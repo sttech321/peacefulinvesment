@@ -1,0 +1,9 @@
+/* Production-ready App.css - Minimal styles */
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+/* Keep only essential styles for production */

@@ -1,0 +1,16 @@
+project_id = "satsigmywganodvjcsip"
+
+[functions.generate-referral]
+verify_jwt = true
+
+[functions.record-referral-deposit]
+verify_jwt = true
+
+[functions.record-commission-payment]
+verify_jwt = true
+
+[functions.send-referral-invitation]
+verify_jwt = true
+
+[functions.send-request-notification]
+verify_jwt = true

@@ -1,0 +1,478 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap');
+
+/* Bebas Neue (local) - fallback to Google import while you download the file */
+/* Run `scripts\download-fonts.ps1` to download into `public/fonts/` and prefer local file. */
+@font-face {
+  font-family: 'Bebas Neue';
+  src: url('/fonts/BebasNeue-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* App Download Landing Page Design System */
+
+@layer base {
+  :root {
+    /* Base Colors - Enhanced Light Theme */
+    --background: 0 0% 100%;
+    --foreground: 210 11% 15%;
+
+    /* Enhanced Gold Palette */
+    --primary: 45 100% 55%; /* Warm Gold #FFB800 */
+    --primary-50: 45 100% 95%; /* Lightest Gold */
+    --primary-100: 45 100% 90%; /* Very Light Gold */
+    --primary-200: 45 100% 80%; /* Light Gold */
+    --primary-300: 45 100% 70%; /* Medium Light Gold */
+    --primary-400: 45 100% 60%; /* Medium Gold */
+    --primary-500: 45 100% 55%; /* Base Gold */
+    --primary-600: 45 100% 50%; /* Medium Dark Gold */
+    --primary-700: 45 100% 45%; /* Dark Gold */
+    --primary-800: 45 100% 40%; /* Darker Gold */
+    --primary-900: 45 100% 35%; /* Darkest Gold */
+    --primary-foreground: 210 11% 15%;
+
+    /* Professional Blue Accents */
+    --accent: 210 100% 50%; /* Professional Blue #0080FF */
+    --accent-50: 210 100% 95%;
+    --accent-100: 210 100% 90%;
+    --accent-200: 210 100% 80%;
+    --accent-300: 210 100% 70%;
+    --accent-400: 210 100% 60%;
+    --accent-500: 210 100% 50%;
+    --accent-600: 210 100% 45%;
+    --accent-700: 210 100% 40%;
+    --accent-800: 210 100% 35%;
+    --accent-900: 210 100% 30%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Enhanced Neutral Grays */
+    --secondary: 210 20% 98%; /* Very Light Gray */
+    --secondary-foreground: 210 11% 15%;
+
+    /* Neutral Color Scale */
+    --neutral-50: 210 20% 98%;
+    --neutral-100: 210 20% 96%;
+    --neutral-200: 210 16% 93%;
+    --neutral-300: 210 14% 89%;
+    --neutral-400: 210 14% 83%;
+    --neutral-500: 210 11% 71%;
+    --neutral-600: 210 9% 31%;
+    --neutral-700: 210 10% 23%;
+    --neutral-800: 210 24% 16%;
+    --neutral-900: 210 24% 10%;
+
+    /* UI Colors */
+    --card: 0 0% 100%;
+    --card-foreground: 210 11% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 11% 15%;
+
+    --muted: 210 20% 96%;
+    --muted-foreground: 210 11% 71%;
+
+    --border: 210 16% 93%;
+    --input: 210 16% 93%;
+    --ring: 45 100% 55%;
+
+    /* Status Colors */
+    --success: 142 76% 36%; /* Success Green #059669 */
+    --success-foreground: 0 0% 100%;
+    --warning: 25 95% 53%; /* Warning Orange #F59E0B */
+    --warning-foreground: 0 0% 100%;
+    --error: 0 84% 60%; /* Error Red */
+    --error-foreground: 0 0% 100%;
+    --info: 210 100% 50%; /* Info Blue */
+    --info-foreground: 0 0% 100%;
+
+    /* Interactive States */
+    --hover-primary: 45 100% 60%;
+    --hover-secondary: 210 20% 96%;
+    --hover-accent: 210 100% 55%;
+    --active-primary: 45 100% 50%;
+    --active-secondary: 210 20% 93%;
+
+    /* Enhanced Glass Effects */
+    --glass-bg: 0 0% 100% / 0.85;
+    --glass-border: 210 16% 93% / 0.3;
+
+    /* Sophisticated Gradients */
+    --gradient-primary: linear-gradient(
+      135deg,
+      hsl(45 100% 55%) 0%,
+      hsl(45 100% 50%) 100%
+    );
+    --gradient-warm: linear-gradient(
+      135deg,
+      hsl(45 100% 55%) 0%,
+      hsl(25 95% 53%) 100%
+    );
+    --gradient-cool: linear-gradient(
+      135deg,
+      hsl(210 100% 50%) 0%,
+      hsl(200 100% 45%) 100%
+    );
+    --gradient-neutral: linear-gradient(
+      135deg,
+      hsl(210 20% 98%) 0%,
+      hsl(210 20% 96%) 100%
+    );
+    --gradient-hero: linear-gradient(
+      135deg,
+      hsl(210 20% 98%) 0%,
+      hsl(45 100% 95%) 50%,
+      hsl(210 100% 97%) 100%
+    );
+    --gradient-glass: linear-gradient(
+      135deg,
+      hsl(0 0% 100% / 0.15),
+      hsl(0 0% 100% / 0.08)
+    );
+
+    /* Layered Shadow System */
+    --shadow-xs: 0 1px 2px hsl(0 0% 0% / 0.05);
+    --shadow-sm: 0 1px 3px hsl(0 0% 0% / 0.1), 0 1px 2px hsl(0 0% 0% / 0.06);
+    --shadow-md: 0 4px 6px hsl(0 0% 0% / 0.07), 0 2px 4px hsl(0 0% 0% / 0.06);
+    --shadow-lg: 0 10px 15px hsl(0 0% 0% / 0.1), 0 4px 6px hsl(0 0% 0% / 0.05);
+    --shadow-xl:
+      0 20px 25px hsl(0 0% 0% / 0.1), 0 10px 10px hsl(0 0% 0% / 0.04);
+    --shadow-gold: 0 4px 20px hsl(45 100% 55% / 0.15);
+    --shadow-blue: 0 4px 20px hsl(210 100% 50% / 0.15);
+    --shadow-soft: 0 4px 20px hsl(45 100% 55% / 0.12);
+    --shadow-glass: 0 8px 32px hsl(0 0% 0% / 0.08);
+    --shadow-card: 0 2px 12px hsl(210 16% 93% / 0.6);
+
+    --radius: 1rem;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 220 13% 9%;
+    --sidebar-primary: 220 13% 9%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 220 13% 96%;
+    --sidebar-accent-foreground: 220 13% 9%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 51 100% 50%;
+
+    /* Status Colors */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 20% 98%;
+    --pinkcolor: #d544f0;
+    --yellowcolor: #f3b800;
+  }
+
+  .bg-gradient-pink-to-yellow {
+    background: linear-gradient(
+      to right,
+      var(--pinkcolor) 0%,
+      var(--yellowcolor) 100%
+    );
+  }
+
+  .bg-gradient-yellow-to-pink {
+    background: linear-gradient(
+      to right,
+      var(--yellowcolor) 0%,
+      var(--pinkcolor) 100%
+    );
+  }
+
+  /* Glass Card Effect */
+  .glass-card {
+    background: hsl(var(--glass-bg));
+    backdrop-filter: blur(12px);
+    border: 1px solid hsl(var(--glass-border));
+    box-shadow: var(--shadow-glass);
+  }
+
+  .dark {
+    /* Base Colors - Dark Theme */
+    --background: 222 84% 5%; /* Deep Navy #0F172A */
+    --foreground: 210 20% 98%; /* Soft White #F9FAFB */
+
+    /* Brand Colors - Gold Theme */
+    --primary: 51 100% 50%; /* Gold #FFD700 */
+    --primary-muted: 51 100% 45%; /* Muted Gold #E6C200 */
+    --primary-foreground: 222 84% 5%;
+
+    --secondary: 220 13% 12%; /* Dark Gray #1F2937 */
+    --secondary-foreground: 210 20% 98%;
+
+    --accent: 51 100% 50%; /* Gold */
+    --accent-foreground: 222 84% 5%;
+
+    /* UI Colors */
+    --card: 222 84% 8%;
+    --card-foreground: 210 20% 98%;
+
+    --popover: 222 84% 8%;
+    --popover-foreground: 210 20% 98%;
+
+    --muted: 220 13% 12%;
+    --muted-foreground: 220 9% 62%; /* Light Gray #9CA3AF */
+
+    --border: 220 13% 15%;
+    --input: 220 13% 15%;
+    --ring: 51 100% 50%;
+
+    /* Glass Effects */
+    --glass-bg: 222 84% 8% / 0.8;
+    --glass-border: 210 20% 98% / 0.1;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(
+      135deg,
+      hsl(51 100% 50%),
+      hsl(51 100% 45%)
+    );
+    --gradient-hero: linear-gradient(
+      135deg,
+      hsl(222 84% 5%) 0%,
+      hsl(220 13% 12%) 50%,
+      hsl(51 100% 50% / 0.1) 100%
+    );
+    --gradient-glass: linear-gradient(
+      135deg,
+      hsl(210 20% 98% / 0.05),
+      hsl(210 20% 98% / 0.02)
+    );
+
+    /* Shadows */
+    --shadow-soft: 0 4px 20px hsl(51 100% 50% / 0.2);
+    --shadow-glass: 0 8px 32px hsl(0 0% 0% / 0.3);
+    --shadow-card: 0 2px 20px hsl(0 0% 0% / 0.5);
+
+    /* Status Colors */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 20% 98%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html,
+  body {
+    @apply w-full overflow-x-hidden;
+  }
+
+  body {
+    @apply bg-background font-inter text-foreground antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-inter font-semibold;
+  }
+}
+
+@layer components {
+  /* Enhanced Glass Effect Components */
+  .glass {
+    @apply border shadow-glass backdrop-blur-xl;
+    background: hsl(var(--glass-bg));
+    border-color: hsl(var(--glass-border));
+  }
+
+  .glass-card {
+    @apply glass rounded-2xl p-6 shadow-[var(--shadow-glass)];
+  }
+
+  /* Download Button Variants */
+  .download-btn-primary {
+    @apply rounded-2xl border-0 bg-gradient-primary px-8 py-4 text-lg font-semibold text-primary-foreground shadow-[var(--shadow-soft)] transition-all duration-300 hover:scale-105 hover:shadow-[var(--shadow-glass)];
+  }
+
+  .download-btn-secondary {
+    @apply glass rounded-xl px-6 py-3 font-medium text-foreground transition-all duration-300 hover:scale-105;
+  }
+
+  /* Hero Background */
+  .hero-bg {
+    background: var(--gradient-hero);
+  }
+
+  /* Feature Cards */
+  .feature-card {
+    @apply glass-card cursor-pointer transition-all duration-300 hover:scale-105;
+  }
+
+  /* Smooth Animations */
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.8s ease-out forwards;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 1s ease-out forwards;
+  }
+}
+
+@layer utilities {
+  /* Enhanced Color Utilities */
+  .text-primary-gradient {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .bg-primary-gradient {
+    background: var(--gradient-primary);
+  }
+
+  .bg-warm-gradient {
+    background: var(--gradient-warm);
+  }
+
+  .bg-cool-gradient {
+    background: var(--gradient-cool);
+  }
+
+  .bg-neutral-gradient {
+    background: var(--gradient-neutral);
+  }
+
+  .bg-hero-gradient {
+    background: var(--gradient-hero);
+  }
+
+  /* Enhanced Shadow Utilities */
+  .shadow-gold {
+    box-shadow: var(--shadow-gold);
+  }
+
+  .shadow-blue {
+    box-shadow: var(--shadow-blue);
+  }
+
+  /* Enhanced Border Utilities */
+  .border-primary-subtle {
+    border-color: hsl(var(--primary-200));
+  }
+
+  .border-accent-subtle {
+    border-color: hsl(var(--accent-200));
+  }
+
+  /* Status Color Utilities */
+  .text-success {
+    color: hsl(var(--success));
+  }
+
+  .text-warning {
+    color: hsl(var(--warning));
+  }
+
+  .text-error {
+    color: hsl(var(--error));
+  }
+
+  .text-info {
+    color: hsl(var(--info));
+  }
+
+  .bg-success {
+    background-color: hsl(var(--success));
+  }
+
+  .bg-warning {
+    background-color: hsl(var(--warning));
+  }
+
+  .bg-error {
+    background-color: hsl(var(--error));
+  }
+
+  .bg-info {
+    background-color: hsl(var(--info));
+  }
+
+  /* Enhanced Interactive States */
+  .hover-lift {
+    transition:
+      transform 0.2s ease-in-out,
+      box-shadow 0.2s ease-in-out;
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .hover-glow {
+    transition: box-shadow 0.3s ease-in-out;
+  }
+
+  .hover-glow:hover {
+    box-shadow: var(--shadow-gold);
+  }
+
+  /* Glow Effects */
+  .glow-primary {
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.5);
+  }
+
+  .glow-accent {
+    box-shadow: 0 0 20px hsl(var(--accent) / 0.5);
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0px);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Fix transparent dropdown backgrounds */
+[data-radix-select-content] {
+  background-color: hsl(var(--popover)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+}
+
+[data-radix-select-content] [data-radix-select-item] {
+  background-color: transparent;
+}
+
+[data-radix-select-content] [data-radix-select-item]:hover {
+  background-color: hsl(var(--accent)) !important;
+}
