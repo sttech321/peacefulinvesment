@@ -109,7 +109,7 @@ const HeroSection = () => {
               className='animate-slide-up mb-6 font-inter text-4xl font-bold uppercase text-white md:text-5xl xl:text-6xl'
               style={{ animationDelay: '0.2s' }}
             >
-              Test Control Your{' '}
+              Control Your{' '}
               <span className='text-primary-gradient'>Investment Bots</span>{' '}
               from Anywhere
             </h1>
