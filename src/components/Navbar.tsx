@@ -69,7 +69,7 @@ const Navbar = () => {
           {/* Logo */}
           <Link
             to='/'
-            className='flex min-w-0 flex-shrink-0 items-center space-x-2'
+            className='flex min-w-0 flex-shrink-0 items-center space-x-2 outline-none'
           >
             <Shield className='h-6 w-6 flex-shrink-0 text-primary sm:h-8 sm:w-8' />
             <span className='truncate text-lg font-bold text-foreground text-white sm:text-xl'>
@@ -78,13 +78,13 @@ const Navbar = () => {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className='hidden items-center space-x-6 md:flex'>
+          <div className='hidden items-center space-x-6 lg:flex'>
             {/* Main navigation links */}
             {mainNavLinks.map(link => (
               <Link
                 key={link.name}
                 to={link.href}
-                className='font-inter text-xs font-semibold uppercase text-white transition-colors hover:text-muted-foreground'
+                className='font-inter text-xs font-semibold uppercase text-white transition-colors hover:text-primary'
               >
                 {link.name}
               </Link>
@@ -111,7 +111,7 @@ const Navbar = () => {
           </div>
 
           {/* Right Side Actions */}
-          <div className='hidden items-center space-x-3 md:flex'>
+          <div className='hidden items-center space-x-3 lg:flex'>
             {user ? (
               <>
                 {/* Theme Toggle */}
@@ -202,7 +202,7 @@ const Navbar = () => {
           </div>
 
           {/* Mobile menu button */}
-          <div className='ml-2 flex-shrink-0 md:hidden'>
+          <div className='ml-2 flex-shrink-0 lg:hidden'>
             <button
               onClick={() => setIsOpen(!isOpen)}
               className='p-1 text-muted-foreground hover:text-foreground'
@@ -218,7 +218,7 @@ const Navbar = () => {
 
         {/* Mobile Navigation */}
         {isOpen && (
-          <div className='fixed inset-x-0 top-16 z-50 border-t border-border/40 bg-background/95 shadow-lg backdrop-blur-xl md:hidden'>
+          <div className='fixed inset-x-0 top-16 z-50 border-t border-border/40 bg-[#0c0715]/85 shadow-lg backdrop-blur-xl lg:hidden'>
             <div className='w-full max-w-full overflow-x-hidden'>
               <div className='space-y-1 px-3 py-2'>
                 {/* Main nav links */}

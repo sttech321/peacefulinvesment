@@ -173,6 +173,7 @@
       var(--pinkcolor) 0%,
       var(--yellowcolor) 100%
     );
+    transition: 0.4s ease !important;
   }
 
   .bg-gradient-yellow-to-pink {
@@ -181,6 +182,12 @@
       var(--yellowcolor) 0%,
       var(--pinkcolor) 100%
     );
+    transition: 0.4s ease !important;
+  }
+
+  .pink-yellow-shadow {
+    background: url(assets/gradient_bg.jpg) repeat-y center top;
+    background-size: 100%;
   }
 
   /* Glass Card Effect */

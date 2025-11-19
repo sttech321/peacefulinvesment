@@ -59,7 +59,7 @@ const LandingHeroNew = () => {
 
             {/* CTA Buttons */}
             <div
-              className='animate-slide-up flex flex-col justify-start gap-4 sm:flex-row'
+              className='animate-slide-up flex justify-start gap-4 sm:flex-row'
               style={{ animationDelay: '0.6s' }}
             >
               <Link

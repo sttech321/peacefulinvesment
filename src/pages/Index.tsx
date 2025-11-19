@@ -10,23 +10,26 @@ import LandingCount from '@/components/landing/LandingCount';
 import LandingFeaturesNew from '@/components/landing/LandingFeaturesNew';
 import LandingFaithFinancest from '@/components/landing/LandingFaithFinancest';
 import LandingServicesNew from '@/components/landing/LandingServicesNew';
+import LandingCTAnew from '@/components/landing/LandingCTAnew';
 
 const Index = () => {
   return (
     <div className='min-h-screen bg-black pt-16'>
-      
       <LandingHeroNew />
-      <LandingCount />
-      <LandingFeaturesNew />
-      <LandingFaithFinancest />
-      <LandingServicesNew />
-      <LandingTestimonials />
+      <div className='pink-yellow-shadow'>
+        <LandingCount />
+        <LandingFeaturesNew />
+        <LandingFaithFinancest />
+        <LandingServicesNew />
+        <LandingCTAnew />
+
+        {/* <LandingTestimonials />
       <LandingFAQ />
-      <LandingCTA />
-      <Footer />
+      <LandingCTA /> */}
+        <Footer />
+      </div>
     </div>
   );
 };
 
 export default Index;
-;

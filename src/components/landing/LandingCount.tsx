@@ -84,11 +84,11 @@ export default function LandingCount() {
   }
 
   return (
-    <section className='px-6 py-24'>
+    <section className='px-6 py-7 md:py-12 lg:py-24'>
       <div className='mx-auto max-w-7xl'>
         <div className='animate-slide-up' style={{ animationDelay: '0.4s' }}>
-          <div className='bg-gradient-pink-to-yellow rounded-sm p-[1px]'>
-            <div className='grid grid-cols-4 items-center gap-6 rounded-sm bg-black'>
+          <div className='bg-gradient-pink-to-yellow rounded-sm p-[2px]'>
+            <div className='grid grid-cols-1 items-center gap-6 rounded-sm bg-black md:grid-cols-2 lg:grid-cols-4'>
               <div className='glass-card border-0 bg-transparent py-9 text-center shadow-none'>
                 <div className='mb-2 font-bebas-neue text-[50px] font-normal leading-[36px] text-white'>
                   {formatUsers(values.users)}
@@ -126,10 +126,10 @@ export default function LandingCount() {
 
           <div className='mt-5 px-6 pt-10 text-center'>
             <img className='mx-auto' src={joinIcon} alt='Join Icon' />
-            <h2 className='pt-5 font-inter text-3xl uppercase text-white'>
+            <h2 className='pt-5 font-inter text-2xl uppercase text-white lg:text-3xl'>
               JOIN OUR COMMUNITY
             </h2>
-            <p className='mt-2 font-open-sans text-2xl text-white'>
+            <p className='mt-2 font-open-sans text-lg text-white lg:text-2xl'>
               Connect with successful investors and learn from the best.
             </p>
           </div>
