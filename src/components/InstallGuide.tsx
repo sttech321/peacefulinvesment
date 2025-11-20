@@ -225,40 +225,38 @@ const InstallGuide = () => {
               <div className='bg-gradient-pink-to-yellow rounded-lg p-[2px]'>
                 <a
                   href='#'
-                  className='flex items-center justify-between rounded-lg border border-secondary-foreground p-3 transition-colors hover:bg-muted/50'
+                  className='flex items-center justify-between rounded-lg border border-secondary-foreground p-3 text-white transition-colors hover:bg-muted/50 hover:text-black'
                 >
-                  <span className='text-white'>
-                    📖 Installation Documentation
-                  </span>
-                  <span className='text-accent-cyan'>→</span>
+                  <span>📖 Installation Documentation</span>
+                  <span>→</span>
                 </a>
               </div>
 
               <div className='bg-gradient-pink-to-yellow rounded-lg p-[2px]'>
                 <a
                   href='#'
-                  className='flex items-center justify-between rounded-lg border border-secondary-foreground p-3 transition-colors hover:bg-muted/50'
+                  className='flex items-center justify-between rounded-lg border border-secondary-foreground p-3 text-white transition-colors hover:bg-muted/50 hover:text-black'
                 >
-                  <span className='text-white'>🎥 Video Setup Tutorial</span>
-                  <span className='text-accent-cyan'>→</span>
+                  <span>🎥 Video Setup Tutorial</span>
+                  <span>→</span>
                 </a>
               </div>
               <div className='bg-gradient-pink-to-yellow rounded-lg p-[2px]'>
                 <a
                   href='#'
-                  className='flex items-center justify-between rounded-lg border border-secondary-foreground p-3 transition-colors hover:bg-muted/50'
+                  className='flex items-center justify-between rounded-lg border border-secondary-foreground p-3 text-white transition-colors hover:bg-muted/50 hover:text-black'
                 >
-                  <span className='text-white'>💬 Live Support Chat</span>
-                  <span className='text-accent-green'>●</span>
+                  <span>💬 Live Support Chat</span>
+                  <span>●</span>
                 </a>
               </div>
               <div className='bg-gradient-pink-to-yellow rounded-lg p-[2px]'>
                 <a
                   href='#'
-                  className='flex items-center justify-between rounded-lg border border-secondary-foreground p-3 transition-colors hover:bg-muted/50'
+                  className='flex items-center justify-between rounded-lg border border-secondary-foreground p-3 text-white transition-colors hover:bg-muted/50 hover:text-black'
                 >
-                  <span className='text-white'>👥 Community Forum</span>
-                  <span className='text-accent-cyan'>→</span>
+                  <span>👥 Community Forum</span>
+                  <span>→</span>
                 </a>
               </div>
             </div>

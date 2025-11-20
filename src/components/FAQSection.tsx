@@ -56,7 +56,7 @@ const FAQSection = () => {
         <div className='mb-16 text-center'>
           <h2 className='mb-6 font-inter text-2xl font-bold uppercase text-white md:text-3xl'>
             Frequently Asked{' '}
-            <span className='text-[var(--yellowcolor)]'>Questions</span>
+            <span className='text-[var(--yellowcolor)]'> Questions</span>
           </h2>
           <p className='mx-auto max-w-3xl font-open-sans text-lg text-white lg:text-xl'>
             Get answers to common questions about Peaceful Investment. Our
@@ -66,18 +66,18 @@ const FAQSection = () => {
         </div>
 
         {/* FAQ Accordion */}
-        <div className='glass-card'>
+        <div className='glass-card bg-black p-0'>
           <Accordion type='single' collapsible className='w-full'>
             {faqs.map((faq, index) => (
               <AccordionItem
                 key={index}
                 value={`item-${index}`}
-                className='border-border/50'
+                className='border-border/20 px-4 last:border-0'
               >
-                <AccordionTrigger className='hover:text-accent-cyan text-left text-lg font-semibold text-foreground transition-colors'>
+                <AccordionTrigger className='hover:text-accent-cyan py-4 text-left font-inter text-lg font-normal text-white outline-none transition-colors hover:no-underline'>
                   {faq.question}
                 </AccordionTrigger>
-                <AccordionContent className='pb-6 pt-2 leading-relaxed text-muted-foreground'>
+                <AccordionContent className='pb-4 pt-0 font-open-sans leading-relaxed text-muted-foreground'>
                   {faq.answer}
                 </AccordionContent>
               </AccordionItem>
@@ -87,77 +87,96 @@ const FAQSection = () => {
 
         {/* Support Resources */}
         <div className='mt-16 grid gap-8 md:grid-cols-2'>
-          <div className='glass-card text-center'>
+          <div className='bg-transparent text-center'>
             <div className='mb-4 text-4xl'>📚</div>
-            <h3 className='mb-4 text-xl font-semibold text-foreground'>
+            <h3 className='mb-4 text-xl font-semibold text-white'>
               Documentation & Guides
             </h3>
             <p className='mb-6 text-muted-foreground'>
               Comprehensive documentation, video tutorials, and step-by-step
               guides for all features.
             </p>
-            <a
-              href='#'
-              className='download-btn-secondary inline-flex items-center justify-center'
-            >
-              Browse Documentation
-            </a>
+
+            <span className='bg-gradient-pink-to-yellow inline-block rounded-sm p-[2px]'>
+              <a
+                href='#'
+                className='hover:text-accent-cyan hover:bg-gradient-pink-to-yellow inline-flex items-center justify-center rounded-sm bg-black px-6 py-3 font-inter text-xs font-semibold uppercase text-white transition-colors'
+              >
+                Browse Documentation
+              </a>
+            </span>
           </div>
 
-          <div className='glass-card text-center'>
+          <div className='bg-transparent text-center'>
             <div className='mb-4 text-4xl'>💬</div>
-            <h3 className='mb-4 text-xl font-semibold text-foreground'>
+            <h3 className='mb-4 text-xl font-semibold text-white'>
               24/7 Support & Community
             </h3>
-            <p className='mb-6 text-muted-foreground'>
+            <p className='mb-6 font-open-sans text-muted-foreground'>
               Join our active trader community and get help from experts and
               fellow users.
             </p>
             <div className='flex justify-center gap-3'>
-              <a
-                href='#'
-                className='download-btn-primary inline-flex items-center justify-center px-4 text-sm'
-              >
-                Live Chat
-              </a>
-              <a
-                href='#'
-                className='download-btn-secondary inline-flex items-center justify-center px-4 text-sm'
-              >
-                Community
-              </a>
+              <span className='bg-gradient-pink-to-yellow inline-block rounded-sm p-[2px]'>
+                <a
+                  href='#'
+                  className='hover:text-accent-cyan hover:bg-gradient-pink-to-yellow inline-flex items-center justify-center rounded-sm bg-black px-6 py-3 font-inter text-xs font-semibold uppercase text-white transition-colors'
+                >
+                  Live Chat
+                </a>
+              </span>
+
+              <span className='bg-gradient-pink-to-yellow inline-block rounded-sm p-[2px]'>
+                <a
+                  href='#'
+                  className='hover:text-accent-cyan hover:bg-gradient-pink-to-yellow inline-flex items-center justify-center rounded-sm bg-black px-6 py-3 font-inter text-xs font-semibold uppercase text-white transition-colors'
+                >
+                  Community
+                </a>
+              </span>
             </div>
           </div>
         </div>
 
         {/* Contact CTA */}
-        <div className='glass-card mt-16 text-center'>
-          <h3 className='mb-4 text-xl font-semibold text-foreground'>
-            Still have questions about Peaceful Investment?
-          </h3>
-          <p className='mb-6 text-muted-foreground'>
+        <div className='bg-transparent pt-10 text-center md:pt-12 lg:pt-24'>
+          <h2 className='mb-4 font-inter text-2xl font-bold uppercase text-white md:text-3xl'>
+            Still have questions about{' '}
+            <span className='text-[var(--yellowcolor)]'>
+              Peaceful Investment?
+            </span>
+          </h2>
+
+          <p className='mb-6 font-open-sans text-lg text-white lg:text-xl'>
             Our trading experts are here to help you optimize your automated
             trading setup.
           </p>
           <div className='flex flex-col justify-center gap-4 sm:flex-row'>
-            <a
-              href='#'
-              className='download-btn-primary inline-flex items-center justify-center'
-            >
-              💬 Chat with Trading Expert
-            </a>
-            <a
-              href='#'
-              className='download-btn-secondary inline-flex items-center justify-center'
-            >
-              📧 Email Support
-            </a>
-            <a
-              href='#'
-              className='download-btn-secondary inline-flex items-center justify-center'
-            >
-              📞 Schedule Call
-            </a>
+            <span className='bg-gradient-pink-to-yellow inline-block rounded-sm p-[2px]'>
+              <a
+                href='#'
+                className='hover:text-accent-cyan hover:bg-gradient-pink-to-yellow inline-flex items-center justify-center rounded-sm bg-black px-6 py-3 font-inter text-xs font-semibold uppercase text-white transition-colors'
+              >
+                💬 Chat with Trading Expert
+              </a>
+            </span>
+
+            <span className='bg-gradient-pink-to-yellow inline-block rounded-sm p-[2px]'>
+              <a
+                href='#'
+                className='hover:text-accent-cyan hover:bg-gradient-pink-to-yellow inline-flex items-center justify-center rounded-sm bg-black px-6 py-3 font-inter text-xs font-semibold uppercase text-white transition-colors'
+              >
+                📧 Email Support
+              </a>
+            </span>
+            <span className='bg-gradient-pink-to-yellow inline-block rounded-sm p-[2px]'>
+              <a
+                href='#'
+                className='hover:text-accent-cyan hover:bg-gradient-pink-to-yellow inline-flex items-center justify-center rounded-sm bg-black px-6 py-3 font-inter text-xs font-semibold uppercase text-white transition-colors'
+              >
+                📞 Schedule Call
+              </a>
+            </span>
           </div>
         </div>
       </div>

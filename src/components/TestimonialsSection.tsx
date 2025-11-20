@@ -1,4 +1,12 @@
-import { Star, Quote, TrendingUp } from 'lucide-react';
+import {
+  Star,
+  Quote,
+  TrendingUp,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import useEmblaCarousel from 'embla-carousel-react';
 
 const TestimonialsSection = () => {
   const testimonials = [
@@ -57,6 +65,45 @@ const TestimonialsSection = () => {
     { name: 'Countries', logo: '🌍', count: '120+' },
   ];
 
+  // Embla carousel setup
+  const [emblaRef, emblaApi] = useEmblaCarousel({
+    loop: true,
+    align: 'start',
+    slidesToScroll: 1,
+  });
+  const [prevDisabled, setPrevDisabled] = useState(true);
+  const [nextDisabled, setNextDisabled] = useState(true);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [scrollSnaps, setScrollSnaps] = useState<number[]>([]);
+
+  const onSelect = useCallback(() => {
+    if (!emblaApi) return;
+    setSelectedIndex(emblaApi.selectedScrollSnap());
+    setPrevDisabled(!emblaApi.canScrollPrev());
+    setNextDisabled(!emblaApi.canScrollNext());
+  }, [emblaApi]);
+
+  const scrollTo = useCallback(
+    (index: number) => emblaApi && emblaApi.scrollTo(index),
+    [emblaApi]
+  );
+  const scrollPrev = useCallback(
+    () => emblaApi && emblaApi.scrollPrev(),
+    [emblaApi]
+  );
+  const scrollNext = useCallback(
+    () => emblaApi && emblaApi.scrollNext(),
+    [emblaApi]
+  );
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    setScrollSnaps(emblaApi.scrollSnapList());
+    onSelect();
+    emblaApi.on('select', onSelect);
+    emblaApi.on('reInit', onSelect);
+  }, [emblaApi, onSelect]);
+
   return (
     <section className='px-6 pt-10 md:pt-12 lg:pt-24'>
       <div className='mx-auto max-w-7xl'>
@@ -74,103 +121,154 @@ const TestimonialsSection = () => {
           </p>
         </div>
 
-        {/* Testimonials Grid */}
-        <div className='mb-20 grid grid-cols-1 gap-8 md:grid-cols-2'>
-          {testimonials.map((testimonial, index) => (
-            <div
-              key={index}
-              className='glass-card hover:glow-primary group bg-black'
-              style={{ animationDelay: `${index * 0.1}s` }}
-            >
-              {/* Quote Icon */}
-              <div className='mb-4'>
-                <Quote className='h-8 w-8 text-white opacity-40' />
-              </div>
+        {/* Testimonials Slider (Embla) */}
+        <div className='mb-20'>
+          <div className='relative'>
+            <div className='overflow-hidden' ref={emblaRef}>
+              <div className='-ml-4 flex'>
+                {testimonials.map((testimonial, index) => (
+                  <div
+                    key={index}
+                    className='shrink-0 grow-0 basis-full pl-4 md:basis-1/2'
+                  >
+                    <div className='glass-card group bg-black'>
+                      {/* Quote Icon */}
+                      <div className='mb-4'>
+                        <Quote className='h-8 w-8 text-white opacity-40' />
+                      </div>
 
-              {/* Testimonial Text */}
-              <blockquote className='mb-6 font-open-sans text-lg leading-relaxed text-muted-foreground'>
-                "{testimonial.quote}"
-              </blockquote>
+                      {/* Testimonial Text */}
+                      <blockquote className='mb-6 font-open-sans text-lg leading-relaxed text-muted-foreground'>
+                        "{testimonial.quote}"
+                      </blockquote>
 
-              {/* Rating */}
-              <div className='mb-4 flex items-center gap-1'>
-                {[...Array(testimonial.rating)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className='fill-accent-green h-5 w-5 text-[var(--yellowcolor)]'
-                  />
+                      {/* Rating */}
+                      <div className='mb-4 flex items-center gap-1'>
+                        {[...Array(testimonial.rating)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className='fill-accent-green h-5 w-5 text-[var(--yellowcolor)]'
+                          />
+                        ))}
+                      </div>
+
+                      {/* Author Info */}
+                      <div className='flex items-center justify-between'>
+                        <div className='flex items-center gap-4'>
+                          <div className='flex h-12 w-12 items-center justify-center rounded-full bg-gradient-primary text-2xl'>
+                            {testimonial.avatar}
+                          </div>
+                          <div>
+                            <div className='font-semibold text-white'>
+                              {testimonial.name}
+                            </div>
+                            <div className='text-sm text-muted-foreground'>
+                              {testimonial.role}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Performance Badge */}
+                        <div className='text-right'>
+                          <div className='font-sembold flex items-center gap-1 text-lg text-muted-foreground'>
+                            <TrendingUp className='h-4 w-4' />
+                            {testimonial.profit}
+                          </div>
+                          <div className='text-xs text-muted-foreground'>
+                            {testimonial.timeframe}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 ))}
               </div>
-
-              {/* Author Info */}
-              <div className='flex items-center justify-between'>
-                <div className='flex items-center gap-4'>
-                  <div className='flex h-12 w-12 items-center justify-center rounded-full bg-gradient-primary text-2xl'>
-                    {testimonial.avatar}
-                  </div>
-                  <div>
-                    <div className='font-semibold text-white'>
-                      {testimonial.name}
-                    </div>
-                    <div className='text-sm text-muted-foreground'>
-                      {testimonial.role}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Performance Badge */}
-                <div className='text-right'>
-                  <div className='font-sembold flex items-center gap-1 text-lg text-muted-foreground'>
-                    <TrendingUp className='h-4 w-4' />
-                    {testimonial.profit}
-                  </div>
-                  <div className='text-xs text-muted-foreground'>
-                    {testimonial.timeframe}
-                  </div>
-                </div>
-              </div>
             </div>
-          ))}
+
+            {/* Arrows */}
+            <button
+              type='button'
+              onClick={scrollPrev}
+              disabled={prevDisabled}
+              aria-label='Previous testimonials'
+              className='absolute left-2 top-1/2 -translate-y-1/2 rounded-full border border-white/10 bg-black/60 p-2 text-white backdrop-blur transition hover:bg-black/80 disabled:cursor-not-allowed disabled:opacity-40'
+            >
+              <ChevronLeft className='h-5 w-5' />
+            </button>
+            <button
+              type='button'
+              onClick={scrollNext}
+              disabled={nextDisabled}
+              aria-label='Next testimonials'
+              className='absolute right-2 top-1/2 -translate-y-1/2 rounded-full border border-white/10 bg-black/60 p-2 text-white backdrop-blur transition hover:bg-black/80 disabled:cursor-not-allowed disabled:opacity-40'
+            >
+              <ChevronRight className='h-5 w-5' />
+            </button>
+          </div>
+
+          {/* Dots */}
+          <div className='mt-6 flex justify-center gap-2'>
+            {scrollSnaps.map((_, idx) => (
+              <button
+                key={idx}
+                type='button'
+                onClick={() => scrollTo(idx)}
+                aria-label={`Go to slide ${idx + 1}`}
+                className={
+                  'h-2.5 w-2.5 rounded-full transition ' +
+                  (idx === selectedIndex
+                    ? 'bg-[var(--yellowcolor)]'
+                    : 'bg-white/30 hover:bg-white/50')
+                }
+              />
+            ))}
+          </div>
         </div>
 
         {/* Trust Indicators */}
-        <div className='glass-card'>
-          <h3 className='mb-8 text-center text-2xl font-bold text-foreground'>
-            Powering Trading Success Worldwide
+        <div>
+          <h3 className='mb-6 text-center font-inter text-2xl font-bold uppercase text-white md:text-3xl'>
+            Powering Trading{' '}
+            <span className='text-[var(--yellowcolor)]'>Success Worldwide</span>
           </h3>
-          <div className='grid grid-cols-2 gap-6 md:grid-cols-6'>
-            {trustIndicators.map((indicator, index) => (
-              <div key={index} className='group text-center'>
-                <div className='mb-2 text-4xl transition-transform group-hover:scale-110'>
-                  {indicator.logo}
-                </div>
-                <div className='mb-1 text-xl font-bold text-foreground'>
-                  {indicator.count}
-                </div>
-                <div className='text-sm text-muted-foreground'>
-                  {indicator.name}
-                </div>
+
+          <div className='animate-slide-up' style={{ animationDelay: '0.4s' }}>
+            <div className='bg-gradient-pink-to-yellow rounded-sm p-[2px]'>
+              <div className='grid grid-cols-2 gap-6 rounded-sm bg-black p-6 md:grid-cols-6'>
+                {trustIndicators.map((indicator, index) => (
+                  <div key={index} className='group text-center'>
+                    <div className='mb-2 text-4xl transition-transform group-hover:scale-110'>
+                      {indicator.logo}
+                    </div>
+                    <div className='mb-1 text-xl font-bold text-white'>
+                      {indicator.count}
+                    </div>
+                    <div className='text-sm text-muted-foreground'>
+                      {indicator.name}
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
           </div>
         </div>
 
         {/* Overall Rating Summary */}
         <div className='mt-16 text-center'>
-          <div className='glass-card inline-flex items-center gap-4'>
+          <div className='glass-card inline-flex items-center gap-4 bg-primary/90'>
             <div className='flex items-center gap-1'>
               {[...Array(5)].map((_, i) => (
                 <Star
                   key={i}
-                  className='fill-accent-green text-accent-green h-6 w-6'
+                  className='fill-accent-green h-6 w-6 text-white'
                 />
               ))}
             </div>
-            <div className='text-2xl font-bold text-foreground'>4.9/5</div>
-            <div className='text-muted-foreground'>
+            <div className='text-2xl font-bold text-white'>4.9/5</div>
+            <div className='text-white'>
               • Average rating from 3,247 traders
             </div>
-            <div className='text-accent-green flex items-center gap-2'>
+            <div className='flex items-center gap-2 text-white'>
               <TrendingUp className='h-4 w-4' />
               <span className='font-semibold'>97% recommend</span>
             </div>
