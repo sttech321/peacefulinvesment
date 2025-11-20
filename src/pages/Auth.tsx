@@ -171,16 +171,18 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen hero-bg flex items-center justify-center p-4">
-      <Card className="w-full max-w-md glass-card">
+    <div>
+    <div className="min-h-screen pink-yellow-shadow flex items-center justify-center p-4">
+      <div className="border-0 shadow-none bg-gradient-pink-to-yellow rounded-sm p-[2px] w-full max-w-md hover:glow-primary">
+      <Card className="bg-black rounded-sm block border-0 shadow-none">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             <Shield className="h-12 w-12 text-primary" />
           </div>
-          <CardTitle className="text-2xl font-bold">
+          <CardTitle className="text-2xl font-bold text-white">
             {isSignUp ? "Create Your Account" : "Welcome Back"}
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-white">
             {isSignUp 
               ? "Start managing your MetaTrader bots today."
               : "Login to manage your bots and investments."
@@ -203,14 +205,14 @@ const Auth = () => {
             )}
             {isSignUp && (
               <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name</Label>
+                <Label htmlFor="fullName" className="text-muted-foreground">Full Name</Label>
                 <Input
                   id="fullName"
                   type="text"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="Enter your full name"
-                  className={errors.fullName ? "border-red-500" : ""}
+                   className={`focus:outline-none focus-visible:outline-none focus-visible:ring-0 shadow-none border-0 rounded-[8px] ${errors.fullName ? "border-red-500" : ""}`}
                 />
                 {errors.fullName && (
                   <p className="text-sm text-red-500">{errors.fullName}</p>
@@ -219,22 +221,22 @@ const Auth = () => {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-muted-foreground">Email</Label>
               <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
-                className={errors.email ? "border-red-500" : ""}
-              />
+  id="email"
+  type="email"
+  value={email}
+  onChange={(e) => setEmail(e.target.value)}
+  placeholder="Enter your email"
+  className={`focus:outline-none focus-visible:outline-none focus-visible:ring-0 shadow-none border-0 rounded-[8px] ${errors.email ? "border-red-500" : ""}`}
+/>
               {errors.email && (
                 <p className="text-sm text-red-500">{errors.email}</p>
               )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-muted-foreground">Password</Label>
               <div className="relative">
                 <Input
                   id="password"
@@ -242,7 +244,7 @@ const Auth = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
-                  className={errors.password ? "border-red-500" : ""}
+                  className={`focus:outline-none focus-visible:outline-none focus-visible:ring-0 shadow-none border-0 rounded-[8px] ${errors.password ? "border-red-500" : ""}`}
                 />
                 <button
                   type="button"
@@ -259,7 +261,7 @@ const Auth = () => {
 
             {isSignUp && (
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Label htmlFor="confirmPassword" className="text-muted-foreground">Confirm Password</Label>
                 <div className="relative">
                   <Input
                     id="confirmPassword"
@@ -267,7 +269,7 @@ const Auth = () => {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Confirm your password"
-                    className={errors.confirmPassword ? "border-red-500" : ""}
+                     className={`focus:outline-none focus-visible:outline-none focus-visible:ring-0 shadow-none border-0 rounded-[8px] ${errors.confirmPassword ? "border-red-500" : ""}`}                   
                   />
                   <button
                     type="button"
@@ -285,8 +287,10 @@ const Auth = () => {
 
             {isSignUp && (
               <div className="flex items-center space-x-2">
-                <input type="checkbox" id="terms" required className="rounded" />
-                <Label htmlFor="terms" className="text-sm">
+ 
+
+                <input type="checkbox" id="terms" required className="border-0" />
+                <Label htmlFor="terms" className="text-sm text-white">
                   I agree to the{" "}
                   <a href="#" className="text-primary hover:underline">
                     Terms & Privacy Policy
@@ -295,6 +299,7 @@ const Auth = () => {
               </div>
             )}
 
+<div className="pt-2">
             <Button
               type="submit"
               className="w-full download-btn-primary"
@@ -302,7 +307,7 @@ const Auth = () => {
             >
               {isLoading ? "Loading..." : isSignUp ? "Sign Up" : "Login"}
             </Button>
-
+</div>
             {/* Resend Confirmation Button for expired links */}
             {errors.general && errors.general.includes('expired') && (
               <Button
@@ -342,7 +347,7 @@ const Auth = () => {
               <button
                 type="button"
                 onClick={switchMode}
-                className="text-sm text-muted-foreground hover:text-foreground"
+                className="text-sm text-white hover:text-muted-foreground"
               >
                 {isSignUp 
                   ? "Already have an account? Login"
@@ -353,6 +358,8 @@ const Auth = () => {
           </form>
         </CardContent>
       </Card>
+       </div>
+      </div>
       <Footer />
     </div>
   );
