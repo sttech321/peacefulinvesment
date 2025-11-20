@@ -179,7 +179,7 @@ const Auth = () => {
           <div className="flex justify-center mb-4">
             <Shield className="h-12 w-12 text-primary" />
           </div>
-          <CardTitle className="text-2xl font-bold text-white">
+          <CardTitle className="text-2xl font-inter font-semibold text-white">
             {isSignUp ? "Create Your Account" : "Welcome Back"}
           </CardTitle>
           <CardDescription className="text-white">
@@ -190,7 +190,7 @@ const Auth = () => {
           </CardDescription>
           {referralCode && isSignUp && (
             <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-2">
-              <p className="text-sm text-green-800">
+              <p className="text-sm text-muted-foreground">
                 <strong>Referral Code Applied:</strong> {referralCode}
               </p>
             </div>
@@ -302,7 +302,7 @@ const Auth = () => {
 <div className="pt-2">
             <Button
               type="submit"
-              className="w-full download-btn-primary"
+              className="w-full download-btn-primary font-inter text-sm font-semibold uppercase"
               disabled={isLoading}
             >
               {isLoading ? "Loading..." : isSignUp ? "Sign Up" : "Login"}
