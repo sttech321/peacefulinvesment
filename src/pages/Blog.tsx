@@ -43,7 +43,7 @@ const Blog = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pink-yellow-shadow pt-16 pb-12">
+    <div className="min-h-screen bg-background pink-yellow-shadow pt-16">
 
          {/* Header */}
         <div className="text-center py-10 md:py-12 lg:py-24 px-4 animate-slide-up bg-black/20">
