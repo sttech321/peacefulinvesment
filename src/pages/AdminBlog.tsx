@@ -33,7 +33,7 @@ const AdminBlog = () => {
   
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<any>({
     title: '',
     slug: '',
     content: '',
@@ -43,6 +43,7 @@ const AdminBlog = () => {
     status: 'draft' as 'draft' | 'published' | 'archived',
     meta_title: '',
     meta_description: '',
+    featured_image:'',
   });
 
   useEffect(() => {
@@ -57,8 +58,9 @@ const AdminBlog = () => {
   }, [isAdmin, roleLoading, navigate, toast]);
 
   useEffect(() => {
-    console.log('AdminBlog: Fetching posts with status "all"');
+   // console.log('AdminBlog: Fetching posts with status "all"');
     fetchPosts('all');
+   // console.log("All blog posts:", fetchPosts);
   }, [fetchPosts]);
 
   const resetForm = () => {
@@ -72,47 +74,75 @@ const AdminBlog = () => {
       status: 'draft',
       meta_title: '',
       meta_description: '',
+      featured_image: ''
     });
     setEditingPost(null);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const postData = {
-      ...formData,
-      tags: formData.tags.split(',').map(tag => tag.trim()).filter(Boolean),
-      published_at: formData.status === 'published' ? new Date().toISOString() : null,
-    };
+  const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+};
 
-    try {
-      if (editingPost) {
-        const { error } = await updatePost(editingPost.id, postData);
-        if (error) throw error;
-        toast({
-          title: "Post Updated",
-          description: "Blog post has been updated successfully.",
-        });
-      } else {
-        const { error } = await createPost(postData);
-        if (error) throw error;
-        toast({
-          title: "Post Created",
-          description: "Blog post has been created successfully.",
-        });
-      }
-      
-      setDialogOpen(false);
-      resetForm();
-      fetchPosts('all');
-    } catch (error) {
+
+  const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  let base64Image: string | undefined = undefined;
+
+  if (formData.featured_image instanceof File) {
+    base64Image = await fileToBase64(formData.featured_image);
+  }
+
+  console.log('base64Image', base64Image)
+  const { previewUrl, ...cleanForm } = formData;
+
+  const postData = {
+    ...cleanForm,
+    tags: cleanForm.tags.split(',').map(tag => tag.trim()).filter(Boolean),
+    published_at: cleanForm.status === 'published' ? new Date().toISOString() : null,
+    featured_image: base64Image || null
+  };
+
+
+  console.log('postData', postData);
+
+  try {
+    if (editingPost) {
+      const { error } = await updatePost(editingPost.id, postData);
+      if (error) throw error;
+
       toast({
-        title: "Error",
-        description: "Failed to save blog post. Please try again.",
-        variant: "destructive",
+        title: "Post Updated",
+        description: "Blog post has been updated successfully.",
+      });
+    } else {
+      const { error } = await createPost(postData);
+      if (error) throw error;
+
+      toast({
+        title: "Post Created",
+        description: "Blog post has been created successfully.",
       });
     }
-  };
+
+    setDialogOpen(false);
+    resetForm();
+    fetchPosts("all");
+
+  } catch (error) {
+    toast({
+      title: "Error",
+      description: "Failed to save blog post. Please try again.",
+      variant: "destructive",
+    });
+  }
+};
+
 
   const handleEdit = (post: BlogPost) => {
     setEditingPost(post);
@@ -126,6 +156,7 @@ const AdminBlog = () => {
       status: post.status,
       meta_title: post.meta_title || '',
       meta_description: post.meta_description || '',
+      featured_image: post.featured_image || '',
     });
     setDialogOpen(true);
   };
@@ -241,6 +272,47 @@ const AdminBlog = () => {
                   />
                 </div>
 
+                <div>
+                  <Label htmlFor="featured_image">Featured Image</Label>
+                  <Input
+                    id="featured_image"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        const file = e.target.files[0];
+                        setFormData({ ...formData, featured_image: file });
+
+                        // Optional: preview image
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          const previewUrl = reader.result as string;
+                          setFormData(prev => ({ ...prev, previewUrl }));
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
+
+                  {formData.featured_image ? (
+                    // Show preview if user picked a new image
+                    <img
+                      src={formData.featured_image}
+                      alt="Preview"
+                      className="mt-2 max-h-48 rounded-lg"
+                    />
+                  ) : formData.previewUrl ? (
+                    // Show DB image if it's edit mode and image exists
+                    <img
+                      src={formData.previewUrl}
+                      alt="Current"
+                      className="mt-2 max-h-48 rounded-lg"
+                    />
+                  ) : null}
+
+                </div>
+
+
                 <div className="grid grid-cols-3 gap-4">
                   <div>
                     <Label htmlFor="category">Category</Label>
@@ -325,8 +397,18 @@ const AdminBlog = () => {
 
         {/* Posts Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          
           {posts.map((post) => (
+            
             <Card key={post.id} className="glass-card">
+              {post.featured_image && (
+                <img
+                  src={post.featured_image}
+                  alt={post.title}
+                  className="w-full h-40 object-cover rounded-t-lg mb-2"
+                />
+              )}
+
               <CardHeader>
                 <div className="flex items-center justify-between mb-2">
                   <Badge
@@ -335,6 +417,7 @@ const AdminBlog = () => {
                   >
                     {post.status}
                   </Badge>
+                  
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
                     <Eye className="w-3 h-3" />
                     {post.view_count}

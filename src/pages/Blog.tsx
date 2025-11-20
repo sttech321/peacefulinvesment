@@ -116,6 +116,13 @@ const BlogPostCard = ({ post }: { post: BlogPost }) => {
   return (
     <Card className="group hover:scale-105 transition-all duration-300 cursor-pointer glass-card">
       <Link to={`/blog/${post.slug}`}>
+        {post.featured_image && (
+            <img
+              src={post.featured_image}
+              alt={post.title}
+              className="w-full h-40 object-cover rounded-t-lg mb-2"
+            />
+          )}
         <CardHeader className="pb-4">
           <div className="flex items-center gap-2 mb-3">
             <Badge

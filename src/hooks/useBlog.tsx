@@ -7,7 +7,7 @@ export interface BlogPost {
   slug: string;
   content: string;
   excerpt?: string;
-  featured_image?: string;
+  featured_image?: string ;
   category: string;
   tags: string[];
   status: 'draft' | 'published' | 'archived';
@@ -103,6 +103,7 @@ export const useBlog = () => {
           meta_description: post.meta_description,
           author_id: (await supabase.auth.getUser()).data.user?.id || '',
           published_at: post.status === 'published' ? new Date().toISOString() : null,
+          featured_image : post.featured_image
         }])
         .select()
         .single();

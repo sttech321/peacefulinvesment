@@ -137,6 +137,14 @@ const BlogPost = () => {
             </div>
           </div>
 
+          {post.featured_image && (
+            <img
+              src={post.featured_image}
+              alt={post.title}
+              className="w-full h-40 object-cover rounded-t-lg mb-2"
+            />
+          )}
+
           <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-6 leading-tight">
             {post.title}
           </h1>

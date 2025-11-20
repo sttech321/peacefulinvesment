@@ -132,7 +132,7 @@ export type Database = {
           content?: string
           created_at?: string
           excerpt?: string | null
-          featured_image?: string | null
+          featured_image?:  string | null
           id?: string
           meta_description?: string | null
           meta_title?: string | null
