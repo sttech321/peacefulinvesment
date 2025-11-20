@@ -235,7 +235,7 @@ const ForgotUsername = () => {
                   value={searchValue}
                   onChange={(e) => setSearchValue(e.target.value)}
                   required
-                  className="focus:outline-none focus-visible:outline-none focus-visible:ring-0 shadow-none border-0 rounded-[8px]"
+                  className="rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
                   placeholder={
                     searchMethod === 'email' 
                       ? 'Enter your email address' 
