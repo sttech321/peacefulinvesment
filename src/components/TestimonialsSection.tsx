@@ -108,8 +108,8 @@ const TestimonialsSection = () => {
     <section className='px-6 pt-10 md:pt-12 lg:pt-24'>
       <div className='mx-auto max-w-7xl'>
         {/* Section Header */}
-        <div className='mb-16 text-center'>
-          <h2 className='mb-6 font-inter text-2xl font-bold uppercase text-white md:text-3xl'>
+        <div className='mb-9 lg:mb-16 text-center'>
+          <h2 className='mb-4 lg:mb-6 font-inter text-2xl font-bold uppercase text-white md:text-3xl'>
             Trusted by{' '}
             <span className='text-[var(--yellowcolor)]'>
               Professional Traders
@@ -122,7 +122,7 @@ const TestimonialsSection = () => {
         </div>
 
         {/* Testimonials Slider (Embla) */}
-        <div className='mb-20'>
+        <div className='mb-9 lg:mb-16 xl:mb-20'>
           <div className='relative'>
             <div className='overflow-hidden' ref={emblaRef}>
               <div className='-ml-4 flex'>
@@ -255,7 +255,7 @@ const TestimonialsSection = () => {
 
         {/* Overall Rating Summary */}
         <div className='mt-16 text-center'>
-          <div className='glass-card inline-flex items-center gap-4 bg-primary/90'>
+          <div className='glass-card inline-flex flex-wrap justify-center items-center gap-[10px] lg:gap-4 bg-primary/90'>
             <div className='flex items-center gap-1'>
               {[...Array(5)].map((_, i) => (
                 <Star

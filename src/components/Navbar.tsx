@@ -122,7 +122,7 @@ const Navbar = () => {
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant='ghost'
-                      className='flex items-center gap-2 px-3 py-2'
+                      className='flex items-center gap-2 px-3 py-2 border-0 bg-gradient-pink-to-yellow rounded-[10px] text-white hover:text-white'
                     >
                       <User className='h-4 w-4' />
                       <span className='text-sm'>

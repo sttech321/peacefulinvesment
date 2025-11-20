@@ -86,7 +86,7 @@ const FAQSection = () => {
         </div>
 
         {/* Support Resources */}
-        <div className='mt-16 grid gap-8 md:grid-cols-2'>
+        <div className='mt-9 lg:mt-16 grid gap-8 md:grid-cols-2'>
           <div className='bg-transparent text-center'>
             <div className='mb-4 text-4xl'>📚</div>
             <h3 className='mb-4 text-xl font-semibold text-white'>
@@ -155,28 +155,30 @@ const FAQSection = () => {
             <span className='bg-gradient-pink-to-yellow inline-block rounded-sm p-[2px]'>
               <a
                 href='#'
-                className='hover:text-accent-cyan hover:bg-gradient-pink-to-yellow inline-flex items-center justify-center rounded-sm bg-black px-6 py-3 font-inter text-xs font-semibold uppercase text-white transition-colors'
+                className='hover:text-accent-cyan hover:bg-gradient-pink-to-yellow inline-flex items-center justify-center rounded-sm bg-black px-6 py-3 font-inter text-xs font-semibold uppercase text-white transition-colors w-full'
               >
                 💬 Chat with Trading Expert
               </a>
             </span>
 
-            <span className='bg-gradient-pink-to-yellow inline-block rounded-sm p-[2px]'>
+<div className='flex gap-4'>
+            <span className='bg-gradient-pink-to-yellow inline-block rounded-sm p-[2px] w-full'>
               <a
                 href='#'
-                className='hover:text-accent-cyan hover:bg-gradient-pink-to-yellow inline-flex items-center justify-center rounded-sm bg-black px-6 py-3 font-inter text-xs font-semibold uppercase text-white transition-colors'
+                className='hover:text-accent-cyan hover:bg-gradient-pink-to-yellow inline-flex items-center justify-center rounded-sm bg-black px-4 md:px-6 py-3 font-inter text-xs font-semibold uppercase text-white transition-colors w-full'
               >
                 📧 Email Support
               </a>
             </span>
-            <span className='bg-gradient-pink-to-yellow inline-block rounded-sm p-[2px]'>
+            <span className='bg-gradient-pink-to-yellow inline-block rounded-sm p-[2px] w-full'>
               <a
                 href='#'
-                className='hover:text-accent-cyan hover:bg-gradient-pink-to-yellow inline-flex items-center justify-center rounded-sm bg-black px-6 py-3 font-inter text-xs font-semibold uppercase text-white transition-colors'
+                className='hover:text-accent-cyan hover:bg-gradient-pink-to-yellow inline-flex items-center justify-center rounded-sm bg-black px-4 md:px-6 py-3 font-inter text-xs font-semibold uppercase text-white transition-colors w-full lg:min-w-[170px]'
               >
                 📞 Schedule Call
               </a>
             </span>
+            </div>
           </div>
         </div>
       </div>
