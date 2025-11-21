@@ -1,7 +1,7 @@
 // Email Service Exports
 
 // Core service
-export { MailjetService, mailjetService } from './MailjetService';
+export { MailjetService, mailjetService } from './MailjetService.ts';
 
 // Types
 export { EmailType, SenderEmail } from './EmailTypes';
