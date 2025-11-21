@@ -174,8 +174,8 @@ const DownloadSection = () => {
 
                 {/* OS Icon & Title */}
                 <div className='mb-6 text-center'>
-                  <div className='group-hover:glow-primary mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-black transition-transform duration-300 group-hover:scale-110'>
-                    <download.icon className='h-10 w-10 text-white' />
+                  <div className='w-20 h-20 mx-auto bg-primary/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 mb-5'>
+                    <download.icon className='h-10 w-10 text-primary' />
                   </div>
                   <h3 className='font-bebas-neue text-2xl font-normal text-white'>
                     Peaceful Investment

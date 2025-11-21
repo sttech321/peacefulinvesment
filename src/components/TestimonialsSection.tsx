@@ -7,7 +7,6 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
-import styles from './TestimonialsSection.module.css';
 
 const TestimonialsSection = () => {
   const testimonials = [
@@ -106,7 +105,7 @@ const TestimonialsSection = () => {
   }, [emblaApi, onSelect]);
 
   return (
-    <section className={`px-6 pt-10 md:pt-12 lg:pt-24 ${styles.new_section}`}>
+    <section className='px-6 pt-10 md:pt-12 lg:pt-24'>
       <div className='mx-auto max-w-7xl'>
         {/* Section Header */}
         <div className='mb-9 lg:mb-16 text-center'>

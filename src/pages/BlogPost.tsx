@@ -101,7 +101,7 @@ const BlogPost = () => {
     <div className="min-h-screen pink-yellow-shadow pt-16 blog-singlepost">
       <article>
 
-        <div className="px-6 py-10 md:py-12 lg:py-20 bg-black/20">
+        <div className="px-6 py-10 md:py-12 lg:py-24 bg-black/20">
         <div className="max-w-7xl mx-auto">
         {/* Navigation */}
         {/* <div className="mb-0">
