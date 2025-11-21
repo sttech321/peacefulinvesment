@@ -88,36 +88,36 @@ export default function LandingCount() {
       <div className='mx-auto max-w-7xl'>
         <div className='animate-slide-up' style={{ animationDelay: '0.4s' }}>
           <div className='bg-gradient-pink-to-yellow rounded-sm p-[2px]'>
-            <div className='grid grid-cols-1 items-center gap-6 rounded-sm bg-black md:grid-cols-2 lg:grid-cols-4'>
-              <div className='glass-card border-0 bg-transparent py-9 text-center shadow-none'>
-                <div className='mb-2 font-bebas-neue text-[50px] font-normal leading-[36px] text-white'>
+            <div className='grid grid-cols-2 items-center gap-0 rounded-sm bg-black md:grid-cols-4 pt-5 pb-4'>
+              <div className='glass-card border-0 bg-transparent p-4 text-center shadow-none'>
+                <div className='mb-2 font-bebas-neue text-[45px] xl:text-[50px] font-normal leading-[36px] text-white'>
                   {formatUsers(values.users)}
                 </div>
-                <div className='font-open-sans text-2xl font-normal text-white'>
+                <div className='font-open-sans text-[18px] lg:text-2xl font-normal text-white'>
                   Assets Under Management
                 </div>
               </div>
-              <div className='glass-card border-0 bg-transparent py-9 text-center shadow-none'>
-                <div className='mb-2 font-bebas-neue text-[50px] font-normal leading-[36px] text-white'>
+              <div className='glass-card border-0 bg-transparent p-4 text-center shadow-none'>
+                <div className='mb-2 font-bebas-neue text-[45px] xl:text-[50px] font-normal leading-[36px] text-white'>
                   {formatAum(values.aum)}
                 </div>
-                <div className='font-open-sans text-2xl font-normal text-white'>
+                <div className='font-open-sans text-[18px] lg:text-2xl font-normal text-white'>
                   Active Investors
                 </div>
               </div>
-              <div className='glass-card border-0 bg-transparent py-9 text-center shadow-none'>
-                <div className='mb-2 font-bebas-neue text-[50px] font-normal leading-[36px] text-white'>
+              <div className='glass-card border-0 bg-transparent p-4 text-center shadow-none'>
+                <div className='mb-2 font-bebas-neue text-[45px] xl:text-[50px] font-normal leading-[36px] text-white'>
                   99.9%
                 </div>
-                <div className='font-open-sans text-2xl font-normal text-white'>
+                <div className='font-open-sans text-[18px] lg:text-2xl font-normal text-white'>
                   Platform Uptime
                 </div>
               </div>
-              <div className='glass-card border-0 bg-transparent py-9 text-center shadow-none'>
-                <div className='mb-2 font-bebas-neue text-[50px] font-normal leading-[36px] text-white'>
+              <div className='glass-card border-0 bg-transparent p-4 text-center shadow-none'>
+                <div className='mb-2 font-bebas-neue text-[45px] xl:text-[50px] font-normal leading-[36px] text-white'>
                   24/7
                 </div>
-                <div className='font-open-sans text-2xl font-normal text-white'>
+                <div className='font-open-sans text-[18px] lg:text-2xl font-normal text-white'>
                   Expert Support
                 </div>
               </div>

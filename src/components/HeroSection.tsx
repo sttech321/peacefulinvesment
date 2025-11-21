@@ -26,7 +26,7 @@ const HeroSection = () => {
   };
 
   return (
-    <section className='relative flex min-h-screen items-center justify-center overflow-hidden bg-black/60 py-10'>
+    <section className='relative flex min-h-screen items-center justify-center overflow-hidden bg-black/60 py-10 px-6'>
       {/* Professional Hero Background */}
       <div className='absolute inset-0'>
         {/* Base gradient background */}
@@ -93,7 +93,7 @@ const HeroSection = () => {
       </div>
 
       {/* Content */}
-      <div className='relative z-10 mx-auto max-w-7xl px-6 text-center'>
+      <div className='relative z-10 mx-auto max-w-7xl text-center'>
         <div className='grid items-center gap-12 lg:grid-cols-2'>
           {/* Left Content */}
           <div className='text-left lg:text-left'>
@@ -106,7 +106,7 @@ const HeroSection = () => {
 
             {/* Enhanced Main Headline */}
             <h1
-              className='animate-slide-up mb-6 font-inter text-4xl font-bold uppercase text-white md:text-5xl xl:text-6xl'
+              className='animate-slide-up mb-6 font-inter font-bold uppercase text-white text-3xl md:text-4xl lg:text-5xl xl:text-6xl'
               style={{ animationDelay: '0.2s' }}
             >
               Control Your{' '}
@@ -116,7 +116,7 @@ const HeroSection = () => {
 
             {/* Enhanced Subtitle */}
             <p
-              className='animate-slide-up mb-8 max-w-2xl font-inter text-[20px] font-normal text-white'
+              className='animate-slide-up mb-8 max-w-2xl font-inter text-lg md:text-[20px] font-normal text-white'
               style={{ animationDelay: '0.4s' }}
             >
               Peaceful Investment - Easily manage strategies, monitor trades,

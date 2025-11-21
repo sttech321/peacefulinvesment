@@ -106,36 +106,36 @@ const DownloadSection = () => {
       <div className='mx-auto max-w-7xl pb-10 md:pb-12 lg:pb-24'>
         <div className='animate-slide-up' style={{ animationDelay: '0.4s' }}>
           <div className='bg-gradient-pink-to-yellow rounded-sm p-[2px]'>
-            <div className='grid grid-cols-1 items-center gap-6 rounded-sm bg-black md:grid-cols-2 lg:grid-cols-4'>
-              <div className='glass-card border-0 bg-transparent py-9 text-center shadow-none'>
-                <div className='mb-2 font-bebas-neue text-[50px] font-normal leading-[36px] text-white'>
+            <div className='grid grid-cols-2 items-center gap-0 rounded-sm bg-black md:grid-cols-4 pt-5 pb-4'>
+              <div className='glass-card border-0 bg-transparent p-4 text-center shadow-none'>
+                <div className='mb-2 font-bebas-neue text-[45px] xl:text-[50px] font-normal leading-[36px] text-white'>
                   50K+
                 </div>
-                <div className='font-open-sans text-2xl font-normal text-white'>
+                <div className='font-open-sans text-[18px] lg:text-2xl font-normal text-white'>
                   Active Traders
                 </div>
               </div>
-              <div className='glass-card border-0 bg-transparent py-9 text-center shadow-none'>
-                <div className='mb-2 font-bebas-neue text-[50px] font-normal leading-[36px] text-white'>
+              <div className='glass-card border-0 bg-transparent p-4 text-center shadow-none'>
+                <div className='mb-2 font-bebas-neue text-[45px] xl:text-[50px] font-normal leading-[36px] text-white'>
                   $2.8B+
                 </div>
-                <div className='font-open-sans text-2xl font-normal text-white'>
+                <div className='font-open-sans text-[18px] lg:text-2xl font-normal text-white'>
                   Volume Managed
                 </div>
               </div>
-              <div className='glass-card border-0 bg-transparent py-9 text-center shadow-none'>
-                <div className='mb-2 font-bebas-neue text-[50px] font-normal leading-[36px] text-white'>
+              <div className='glass-card border-0 bg-transparent p-4 text-center shadow-none'>
+                <div className='mb-2 font-bebas-neue text-[45px] xl:text-[50px] font-normal leading-[36px] text-white'>
                   99.9%
                 </div>
-                <div className='font-open-sans text-2xl font-normal text-white'>
+                <div className='font-open-sans text-[18px] lg:text-2xl font-normal text-white'>
                   Uptime
                 </div>
               </div>
-              <div className='glass-card border-0 bg-transparent py-9 text-center shadow-none'>
-                <div className='mb-2 font-bebas-neue text-[50px] font-normal leading-[36px] text-white'>
+              <div className='glass-card border-0 bg-transparent p-4 text-center shadow-none'>
+                <div className='mb-2 font-bebas-neue text-[45px] xl:text-[50px] font-normal leading-[36px] text-white'>
                   24/7
                 </div>
-                <div className='font-open-sans text-2xl font-normal text-white'>
+                <div className='font-open-sans text-[18px] lg:text-2xl font-normal text-white'>
                   Monitoring
                 </div>
               </div>
@@ -146,10 +146,9 @@ const DownloadSection = () => {
 
       <div className='mx-auto max-w-7xl'>
         {/* Section Header */}
-        <div className='mb-16 text-center'>
-          <h2 className='mb-6 font-inter text-2xl font-bold uppercase text-white md:text-3xl'>
-            Download the App for{' '}
-            <span className='text-[var(--yellowcolor)]'>Your Platform</span>
+        <div className='mb-9 lg:mb-16 text-center'>
+          <h2 className='mb-4 md:mb-6 font-inter text-2xl font-bold uppercase text-white md:text-3xl'>
+            Download the App for <span className='text-[var(--yellowcolor)]'>Your Platform</span>
           </h2>
           <p className='mx-auto max-w-3xl font-open-sans text-lg text-white lg:text-xl'>
             Get started with Peaceful Investment on your preferred platform. All
@@ -158,7 +157,7 @@ const DownloadSection = () => {
         </div>
 
         {/* Download Cards */}
-        <div className='mx-auto mb-16 grid max-w-7xl grid-cols-1 gap-8 md:grid-cols-3'>
+        <div className='mx-auto mb-9 lg:mb-16 grid max-w-7xl grid-cols-1 gap-8 md:grid-cols-3'>
           {downloads.map((download, index) => (
             <div
               key={download.os}

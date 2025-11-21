@@ -1,25 +1,33 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams, Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
-import { Shield, Eye, EyeOff, User, Lock } from "lucide-react";
-import Footer from "@/components/Footer";
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { Shield, Eye, EyeOff, User, Lock } from 'lucide-react';
+import Footer from '@/components/Footer';
 
 const Auth = () => {
   const [searchParams] = useSearchParams();
-  const [isSignUp, setIsSignUp] = useState(searchParams.get("mode") === "signup");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [fullName, setFullName] = useState("");
+  const [isSignUp, setIsSignUp] = useState(
+    searchParams.get('mode') === 'signup'
+  );
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [fullName, setFullName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [referralCode, setReferralCode] = useState<string | null>(null);
 
   const { signIn, signUp, user } = useAuth();
@@ -46,7 +54,9 @@ const Auth = () => {
         alert('Confirmation email sent! Please check your inbox.');
       }
     } catch (error) {
-      setErrors({ general: 'Failed to send confirmation email. Please try again.' });
+      setErrors({
+        general: 'Failed to send confirmation email. Please try again.',
+      });
     } finally {
       setIsLoading(false);
     }
@@ -67,19 +77,31 @@ const Auth = () => {
         const urlParams = new URLSearchParams(hash.substring(1));
         const error = urlParams.get('error');
         const errorDescription = urlParams.get('error_description');
-        
-        if (error === 'access_denied' && errorDescription?.includes('expired')) {
+
+        if (
+          error === 'access_denied' &&
+          errorDescription?.includes('expired')
+        ) {
           setErrors({
-            general: 'Email confirmation link has expired. Please enter your email below and click "Resend Confirmation" to get a new link.'
+            general:
+              'Email confirmation link has expired. Please enter your email below and click "Resend Confirmation" to get a new link.',
           });
           // Clear the hash to prevent showing the error again
-          window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+          window.history.replaceState(
+            {},
+            document.title,
+            window.location.pathname + window.location.search
+          );
         } else if (error) {
           setErrors({
-            general: `Authentication error: ${errorDescription || error}`
+            general: `Authentication error: ${errorDescription || error}`,
           });
           // Clear the hash to prevent showing the error again
-          window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+          window.history.replaceState(
+            {},
+            document.title,
+            window.location.pathname + window.location.search
+          );
         }
       }
     };
@@ -90,33 +112,33 @@ const Auth = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (user) {
-      navigate("/");
+      navigate('/');
     }
   }, [user, navigate]);
 
   const validateForm = () => {
-    const newErrors: {[key: string]: string} = {};
+    const newErrors: { [key: string]: string } = {};
 
     if (!email) {
-      newErrors.email = "Email is required";
+      newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = "Email is invalid";
+      newErrors.email = 'Email is invalid';
     }
 
     if (!password) {
-      newErrors.password = "Password is required";
+      newErrors.password = 'Password is required';
     } else if (password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters";
+      newErrors.password = 'Password must be at least 6 characters';
     }
 
     if (isSignUp) {
       if (!fullName) {
-        newErrors.fullName = "Full name is required";
+        newErrors.fullName = 'Full name is required';
       }
       if (!confirmPassword) {
-        newErrors.confirmPassword = "Please confirm your password";
+        newErrors.confirmPassword = 'Please confirm your password';
       } else if (password !== confirmPassword) {
-        newErrors.confirmPassword = "Passwords do not match";
+        newErrors.confirmPassword = 'Passwords do not match';
       }
     }
 
@@ -126,32 +148,39 @@ const Auth = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
 
     setIsLoading(true);
 
     try {
       if (isSignUp) {
-        const { error, user: newUser } = await signUp(email, password, fullName);
-        
+        const { error, user: newUser } = await signUp(
+          email,
+          password,
+          fullName
+        );
+
         if (!error) {
           // Store referral code in localStorage for later processing
           if (referralCode) {
             localStorage.setItem('pendingReferralCode', referralCode);
-            console.log('Referral code stored for later processing:', referralCode);
+            console.log(
+              'Referral code stored for later processing:',
+              referralCode
+            );
           }
-          
+
           // Don't navigate on signup as user needs to confirm email
-          setEmail("");
-          setPassword("");
-          setConfirmPassword("");
-          setFullName("");
+          setEmail('');
+          setPassword('');
+          setConfirmPassword('');
+          setFullName('');
         }
       } else {
         const { error } = await signIn(email, password);
         if (!error) {
-          navigate("/");
+          navigate('/');
         }
       }
     } finally {
@@ -159,200 +188,229 @@ const Auth = () => {
     }
   };
 
-
-
   const switchMode = () => {
     setIsSignUp(!isSignUp);
     setErrors({});
-    setEmail("");
-    setPassword("");
-    setConfirmPassword("");
-    setFullName("");
+    setEmail('');
+    setPassword('');
+    setConfirmPassword('');
+    setFullName('');
   };
 
   return (
-    <div className="min-h-screen hero-bg flex items-center justify-center p-4">
-      <Card className="w-full max-w-md glass-card">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <Shield className="h-12 w-12 text-primary" />
-          </div>
-          <CardTitle className="text-2xl font-bold">
-            {isSignUp ? "Create Your Account" : "Welcome Back"}
-          </CardTitle>
-          <CardDescription>
-            {isSignUp 
-              ? "Start managing your MetaTrader bots today."
-              : "Login to manage your bots and investments."
-            }
-          </CardDescription>
-          {referralCode && isSignUp && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-2">
-              <p className="text-sm text-green-800">
-                <strong>Referral Code Applied:</strong> {referralCode}
-              </p>
-            </div>
-          )}
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {errors.general && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                <p className="text-sm text-red-800">{errors.general}</p>
+    <div>
+      <div className='pink-yellow-shadow flex min-h-screen items-center justify-center p-4'>
+        <div className='bg-gradient-pink-to-yellow hover:glow-primary w-full max-w-md rounded-sm border-0 p-[2px] shadow-none'>
+          <Card className='block rounded-sm border-0 bg-black shadow-none'>
+            <CardHeader className='text-center'>
+              <div className='mb-4 flex justify-center'>
+                <Shield className='h-12 w-12 text-primary' />
               </div>
-            )}
-            {isSignUp && (
-              <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name</Label>
-                <Input
-                  id="fullName"
-                  type="text"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Enter your full name"
-                  className={errors.fullName ? "border-red-500" : ""}
-                />
-                {errors.fullName && (
-                  <p className="text-sm text-red-500">{errors.fullName}</p>
+              <CardTitle className='font-inter text-2xl font-semibold text-white'>
+                {isSignUp ? 'Create Your Account' : 'Welcome Back'}
+              </CardTitle>
+              <CardDescription className='text-white'>
+                {isSignUp
+                  ? 'Start managing your MetaTrader bots today.'
+                  : 'Login to manage your bots and investments.'}
+              </CardDescription>
+              {referralCode && isSignUp && (
+                <div className='mt-2 rounded-lg border border-green-200 bg-green-50 p-3'>
+                  <p className='text-sm text-muted-foreground'>
+                    <strong>Referral Code Applied:</strong> {referralCode}
+                  </p>
+                </div>
+              )}
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className='space-y-4'>
+                {errors.general && (
+                  <div className='rounded-lg border border-red-200 bg-red-50 p-3'>
+                    <p className='text-sm text-red-800'>{errors.general}</p>
+                  </div>
                 )}
-              </div>
-            )}
+                {isSignUp && (
+                  <div className='space-y-2'>
+                    <Label htmlFor='fullName' className='text-muted-foreground'>
+                      Full Name
+                    </Label>
+                    <Input
+                      id='fullName'
+                      type='text'
+                      value={fullName}
+                      onChange={e => setFullName(e.target.value)}
+                      placeholder='Enter your full name'
+                      className={`rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none ${errors.fullName ? 'border-red-500' : ''}`}
+                    />
+                    {errors.fullName && (
+                      <p className='text-sm text-red-500'>{errors.fullName}</p>
+                    )}
+                  </div>
+                )}
 
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
-                className={errors.email ? "border-red-500" : ""}
-              />
-              {errors.email && (
-                <p className="text-sm text-red-500">{errors.email}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  className={errors.password ? "border-red-500" : ""}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-              {errors.password && (
-                <p className="text-sm text-red-500">{errors.password}</p>
-              )}
-            </div>
-
-            {isSignUp && (
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
-                <div className="relative">
+                <div className='space-y-2'>
+                  <Label htmlFor='email' className='text-muted-foreground'>
+                    Email
+                  </Label>
                   <Input
-                    id="confirmPassword"
-                    type={showConfirmPassword ? "text" : "password"}
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Confirm your password"
-                    className={errors.confirmPassword ? "border-red-500" : ""}
+                    id='email'
+                    type='email'
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder='Enter your email'
+                    className={`rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none ${errors.email ? 'border-red-500' : ''}`}
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  {errors.email && (
+                    <p className='text-sm text-red-500'>{errors.email}</p>
+                  )}
+                </div>
+
+                <div className='space-y-2'>
+                  <Label htmlFor='password' className='text-muted-foreground'>
+                    Password
+                  </Label>
+                  <div className='relative'>
+                    <Input
+                      id='password'
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      placeholder='Enter your password'
+                      className={`rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none ${errors.password ? 'border-red-500' : ''}`}
+                    />
+                    <button
+                      type='button'
+                      onClick={() => setShowPassword(!showPassword)}
+                      className='absolute right-3 top-1/2 -translate-y-1/2 transform text-muted-foreground hover:text-foreground'
+                    >
+                      {showPassword ? (
+                        <EyeOff className='h-4 w-4' />
+                      ) : (
+                        <Eye className='h-4 w-4' />
+                      )}
+                    </button>
+                  </div>
+                  {errors.password && (
+                    <p className='text-sm text-red-500'>{errors.password}</p>
+                  )}
+                </div>
+
+                {isSignUp && (
+                  <div className='space-y-2'>
+                    <Label
+                      htmlFor='confirmPassword'
+                      className='text-muted-foreground'
+                    >
+                      Confirm Password
+                    </Label>
+                    <div className='relative'>
+                      <Input
+                        id='confirmPassword'
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        value={confirmPassword}
+                        onChange={e => setConfirmPassword(e.target.value)}
+                        placeholder='Confirm your password'
+                        className={`rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none ${errors.confirmPassword ? 'border-red-500' : ''}`}
+                      />
+                      <button
+                        type='button'
+                        onClick={() =>
+                          setShowConfirmPassword(!showConfirmPassword)
+                        }
+                        className='absolute right-3 top-1/2 -translate-y-1/2 transform text-muted-foreground hover:text-foreground'
+                      >
+                        {showConfirmPassword ? (
+                          <EyeOff className='h-4 w-4' />
+                        ) : (
+                          <Eye className='h-4 w-4' />
+                        )}
+                      </button>
+                    </div>
+                    {errors.confirmPassword && (
+                      <p className='text-sm text-red-500'>
+                        {errors.confirmPassword}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {isSignUp && (
+                  <div className='flex items-center space-x-2'>
+                    <input
+                      type='checkbox'
+                      id='terms'
+                      required
+                      className='border-0'
+                    />
+                    <Label htmlFor='terms' className='text-sm text-white'>
+                      I agree to the{' '}
+                      <a href='#' className='text-primary hover:underline'>
+                        Terms & Privacy Policy
+                      </a>
+                    </Label>
+                  </div>
+                )}
+
+                <div className='pt-2'>
+                  <Button
+                    type='submit'
+                    className='download-btn-primary w-full font-inter text-sm font-semibold uppercase'
+                    disabled={isLoading}
                   >
-                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {isLoading ? 'Loading...' : isSignUp ? 'Sign Up' : 'Login'}
+                  </Button>
+                </div>
+                {/* Resend Confirmation Button for expired links */}
+                {errors.general && errors.general.includes('expired') && (
+                  <Button
+                    type='button'
+                    variant='outline'
+                    onClick={handleResendConfirmation}
+                    disabled={isLoading || !email}
+                    className='w-full'
+                  >
+                    {isLoading ? 'Sending...' : 'Resend Confirmation Email'}
+                  </Button>
+                )}
+
+                {!isSignUp && (
+                  <div className='space-y-3'>
+                    <div className='flex items-center justify-center gap-4 text-sm'>
+                      <Link
+                        to='/forgot-password'
+                        className='flex items-center gap-1 text-primary hover:underline'
+                      >
+                        <Lock className='h-3 w-3' />
+                        Forgot Password?
+                      </Link>
+                      <span className='text-muted-foreground'>|</span>
+                      <Link
+                        to='/forgot-username'
+                        className='flex items-center gap-1 text-primary hover:underline'
+                      >
+                        <User className='h-3 w-3' />
+                        Forgot Username?
+                      </Link>
+                    </div>
+                  </div>
+                )}
+
+                <div className='text-center'>
+                  <button
+                    type='button'
+                    onClick={switchMode}
+                    className='text-sm text-white hover:text-muted-foreground'
+                  >
+                    {isSignUp
+                      ? 'Already have an account? Login'
+                      : "Don't have an account? Sign Up"}
                   </button>
                 </div>
-                {errors.confirmPassword && (
-                  <p className="text-sm text-red-500">{errors.confirmPassword}</p>
-                )}
-              </div>
-            )}
-
-            {isSignUp && (
-              <div className="flex items-center space-x-2">
-                <input type="checkbox" id="terms" required className="rounded" />
-                <Label htmlFor="terms" className="text-sm">
-                  I agree to the{" "}
-                  <a href="#" className="text-primary hover:underline">
-                    Terms & Privacy Policy
-                  </a>
-                </Label>
-              </div>
-            )}
-
-            <Button
-              type="submit"
-              className="w-full download-btn-primary"
-              disabled={isLoading}
-            >
-              {isLoading ? "Loading..." : isSignUp ? "Sign Up" : "Login"}
-            </Button>
-
-            {/* Resend Confirmation Button for expired links */}
-            {errors.general && errors.general.includes('expired') && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleResendConfirmation}
-                disabled={isLoading || !email}
-                className="w-full"
-              >
-                {isLoading ? "Sending..." : "Resend Confirmation Email"}
-              </Button>
-            )}
-
-            {!isSignUp && (
-              <div className="space-y-3">
-                <div className="flex items-center justify-center gap-4 text-sm">
-                  <Link 
-                    to="/forgot-password" 
-                    className="text-primary hover:underline flex items-center gap-1"
-                  >
-                    <Lock className="h-3 w-3" />
-                    Forgot Password?
-                  </Link>
-                  <span className="text-muted-foreground">|</span>
-                  <Link 
-                    to="/forgot-username" 
-                    className="text-primary hover:underline flex items-center gap-1"
-                  >
-                    <User className="h-3 w-3" />
-                    Forgot Username?
-                  </Link>
-                </div>
-              </div>
-            )}
-
-            <div className="text-center">
-              <button
-                type="button"
-                onClick={switchMode}
-                className="text-sm text-muted-foreground hover:text-foreground"
-              >
-                {isSignUp 
-                  ? "Already have an account? Login"
-                  : "Don't have an account? Sign Up"
-                }
-              </button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
       <Footer />
     </div>
   );

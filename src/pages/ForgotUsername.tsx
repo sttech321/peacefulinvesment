@@ -169,15 +169,16 @@ const ForgotUsername = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="pink-yellow-shadow flex items-center justify-center p-4 min-h-screen">
       <div className="container mx-auto px-4 max-w-md">
-        <Card>
+         <div className="border-0 shadow-none bg-gradient-pink-to-yellow rounded-sm p-[2px] hover:glow-primary">
+        <Card className="bg-black rounded-sm block border-0 shadow-none">
           <CardHeader className="text-center">
-            <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 mx-auto">
+            <div className="w-14 h-14 bg-primary/10 rounded-lg flex items-center justify-center mb-4 mx-auto">
               <User className="h-6 w-6 text-primary" />
             </div>
-            <CardTitle className="text-2xl">Forgot Username?</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-2xl font-inter font-semibold text-white">Forgot Username?</CardTitle>
+            <CardDescription className="text-white">
               Enter your email or phone number to recover your username
             </CardDescription>
           </CardHeader>
@@ -192,7 +193,7 @@ const ForgotUsername = () => {
 
               {/* Search Method Selection */}
               <div className="space-y-3">
-                <Label>Find my username using:</Label>
+                <Label className="text-muted-foreground">Find my username using:</Label>
                 <div className="grid grid-cols-2 gap-3">
                   <Button
                     type="button"
@@ -202,7 +203,7 @@ const ForgotUsername = () => {
                       setSearchValue('');
                       setError('');
                     }}
-                    className="w-full"
+                    className="w-full border-0"
                   >
                     <Mail className="h-4 w-4 mr-2" />
                     Email
@@ -215,7 +216,7 @@ const ForgotUsername = () => {
                       setSearchValue('');
                       setError('');
                     }}
-                    className="w-full"
+                    className="w-full border-0"
                   >
                     <Phone className="h-4 w-4 mr-2" />
                     Phone
@@ -225,7 +226,7 @@ const ForgotUsername = () => {
 
               {/* Input Field */}
               <div className="space-y-2">
-                <Label htmlFor="searchValue">
+                <Label htmlFor="searchValue" className="text-muted-foreground">
                   {searchMethod === 'email' ? 'Email Address' : 'Phone Number'}
                 </Label>
                 <Input
@@ -234,6 +235,7 @@ const ForgotUsername = () => {
                   value={searchValue}
                   onChange={(e) => setSearchValue(e.target.value)}
                   required
+                  className="rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
                   placeholder={
                     searchMethod === 'email' 
                       ? 'Enter your email address' 
@@ -243,7 +245,7 @@ const ForgotUsername = () => {
                 />
               </div>
 
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button type="submit" className="w-full download-btn-primary font-inter text-sm font-semibold uppercase" disabled={loading}>
                 {loading ? (
                   <div className="flex items-center gap-2">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
@@ -268,8 +270,8 @@ const ForgotUsername = () => {
               </Link>
             </div>
 
-            <div className="mt-6 p-4 bg-muted/50 rounded-lg">
-              <h4 className="font-medium text-sm mb-2">Privacy Note</h4>
+            <div className="mt-6 p-4 bg-muted/10 rounded-lg">
+              <h4 className="font-medium text-sm mb-1 text-white">Privacy Note</h4>
               <p className="text-xs text-muted-foreground">
                 For security reasons, we'll only send username information to verified contact methods 
                 associated with your account. If you don't receive a message, the contact information 
@@ -279,6 +281,7 @@ const ForgotUsername = () => {
           </CardContent>
         </Card>
       </div>
+    </div>
     </div>
   );
 };

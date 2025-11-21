@@ -102,8 +102,8 @@ const InstallGuide = () => {
     <section className='px-6 pt-10 md:pt-12 lg:pt-24'>
       <div className='mx-auto max-w-7xl'>
         {/* Section Header */}
-        <div className='mb-16 text-center'>
-          <h2 className='mb-6 font-inter text-2xl font-bold uppercase text-white md:text-3xl'>
+        <div className='mb-9 lg:mb-16 text-center'>
+          <h2 className='mb-4 lg:mb-6 font-inter text-2xl font-bold uppercase text-white md:text-3xl'>
             Get Started in{' '}
             <span className='text-[var(--yellowcolor)]'>3 Easy Steps</span>
           </h2>
@@ -118,16 +118,16 @@ const InstallGuide = () => {
         <Tabs value={activeOS} onValueChange={setActiveOS} className='w-full'>
           <div className='bg-gradient-pink-to-yellow mb-5 rounded-lg p-[2px] lg:mb-12'>
             <TabsList className='grid w-full grid-cols-3 bg-black'>
-              <TabsTrigger value='windows' className='flex items-center gap-2'>
-                <Monitor className='h-4 w-4' />
+              <TabsTrigger value='windows' className='flex items-center gap-2 text-xs md:text-sm px-2'>
+                <Monitor className='h-4 w-4 hidden md:inline' />
                 Windows Setup
               </TabsTrigger>
-              <TabsTrigger value='macos' className='flex items-center gap-2'>
-                <Apple className='h-4 w-4' />
+              <TabsTrigger value='macos' className='flex items-center gap-2 text-xs md:text-sm px-2'>
+                <Apple className='h-4 w-4 hidden md:inline' />
                 macOS Setup
               </TabsTrigger>
-              <TabsTrigger value='linux' className='flex items-center gap-2'>
-                <Smartphone className='h-4 w-4' />
+              <TabsTrigger value='linux' className='flex items-center gap-2 text-xs md:text-sm px-2'>
+                <Smartphone className='h-4 w-4 hidden md:inline' />
                 Linux Setup
               </TabsTrigger>
             </TabsList>
@@ -164,7 +164,7 @@ const InstallGuide = () => {
                     </div>
 
                     {/* Progress Indicator */}
-                    <div className='flex-shrink-0'>
+                    <div className='flex-shrink-0  hidden md:block'>
                       <CheckCircle className='text-accent-green h-6 w-6 opacity-70 transition-opacity group-hover:opacity-100' />
                     </div>
                   </div>

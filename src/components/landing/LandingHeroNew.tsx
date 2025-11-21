@@ -38,7 +38,7 @@ const LandingHeroNew = () => {
 
             {/* Main Headline */}
             <h1
-              className='animate-slide-up mb-6 font-inter text-4xl font-bold uppercase text-white md:text-6xl lg:text-6xl'
+              className='animate-slide-up mb-6 font-inter font-bold uppercase text-white text-3xl md:text-4xl lg:text-5xl xl:text-6xl'
               style={{ animationDelay: '0.2s' }}
             >
               Your Gateway to{' '}
@@ -49,7 +49,7 @@ const LandingHeroNew = () => {
 
             {/* Subtitle */}
             <p
-              className='animate-slide-up mb-8 max-w-2xl font-inter text-[20px] font-normal text-white'
+              className='animate-slide-up mb-8 max-w-2xl font-inter text-lg md:text-[20px] font-normal text-white'
               style={{ animationDelay: '0.4s' }}
             >
               Complete investment platform with automated trading, portfolio
