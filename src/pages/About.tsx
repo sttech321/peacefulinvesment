@@ -118,13 +118,13 @@ export default function About() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/auth" className="bg-gradient-pink-to-yellow rounded-[12px] p-[2px]">
-                <Button className="hover:bg-gradient-pink-to-yellow flex  rounded-[10px] border-0 bg-black p-0 px-5 font-inter text-xs font-semibold uppercase text-white hover:text-white">
+                <Button className="hover:bg-gradient-pink-to-yellow flex  rounded-[10px] border-0 bg-black p-0 px-5 font-inter text-xs font-semibold uppercase text-white hover:text-white w-full">
                   Start Trading Today
                   <ArrowRight className="w-5 h-5 ml-0 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
               <Link to="/downloads" className="bg-gradient-pink-to-yellow rounded-[12px] p-[2px]">
-                <Button variant="outline" className="bg-gradient-yellow-to-pink hover:bg-gradient-pink-to-yellow block rounded-[10px] border-0 p-0 px-5 font-inter text-xs font-semibold uppercase text-white">
+                <Button variant="outline" className="bg-gradient-yellow-to-pink hover:bg-gradient-pink-to-yellow block rounded-[10px] border-0 p-0 px-5 font-inter text-xs font-semibold uppercase text-white w-full">
                   View Our Platform
                 </Button>
               </Link>
@@ -218,22 +218,28 @@ export default function About() {
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {values.map((value, index) => (
-              <div 
-                key={index} 
-                className="feature-card group text-center"
+              <div
+                key={index}
+                className="mb-5 md:mb-0 last:mb-0 relative group rounded-xl bg-black/10 backdrop-blur-sm border border-[var(--yellowcolor)] px-6 pt-10 pb-8 text-center shadow-sm transition duration-300 hover:border-[var(--yellowcolor)] hover:shadow-lg hover:shadow-[var(--yellowcolor)]/10"
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
-                <div className="mb-6">
-                  <div className="w-16 h-16 mx-auto bg-gradient-primary rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                    <value.icon className="w-8 h-8 text-primary-foreground" />
+                {/* Step Badge */}
+                <div className="absolute -top-5 left-1/2 -translate-x-1/2 flex">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-[var(--yellowcolor)] text-black shadow-md ring-1 ring-black/10 transition group-hover:scale-105">
+                    <value.icon className="h-8 w-8" />
                   </div>
                 </div>
-                <h3 className="text-xl font-semibold text-foreground mb-4">
+                 
+                <h3 className="mt-5 text-lg font-semibold text-white">
                   {value.title}
                 </h3>
-                <p className="text-muted-foreground leading-relaxed">
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground font-open-sans">
                   {value.description}
                 </p>
+                {/* Progress Bar line under card for step flow */}
+                {index < values.length - 0 && (
+                  <div className="absolute bottom-0 left-1/2 hidden h-10 w-px translate-x-[-50%] translate-y-full bg-gradient-to-b from-[var(--yellowcolor)] to-transparent lg:block" />
+                )}
               </div>
             ))}
           </div>
@@ -243,7 +249,7 @@ export default function About() {
       {/* Achievements */}
       <section className="px-6 pt-10 md:pt-12 lg:pt-24 bg-transparent">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb:10 md:mb-14">
+          <div className="text-center mb-10 md:mb-14">
             <h2 className="mb-4 md:mb-5 font-inter text-2xl font-bold uppercase text-white md:text-3xl">
               Our <span className="text-[var(--yellowcolor)]">Achievements</span>
             </h2>
@@ -255,7 +261,7 @@ export default function About() {
 
 
           <div className='bg-gradient-pink-to-yellow rounded-sm p-[2px]'>
-            <div className='grid grid-cols-2 items-center gap-0 rounded-sm bg-black md:grid-cols-4 pt-5 pb-4'>
+            <div className='grid grid-cols-2 gap-0 rounded-sm bg-black md:grid-cols-4 pt-5 pb-4 items-center'>
             {achievements.map((achievement, index) => (
               <div key={index} className="glass-card border-0 bg-transparent p-4 text-center shadow-none">
                 <div className="w-20 h-20 mx-auto mb-7 bg-primary/10 rounded-2xl flex items-center justify-center">
@@ -279,7 +285,7 @@ export default function About() {
       {/* Team */}
       <section className="px-6 pt-10 md:pt-12 lg:pt-24 bg-transparent">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
+          <div className="text-center mb-10 lg:mb-16">
             <h2 className="mb-4 md:mb-5 font-inter text-2xl font-bold uppercase text-white md:text-3xl">
               Meet Our <span className="text-[var(--yellowcolor)]">Leadership Team</span>
             </h2>
@@ -321,7 +327,7 @@ export default function About() {
       {/* Timeline */}
       <section className="px-6 pt-10 md:pt-12 lg:pt-24 bg-transparent">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
+          <div className="text-center mb-10 lg:mb-16">
             <h2 className="mb-4 md:mb-5 font-inter text-2xl font-bold uppercase text-white md:text-3xl">
               Our <span className="text-[var(--yellowcolor)]">Journey</span>
             </h2>
@@ -332,30 +338,44 @@ export default function About() {
           <div className="relative">
             <div className="absolute left-1/2 transform -translate-x-px h-full w-0.5 bg-gradient-primary"></div>
             <div className="space-y-12">
-              {milestones.map((milestone, index) => (
-                <div key={index} className={`flex items-center ${index % 2 === 0 ? 'flex-row' : 'flex-row-reverse'}`}>
-                  <div className="w-1/2 px-8">
-                    <Card className="glass-card border-0 shadow-lg">
-                      <CardContent className="p-6">
-                        <div className="flex items-center mb-2">
-                          <Badge variant="secondary" className="mr-3">
-                            {milestone.year}
-                          </Badge>
-                          <Award className="w-5 h-5 text-primary" />
-                        </div>
-                        <h3 className="text-xl font-semibold text-foreground mb-2">
-                          {milestone.title}
-                        </h3>
-                        <p className="text-muted-foreground">
-                          {milestone.description}
-                        </p>
-                      </CardContent>
-                    </Card>
+              {milestones.map((milestone, index) => {
+                const isLeft = index % 2 === 0;
+                return (
+                  <div
+                    key={index}
+                    className={`flex items-center ${isLeft ? 'flex-row' : 'flex-row-reverse'}`}
+                  >
+                    {/* Card Side */}
+                    <div className={`md:w-1/2 ${isLeft ? 'pr-4 md:pr-8' : 'pl-4 md:pl-8'}`}>
+                      <Card className="glass-card bg-black border-1 shadow-lg relative">
+                        <CardContent className="p-0">
+                          <div className="flex items-center mb-3">
+                            <Badge variant="secondary" className="mr-3 bg-primary hover:bg-primary">
+                              {milestone.year}
+                            </Badge>
+                            <Award className="w-5 h-5 text-primary" />
+                          </div>
+                          <h3 className="text-xl font-inter font-semibold text-white mb-2">
+                            {milestone.title}
+                          </h3>
+                          <p className="text-muted-foreground font-open-sans leading-relaxed">
+                            {milestone.description}
+                          </p>
+                        </CardContent>
+                      </Card>
+                    </div>
+                    {/* Horizontal connector line (attach to card edge) */}
+                    <div
+                      className={`hidden md:inline-block h-0.5 w-12 bg-primary ${isLeft ? '-ml-[47px]' : '-mr-[47px]'}`}
+                      aria-hidden="true"
+                    ></div>
+                    {/* Timeline Dot */}
+                    <div className="hidden md:inline-block w-4 h-4 bg-gradient-primary rounded-full border-4 border-primary shadow-lg"></div>
+                    {/* Spacer Side */}
+                    <div className="hidden md:inline-block w-1/2 px-8"></div>
                   </div>
-                  <div className="w-4 h-4 bg-gradient-primary rounded-full border-4 border-background shadow-lg"></div>
-                  <div className="w-1/2 px-8"></div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
@@ -370,14 +390,14 @@ export default function About() {
           <p className="mx-auto max-w-3xl font-open-sans text-lg text-white lg:text-xl">
             Join thousands of successful traders who trust Peaceful Investment for their financial growth.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8 md:pt-10">
-            <Link to="/auth" className="bg-gradient-pink-to-yellow rounded-[12px] p-[2px]">
-              <Button size="lg" variant="secondary" className="hover:bg-gradient-pink-to-yellow flex rounded-[10px] border-0 bg-black p-0 px-5 font-inter text-sm font-semibold uppercase text-white hover:text-white">
+          <div className="flex sm:flex-row gap-4 justify-center pt-8 md:pt-10 max-w-sm mx-auto">
+            <Link to="/auth" className="bg-gradient-pink-to-yellow rounded-[12px] p-[2px] w-full">
+              <Button size="lg" variant="secondary" className="hover:bg-gradient-pink-to-yellow flex rounded-[10px] border-0 bg-black p-0 px-5 font-inter text-sm font-semibold uppercase text-white hover:text-white w-full">
                 Create Account
               </Button>
             </Link>
-            <Link to="/downloads" className="bg-gradient-pink-to-yellow rounded-[12px] p-[2px]">
-              <Button size="lg" variant="outline" className="bg-gradient-yellow-to-pink hover:bg-gradient-pink-to-yellow block rounded-[10px] border-0 p-0 px-5 font-inter text-sm font-semibold uppercase text-white">
+            <Link to="/downloads" className="bg-gradient-pink-to-yellow rounded-[12px] p-[2px] w-full">
+              <Button size="lg" variant="outline" className="bg-gradient-yellow-to-pink hover:bg-gradient-pink-to-yellow block rounded-[10px] border-0 p-0 px-5 font-inter text-sm font-semibold uppercase text-white w-full">
                 Learn More
               </Button>
             </Link>
