@@ -61,10 +61,10 @@ const Navbar = () => {
 
   return (
     <nav
-      className='fixed left-0 right-0 top-0 z-50 border-b bg-[#0c0715] backdrop-blur-xl'
+      className='fixed left-0 right-0 top-0 z-50 border-b bg-[#0c0715] backdrop-blur-xl px-6'
       style={{ borderColor: 'var(--pinkcolor)' }}
     >
-      <div className='mx-auto max-w-7xl px-3 sm:px-4 lg:px-8'>
+      <div className='mx-auto max-w-7xl'>
         <div className='flex h-16 min-w-0 items-center justify-between'>
           {/* Logo */}
           <Link
