@@ -1,0 +1,5 @@
+.new_section {
+  position: relative;
+  /* Example custom styling hook; extend as needed */
+  isolation: isolate;
+}

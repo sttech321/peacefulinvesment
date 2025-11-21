@@ -55,11 +55,11 @@ const BlogPost = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen pt-20 px-6 bg-background loading-tttt">
-        <div className="max-w-4xl mx-auto">
+      <div className="min-h-screen pink-yellow-shadow px-6 pt-16 flex items-center justify-center">
+        <div className="max-w-7xl mx-auto w-full opacity-20">
           <Skeleton className="h-8 w-32 mb-8" />
           <Skeleton className="h-12 w-full mb-4" />
-          <Skeleton className="h-6 w-96 mb-8" />
+          <Skeleton className="h-6 w-full mb-8" />
           <div className="space-y-4">
             {[...Array(10)].map((_, i) => (
               <Skeleton key={i} className="h-4 w-full" />
@@ -72,12 +72,13 @@ const BlogPost = () => {
 
   if (!post) {
     return (
-      <div className="min-h-screen pt-20 px-6 bg-background hhhhhh">
+         <div className="min-h-screen pink-yellow-shadow pt-16 flex items-center justify-center">
         <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-2xl font-bold text-foreground mb-4">Post not found</h1>
-          <Link to="/blog">
-            <Button variant="outline">
-              <ArrowLeft className="w-4 h-4 mr-2" />
+          <h1 className="mb-6 font-inter font-bold uppercase text-white text-3xl md:text-4xl lg:text-5xl xl:text-6xl">
+            Post <span className="text-[var(--yellowcolor)]">not found</span> </h1>
+          <Link to="/blog" className="bg-gradient-pink-to-yellow rounded-[12px] p-[2px] inline-block">
+            <Button variant="outline" className="bg-gradient-yellow-to-pink hover:bg-gradient-pink-to-yellow flex rounded-[10px] border-0 p-0 px-5 font-inter text-sm font-semibold uppercase text-white hover:text-white"> 
+              <ArrowLeft className="w-4 h-4 mr-1" />
               Back to Blog
             </Button>
           </Link>
@@ -95,7 +96,8 @@ const BlogPost = () => {
   }[post.category] || { color: '#6B7280', name: 'General' };
 
   return (
-    <>
+    <> 
+
     <div className="min-h-screen pink-yellow-shadow pt-16 blog-singlepost">
       <article>
 
@@ -114,15 +116,10 @@ const BlogPost = () => {
         {/* Header */}
         <header className="mb-0">
           <div className="grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8 flex-wrap lg:flex-nowrap flex items-center">
-          <div className="flex flex-wrap items-center gap-0 mb-6 lg:mb-0 max-w-3xl">
+          <div className="flex flex-wrap items-center gap-0 mb-0 max-w-3xl pr-0 lg:pr-5">
          
-            <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground pb-7">
-                 <Badge
-              style={{
-                backgroundColor: categoryData.color,
-                color: 'white',
-              }}
-            >
+            <div className="flex flex-wrap items-center gap-2 md:gap-4 text-sm text-muted-foreground pb-5 md:pb-7">
+                 <Badge className="bg-gradient-yellow-to-pink block rounded-[20px] border-0 py-1 px-2 font-inter text-xs font-semibold uppercase text-white">
               {categoryData.name}
             </Badge>
 
@@ -130,7 +127,7 @@ const BlogPost = () => {
                 <Calendar className="w-4 h-4" />
                 {new Date(post.published_at || post.created_at).toLocaleDateString('en-US', {
                   year: 'numeric',
-                  month: 'long',
+                  month: 'short',
                   day: 'numeric'
                 })}
               </div>
@@ -144,7 +141,7 @@ const BlogPost = () => {
               </div>
             </div>
            
-          <h1 className="pb-7 font-inter text-2xl font-bold text-white md:text-3xl">
+          <h1 className="pb-5 md:pb-7 font-inter text-2xl font-bold text-white md:text-3xl">
             {post.title}
           </h1>
 
@@ -162,19 +159,19 @@ const BlogPost = () => {
                   {tag}
                 </Badge>
               ))}
-            </div>
+           
             
-            <span className="">
+            
             <Button 
               onClick={sharePost} 
               variant="outline" 
               size="sm"
-              className="flex items-center gap-2 ml-3 p-1 px-4 border-0 h-26 bg-primary text-black hover:bg-primary/70 focus:ring-2 focus:ring-offset-2 focus:ring-primary hover:text-white"
+              className="flex items-center gap-2 ml-0 p-1 px-4 border-0 h-26 bg-primary text-black hover:bg-primary/70 focus:ring-2 focus:ring-offset-2 focus:ring-primary hover:text-white"
             >
               <Share2 className="w-4 h-4" />
               Share
             </Button>
-            </span>
+             </div>
           </div>
           </div>
           <div className="">
@@ -213,15 +210,15 @@ const BlogPost = () => {
                 <strong className="font-bold text-primary">{children}</strong>
               ),
               blockquote: ({ children }) => (
-                <blockquote className="border-l-4 border-primary pl-6 italic text-muted-foreground my-6">
+                <blockquote className="border-l-4 border-primary pl-6 italic text-white my-6">
                   {children}
                 </blockquote>
               ),
               ul: ({ children }) => (
-                <ul className="list-disc list-inside space-y-2 mb-4 text-foreground">{children}</ul>
+                <ul className="list-disc list-inside space-y-2 mb-4 text-white">{children}</ul>
               ),
               li: ({ children }) => (
-                <li className="text-foreground">{children}</li>
+                <li className="text-white">{children}</li>
               ),
             }}
           >
@@ -233,19 +230,20 @@ const BlogPost = () => {
         {/* Footer */}
         <footer className="border-0 border-muted-foreground/10 px-5 py-10 md:py-12 xl:py-14">
           <div className="text-center">
-            <p className="text-muted-foreground mb-4">
+            <p className="text-white mb-4">
               Share this prayer with others who might benefit
             </p>
             <div className="flex justify-center gap-4">
-              <Link to="/blog">
-                <Button variant="outline">
+              <Link to="/blog" className="bg-gradient-pink-to-yellow rounded-[12px] p-[2px]">
+                <Button variant="outline" className=" hover:bg-gradient-pink-to-yellow block rounded-[10px] border-0 bg-black p-0 px-5 font-inter text-xs font-semibold uppercase text-white hover:text-white">
                   Read More Articles
                 </Button>
               </Link>
-              <Button onClick={sharePost}>
-                <Share2 className="w-4 h-4 mr-2" />
+              <span className="bg-gradient-pink-to-yellow rounded-[12px] p-[2px]">
+              <Button onClick={sharePost} className="bg-gradient-yellow-to-pink hover:bg-gradient-pink-to-yellow flex rounded-[10px] border-0 p-0 px-5 font-inter text-xs font-semibold uppercase text-white">
+                <Share2 className="w-4 h-4 mr-1" />
                 Share Article
-              </Button>
+              </Button></span>
             </div>
           </div>
         </footer>
