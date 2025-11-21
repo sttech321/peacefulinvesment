@@ -21,10 +21,10 @@ const Blog = () => {
       <div className="min-h-screen pink-yellow-shadow pt-16">
 
            {/* Header */}
-        <div className="text-center py-10 md:py-12 xl:py-20 px-6 animate-slide-up bg-black/20">
-        <div className="max-w-7xl mx-auto">
-           <Skeleton className="h-12 w-96 mx-auto mb-4 opacity-50" />
-           <Skeleton className="h-6 w-128 mx-auto opacity-50" />
+        <div className="text-center py-10 md:py-12 lg:py-20 px-6 animate-slide-up bg-black/20">
+        <div className="max-w-4xl mx-auto">
+           <Skeleton className="h-12 w-full mx-auto mb-4 opacity-50" />
+           <Skeleton className="h-6 w-full mx-auto opacity-50" />
         </div>
 </div>
 
@@ -54,7 +54,7 @@ const Blog = () => {
     <div className="min-h-screen pink-yellow-shadow pt-16">
 
          {/* Header */}
-        <div className="text-center py-10 md:py-12 xl:py-20 px-6 animate-slide-up bg-black/20">
+        <div className="text-center py-10 md:py-12 lg:py-20 px-6 animate-slide-up bg-black/20">
         <div className="max-w-7xl mx-auto">
           <h1 className="mb-6 font-inter font-bold uppercase text-white text-3xl md:text-4xl lg:text-5xl xl:text-6xl">
             Catholic <span className="text-[var(--yellowcolor)]">Faith & Prayer</span>

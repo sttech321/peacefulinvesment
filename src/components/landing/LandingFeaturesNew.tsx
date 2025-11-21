@@ -63,8 +63,8 @@ const LandingFeaturesNew = () => {
             >
               <div className='group relative z-10 m-[0px] h-full rounded-lg border-0 bg-black p-8 px-3 text-center'>
                 <div className='mb-6'>
-                  <div className='group-hover:glow-primary mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-black transition-transform duration-300 group-hover:scale-110'>
-                    <img src={feature.src} alt={feature.title} />
+                  <div className='w-20 h-20 mx-auto bg-primary/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 mb-5'>
+                    <img className='w-10 h-10' src={feature.src} alt={feature.title} />
                   </div>
                 </div>
 
