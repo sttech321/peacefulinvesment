@@ -95,11 +95,11 @@ const Referrals = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen pink-yellow-shadow pt-24">
+      <div className="max-w-7xl mx-auto p-4 pb-16">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-foreground mb-2">Referrals Dashboard</h1>
+          <h1 className="text-4xl font-bold text-white mb-2">Referrals Dashboard</h1>
           <p className="text-muted-foreground">Earn 5% commission on every successful referral</p>
         </div>
 
@@ -124,81 +124,82 @@ const Referrals = () => {
         )}
 
         {referral && (
-          <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="analytics">Analytics</TabsTrigger>
-              <TabsTrigger value="share">Share</TabsTrigger>
-              <TabsTrigger value="history">History</TabsTrigger>
-            </TabsList>
-
+          <Tabs defaultValue="overview" className="space-y-6 w-full">
+            <div className='bg-gradient-pink-to-yellow mb-5 rounded-lg p-[2px] lg:mb-12'>
+              <TabsList className='grid w-full grid-cols-4 bg-black'>
+                <TabsTrigger value="overview" className='flex items-center gap-2 text-xs md:text-sm px-2'>Overview</TabsTrigger>
+                <TabsTrigger value="analytics" className='flex items-center gap-2 text-xs md:text-sm px-2'>Analytics</TabsTrigger>
+                <TabsTrigger value="share" className='flex items-center gap-2 text-xs md:text-sm px-2'>Share</TabsTrigger>
+                <TabsTrigger value="history" className='flex items-center gap-2 text-xs md:text-sm px-2'>History</TabsTrigger>
+              </TabsList>
+            </div>
             <TabsContent value="overview" className="space-y-6">
               {/* Statistics Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Referrals</CardTitle>
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{referral.total_referrals}</div>
-                    <p className="text-xs text-muted-foreground">Active signups</p>
-                  </CardContent>
-                </Card>
+                <div className="glass-card p-6 mt-0  bg-black ">
+                  <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <h3 className="text-xl font-medium text-white font-inter">Total Referrals</h3>
+                    <Users className="h-4 w-4  text-[var(--yellowcolor)]" />
+                  </div>
+                  <div className="card-content">
+                    <div className="text-2xl font-bold text-white">{referral.total_referrals}</div>
+                    <p className="text-sm text-muted-foreground font-open-sans text-white">Active signups</p>
+                  </div>
+                </div>
 
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Earnings</CardTitle>
-                    <DollarSign className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{formatCurrency(referral.total_earnings)}</div>
-                    <p className="text-xs text-muted-foreground">Lifetime commissions</p>
-                  </CardContent>
-                </Card>
+                <div className="glass-card p-6  mt-0  bg-black">
+                  <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <h3 className="text-xl font-medium font-inter text-white">Total Earnings</h3>
+                    <DollarSign className="h-4 w-4  text-[var(--yellowcolor)]" />
+                  </div>
+                  <div className="card-content">
+                    <div className="text-2xl font-bold text-white">{formatCurrency(referral.total_earnings)}</div>
+                    <p className="text-sm text-muted-foreground font-open-sans text-white">Lifetime commissions</p>
+                  </div>
+                </div>
 
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">YTD Earnings</CardTitle>
-                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{formatCurrency(referral.year_to_date_earnings)}</div>
-                    <p className="text-xs text-muted-foreground">This year so far</p>
-                  </CardContent>
-                </Card>
+                <div className="glass-card p-6  mt-0  bg-black">
+                  <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <h3 className="text-xl font-medium font-inter text-white">YTD Earnings</h3>
+                    <TrendingUp className="h-4 w-4  text-[var(--yellowcolor)]" />
+                  </div>
+                  <div  className="card-content">
+                    <div className="text-2xl font-bold text-white">{formatCurrency(referral.year_to_date_earnings)}</div>
+                    <p className="text-sm text-muted-foreground font-open-sans text-white">This year so far</p>
+                  </div>
+                </div>
 
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Status</CardTitle>
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
+                <div className="glass-card p-6  mt-0  bg-black">
+                  <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <h3 className="text-xl font-medium font-inter text-white">Status</h3>
+                    <Calendar className="h-4 w-4 text-[var(--yellowcolor)]" />
+                  </div>
+                  <div className="card-content">
                     <Badge variant={getStatusColor(referral.status)} className="text-sm">
                       {referral.status.charAt(0).toUpperCase() + referral.status.slice(1)}
                     </Badge>
-                    <p className="text-xs text-muted-foreground mt-1">Current status</p>
-                  </CardContent>
-                </Card>
+                    <p className="text-sm text-muted-foreground mt-1 font-open-sans text-white">Current status</p>
+                  </div>
+                </div>
               </div>
 
               {/* Referral Link Sharing */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+              <div className="glass-card p-6  mt-0  bg-black">
+                <div className="mb-3">
+                  <h3 className="flex items-center gap-2 font-inter text-white">
                     <Share2 className="h-5 w-5" />
                     Your Referral Link
-                  </CardTitle>
-                  <CardDescription>
+                  </h3>
+                  <div className="text-muted-foreground">
                     Share this link with friends to earn 5% commission on their deposits
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
+                  </div>
+                </div>
+                <div className="space-y-4">
                   <div className="flex gap-2">
                     <Input 
                       value={referral.referral_link} 
                       readOnly 
-                      className="bg-muted/50"
+                      className="bg-muted/90"
                     />
                     <Button onClick={copyReferralLink} variant="outline" size="icon">
                       <Copy className="h-4 w-4" />
@@ -249,40 +250,48 @@ const Referrals = () => {
                               rows={4}
                             />
                           </div>
-                          <Button onClick={handleSendInvite} className="w-full">
+                          {/* <Button onClick={handleSendInvite} className="w-full ">
                             <Send className="h-4 w-4 mr-2" />
                             Send Invitation
-                          </Button>
+                          </Button> */}
+                           <span className='bg-gradient-pink-to-yellow inline-block rounded-[12px] p-[2px]'>
+                            <Button
+                              onClick={handleSendInvite}
+                              className='bg-gradient-yellow-to-pink hover:bg-gradient-pink-to-yellow block h-[35px] rounded-[10px] border-0 p-0 px-5 font-inter text-xs font-semibold uppercase text-white'
+                            >
+                              Send Invitation
+                            </Button>
+                          </span>
                         </div>
                       </DialogContent>
                     </Dialog>
                   </div>
 
-                  <div className="bg-muted/50 p-4 rounded-lg">
-                    <p className="text-sm text-muted-foreground">
-                      <strong>Referral Code:</strong> {referral.referral_code}
+                  <div className="bg-muted/20 p-4 rounded-lg">
+                    <p className="text-sm text-white">
+                      <strong className="text-white">Referral Code:</strong> {referral.referral_code}
                     </p>
                     <p className="text-sm text-muted-foreground">
                       Share this code directly if someone prefers to enter it manually during signup.
                     </p>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
 
               {/* Recent Activity */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Recent Signups */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Users className="h-5 w-5" />
+                <div className="glass-card p-6  mt-0  bg-black">
+                  <div>
+                    <h3 className="flex items-center gap-2 text-white">
+                      <Users className="h-5 w-5 text-[var(--yellowcolor)]" />
                       Recent Signups
-                    </CardTitle>
-                    <CardDescription>
+                    </h3>
+                    <div className="text-sm text-muted-foreground">
                       People who joined using your referral link
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
+                    </div>
+                  </div>
+                  <div className="card-content">
                     {signups.length === 0 ? (
                       <p className="text-muted-foreground text-center py-4">
                         No signups yet. Share your referral link to get started!
@@ -318,21 +327,21 @@ const Referrals = () => {
                         )}
                       </div>
                     )}
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
 
                 {/* Payment History */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <DollarSign className="h-5 w-5" />
+                <div className="glass-card p-6  mt-0  bg-black">
+                  <div>
+                    <h3 className="flex items-center gap-2 text-white">
+                      <DollarSign className="h-5 w-5 text-[var(--yellowcolor)]" />
                       Commission Payments
-                    </CardTitle>
-                    <CardDescription>
+                    </h3>
+                    <div className="text-muted-foreground">
                       Your commission payment history
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
+                    </div>
+                  </div>
+                  <div className="card-content">
                     {payments.length === 0 ? (
                       <p className="text-muted-foreground text-center py-4">
                         No payments yet. Commissions will appear here once your referrals make deposits.
@@ -364,8 +373,8 @@ const Referrals = () => {
                         )}
                       </div>
                     )}
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               </div>
             </TabsContent>
 
@@ -495,7 +504,7 @@ const Referrals = () => {
                 <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-3 mx-auto">
                   <Share2 className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="font-semibold mb-2">1. Share Your Link</h3>
+                <h3 className="font-semibold mb-2 text-white">1. Share Your Link</h3>
                 <p className="text-sm text-muted-foreground">
                   Share your unique referral link with friends and family
                 </p>
@@ -504,7 +513,7 @@ const Referrals = () => {
                 <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-3 mx-auto">
                   <Users className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="font-semibold mb-2">2. They Sign Up</h3>
+                <h3 className="font-semibold mb-2 text-white">2. They Sign Up</h3>
                 <p className="text-sm text-muted-foreground">
                   New users create an account using your referral link
                 </p>
@@ -513,7 +522,7 @@ const Referrals = () => {
                 <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-3 mx-auto">
                   <DollarSign className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="font-semibold mb-2">3. Earn 5%</h3>
+                <h3 className="font-semibold mb-2 text-white">3. Earn 5%</h3>
                 <p className="text-sm text-muted-foreground">
                   Get 5% commission when they make their first deposit
                 </p>
