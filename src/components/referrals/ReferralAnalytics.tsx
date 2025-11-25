@@ -64,75 +64,75 @@ const ReferralAnalytics = ({ referral, signups, payments }: ReferralAnalyticsPro
   return (
     <div className="space-y-6">
       {/* Performance Overview */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5" />
+      <div className="glass-card p-6  mt-0  bg-black">
+        <div className="mb-4">
+          <h3 className="flex items-center gap-2 text-xl text-white">
+            <BarChart3 className="h-5 w-5 text-[var(--yellowcolor)]" />
             Performance Analytics
-          </CardTitle>
-          <CardDescription>
+          </h3>
+          <div className="font-open-sans text-muted-foreground">
             Track your referral performance and earnings potential
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+          </div>
+        </div>
+        <div className="card-content">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Performance Tier */}
-            <div className="text-center p-4 bg-muted/50 rounded-lg">
+            <div className="text-center p-4 bg-muted/10 rounded-lg">
               <div className={`w-12 h-12 ${performance.color} rounded-lg flex items-center justify-center mb-2 mx-auto`}>
                 <PerformanceIcon className="h-6 w-6 text-white" />
               </div>
-              <Badge variant="outline" className="mb-2">
+              <Badge variant="outline" className="mb-2 text-white">
                 {performance.tier} Tier
               </Badge>
               <p className="text-xs text-muted-foreground">Performance Level</p>
             </div>
 
             {/* Conversion Rate */}
-            <div className="text-center p-4 bg-muted/50 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">
+            <div className="text-center p-4 bg-muted/10 rounded-lg">
+              <div className="text-2xl mb-2 font-bold text-green-600">
                 {conversionRate.toFixed(1)}%
               </div>
-              <p className="text-sm font-medium">Conversion Rate</p>
+              <p className="text-md font-medium mb-2 text-white">Conversion Rate</p>
               <p className="text-xs text-muted-foreground">
                 {depositorSignups} of {totalSignups} deposited
               </p>
             </div>
 
             {/* Average Deposit */}
-            <div className="text-center p-4 bg-muted/50 rounded-lg">
+            <div className="text-center p-4 bg-muted/10 rounded-lg">
               <div className="text-2xl font-bold text-blue-600">
                 ${avgDeposit.toFixed(0)}
               </div>
-              <p className="text-sm font-medium">Avg. Deposit</p>
+              <p className="text-md font-medium mb-2 text-white">Avg. Deposit</p>
               <p className="text-xs text-muted-foreground">Per successful referral</p>
             </div>
 
             {/* Days Active */}
-            <div className="text-center p-4 bg-muted/50 rounded-lg">
+            <div className="text-center p-4 bg-muted/10 rounded-lg">
               <div className="text-2xl font-bold text-purple-600">
                 {daysSinceJoin}
               </div>
-              <p className="text-sm font-medium">Days Active</p>
+              <p className="text-md font-medium mb-2 text-white">Days Active</p>
               <p className="text-xs text-muted-foreground">Since joining program</p>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Monthly Progress */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Target className="h-5 w-5" />
+      <div className="glass-card p-6  mt-0  bg-black">
+        <div>
+          <h3 className="flex items-center gap-2 text-white">
+            <Target className="h-5 w-5 text-[var(--yellowcolor)]" />
             Monthly Progress
-          </CardTitle>
-          <CardDescription>
+          </h3>
+          <div className="text-white">
             Track your progress towards the monthly earning goal
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+          </div>
+        </div>
+        <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">This Month's Earnings</span>
+            <span className="text-sm font-medium text-white">This Month's Earnings</span>
             <span className="text-lg font-bold">
               ${thisMonthEarnings.toFixed(2)} / ${monthlyTarget.toFixed(2)}
             </span>
@@ -141,7 +141,7 @@ const ReferralAnalytics = ({ referral, signups, payments }: ReferralAnalyticsPro
           <Progress value={Math.min(monthlyProgress, 100)} className="h-3" />
           
           <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <span>{monthlyProgress.toFixed(1)}% of monthly target</span>
+            <span className="text-white">{monthlyProgress.toFixed(1)}% of monthly target</span>
             {monthlyProgress >= 100 ? (
               <Badge variant="default" className="bg-green-500">
                 🎉 Target Reached!
@@ -150,52 +150,54 @@ const ReferralAnalytics = ({ referral, signups, payments }: ReferralAnalyticsPro
               <span>${(monthlyTarget - thisMonthEarnings).toFixed(2)} remaining</span>
             )}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center space-x-2">
-              <Clock className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <p className="text-2xl font-bold">
-                  ${(referral.total_earnings / Math.max(daysSinceJoin, 1)).toFixed(2)}
-                </p>
-                <p className="text-xs text-muted-foreground">Avg. Daily Earnings</p>
+      <div className="glass-card p-6  mt-0  bg-black">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div >
+            <div className="pt-0">
+              <div className="flex items-center space-x-2">
+                <Clock className="h-5 w-5 text-lg text-[var(--yellowcolor)]" />
+                <div>
+                  <p className="text-2xl font-bold text-white">
+                    ${(referral.total_earnings / Math.max(daysSinceJoin, 1)).toFixed(2)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Avg. Daily Earnings</p>
+                </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center space-x-2">
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <p className="text-2xl font-bold">
-                  {(referral.total_referrals / Math.max(daysSinceJoin, 1) * 30).toFixed(1)}
-                </p>
-                <p className="text-xs text-muted-foreground">Monthly Referral Rate</p>
+          <div>
+            <div className="pt-0">
+              <div className="flex items-center space-x-2">
+                <TrendingUp className="h-5 w-5 text-lg text-[var(--yellowcolor)]" />
+                <div>
+                  <p className="text-2xl font-bold text-white">
+                    {(referral.total_referrals / Math.max(daysSinceJoin, 1) * 30).toFixed(1)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Monthly Referral Rate</p>
+                </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center space-x-2">
-              <Award className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <p className="text-2xl font-bold">
-                  ${(referral.total_earnings / Math.max(referral.total_referrals, 1)).toFixed(2)}
-                </p>
-                <p className="text-xs text-muted-foreground">Earnings per Referral</p>
+          <div>
+            <div className="pt-0">
+              <div className="flex items-center space-x-2">
+                <Award className="h-5 w-5 text-lg text-[var(--yellowcolor)]" />
+                <div>
+                  <p className="text-2xl font-bold text-white">
+                    ${(referral.total_earnings / Math.max(referral.total_referrals, 1)).toFixed(2)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Earnings per Referral</p>
+                </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );
