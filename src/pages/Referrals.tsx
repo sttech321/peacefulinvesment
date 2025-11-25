@@ -29,13 +29,15 @@ const Referrals = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Access Denied</CardTitle>
-            <CardDescription>Please log in to access the referrals dashboard.</CardDescription>
-          </CardHeader>
-        </Card>
+      <div className="min-h-screen flex items-center justify-center bg-black">
+        <div className="bg-gradient-pink-to-yellow hover:glow-primary relative rounded-lg p-[2px]">
+          <Card className="w-full max-w-md bg-black">
+            <CardHeader>
+              <CardTitle>Access Denied</CardTitle>
+              <CardDescription>Please log in to access the referrals dashboard.</CardDescription>
+            </CardHeader>
+          </Card>
+        </div>  
       </div>
     );
   }
@@ -136,245 +138,255 @@ const Referrals = () => {
             <TabsContent value="overview" className="space-y-6">
               {/* Statistics Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="glass-card p-6 mt-0  bg-black ">
-                  <div className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <h3 className="text-xl font-medium text-white font-inter">Total Referrals</h3>
-                    <Users className="h-4 w-4  text-[var(--yellowcolor)]" />
+                <div className="bg-gradient-pink-to-yellow hover:glow-primary relative rounded-sm p-[2px]">
+                  <div className="glass-card p-6 mt-0 rounded-sm bg-black ">
+                    <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <h3 className="text-xl font-medium text-white font-inter">Total Referrals</h3>
+                      <Users className="h-4 w-4  text-[var(--yellowcolor)]" />
+                    </div>
+                    <div className="card-content">
+                      <div className="text-2xl font-bold text-white">{referral.total_referrals}</div>
+                      <p className="text-sm text-muted-foreground font-open-sans text-white">Active signups</p>
+                    </div>
                   </div>
-                  <div className="card-content">
-                    <div className="text-2xl font-bold text-white">{referral.total_referrals}</div>
-                    <p className="text-sm text-muted-foreground font-open-sans text-white">Active signups</p>
-                  </div>
-                </div>
-
-                <div className="glass-card p-6  mt-0  bg-black">
-                  <div className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <h3 className="text-xl font-medium font-inter text-white">Total Earnings</h3>
-                    <DollarSign className="h-4 w-4  text-[var(--yellowcolor)]" />
-                  </div>
-                  <div className="card-content">
-                    <div className="text-2xl font-bold text-white">{formatCurrency(referral.total_earnings)}</div>
-                    <p className="text-sm text-muted-foreground font-open-sans text-white">Lifetime commissions</p>
-                  </div>
-                </div>
-
-                <div className="glass-card p-6  mt-0  bg-black">
-                  <div className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <h3 className="text-xl font-medium font-inter text-white">YTD Earnings</h3>
-                    <TrendingUp className="h-4 w-4  text-[var(--yellowcolor)]" />
-                  </div>
-                  <div  className="card-content">
-                    <div className="text-2xl font-bold text-white">{formatCurrency(referral.year_to_date_earnings)}</div>
-                    <p className="text-sm text-muted-foreground font-open-sans text-white">This year so far</p>
+                </div>  
+                <div className="bg-gradient-pink-to-yellow hover:glow-primary relative rounded-sm p-[2px]">
+                  <div className="glass-card p-6  mt-0 rounded-sm  bg-black">
+                    <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <h3 className="text-xl font-medium font-inter text-white">Total Earnings</h3>
+                      <DollarSign className="h-4 w-4  text-[var(--yellowcolor)]" />
+                    </div>
+                    <div className="card-content">
+                      <div className="text-2xl font-bold text-white">{formatCurrency(referral.total_earnings)}</div>
+                      <p className="text-sm text-muted-foreground font-open-sans text-white">Lifetime commissions</p>
+                    </div>
                   </div>
                 </div>
-
-                <div className="glass-card p-6  mt-0  bg-black">
-                  <div className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <h3 className="text-xl font-medium font-inter text-white">Status</h3>
-                    <Calendar className="h-4 w-4 text-[var(--yellowcolor)]" />
+                <div className="bg-gradient-pink-to-yellow hover:glow-primary relative rounded-sm p-[2px]">  
+                  <div className="glass-card p-6 h-full mt-0 rounded-sm  bg-black">
+                    <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <h3 className="text-xl font-medium font-inter text-white">YTD Earnings</h3>
+                      <TrendingUp className="h-4 w-4  text-[var(--yellowcolor)]" />
+                    </div>
+                    <div  className="card-content">
+                      <div className="text-2xl font-bold text-white">{formatCurrency(referral.year_to_date_earnings)}</div>
+                      <p className="text-sm text-muted-foreground font-open-sans text-white">This year so far</p>
+                    </div>
                   </div>
-                  <div className="card-content">
-                    <Badge variant={getStatusColor(referral.status)} className="text-sm">
-                      {referral.status.charAt(0).toUpperCase() + referral.status.slice(1)}
-                    </Badge>
-                    <p className="text-sm text-muted-foreground mt-1 font-open-sans text-white">Current status</p>
+                </div>  
+                <div className="bg-gradient-pink-to-yellow hover:glow-primary relative rounded-sm p-[2px]">
+                  <div className="glass-card p-6  mt-0 h-full rounded-sm bg-black">
+                    <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <h3 className="text-xl font-medium font-inter text-white">Status</h3>
+                      <Calendar className="h-4 w-4 text-[var(--yellowcolor)]" />
+                    </div>
+                    <div className="card-content">
+                      <Badge variant={getStatusColor(referral.status)} className="text-sm">
+                        {referral.status.charAt(0).toUpperCase() + referral.status.slice(1)}
+                      </Badge>
+                      <p className="text-sm text-muted-foreground mt-1 font-open-sans text-white">Current status</p>
+                    </div>
                   </div>
-                </div>
+                </div>  
               </div>
 
               {/* Referral Link Sharing */}
-              <div className="glass-card p-6  mt-0  bg-black">
-                <div className="mb-3">
-                  <h3 className="flex items-center gap-2 font-inter text-white">
-                    <Share2 className="h-5 w-5" />
-                    Your Referral Link
-                  </h3>
-                  <div className="text-muted-foreground">
-                    Share this link with friends to earn 5% commission on their deposits
+              <div className="bg-gradient-pink-to-yellow hover:glow-primary relative rounded-sm p-[2px]">
+                <div className="glass-card p-6  mt-0 rounded-sm bg-black">
+                  <div className="mb-3">
+                    <h3 className="flex items-center gap-2 font-inter text-white">
+                      <Share2 className="h-5 w-5" />
+                      Your Referral Link
+                    </h3>
+                    <div className="text-muted-foreground">
+                      Share this link with friends to earn 5% commission on their deposits
+                    </div>
                   </div>
-                </div>
-                <div className="space-y-4">
-                  <div className="flex gap-2">
-                    <Input 
-                      value={referral.referral_link} 
-                      readOnly 
-                      className="bg-muted/90"
-                    />
-                    <Button onClick={copyReferralLink} variant="outline" size="icon">
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
-                      <DialogTrigger asChild>
-                        <Button className="flex items-center gap-2">
-                          <Mail className="h-4 w-4" />
-                          Send Invitation
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="sm:max-w-md">
-                        <DialogHeader>
-                          <DialogTitle>Send Referral Invitation</DialogTitle>
-                          <DialogDescription>
-                            Send a personalized invitation email to invite someone to join.
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          <div>
-                            <Label htmlFor="email">Email Address</Label>
-                            <Input
-                              id="email"
-                              type="email"
-                              placeholder="Enter email address"
-                              value={inviteEmail}
-                              onChange={(e) => setInviteEmail(e.target.value)}
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="subject">Subject</Label>
-                            <Input
-                              id="subject"
-                              value={inviteSubject}
-                              onChange={(e) => setInviteSubject(e.target.value)}
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="message">Message</Label>
-                            <Textarea
-                              id="message"
-                              placeholder="Enter your message"
-                              value={inviteMessage}
-                              onChange={(e) => setInviteMessage(e.target.value)}
-                              rows={4}
-                            />
-                          </div>
-                          {/* <Button onClick={handleSendInvite} className="w-full ">
-                            <Send className="h-4 w-4 mr-2" />
+                  <div className="space-y-4">
+                    <div className="flex gap-2">
+                      <Input 
+                        value={referral.referral_link} 
+                        readOnly 
+                        className="bg-muted/90"
+                      />
+                      <Button onClick={copyReferralLink} variant="outline" size="icon">
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
+                        <DialogTrigger asChild>
+                          <Button className="flex items-center gap-2">
+                            <Mail className="h-4 w-4" />
                             Send Invitation
-                          </Button> */}
-                           <span className='bg-gradient-pink-to-yellow inline-block rounded-[12px] p-[2px]'>
-                            <Button
-                              onClick={handleSendInvite}
-                              className='bg-gradient-yellow-to-pink hover:bg-gradient-pink-to-yellow block h-[35px] rounded-[10px] border-0 p-0 px-5 font-inter text-xs font-semibold uppercase text-white'
-                            >
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-md">
+                          <DialogHeader>
+                            <DialogTitle>Send Referral Invitation</DialogTitle>
+                            <DialogDescription>
+                              Send a personalized invitation email to invite someone to join.
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <div>
+                              <Label htmlFor="email">Email Address</Label>
+                              <Input
+                                id="email"
+                                type="email"
+                                placeholder="Enter email address"
+                                value={inviteEmail}
+                                onChange={(e) => setInviteEmail(e.target.value)}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="subject">Subject</Label>
+                              <Input
+                                id="subject"
+                                value={inviteSubject}
+                                onChange={(e) => setInviteSubject(e.target.value)}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="message">Message</Label>
+                              <Textarea
+                                id="message"
+                                placeholder="Enter your message"
+                                value={inviteMessage}
+                                onChange={(e) => setInviteMessage(e.target.value)}
+                                rows={4}
+                              />
+                            </div>
+                            {/* <Button onClick={handleSendInvite} className="w-full ">
+                              <Send className="h-4 w-4 mr-2" />
                               Send Invitation
-                            </Button>
-                          </span>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                  </div>
+                            </Button> */}
+                            <span className='bg-gradient-pink-to-yellow inline-block rounded-[12px] p-[2px]'>
+                              <Button
+                                onClick={handleSendInvite}
+                                className='bg-gradient-yellow-to-pink hover:bg-gradient-pink-to-yellow block h-[35px] rounded-[10px] border-0 p-0 px-5 font-inter text-xs font-semibold uppercase text-white'
+                              >
+                                Send Invitation
+                              </Button>
+                            </span>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
 
-                  <div className="bg-muted/20 p-4 rounded-lg">
-                    <p className="text-sm text-white">
-                      <strong className="text-white">Referral Code:</strong> {referral.referral_code}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Share this code directly if someone prefers to enter it manually during signup.
-                    </p>
+                    <div className="bg-muted/20 p-4 rounded-lg">
+                      <p className="text-sm text-white">
+                        <strong className="text-white">Referral Code:</strong> {referral.referral_code}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Share this code directly if someone prefers to enter it manually during signup.
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
+              </div>  
 
               {/* Recent Activity */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Recent Signups */}
-                <div className="glass-card p-6  mt-0  bg-black">
-                  <div>
-                    <h3 className="flex items-center gap-2 text-white">
-                      <Users className="h-5 w-5 text-[var(--yellowcolor)]" />
-                      Recent Signups
-                    </h3>
-                    <div className="text-sm text-muted-foreground">
-                      People who joined using your referral link
+                <div className="bg-gradient-pink-to-yellow hover:glow-primary relative rounded-sm p-[2px]">
+                  <div className="glass-card p-6  mt-0 h-full rounded-sm  bg-black">
+                    <div>
+                      <h3 className="flex items-center gap-2 text-white">
+                        <Users className="h-5 w-5 text-[var(--yellowcolor)]" />
+                        Recent Signups
+                      </h3>
+                      <div className="text-sm text-muted-foreground">
+                        People who joined using your referral link
+                      </div>
+                    </div>
+                    <div className="card-content">
+                      {signups.length === 0 ? (
+                        <p className="text-muted-foreground text-center py-4">
+                          No signups yet. Share your referral link to get started!
+                        </p>
+                      ) : (
+                        <div className="space-y-3">
+                          {signups.slice(0, 5).map((signup) => (
+                            <div key={signup.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                              <div>
+                                <p className="text-sm font-medium">New User Signup</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {formatDate(signup.signup_date)}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                {signup.deposit_amount ? (
+                                  <div>
+                                    <p className="text-sm font-medium text-green-600">
+                                      {formatCurrency(signup.deposit_amount)}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">Deposited</p>
+                                  </div>
+                                ) : (
+                                  <Badge variant="secondary">Pending</Badge>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                          {signups.length > 5 && (
+                            <Button variant="link" className="w-full" size="sm">
+                              View All Signups <ArrowUpRight className="h-3 w-3 ml-1" />
+                            </Button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
-                  <div className="card-content">
-                    {signups.length === 0 ? (
-                      <p className="text-muted-foreground text-center py-4">
-                        No signups yet. Share your referral link to get started!
-                      </p>
-                    ) : (
-                      <div className="space-y-3">
-                        {signups.slice(0, 5).map((signup) => (
-                          <div key={signup.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                            <div>
-                              <p className="text-sm font-medium">New User Signup</p>
-                              <p className="text-xs text-muted-foreground">
-                                {formatDate(signup.signup_date)}
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              {signup.deposit_amount ? (
-                                <div>
-                                  <p className="text-sm font-medium text-green-600">
-                                    {formatCurrency(signup.deposit_amount)}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground">Deposited</p>
-                                </div>
-                              ) : (
-                                <Badge variant="secondary">Pending</Badge>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                        {signups.length > 5 && (
-                          <Button variant="link" className="w-full" size="sm">
-                            View All Signups <ArrowUpRight className="h-3 w-3 ml-1" />
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                  </div>
                 </div>
-
                 {/* Payment History */}
-                <div className="glass-card p-6  mt-0  bg-black">
-                  <div>
-                    <h3 className="flex items-center gap-2 text-white">
-                      <DollarSign className="h-5 w-5 text-[var(--yellowcolor)]" />
-                      Commission Payments
-                    </h3>
-                    <div className="text-muted-foreground">
-                      Your commission payment history
+                <div className="bg-gradient-pink-to-yellow hover:glow-primary relative rounded-sm p-[2px]">
+                  <div className="glass-card p-6  mt-0 h-full rounded-sm  bg-black">
+                    <div>
+                      <h3 className="flex items-center gap-2 text-white">
+                        <DollarSign className="h-5 w-5 text-[var(--yellowcolor)]" />
+                        Commission Payments
+                      </h3>
+                      <div className="text-muted-foreground">
+                        Your commission payment history
+                      </div>
+                    </div>
+                    <div className="card-content">
+                      {payments.length === 0 ? (
+                        <p className="text-muted-foreground text-center py-4">
+                          No payments yet. Commissions will appear here once your referrals make deposits.
+                        </p>
+                      ) : (
+                        <div className="space-y-3">
+                          {payments.slice(0, 5).map((payment) => (
+                            <div key={payment.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                              <div>
+                                <p className="text-sm font-medium">Commission Payment</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {formatDate(payment.payment_date)}
+                                </p>
+                                {payment.notes && (
+                                  <p className="text-xs text-muted-foreground">{payment.notes}</p>
+                                )}
+                              </div>
+                              <div className="text-right">
+                                <p className="text-sm font-medium text-green-600">
+                                  +{formatCurrency(payment.amount)}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                          {payments.length > 5 && (
+                            <Button variant="link" className="w-full" size="sm">
+                              View All Payments <ArrowUpRight className="h-3 w-3 ml-1" />
+                            </Button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
-                  <div className="card-content">
-                    {payments.length === 0 ? (
-                      <p className="text-muted-foreground text-center py-4">
-                        No payments yet. Commissions will appear here once your referrals make deposits.
-                      </p>
-                    ) : (
-                      <div className="space-y-3">
-                        {payments.slice(0, 5).map((payment) => (
-                          <div key={payment.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                            <div>
-                              <p className="text-sm font-medium">Commission Payment</p>
-                              <p className="text-xs text-muted-foreground">
-                                {formatDate(payment.payment_date)}
-                              </p>
-                              {payment.notes && (
-                                <p className="text-xs text-muted-foreground">{payment.notes}</p>
-                              )}
-                            </div>
-                            <div className="text-right">
-                              <p className="text-sm font-medium text-green-600">
-                                +{formatCurrency(payment.amount)}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                        {payments.length > 5 && (
-                          <Button variant="link" className="w-full" size="sm">
-                            View All Payments <ArrowUpRight className="h-3 w-3 ml-1" />
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
+                </div>  
               </div>
             </TabsContent>
 

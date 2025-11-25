@@ -22,6 +22,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useUserRole } from '@/hooks/useUserRole';
+import logoAnimation from '@/assets/patrik-logo-animation.gif';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -61,20 +62,24 @@ const Navbar = () => {
 
   return (
     <nav
-      className='fixed left-0 right-0 top-0 z-50 border-b bg-[#0c0715] backdrop-blur-xl px-6'
+      className='fixed left-0 right-0 top-0 z-50 border-b bg-[#000] backdrop-blur-xl px-6'
       style={{ borderColor: 'var(--pinkcolor)' }}
     >
       <div className='mx-auto max-w-7xl'>
-        <div className='flex h-16 min-w-0 items-center justify-between'>
+        <div className='flex h-[80px] min-w-0 items-center justify-between'>
           {/* Logo */}
           <Link
             to='/'
             className='flex min-w-0 flex-shrink-0 items-center space-x-2 outline-none'
           >
-            <Shield className='h-6 w-6 flex-shrink-0 text-primary sm:h-8 sm:w-8' />
-            <span className='truncate text-lg font-bold text-foreground text-white sm:text-xl'>
+            <img
+              src={logoAnimation}
+              alt='Peaceful Investment'
+              className='h-15 w-32  rounded-full'
+            />
+            {/* <span className='truncate text-lg font-bold text-foreground text-white sm:text-xl'>
               Peaceful Investment
-            </span>
+            </span> */}
           </Link>
 
           {/* Desktop Navigation */}
@@ -115,7 +120,7 @@ const Navbar = () => {
             {user ? (
               <>
                 {/* Theme Toggle */}
-                <ThemeToggle />
+                {/* <ThemeToggle /> */}
 
                 {/* Profile Dropdown */}
                 <DropdownMenu>

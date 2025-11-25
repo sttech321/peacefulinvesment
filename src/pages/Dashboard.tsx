@@ -165,12 +165,12 @@ const Dashboard = () => {
   // Show loading state while fetching data
   if (dashboardLoading) {
     return (
-      <div className="min-h-screen bg-background pt-16">
+      <div className="min-h-screen bg-black pt-16">
         <div className="max-w-7xl mx-auto p-6">
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
               <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-              <h2 className="text-xl font-semibold mb-2">Loading Dashboard Data</h2>
+              <h2 className="text-xl font-semibold mb-2 text-white">Loading Dashboard Data</h2>
               <p className="text-muted-foreground">Fetching your trading account information...</p>
             </div>
           </div>
@@ -216,7 +216,8 @@ const Dashboard = () => {
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {stats.map((stat) => (
-            <Card key={stat.title} className="bg-gradient-pink-to-yellow border-0 p-[2px]  block rounded-sm shadow-none">
+            <div className="bg-gradient-pink-to-yellow border-0 p-[2px] block rounded-sm">
+            <Card key={stat.title} className="bg-black rounded-sm p-0 shadow-none">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 rounded-tl-sm rounded-tr-sm w-full bg-black">
                 <CardTitle className="text-2xl font-medium text-white font-bebas-neue">
                   {stat.title}
@@ -233,75 +234,77 @@ const Dashboard = () => {
                 </div>
               </CardContent>
             </Card>
+            </div>
           ))}
         </div>
 
         {/* Trading Platform Access */}
-        <Card className="mb-8  border-0 shadow-none bg-gradient-pink-to-yellow rounded-sm p-[2px]">
-          <CardHeader className="bg-black  rounded-tl-sm rounded-tr-sm">
-            <div className="block sm:flex items-center justify-between">
-              <div className="items-start mb-5 sm-mb-0 flex sm:items-center gap-3">
-                <div className="w-[80px] sm:w-12 h-12 bg-gradient-to-br from-primary to-primary/70 rounded-lg flex items-center justify-center">
-                  <BarChart3 className="h-6 w-6 text-primary-foreground" />
+        <div className="mb-8 border-0 shadow-none bg-gradient-pink-to-yellow rounded-sm p-[2px]">
+          <Card className="bg-black rounded-sm p-0 shadow-none">
+            <CardHeader className="bg-black  rounded-tl-sm rounded-tr-sm">
+              <div className="block sm:flex items-center justify-between">
+                <div className="items-start mb-5 sm-mb-0 flex sm:items-center gap-3">
+                  <div className="w-[80px] sm:w-12 h-12 bg-gradient-to-br from-primary to-primary/70 rounded-lg flex items-center justify-center">
+                    <BarChart3 className="h-6 w-6 text-primary-foreground" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl text-white font-inter">Professional Trading Platform</CardTitle>
+                    <CardDescription className="text-base font-open-sans">
+                      Access advanced charts, real-time data, and professional trading tools
+                    </CardDescription>
+                  </div>
                 </div>
-                <div>
-                  <CardTitle className="text-xl text-white font-inter">Professional Trading Platform</CardTitle>
-                  <CardDescription className="text-base font-open-sans">
-                    Access advanced charts, real-time data, and professional trading tools
-                  </CardDescription>
-                </div>
+                <Link to="/trading">
+                  <Button size="lg" className="gap-2 opacity-100">
+                    Launch Trading Platform
+                    <ExternalLink className="h-4 w-4" />
+                  </Button>
+                </Link>
               </div>
-              <Link to="/trading">
-                <Button size="lg" className="gap-2 opacity-100">
-                  Launch Trading Platform
-                  <ExternalLink className="h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
-          </CardHeader>
-          <CardContent className="bg-black rounded-bl-sm rounded-br-sm">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Link to="/meta-trader-accounts">
-                <div className="flex items-center gap-3 p-3 bg-background/90 rounded-lg hover:bg-white transition-colors cursor-pointer">
-                  <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                    <TrendingUp className="h-4 w-4 text-blue-600" />
+            </CardHeader>
+            <CardContent className="bg-black rounded-bl-sm rounded-br-sm">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Link to="/meta-trader-accounts">
+                  <div className="flex items-center gap-3 p-3 bg-background/90 rounded-lg hover:bg-white transition-colors cursor-pointer">
+                    <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                      <TrendingUp className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium font-inter">Account Overview</p>
+                      <p className="text-sm text-[#22262a] font-open-sans">View all trading accounts</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium font-inter">Account Overview</p>
-                    <p className="text-sm text-[#22262a] font-open-sans">View all trading accounts</p>
+                </Link>
+                <Link to="/trading">
+                  <div className="flex items-center gap-3 p-3 bg-background/90 rounded-lg hover:bg-white transition-colors cursor-pointer">
+                    <div className="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center">
+                      <Activity className="h-4 w-4 text-green-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium font-inter">Live Trading</p>
+                      <p className="text-sm text-[#22262a] font-open-sans">Execute trades instantly</p>
+                    </div>
                   </div>
-                </div>
-              </Link>
-              <Link to="/trading">
-                <div className="flex items-center gap-3 p-3 bg-background/90 rounded-lg hover:bg-white transition-colors cursor-pointer">
-                  <div className="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center">
-                    <Activity className="h-4 w-4 text-green-600" />
+                </Link>
+                <Link to="/overseas-company">
+                  <div className="flex items-center gap-3 p-3 bg-background/90 rounded-lg hover:bg-white transition-colors cursor-pointer">
+                    <div className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                      <DollarSign className="h-4 w-4 text-purple-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium font-inter">Create Account</p>
+                      <p className="text-sm text-[#22262a] font-open-sans">Set up new trading account</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium font-inter">Live Trading</p>
-                    <p className="text-sm text-[#22262a] font-open-sans">Execute trades instantly</p>
-                  </div>
-                </div>
-              </Link>
-              <Link to="/overseas-company">
-                <div className="flex items-center gap-3 p-3 bg-background/90 rounded-lg hover:bg-white transition-colors cursor-pointer">
-                  <div className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                    <DollarSign className="h-4 w-4 text-purple-600" />
-                  </div>
-                  <div>
-                    <p className="font-medium font-inter">Create Account</p>
-                    <p className="text-sm text-[#22262a] font-open-sans">Set up new trading account</p>
-                  </div>
-                </div>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
         {/* Account Management */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 ">
           <div className="border-0 shadow-none bg-gradient-pink-to-yellow rounded-sm p-[2px]">
-            <div className="bg-black h-full rounded-sm p-6">
+            <div className="bg-black rounded-sm h-full rounded-sm p-6">
               <div className="card-heading mb-4">
                 <h3 className="text-white font-inter text-xl">Trading Accounts</h3>
                 <p className="font-open-sans text-white">

@@ -62,26 +62,28 @@ export default function MetaTraderAccounts() {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Card className="w-full max-w-md">
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <h2 className="text-xl font-semibold mb-2">Authentication Required</h2>
-              <p className="text-muted-foreground">Please sign in to view your MetaTrader accounts.</p>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen flex items-center justify-center bg-black">
+        <div className="bg-gradient-pink-to-yellow hover:glow-primary relative rounded-lg p-[2px]">
+          <Card className="w-full max-w-md bg-black">
+            <CardContent className="pt-6">
+              <div className="text-center">
+                <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                <h2 className="text-xl font-semibold mb-2 text-white">Authentication Required</h2>
+                <p className="text-muted-foreground">Please sign in to view your MetaTrader accounts.</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>  
       </div>
     );
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex items-center justify-center bg-black">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-          <h2 className="text-xl font-semibold mb-2">Loading Your Accounts</h2>
+          <h2 className="text-xl font-semibold mb-2 text-white">Loading Your Accounts</h2>
           <p className="text-muted-foreground">Fetching your MetaTrader account data...</p>
         </div>
       </div>
@@ -97,7 +99,7 @@ export default function MetaTraderAccounts() {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
               <div>
                 <h1 className="text-3xl font-bold text-foreground mb-2">MetaTrader Accounts</h1>
-                <p className="text-muted-foreground">
+                <p className="text-muted-foreground font-open-sans">
                   Monitor and manage your trading accounts in real-time
                 </p>
               </div>
@@ -211,7 +213,7 @@ export default function MetaTraderAccounts() {
 
     // Default error handling for other errors
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex items-center justify-center bg-black">
         <Card className="w-full max-w-md">
           <CardContent className="pt-6">
             <div className="text-center">
@@ -230,12 +232,12 @@ export default function MetaTraderAccounts() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-hero">
-      <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen pink-yellow-shadow pt-24">
+      <div className="max-w-7xl mx-auto p-4 pb-16">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">MetaTrader Accounts</h1>
+            <h1 className="text-3xl font-bold text-foreground mb-2 text-white">MetaTrader Accounts</h1>
             <p className="text-muted-foreground">
               Monitor and manage your trading accounts in real-time
             </p>
@@ -246,7 +248,7 @@ export default function MetaTraderAccounts() {
             variant="outline"
             className="glass"
           >
-            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-4 w-4 mr-2 hover:border-0 ${refreshing ? 'animate-spin' : ''}`} />
             Refresh Data
           </Button>
         </div>
@@ -267,78 +269,80 @@ export default function MetaTraderAccounts() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {accounts.map((account) => (
-              <Card key={account.id} className="glass-card hover:scale-105 transition-all duration-300">
-                <CardHeader className="pb-3">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="text-lg font-semibold">
-                        {account.name}
-                      </CardTitle>
-                      <p className="text-sm text-muted-foreground">ID: {account.meta_trader_id}</p>
+              <div className="mb-3 border-0 shadow-none bg-gradient-pink-to-yellow  hover:glow-primary rounded-sm p-[2px]">
+                <Card key={account.id} className="p-0 rounded-sm  transition-all duration-300">
+                  <CardHeader className="pb-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle className="text-lg font-semibold">
+                          {account.name}
+                        </CardTitle>
+                        <p className="text-sm text-muted-foreground font-open-sans">ID: {account.meta_trader_id}</p>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <Badge className={getStatusColor(account.status.toLowerCase())}>
+                          {account.status}
+                        </Badge>
+                        <Badge className="bg-secondary/80 text-secondary-foreground hover:bg-secondary/90 font-open-sans">
+                          Live
+                        </Badge>
+                      </div>
                     </div>
-                    <div className="flex flex-col gap-2">
-                      <Badge className={getStatusColor(account.status.toLowerCase())}>
-                        {account.status}
-                      </Badge>
-                      <Badge className="bg-secondary/10 text-secondary-foreground hover:bg-secondary/20">
-                        Live
-                      </Badge>
+                  </CardHeader>
+                  
+                  <CardContent className="space-y-4">
+                    {/* Balance Section */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground uppercase tracking-wide font-open-sans">
+                          Balance
+                        </p>
+                        <p className="text-lg font-semibold text-emerald-600 font-open-sans">
+                          {formatCurrency(account.balance, 'USD')}
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground uppercase tracking-wide font-open-sans">
+                          Equity
+                        </p>
+                        <p className="text-lg font-semibold font-open-sans text-white">
+                          {formatCurrency(account.equity, 'USD')}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </CardHeader>
-                
-                <CardContent className="space-y-4">
-                  {/* Balance Section */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <p className="text-xs text-muted-foreground uppercase tracking-wide">
-                        Balance
-                      </p>
-                      <p className="text-lg font-semibold text-emerald-600">
-                        {formatCurrency(account.balance, 'USD')}
-                      </p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs text-muted-foreground uppercase tracking-wide">
-                        Equity
-                      </p>
-                      <p className="text-lg font-semibold">
-                        {formatCurrency(account.equity, 'USD')}
-                      </p>
-                    </div>
-                  </div>
 
-                  {/* Margin Section */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <p className="text-xs text-muted-foreground uppercase tracking-wide">
-                        Margin Used
-                      </p>
-                      <p className="text-sm font-medium text-amber-600">
-                        {formatCurrency(account.margin, 'USD')}
-                      </p>
+                    {/* Margin Section */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground uppercase tracking-wide font-open-sans">
+                          Margin Used
+                        </p>
+                        <p className="text-sm font-medium text-amber-600 font-open-sans">
+                          {formatCurrency(account.margin, 'USD')}
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground uppercase tracking-wide font-open-sans">
+                          P&L
+                        </p>
+                        <p className={`text-sm font-medium font-open-sans ${account.total_pnl >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                          {formatCurrency(account.total_pnl, 'USD')}
+                        </p>
+                      </div>
                     </div>
-                    <div className="space-y-1">
-                      <p className="text-xs text-muted-foreground uppercase tracking-wide">
-                        P&L
-                      </p>
-                      <p className={`text-sm font-medium ${account.total_pnl >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                        {formatCurrency(account.total_pnl, 'USD')}
-                      </p>
-                    </div>
-                  </div>
 
-                  {/* Additional Info */}
-                  <div className="pt-3 border-t border-border/20">
-                    <div className="flex justify-between items-center text-xs text-muted-foreground">
-                      <span>Expires: {new Date(account.expire_date).toLocaleDateString()}</span>
-                      <span>
-                        Updated: {new Date(account.updated).toLocaleDateString()}
-                      </span>
+                    {/* Additional Info */}
+                    <div className="pt-3 border-t border-border/20">
+                      <div className="flex justify-between items-center text-xs text-muted-foreground font-open-sans">
+                        <span >Expires: {new Date(account.expire_date).toLocaleDateString()}</span>
+                        <span className="font-open-sans">
+                          Updated: {new Date(account.updated).toLocaleDateString()}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </div>  
             ))}
           </div>
         )}
