@@ -42,6 +42,7 @@ import AdminContactRequests from "./pages/admin/AdminContactRequests";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminAuditLog from "./pages/admin/AdminAuditLog";
 import CreateAdminUser from "./pages/CreateAdminUser";
+import LoadingScreen from "@/components/ui/loading-screen";
 
 const queryClient = new QueryClient();
 
@@ -156,6 +157,17 @@ function AppContent() {
 }
 
 function App() {
+  const [showSplash, setShowSplash] = React.useState(true);
+
+  if (showSplash) {
+    return (
+      <LoadingScreen
+        timeoutMs={13000}
+        onFinish={() => setShowSplash(false)}
+      />
+    );
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>

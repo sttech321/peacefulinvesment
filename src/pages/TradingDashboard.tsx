@@ -76,12 +76,12 @@ const TradingDashboard = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex items-center justify-center bg-black">
         <Card className="w-full max-w-md p-6">
           <div className="text-center space-y-4">
             <AlertCircle className="h-12 w-12 text-destructive mx-auto" />
             <div>
-              <h2 className="text-xl font-semibold">Access Denied</h2>
+              <h2 className="text-xl font-semibold text-white">Access Denied</h2>
               <p className="text-muted-foreground">Please log in to access the trading dashboard.</p>
             </div>
             <Button onClick={() => window.location.href = '/auth'}>
@@ -94,7 +94,7 @@ const TradingDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-black">
       {/* Header */}
       <div className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-3">
@@ -137,13 +137,13 @@ const TradingDashboard = () => {
       <div className="relative">
         {/* Loading Overlay */}
         {isLoading && (
-          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-40">
+          <div className="absolute inset-0 bg-black backdrop-blur-sm flex items-center justify-center z-40">
             <Card className="p-8 text-center space-y-4">
               <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary/70 rounded-lg flex items-center justify-center mx-auto">
                 <Loader2 className="h-8 w-8 text-primary-foreground animate-spin" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold">Loading Trading Platform</h3>
+                <h3 className="text-lg font-semibold text-white">Loading Trading Platform</h3>
                 <p className="text-muted-foreground">
                   Connecting to Peaceful Investment...
                 </p>

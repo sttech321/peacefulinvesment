@@ -165,12 +165,12 @@ const Dashboard = () => {
   // Show loading state while fetching data
   if (dashboardLoading) {
     return (
-      <div className="min-h-screen bg-background pt-16">
+      <div className="min-h-screen bg-black pt-16">
         <div className="max-w-7xl mx-auto p-6">
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
               <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-              <h2 className="text-xl font-semibold mb-2">Loading Dashboard Data</h2>
+              <h2 className="text-xl font-semibold mb-2 text-white">Loading Dashboard Data</h2>
               <p className="text-muted-foreground">Fetching your trading account information...</p>
             </div>
           </div>
@@ -202,10 +202,10 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pt-16">
-      <div className="max-w-7xl mx-auto p-6">
+    <div className="min-h-screen pink-yellow-shadow pt-24">
+      <div className="max-w-7xl mx-auto p-4 pb-16">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground">
+          <h1 className="text-3xl text-white  font-bold text-foreground">
             Welcome back, {user.email}
           </h1>
           <p className="text-muted-foreground mt-2">
@@ -216,204 +216,211 @@ const Dashboard = () => {
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {stats.map((stat) => (
-            <Card key={stat.title} className="glass-card">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
+            <div className="bg-gradient-pink-to-yellow border-0 p-[2px] block rounded-sm">
+            <Card key={stat.title} className="bg-black rounded-sm p-0 shadow-none">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 rounded-tl-sm rounded-tr-sm w-full bg-black">
+                <CardTitle className="text-2xl font-medium text-white font-bebas-neue">
                   {stat.title}
                 </CardTitle>
-                <stat.icon className="h-4 w-4 text-muted-foreground" />
+                <stat.icon className="h-4 w-4 text-[var(--yellowcolor)] " />
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stat.value}</div>
-                <p className="text-xs text-muted-foreground">
+              <CardContent className="w-full bg-black rounded-bl-sm rounded-br-sm">
+                <div className="text-2xl font-bold text-[var(--yellowcolor)] mb-3 pb-0">{stat.value}</div>
+                <p className="text-xs text-muted-foreground font-open-sans">
                   {stat.description}
                 </p>
-                <div className="text-xs text-primary mt-1">
+                <div className="text-sm text-primary mt-1 text-white font-open-sans">
                   {stat.trend} from last month
                 </div>
               </CardContent>
             </Card>
+            </div>
           ))}
         </div>
 
         {/* Trading Platform Access */}
-        <Card className="mb-8 bg-gradient-to-br from-primary/10 via-primary/5 to-background border-primary/20">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary/70 rounded-lg flex items-center justify-center">
-                  <BarChart3 className="h-6 w-6 text-primary-foreground" />
+        <div className="mb-8 border-0 shadow-none bg-gradient-pink-to-yellow rounded-sm p-[2px]">
+          <Card className="bg-black rounded-sm p-0 shadow-none">
+            <CardHeader className="bg-black  rounded-tl-sm rounded-tr-sm">
+              <div className="block sm:flex items-center justify-between">
+                <div className="items-start mb-5 sm-mb-0 flex sm:items-center gap-3">
+                  <div className="w-[80px] sm:w-12 h-12 bg-gradient-to-br from-primary to-primary/70 rounded-lg flex items-center justify-center">
+                    <BarChart3 className="h-6 w-6 text-primary-foreground" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl text-white font-inter">Professional Trading Platform</CardTitle>
+                    <CardDescription className="text-base font-open-sans">
+                      Access advanced charts, real-time data, and professional trading tools
+                    </CardDescription>
+                  </div>
                 </div>
-                <div>
-                  <CardTitle className="text-xl">Professional Trading Platform</CardTitle>
-                  <CardDescription className="text-base">
-                    Access advanced charts, real-time data, and professional trading tools
-                  </CardDescription>
+                <Link to="/trading">
+                  <Button size="lg" className="gap-2 opacity-100">
+                    Launch Trading Platform
+                    <ExternalLink className="h-4 w-4" />
+                  </Button>
+                </Link>
+              </div>
+            </CardHeader>
+            <CardContent className="bg-black rounded-bl-sm rounded-br-sm">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Link to="/meta-trader-accounts">
+                  <div className="flex items-center gap-3 p-3 bg-background/90 rounded-lg hover:bg-white transition-colors cursor-pointer">
+                    <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                      <TrendingUp className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium font-inter">Account Overview</p>
+                      <p className="text-sm text-[#22262a] font-open-sans">View all trading accounts</p>
+                    </div>
+                  </div>
+                </Link>
+                <Link to="/trading">
+                  <div className="flex items-center gap-3 p-3 bg-background/90 rounded-lg hover:bg-white transition-colors cursor-pointer">
+                    <div className="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center">
+                      <Activity className="h-4 w-4 text-green-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium font-inter">Live Trading</p>
+                      <p className="text-sm text-[#22262a] font-open-sans">Execute trades instantly</p>
+                    </div>
+                  </div>
+                </Link>
+                <Link to="/overseas-company">
+                  <div className="flex items-center gap-3 p-3 bg-background/90 rounded-lg hover:bg-white transition-colors cursor-pointer">
+                    <div className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                      <DollarSign className="h-4 w-4 text-purple-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium font-inter">Create Account</p>
+                      <p className="text-sm text-[#22262a] font-open-sans">Set up new trading account</p>
+                    </div>
+                  </div>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+        {/* Account Management */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 ">
+          <div className="border-0 shadow-none bg-gradient-pink-to-yellow rounded-sm p-[2px]">
+            <div className="bg-black rounded-sm h-full rounded-sm p-6">
+              <div className="card-heading mb-4">
+                <h3 className="text-white font-inter text-xl">Trading Accounts</h3>
+                <p className="font-open-sans text-white">
+                  Your MetaTrader account overview
+                </p>
+              </div>
+              <div className="card-content">
+                <div className="space-y-4">
+                  {accounts.length === 0 ? (
+                    <div className="text-center py-8">
+                      <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Activity className="h-8 w-8 text-muted-foreground text-white" />
+                      </div>
+                      <p className="text-muted-foreground font-open-sans">No trading accounts found</p>
+                      <Link to="/overseas-company">
+                        <Button variant="outline" className="mt-4">
+                          Create Account
+                        </Button>
+                      </Link>
+                    </div>
+                  ) : (
+                    accounts.map((account) => (
+                      <div key={account.id} className="flex items-center justify-between p-3 bg-muted/20 rounded-lg">
+                        <div>
+                          <p className="font-medium text-white">{account.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            ID: {account.meta_trader_id} • {account.status}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className={`font-medium ${account.total_pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {formatCurrency(account.total_pnl)}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {formatCurrency(account.equity)}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
-              <Link to="/trading">
-                <Button size="lg" className="gap-2">
-                  Launch Trading Platform
-                  <ExternalLink className="h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Link to="/meta-trader-accounts">
-                <div className="flex items-center gap-3 p-3 bg-background/50 rounded-lg hover:bg-background/70 transition-colors cursor-pointer">
-                  <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                    <TrendingUp className="h-4 w-4 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="font-medium">Account Overview</p>
-                    <p className="text-sm text-muted-foreground">View all trading accounts</p>
-                  </div>
-                </div>
-              </Link>
-              <Link to="/trading">
-                <div className="flex items-center gap-3 p-3 bg-background/50 rounded-lg hover:bg-background/70 transition-colors cursor-pointer">
-                  <div className="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center">
-                    <Activity className="h-4 w-4 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="font-medium">Live Trading</p>
-                    <p className="text-sm text-muted-foreground">Execute trades instantly</p>
-                  </div>
-                </div>
-              </Link>
-              <Link to="/overseas-company">
-                <div className="flex items-center gap-3 p-3 bg-background/50 rounded-lg hover:bg-background/70 transition-colors cursor-pointer">
-                  <div className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                    <DollarSign className="h-4 w-4 text-purple-600" />
-                  </div>
-                  <div>
-                    <p className="font-medium">Create Account</p>
-                    <p className="text-sm text-muted-foreground">Set up new trading account</p>
-                  </div>
-                </div>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
+            </div>  
+          </div>
 
-        {/* Account Management */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="glass-card">
-            <CardHeader>
-              <CardTitle>Trading Accounts</CardTitle>
-              <CardDescription>
-                Your MetaTrader account overview
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {accounts.length === 0 ? (
-                  <div className="text-center py-8">
-                    <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Activity className="h-8 w-8 text-muted-foreground" />
+          <div className="border-0 shadow-none bg-gradient-pink-to-yellow rounded-sm p-[2px]">
+            <div className="bg-black p-6 rounded-sm">
+              <div className="card-heading mb-4">
+                <h4 className="font-inter text-white text-xl">Account Summary</h4>
+                <p className="font-open-sans text-white">
+                  Overview of your trading performance
+                </p>
+              </div>
+              <div>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-3 bg-muted/20 rounded-lg">
+                      <p className="text-sm text-white font-open-sans">Total Accounts</p>
+                      <p className="text-2xl font-bold font-open-sans text-white">{accounts.length}</p>
                     </div>
-                    <p className="text-muted-foreground">No trading accounts found</p>
-                    <Link to="/overseas-company">
-                      <Button variant="outline" className="mt-4">
-                        Create Account
-                      </Button>
-                    </Link>
+                    <div className="p-3 bg-muted/20 rounded-lg">
+                      <p className="text-sm text-muted-foreground font-open-sans text-white">Active Accounts</p>
+                      <p className="text-2xl font-bold text-green-600 font-open-san">{dashboardStats.activeAccounts}</p>
+                    </div>
                   </div>
-                ) : (
-                  accounts.map((account) => (
-                    <div key={account.id} className="flex items-center justify-between p-3 bg-muted/20 rounded-lg">
+                  
+                  {accounts.length === 0 && (
+                    <div className="text-center py-4">
+                      <p className="text-sm text-muted-foreground mb-2 font-open-sans">
+                        No trading accounts linked to your profile
+                      </p>
+                      <Link to="/overseas-company">
+                        <Button variant="outline" className="font-open-sans" size="sm">
+                          Create Your First Account
+                        </Button>
+                      </Link>
+                    </div>
+                  )}
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-3 bg-muted/20 rounded-lg">
                       <div>
-                        <p className="font-medium">{account.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          ID: {account.meta_trader_id} • {account.status}
-                        </p>
+                        <p className="font-medium font-inter text-white">Total Balance</p>
+                        <p className="text-sm text-muted-foreground font-open-sans">All accounts</p>
                       </div>
                       <div className="text-right">
-                        <p className={`font-medium ${account.total_pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {formatCurrency(account.total_pnl)}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {formatCurrency(account.equity)}
+                        <p className="font-medium font-open-sans text-white">{formatCurrency(dashboardStats.totalBalance)}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-3 bg-muted/20 rounded-lg">
+                      <div>
+                        <p className="font-medium font-inter text-white">Total P&L</p>
+                        <p className="text-sm text-muted-foreground font-open-sans">Profit/Loss</p>
+                      </div>
+                      <div className="text-right">
+                        <p className={`font-medium ${dashboardStats.totalPnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {formatCurrency(dashboardStats.totalPnl)}
                         </p>
                       </div>
                     </div>
-                  ))
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="glass-card">
-            <CardHeader>
-              <CardTitle>Account Summary</CardTitle>
-              <CardDescription>
-                Overview of your trading performance
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                                 <div className="grid grid-cols-2 gap-4">
-                   <div className="p-3 bg-muted/20 rounded-lg">
-                     <p className="text-sm text-muted-foreground">Total Accounts</p>
-                     <p className="text-2xl font-bold">{accounts.length}</p>
-                   </div>
-                   <div className="p-3 bg-muted/20 rounded-lg">
-                     <p className="text-sm text-muted-foreground">Active Accounts</p>
-                     <p className="text-2xl font-bold text-green-600">{dashboardStats.activeAccounts}</p>
-                   </div>
-                 </div>
-                 
-                 {accounts.length === 0 && (
-                   <div className="text-center py-4">
-                     <p className="text-sm text-muted-foreground mb-2">
-                       No trading accounts linked to your profile
-                     </p>
-                     <Link to="/overseas-company">
-                       <Button variant="outline" size="sm">
-                         Create Your First Account
-                       </Button>
-                     </Link>
-                   </div>
-                 )}
-                
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 bg-muted/20 rounded-lg">
-                    <div>
-                      <p className="font-medium">Total Balance</p>
-                      <p className="text-sm text-muted-foreground">All accounts</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-medium">{formatCurrency(dashboardStats.totalBalance)}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between p-3 bg-muted/20 rounded-lg">
-                    <div>
-                      <p className="font-medium">Total P&L</p>
-                      <p className="text-sm text-muted-foreground">Profit/Loss</p>
-                    </div>
-                    <div className="text-right">
-                      <p className={`font-medium ${dashboardStats.totalPnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {formatCurrency(dashboardStats.totalPnl)}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between p-3 bg-muted/20 rounded-lg">
-                    <div>
-                      <p className="font-medium">Margin Used</p>
-                      <p className="text-sm text-muted-foreground">Total margin</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-medium">{formatCurrency(dashboardStats.totalMargin)}</p>
+                    
+                    <div className="flex items-center justify-between p-3 bg-muted/20 rounded-lg">
+                      <div>
+                        <p className="font-medium font-inter text-white">Margin Used</p>
+                        <p className="text-sm text-muted-foreground font-open-sans">Total margin</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-medium font-open-sans text-white">{formatCurrency(dashboardStats.totalMargin)}</p>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       </div>
       <Footer />

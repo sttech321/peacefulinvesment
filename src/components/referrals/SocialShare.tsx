@@ -116,19 +116,19 @@ const SocialShare = ({ referralLink, referralCode }: SocialShareProps) => {
       <CardContent className="space-y-6">
         {/* Quick Share Buttons */}
         <div>
-          <h4 className="font-medium mb-3">Quick Share</h4>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <h4 className="font-medium mb-3 text-white">Quick Share</h4>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 ">
             {socialPlatforms.map((platform) => {
               const IconComponent = platform.icon;
               return (
                 <Button
                   key={platform.name}
                   variant="outline"
-                  className={`flex flex-col items-center gap-2 h-auto py-3 ${platform.color}`}
+                  className={`flex flex-col items-center gap-2 h-auto py-6 bg-muted/10 ${platform.color}`}
                   onClick={() => handleSocialShare(platform.platform)}
                 >
-                  <IconComponent className="h-5 w-5" />
-                  <span className="text-xs">{platform.name}</span>
+                  <IconComponent className="h-8 w-8 text-[var(--yellowcolor)]" />
+                  <span className="text-xs text-white">{platform.name}</span>
                 </Button>
               );
             })}
@@ -137,7 +137,7 @@ const SocialShare = ({ referralLink, referralCode }: SocialShareProps) => {
 
         {/* Message Templates */}
         <div>
-          <h4 className="font-medium mb-3">Pre-written Templates</h4>
+          <h4 className="font-medium mb-3 text-white">Pre-written Templates</h4>
           <div className="space-y-3">
             {Object.entries(shareTemplates).map(([platform, template]) => {
               if (platform === 'email') return null; // Skip email as it's handled differently
@@ -145,11 +145,12 @@ const SocialShare = ({ referralLink, referralCode }: SocialShareProps) => {
               return (
                 <div key={platform} className="p-3 border rounded-lg">
                   <div className="flex items-center justify-between mb-2">
-                    <Badge variant="outline" className="capitalize">
+                    <Badge  variant="outline" className="capitalize text-white">
                       {platform}
                     </Badge>
                     <Button
                       variant="ghost"
+                      className="text-white bg-black"
                       size="sm"
                       onClick={() => copyTemplate(template as string)}
                     >
@@ -166,7 +167,7 @@ const SocialShare = ({ referralLink, referralCode }: SocialShareProps) => {
             {/* Email Template */}
             <div className="p-3 border rounded-lg">
               <div className="flex items-center justify-between mb-2">
-                <Badge variant="outline">Email</Badge>
+                <Badge variant="outline" className="text-white">Email</Badge>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -184,8 +185,8 @@ const SocialShare = ({ referralLink, referralCode }: SocialShareProps) => {
         </div>
 
         {/* Tips */}
-        <div className="bg-muted/50 p-4 rounded-lg">
-          <h4 className="font-medium mb-2">💡 Sharing Tips</h4>
+        <div className="bg-muted/10 p-4 rounded-lg">
+          <h4 className="font-medium mb-2 text-white">💡 Sharing Tips</h4>
           <ul className="text-sm text-muted-foreground space-y-1">
             <li>• Personalize your messages to increase engagement</li>
             <li>• Share success stories and experiences</li>
