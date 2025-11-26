@@ -159,197 +159,201 @@ const RequestFilters = ({ requests, onFilteredRequestsChange }: RequestFiltersPr
     amountMin || amountMax;
 
   return (
-    <div className="space-y-4 p-4 border rounded-lg bg-muted/20">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4" />
-          <span className="font-medium">Filters & Search</span>
-          <Badge variant="secondary">
-            {filteredRequests.length} of {requests.length} requests
-          </Badge>
-        </div>
-        {hasActiveFilters && (
-          <Button variant="ghost" size="sm" onClick={clearAllFilters}>
-            <X className="h-4 w-4 mr-1" />
-            Clear All
-          </Button>
-        )}
-      </div>
-
-      {/* Search and Sort Row */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search requests..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-
-        <Select value={sortField} onValueChange={(value) => setSortField(value as SortField)}>
-          <SelectTrigger>
-            <SelectValue placeholder="Sort by" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="created_at">Date Created</SelectItem>
-            <SelectItem value="amount">Amount</SelectItem>
-            <SelectItem value="status">Status</SelectItem>
-            <SelectItem value="type">Type</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Button
-          variant="outline"
-          onClick={() => toggleSort(sortField)}
-          className="justify-start"
-        >
-          {sortDirection === 'asc' ? (
-            <SortAsc className="h-4 w-4 mr-2" />
-          ) : (
-            <SortDesc className="h-4 w-4 mr-2" />
+    <div className="bg-gradient-pink-to-yellow hover:glow-primary relative rounded-sm p-[2px]">
+      <div className="space-y-4 p-4 rounded-sm bg-black">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-white" />
+            <span className="font-medium text-white">Filters & Search</span>
+            <Badge variant="secondary" className="">
+              {filteredRequests.length} of {requests.length} requests
+            </Badge>
+          </div>
+          {hasActiveFilters && (
+            <Button variant="ghost" size="sm" onClick={clearAllFilters}>
+              <X className="h-4 w-4 mr-1" />
+              Clear All
+            </Button>
           )}
-          {sortDirection === 'asc' ? 'Ascending' : 'Descending'}
-        </Button>
+        </div>
+
+        {/* Search and Sort Row */}
+        <div className="grid gap-4 md:grid-cols-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search requests..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
+            />
+          </div>
+
+          <Select value={sortField} onValueChange={(value) => setSortField(value as SortField)}>
+            <SelectTrigger className="focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent">
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
+              <SelectItem value="created_at">Date Created</SelectItem>
+              <SelectItem value="amount">Amount</SelectItem>
+              <SelectItem value="status">Status</SelectItem>
+              <SelectItem value="type">Type</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Button
+            variant="outline"
+            onClick={() => toggleSort(sortField)}
+            className="justify-start"
+          >
+            {sortDirection === 'asc' ? (
+              <SortAsc className="h-4 w-4 mr-2" />
+            ) : (
+              <SortDesc className="h-4 w-4 mr-2" />
+            )}
+            {sortDirection === 'asc' ? 'Ascending' : 'Descending'}
+          </Button>
+        </div>
+
+        {/* Filter Row */}
+        <div className="grid gap-4 md:grid-cols-4">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent">
+              <SelectValue placeholder="All Statuses" />
+            </SelectTrigger>
+            <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
+              <SelectItem value="all">All Statuses</SelectItem>
+              {filterOptions.statuses.map((status) => (
+                <SelectItem key={status.value} value={status.value}>
+                  {status.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent">
+              <SelectValue placeholder="All Types" />
+            </SelectTrigger>
+            <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
+              <SelectItem value="all">All Types</SelectItem>
+              {filterOptions.types.map((type) => (
+                <SelectItem key={type.value} value={type.value}>
+                  {type.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={paymentMethodFilter} onValueChange={setPaymentMethodFilter}>
+            <SelectTrigger className="focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent">
+              <SelectValue placeholder="All Payment Methods" />
+            </SelectTrigger>
+            <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
+              <SelectItem value="all">All Payment Methods</SelectItem>
+              {filterOptions.paymentMethods.map((method) => (
+                <SelectItem key={method} value={method}>
+                  {method}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={currencyFilter} onValueChange={setCurrencyFilter}>
+            <SelectTrigger className="focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent">
+              <SelectValue placeholder="All Currencies" />
+            </SelectTrigger>
+            <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
+              <SelectItem value="all">All Currencies</SelectItem>
+              {filterOptions.currencies.map((currency) => (
+                <SelectItem key={currency} value={currency}>
+                  {currency}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Amount and Date Range Row */}
+        <div className="grid gap-4 md:grid-cols-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-white">Min Amount</label>
+            <Input
+              type="number"
+              className="focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent"
+              placeholder="0.00"
+              value={amountMin}
+              onChange={(e) => setAmountMin(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-white">Max Amount</label>
+            <Input
+              type="number"
+              className="focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent"
+              placeholder="0.00"
+              value={amountMax}
+              onChange={(e) => setAmountMax(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-white">From Date</label>
+            <Popover>
+              <PopoverTrigger asChild className="focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent">
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !dateFrom && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dateFrom ? format(dateFrom, "PPP") : "Pick a date"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 border-secondary-foreground bg-black/90 text-white">
+                <Calendar
+                  mode="single"
+                  selected={dateFrom}
+                  onSelect={setDateFrom}
+                  initialFocus
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-white">To Date</label>
+            <Popover>
+              <PopoverTrigger asChild className="focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent">
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !dateTo && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dateTo ? format(dateTo, "PPP") : "Pick a date"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 border-secondary-foreground bg-black/90 text-white">
+                <Calendar
+                  mode="single"
+                  selected={dateTo}
+                  onSelect={setDateTo}
+                  initialFocus
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+        </div>
       </div>
-
-      {/* Filter Row */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger>
-            <SelectValue placeholder="All Statuses" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            {filterOptions.statuses.map((status) => (
-              <SelectItem key={status.value} value={status.value}>
-                {status.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger>
-            <SelectValue placeholder="All Types" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
-            {filterOptions.types.map((type) => (
-              <SelectItem key={type.value} value={type.value}>
-                {type.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select value={paymentMethodFilter} onValueChange={setPaymentMethodFilter}>
-          <SelectTrigger>
-            <SelectValue placeholder="All Payment Methods" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Payment Methods</SelectItem>
-            {filterOptions.paymentMethods.map((method) => (
-              <SelectItem key={method} value={method}>
-                {method}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select value={currencyFilter} onValueChange={setCurrencyFilter}>
-          <SelectTrigger>
-            <SelectValue placeholder="All Currencies" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Currencies</SelectItem>
-            {filterOptions.currencies.map((currency) => (
-              <SelectItem key={currency} value={currency}>
-                {currency}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Amount and Date Range Row */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Min Amount</label>
-          <Input
-            type="number"
-            placeholder="0.00"
-            value={amountMin}
-            onChange={(e) => setAmountMin(e.target.value)}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Max Amount</label>
-          <Input
-            type="number"
-            placeholder="0.00"
-            value={amountMax}
-            onChange={(e) => setAmountMax(e.target.value)}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-sm font-medium">From Date</label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-full justify-start text-left font-normal",
-                  !dateFrom && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {dateFrom ? format(dateFrom, "PPP") : "Pick a date"}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <Calendar
-                mode="single"
-                selected={dateFrom}
-                onSelect={setDateFrom}
-                initialFocus
-                className="p-3 pointer-events-auto"
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-sm font-medium">To Date</label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-full justify-start text-left font-normal",
-                  !dateTo && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {dateTo ? format(dateTo, "PPP") : "Pick a date"}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <Calendar
-                mode="single"
-                selected={dateTo}
-                onSelect={setDateTo}
-                initialFocus
-                className="p-3 pointer-events-auto"
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
-      </div>
-    </div>
+    </div>  
   );
 };
 

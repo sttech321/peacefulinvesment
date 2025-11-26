@@ -51,7 +51,7 @@ const RequestsList = () => {
         <CardContent className="pt-6">
           <div className="text-center py-8">
             <DollarSign className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium text-foreground mb-2">No requests yet</h3>
+            <h3 className="text-lg font-medium text-foreground mb-2 text-white">No requests yet</h3>
             <p className="text-muted-foreground">
               Create your first deposit or withdrawal request to get started.
             </p>

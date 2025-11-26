@@ -73,129 +73,131 @@ const SocialShare = ({ referralLink, referralCode }: SocialShareProps) => {
     { 
       name: 'Twitter', 
       icon: Twitter, 
-      color: 'hover:bg-blue-50 hover:text-blue-600',
+      color: 'hover:text-blue-600',
       platform: 'twitter'
     },
     { 
       name: 'Facebook', 
       icon: Facebook, 
-      color: 'hover:bg-blue-50 hover:text-blue-700',
+      color: '',
       platform: 'facebook'
     },
     { 
       name: 'LinkedIn', 
       icon: Linkedin, 
-      color: 'hover:bg-blue-50 hover:text-blue-800',
+      color: '',
       platform: 'linkedin'
     },
     { 
       name: 'WhatsApp', 
       icon: MessageCircle, 
-      color: 'hover:bg-green-50 hover:text-green-600',
+      color: '',
       platform: 'whatsapp'
     },
     { 
       name: 'Email', 
       icon: Instagram, 
-      color: 'hover:bg-purple-50 hover:text-purple-600',
+      color: '',
       platform: 'email'
     }
   ];
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Share2 className="h-5 w-5" />
-          Social Media Sharing
-        </CardTitle>
-        <CardDescription>
-          Share your referral link across different platforms to maximize reach
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Quick Share Buttons */}
+    <div className="border-0 bg-gradient-pink-to-yellow hover:glow-primary relative rounded-sm p-[2px]">
+      <div className="bg-black p-4 rounded-sm">
         <div>
-          <h4 className="font-medium mb-3 text-white">Quick Share</h4>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 ">
-            {socialPlatforms.map((platform) => {
-              const IconComponent = platform.icon;
-              return (
-                <Button
-                  key={platform.name}
-                  variant="outline"
-                  className={`flex flex-col items-center gap-2 h-auto py-6 bg-muted/10 ${platform.color}`}
-                  onClick={() => handleSocialShare(platform.platform)}
-                >
-                  <IconComponent className="h-8 w-8 text-[var(--yellowcolor)]" />
-                  <span className="text-xs text-white">{platform.name}</span>
-                </Button>
-              );
-            })}
+          <h3 className="flex items-center gap-2 text-white ">
+            <Share2 className="h-5 w-5 text-[var(--yellowcolor)]" />
+            Social Media Sharing
+          </h3>
+          <div className="text-muted-foreground mb-3">
+            Share your referral link across different platforms to maximize reach
           </div>
         </div>
+        <div className="space-y-6">
+          {/* Quick Share Buttons */}
+          <div>
+            <h4 className="font-medium mb-3 text-white">Quick Share</h4>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 ">
+              {socialPlatforms.map((platform) => {
+                const IconComponent = platform.icon;
+                return (
+                  <Button
+                    key={platform.name}
+                    variant="outline"
+                    className={`flex flex-col items-center gap-2 h-auto py-6 border-0 hover:bg-muted/20 bg-muted/10 ${platform.color}`}
+                    onClick={() => handleSocialShare(platform.platform)}
+                  >
+                    <IconComponent className="h-8 w-8 text-sm text-[var(--yellowcolor)]" />
+                    <span className="text-sm text-white">{platform.name}</span>
+                  </Button>
+                );
+              })}
+            </div>
+          </div>
 
-        {/* Message Templates */}
-        <div>
-          <h4 className="font-medium mb-3 text-white">Pre-written Templates</h4>
-          <div className="space-y-3">
-            {Object.entries(shareTemplates).map(([platform, template]) => {
-              if (platform === 'email') return null; // Skip email as it's handled differently
-              
-              return (
-                <div key={platform} className="p-3 border rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <Badge  variant="outline" className="capitalize text-white">
-                      {platform}
-                    </Badge>
-                    <Button
-                      variant="ghost"
-                      className="text-white bg-black"
-                      size="sm"
-                      onClick={() => copyTemplate(template as string)}
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
+          {/* Message Templates */}
+          <div>
+            <h4 className="font-medium mb-3 text-white">Pre-written Templates</h4>
+            <div className="space-y-3">
+              {Object.entries(shareTemplates).map(([platform, template]) => {
+                if (platform === 'email') return null; // Skip email as it's handled differently
+                
+                return (
+                  <div key={platform} className="p-3 bg-muted/10 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <Badge  variant="outline" className="capitalize text-white">
+                        {platform}
+                      </Badge>
+                      <Button
+                        variant="ghost"
+                        className="text-white bg-black"
+                        size="sm"
+                        onClick={() => copyTemplate(template as string)}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <p className="text-sm text-muted-foreground line-clamp-3">
+                      {template as string}
+                    </p>
                   </div>
-                  <p className="text-sm text-muted-foreground line-clamp-3">
-                    {template as string}
-                  </p>
+                );
+              })}
+              
+              {/* Email Template */}
+              <div className="p-3 bg-muted/10 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <Badge variant="outline" className="text-white">Email</Badge>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyTemplate(`Subject: ${shareTemplates.email.subject}\n\n${shareTemplates.email.body}`)}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
                 </div>
-              );
-            })}
-            
-            {/* Email Template */}
-            <div className="p-3 border rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <Badge variant="outline" className="text-white">Email</Badge>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => copyTemplate(`Subject: ${shareTemplates.email.subject}\n\n${shareTemplates.email.body}`)}
-                >
-                  <Copy className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="text-sm text-muted-foreground space-y-1">
-                <p><strong>Subject:</strong> {shareTemplates.email.subject}</p>
-                <p className="line-clamp-3">{shareTemplates.email.body}</p>
+                <div className="text-sm text-muted-foreground space-y-1">
+                  <p><strong>Subject:</strong> {shareTemplates.email.subject}</p>
+                  <p className="line-clamp-3">{shareTemplates.email.body}</p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Tips */}
-        <div className="bg-muted/10 p-4 rounded-lg">
-          <h4 className="font-medium mb-2 text-white">💡 Sharing Tips</h4>
-          <ul className="text-sm text-muted-foreground space-y-1">
-            <li>• Personalize your messages to increase engagement</li>
-            <li>• Share success stories and experiences</li>
-            <li>• Post during peak hours for maximum visibility</li>
-            <li>• Use relevant hashtags to reach broader audiences</li>
-          </ul>
+          {/* Tips */}
+          <div className="bg-muted/10 p-4 rounded-lg">
+            <h4 className="font-medium mb-2 text-white">💡 Sharing Tips</h4>
+            <ul className="text-sm text-muted-foreground space-y-1">
+              <li>• Personalize your messages to increase engagement</li>
+              <li>• Share success stories and experiences</li>
+              <li>• Post during peak hours for maximum visibility</li>
+              <li>• Use relevant hashtags to reach broader audiences</li>
+            </ul>
+          </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>  
+    </div>
   );
 };
 
