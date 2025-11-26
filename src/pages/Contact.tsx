@@ -283,7 +283,7 @@ const Contact = () => {
                       <Select
                         onValueChange={value => setValue('subject', value)}
                       >
-                        <SelectTrigger className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent' style={{ "--tw-ring-offset-width": "0" }}>
+                        <SelectTrigger className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                           <SelectValue placeholder='Select a subject' />
                         </SelectTrigger>
                         <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
@@ -316,7 +316,7 @@ const Contact = () => {
                           )
                         }
                       >
-                        <SelectTrigger className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent' style={{ "--tw-ring-offset-width": "0" }}>
+                        <SelectTrigger className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                           <SelectValue placeholder='Select priority' />
                         </SelectTrigger>
                         <SelectContent className='border-secondary-foreground bg-black/90 text-white'>

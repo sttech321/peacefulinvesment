@@ -120,11 +120,11 @@ const RequestForm = ({ onSuccess }: RequestFormProps) => {
                   <FormLabel>Request Type</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className="focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent">
                         <SelectValue placeholder="Select request type" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
+                    <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
                       <SelectItem value="deposit">Deposit</SelectItem>
                       <SelectItem value="withdrawal">Withdrawal</SelectItem>
                     </SelectContent>
@@ -164,11 +164,11 @@ const RequestForm = ({ onSuccess }: RequestFormProps) => {
                     <FormLabel>Currency</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent">
                           <SelectValue placeholder="Select currency" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                      <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
                         <SelectItem value="USD">USD</SelectItem>
                         <SelectItem value="EUR">EUR</SelectItem>
                         <SelectItem value="GBP">GBP</SelectItem>
@@ -190,11 +190,11 @@ const RequestForm = ({ onSuccess }: RequestFormProps) => {
                   <FormLabel>Payment Method</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className="focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent">
                         <SelectValue placeholder="Select payment method" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
+                    <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
                       {paymentMethods.map((method) => (
                         <SelectItem key={method} value={method}>
                           {method}
