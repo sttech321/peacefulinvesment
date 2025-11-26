@@ -62,7 +62,7 @@ export default function MetaTraderAccounts() {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-black">
+      <div className="min-h-screen flex items-center justify-center pink-yellow-shadow">
         <div className="bg-gradient-pink-to-yellow hover:glow-primary relative rounded-lg p-[2px]">
           <Card className="w-full max-w-md bg-black">
             <CardContent className="pt-6">
@@ -80,7 +80,7 @@ export default function MetaTraderAccounts() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-black">
+      <div className="min-h-screen flex items-center justify-center pink-yellow-shadow">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
           <h2 className="text-xl font-semibold mb-2 text-white">Loading Your Accounts</h2>
@@ -94,7 +94,7 @@ export default function MetaTraderAccounts() {
     // Special handling for no account linked error
     if (error === 'no_accounts_found') {
       return (
-        <div className="min-h-screen bg-gradient-hero">
+        <div className="min-h-screen pink-yellow-shadow">
           <div className="container mx-auto px-4 py-8">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
               <div>
@@ -152,9 +152,9 @@ export default function MetaTraderAccounts() {
       );
     } else if (error === 'no_account_linked') {
       return (
-        <div className="min-h-screen bg-gradient-hero">
+        <div className="min-h-screen pink-yellow-shadow">
           <div className="container mx-auto px-4 py-8">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4 ">
               <div>
                 <h1 className="text-3xl font-bold text-foreground mb-2">MetaTrader Accounts</h1>
                 <p className="text-muted-foreground">
@@ -213,20 +213,25 @@ export default function MetaTraderAccounts() {
 
     // Default error handling for other errors
     return (
-      <div className="min-h-screen flex items-center justify-center bg-black">
-        <Card className="w-full max-w-md">
+      <div className="min-h-screen flex items-center justify-center pink-yellow-shadow">
+        <div className="bg-gradient-pink-to-yellow hover:glow-primary relative rounded-lg p-[2px] w-full max-w-sm">
+        <Card className="w-full max-w-md p-0 bg-black rounded-lg w-full">
           <CardContent className="pt-6">
-            <div className="text-center">
+            <div className="text-center pt-2 pb-3">
               <AlertCircle className="mx-auto h-12 w-12 text-destructive mb-4" />
-              <h2 className="text-xl font-semibold mb-2">Error Loading Accounts</h2>
-              <p className="text-muted-foreground mb-4">{error}</p>
-              <Button onClick={handleRefresh} variant="outline">
-                <RefreshCw className="h-4 w-4 mr-2" />
+              <h2 className="text-xl font-semibold mb-2 text-white">Error Loading Accounts</h2>
+              <p className="text-muted-foreground mb-4">Helo {error}</p>
+
+              <span className="bg-gradient-pink-to-yellow rounded-[12px] p-[2px] inline-block">
+              <Button onClick={handleRefresh} variant="outline" className="bg-gradient-yellow-to-pink hover:bg-gradient-pink-to-yellow flex rounded-[10px] border-0 p-0 px-5 font-inter text-sm font-semibold uppercase text-white">
+                <RefreshCw className="h-4 w-4 mr-1" />
                 Try Again
               </Button>
+              </span>
             </div>
           </CardContent>
         </Card>
+        </div>
       </div>
     );
   }
@@ -242,15 +247,18 @@ export default function MetaTraderAccounts() {
               Monitor and manage your trading accounts in real-time
             </p>
           </div>
+
+          <span className="bg-gradient-pink-to-yellow rounded-[12px] p-[2px] inline-block">
           <Button 
             onClick={handleRefresh} 
             disabled={refreshing}
             variant="outline"
-            className="glass"
+            className="bg-gradient-yellow-to-pink hover:bg-gradient-pink-to-yellow flex rounded-[10px] border-0 p-0 px-5 font-inter text-sm font-semibold uppercase text-white"
           >
-            <RefreshCw className={`h-4 w-4 mr-2 hover:border-0 ${refreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-4 w-4 mr-0 hover:border-0 ${refreshing ? 'animate-spin' : ''}`} />
             Refresh Data
           </Button>
+          </span>
         </div>
 
         {/* Accounts Grid */}
@@ -279,11 +287,11 @@ export default function MetaTraderAccounts() {
                         </CardTitle>
                         <p className="text-sm text-muted-foreground font-open-sans">ID: {account.meta_trader_id}</p>
                       </div>
-                      <div className="flex flex-col gap-2">
+                      <div className="flex flex-col gap-2 text-center">
                         <Badge className={getStatusColor(account.status.toLowerCase())}>
                           {account.status}
                         </Badge>
-                        <Badge className="bg-secondary/80 text-secondary-foreground hover:bg-secondary/90 font-open-sans">
+                        <Badge className="bg-secondary/80 text-secondary-foreground hover:bg-secondary/90 font-open-sans  justify-center">
                           Live
                         </Badge>
                       </div>

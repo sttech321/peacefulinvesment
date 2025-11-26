@@ -29,9 +29,9 @@ const Referrals = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-black">
+      <div className="min-h-screen flex items-center justify-center pink-yellow-shadow">
         <div className="bg-gradient-pink-to-yellow hover:glow-primary relative rounded-lg p-[2px]">
-          <Card className="w-full max-w-md bg-black">
+          <Card className="w-full max-w-md bg-black text-center">
             <CardHeader>
               <CardTitle>Access Denied</CardTitle>
               <CardDescription>Please log in to access the referrals dashboard.</CardDescription>
@@ -44,7 +44,7 @@ const Referrals = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex items-center justify-center pink-yellow-shadow">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
       </div>
     );
@@ -303,7 +303,7 @@ const Referrals = () => {
                     </div>
                     <div className="card-content">
                       {signups.length === 0 ? (
-                        <p className="text-muted-foreground text-center py-4">
+                        <p className="text-muted-foreground py-4">
                           No signups yet. Share your referral link to get started!
                         </p>
                       ) : (

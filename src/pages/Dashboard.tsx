@@ -165,7 +165,7 @@ const Dashboard = () => {
   // Show loading state while fetching data
   if (dashboardLoading) {
     return (
-      <div className="min-h-screen bg-black pt-16">
+      <div className="min-h-screen pink-yellow-shadow pt-16 flex items-center justify-center">
         <div className="max-w-7xl mx-auto p-6">
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
@@ -182,18 +182,19 @@ const Dashboard = () => {
   // Show error state if data fetching failed
   if (error) {
     return (
-      <div className="min-h-screen bg-background pt-16">
-        <div className="max-w-7xl mx-auto p-6">
+      <div className="min-h-screen pink-yellow-shadow pt-16">
+         <div className="max-w-7xl mx-auto p-6">
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Shield className="h-8 w-8 text-red-600" />
+              <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Shield className="h-10 w-10 text-primary" />
               </div>
-              <h2 className="text-xl font-semibold mb-2">Error Loading Dashboard</h2>
-              <p className="text-muted-foreground mb-4">{error}</p>
-              <Button onClick={() => window.location.reload()} variant="outline">
+              <h2 className="text-xl font-semibold mb-2 text-white">Error Loading Dashboard</h2>
+              <p className="text-muted-foreground mb-4 ">{error}</p>
+              <span className="bg-gradient-pink-to-yellow rounded-[12px] p-[2px] inline-block">
+              <Button onClick={() => window.location.reload()} variant="outline" className="bg-gradient-yellow-to-pink hover:bg-gradient-pink-to-yellow block h-[35px] rounded-[10px] border-0 p-0 px-5 font-inter text-sm font-semibold uppercase text-white">
                 Try Again
-              </Button>
+              </Button></span>
             </div>
           </div>
         </div>
@@ -203,6 +204,10 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen pink-yellow-shadow pt-24">
+
+     
+
+
       <div className="max-w-7xl mx-auto p-4 pb-16">
         <div className="mb-8">
           <h1 className="text-3xl text-white  font-bold text-foreground">
