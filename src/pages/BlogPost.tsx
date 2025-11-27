@@ -4,14 +4,20 @@ import { ArrowLeft, Calendar, Clock, Eye, Tag, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useBlog, type BlogPost as BlogPostType } from "@/hooks/useBlog";
+import {
+  useBlog,
+  type BlogPost as BlogPostType,
+  type BlogCategory,
+} from "@/hooks/useBlog";
 import ReactMarkdown from "react-markdown";
 import Footer from "@/components/Footer";
 
 const BlogPost = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const { getPostBySlug, incrementViewCount } = useBlog();
+  const { getPostBySlug, incrementViewCount, categories  } = useBlog();
+
+  
   const [post, setPost] = useState<BlogPostType | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -87,13 +93,11 @@ const BlogPost = () => {
     );
   }
 
-  const categoryData = {
-    'morning-prayers': { color: '#F59E0B', name: 'Morning Prayers' },
-    'night-prayers': { color: '#6366F1', name: 'Night Prayers' },
-    'catholic-apps': { color: '#10B981', name: 'Catholic Apps' },
-    'charity': { color: '#EF4444', name: 'Charity' },
-    'general': { color: '#6B7280', name: 'General' },
-  }[post.category] || { color: '#6B7280', name: 'General' };
+ const categoryData: { name: string; color: string } =
+    categories.find((cat: BlogCategory) => cat.slug === post.category) || {
+      name: "General",
+      color: "#6B7280",
+    };
 
   return (
     <> 

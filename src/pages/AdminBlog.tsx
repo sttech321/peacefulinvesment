@@ -44,6 +44,7 @@ const AdminBlog = () => {
     meta_title: '',
     meta_description: '',
     featured_image:'',
+    previewUrl: "", 
   });
 
   useEffect(() => {
@@ -89,31 +90,48 @@ const AdminBlog = () => {
 };
 
 
-  const handleSubmit = async (e: React.FormEvent) => {
+const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
 
-  let base64Image: string | undefined = undefined;
+  // 1) Convert selected file (if any) to base64
+  let base64Image: string | null = null;
 
   if (formData.featured_image instanceof File) {
     base64Image = await fileToBase64(formData.featured_image);
   }
 
-  console.log('base64Image', base64Image)
-  const { previewUrl, ...cleanForm } = formData;
+  // 2) Remove UI-only fields
+  const { previewUrl, featured_image, ...cleanForm } = formData;
 
-  const postData = {
+  // 3) Common data for both create & update
+  const basePostData = {
     ...cleanForm,
-    tags: cleanForm.tags.split(',').map(tag => tag.trim()).filter(Boolean),
-    published_at: cleanForm.status === 'published' ? new Date().toISOString() : null,
-    featured_image: base64Image || null
+    tags: cleanForm.tags
+      .split(",")
+      .map((tag: string) => tag.trim())
+      .filter(Boolean),
+    published_at:
+      cleanForm.status === "published" ? new Date().toISOString() : null,
   };
 
+  // 4) Final payload
+  //    - On UPDATE: only include `featured_image` when a new file was picked
+  //    - On CREATE: always send `featured_image` (can be null)
+  const payload = editingPost
+    ? {
+        ...basePostData,
+        ...(base64Image !== null ? { featured_image: base64Image } : {}),
+      }
+    : {
+        ...basePostData,
+        featured_image: base64Image, // may be null on create
+      };
 
-  console.log('postData', postData);
+  console.log("payload", payload);
 
   try {
     if (editingPost) {
-      const { error } = await updatePost(editingPost.id, postData);
+      const { error } = await updatePost(editingPost.id, payload);
       if (error) throw error;
 
       toast({
@@ -121,7 +139,7 @@ const AdminBlog = () => {
         description: "Blog post has been updated successfully.",
       });
     } else {
-      const { error } = await createPost(postData);
+      const { error } = await createPost(payload);
       if (error) throw error;
 
       toast({
@@ -133,8 +151,8 @@ const AdminBlog = () => {
     setDialogOpen(false);
     resetForm();
     fetchPosts("all");
-
   } catch (error) {
+    console.error(error);
     toast({
       title: "Error",
       description: "Failed to save blog post. Please try again.",
@@ -142,6 +160,7 @@ const AdminBlog = () => {
     });
   }
 };
+
 
 
   const handleEdit = (post: BlogPost) => {
@@ -156,7 +175,8 @@ const AdminBlog = () => {
       status: post.status,
       meta_title: post.meta_title || '',
       meta_description: post.meta_description || '',
-      featured_image: post.featured_image || '',
+     featured_image: "",                        // no new file yet
+      previewUrl: post.featured_image || "",     // show existing image
     });
     setDialogOpen(true);
   };
@@ -273,44 +293,43 @@ const AdminBlog = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="featured_image">Featured Image</Label>
-                  <Input
-                    id="featured_image"
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      if (e.target.files && e.target.files[0]) {
-                        const file = e.target.files[0];
-                        setFormData({ ...formData, featured_image: file });
+  <Label htmlFor="featured_image">Featured Image</Label>
+  <Input
+    id="featured_image"
+    type="file"
+    accept="image/*"
+    onChange={(e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
 
-                        // Optional: preview image
-                        const reader = new FileReader();
-                        reader.onload = () => {
-                          const previewUrl = reader.result as string;
-                          setFormData(prev => ({ ...prev, previewUrl }));
-                        };
-                        reader.readAsDataURL(file);
-                      }
-                    }}
-                  />
+      // keep the File for upload
+      setFormData((prev: any) => ({
+        ...prev,
+        featured_image: file,
+      }));
 
-                  {formData.featured_image ? (
-                    // Show preview if user picked a new image
-                    <img
-                      src={formData.featured_image}
-                      alt="Preview"
-                      className="mt-2 max-h-48 rounded-lg"
-                    />
-                  ) : formData.previewUrl ? (
-                    // Show DB image if it's edit mode and image exists
-                    <img
-                      src={formData.previewUrl}
-                      alt="Current"
-                      className="mt-2 max-h-48 rounded-lg"
-                    />
-                  ) : null}
+      // generate preview URL – you can use FileReader or createObjectURL.
+      const reader = new FileReader();
+      reader.onload = () => {
+        setFormData((prev: any) => ({
+          ...prev,
+          previewUrl: reader.result as string, // base64 data URL string
+        }));
+      };
+      reader.readAsDataURL(file);
+    }}
+  />
 
-                </div>
+  {/* Always preview using previewUrl (string), never the File object */}
+  {formData.previewUrl && (
+    <img
+      src={formData.previewUrl}
+      alt="Preview"
+      className="mt-2 max-h-48 rounded-lg object-cover"
+    />
+  )}
+</div>
+
 
 
                 <div className="grid grid-cols-3 gap-4">

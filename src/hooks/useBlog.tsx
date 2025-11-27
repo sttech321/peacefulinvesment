@@ -87,51 +87,65 @@ export const useBlog = () => {
     }
   }, []);
 
-  const createPost = async (post: Partial<BlogPost>) => {
-    try {
-      const { data, error } = await supabase
-        .from('blog_posts')
-        .insert([{
-          title: post.title!,
-          slug: post.slug!,
-          content: post.content!,
-          excerpt: post.excerpt,
-          category: post.category || 'general',
-          tags: post.tags || [],
-          status: post.status || 'draft',
-          meta_title: post.meta_title,
-          meta_description: post.meta_description,
-          author_id: (await supabase.auth.getUser()).data.user?.id || '',
-          published_at: post.status === 'published' ? new Date().toISOString() : null,
-          featured_image : post.featured_image
-        }])
-        .select()
-        .single();
+    const createPost = async (post: Partial<BlogPost>) => {
+      try {
+        const { data, error } = await supabase
+          .from("blog_posts")
+          .insert([
+            {
+              title: post.title!,
+              slug: post.slug!,
+              content: post.content!,
+              excerpt: post.excerpt,
+              category: post.category || "general",
+              tags: post.tags || [],
+              status: post.status || "draft",
+              meta_title: post.meta_title,
+              meta_description: post.meta_description,
+              author_id: (await supabase.auth.getUser()).data.user?.id || "",
+              published_at:
+                post.status === "published" ? new Date().toISOString() : null,
+              featured_image: post.featured_image, // can be null on create
+            },
+          ])
+          .select()
+          .single();
 
-      if (error) throw error;
-      return { data, error: null };
-    } catch (error) {
-      console.error('Error creating blog post:', error);
-      return { data: null, error };
-    }
-  };
+        if (error) throw error;
+        return { data, error: null };
+      } catch (error) {
+        console.error("Error creating blog post:", error);
+        return { data: null, error };
+      }
+    };
 
-  const updatePost = async (id: string, updates: Partial<BlogPost>) => {
-    try {
-      const { data, error } = await supabase
-        .from('blog_posts')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
+    const updatePost = async (id: string, updates: Partial<BlogPost>) => {
+      try {
+        const safeUpdates: Partial<BlogPost> = { ...updates };
 
-      if (error) throw error;
-      return { data, error: null };
-    } catch (error) {
-      console.error('Error updating blog post:', error);
-      return { data: null, error };
-    }
-  };
+        // ✅ If featured_image is null/undefined, don't update that column
+        if (
+          "featured_image" in safeUpdates &&
+          (safeUpdates.featured_image === null ||
+            safeUpdates.featured_image === undefined)
+        ) {
+          delete safeUpdates.featured_image;
+        }
+
+        const { data, error } = await supabase
+          .from("blog_posts")
+          .update(safeUpdates) // <-- important
+          .eq("id", id)
+          .select()
+          .single();
+
+        if (error) throw error;
+        return { data, error: null };
+      } catch (error) {
+        console.error("Error updating blog post:", error);
+        return { data: null, error };
+      }
+    };
 
   const deletePost = async (id: string) => {
     try {
