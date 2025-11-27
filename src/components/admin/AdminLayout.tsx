@@ -16,7 +16,7 @@ import {
   LogOut,
   User,
   Building2,
-  Share2
+  Share2, Table2
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -35,6 +35,7 @@ const navigation = [
   { name: "Analytics", href: "/admin/analytics", icon: BarChart3 },
   { name: "Audit Log", href: "/admin/audit-log", icon: Activity },
   { name: "Blog Management", href: "/admin/blog", icon: FileText },
+  { name: "Categories", href: "/admin/blog-categories", icon: Table2 },
   { name: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
