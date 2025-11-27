@@ -13,6 +13,7 @@ import Downloads from "./pages/Downloads";
 import Blog from "./pages/Blog";
 import BlogPost from "./pages/BlogPost";
 import AdminBlog from "./pages/AdminBlog";
+import AdminBlogCategories from "./pages/BlogCategoriesPage";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import CreateAccount from "./pages/CreateAccount";
@@ -43,6 +44,7 @@ import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminAuditLog from "./pages/admin/AdminAuditLog";
 import CreateAdminUser from "./pages/CreateAdminUser";
 import LoadingScreen from "@/components/ui/loading-screen";
+
 
 const queryClient = new QueryClient();
 
@@ -147,7 +149,18 @@ function AppContent() {
                       </AdminLayout>
                     </AdminRouteGuard>
                   } />
-                  
+                    <Route
+                      path="/admin/blog-categories"
+                      element={
+                        <AdminRouteGuard>
+                          <AdminLayout>
+                            <AdminBlogCategories />
+                          </AdminLayout>
+                        </AdminRouteGuard>
+                      }
+                    />
+
+
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
