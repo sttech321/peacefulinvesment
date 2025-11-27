@@ -123,176 +123,178 @@ const ChangePassword = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background py-8">
+    <div className="min-h-screen pink-yellow-shadow pt-36 pb-12">
       <div className="container mx-auto px-4 max-w-md">
-        <Card>
-          <CardHeader className="text-center">
-            <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 mx-auto">
-              <Lock className="h-6 w-6 text-primary" />
-            </div>
-            <CardTitle className="text-2xl">Change Password</CardTitle>
-            <CardDescription>
-              Update your password to keep your account secure
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {error && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-
-              {/* Current Password */}
-              <div className="space-y-2">
-                <Label htmlFor="currentPassword">Current Password</Label>
-                <div className="relative">
-                  <Input
-                    id="currentPassword"
-                    type={showCurrentPassword ? "text" : "password"}
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    required
-                    className="pr-10"
-                    placeholder="Enter your current password"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                  >
-                    {showCurrentPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
+        <div className="bg-gradient-pink-to-yellow hover:glow-primary w-full rounded-sm border-0 p-[2px] shadow-none">
+          <Card className="bg-black rounded-sm">
+            <CardHeader className="text-center">
+              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 mx-auto">
+                <Lock className="h-6 w-6 text-primary" />
               </div>
+              <CardTitle className="text-2xl text-primary">Change Password</CardTitle>
+              <CardDescription>
+                Update your password to keep your account secure
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
 
-              {/* New Password */}
-              <div className="space-y-2">
-                <Label htmlFor="newPassword">New Password</Label>
-                <div className="relative">
-                  <Input
-                    id="newPassword"
-                    type={showNewPassword ? "text" : "password"}
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    required
-                    className="pr-10"
-                    placeholder="Enter your new password"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() => setShowNewPassword(!showNewPassword)}
-                  >
-                    {showNewPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </Button>
+                {/* Current Password */}
+                <div className="space-y-2">
+                  <Label htmlFor="currentPassword" className="text-white">Current Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="currentPassword"
+                      type={showCurrentPassword ? "text" : "password"}
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      required
+                      className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
+                      placeholder="Enter your current password"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                    >
+                      {showCurrentPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
                 </div>
 
-                {/* Password Strength Indicators */}
-                {newPassword && (
-                  <div className="space-y-2 mt-3">
-                    <p className="text-sm font-medium">Password Requirements:</p>
-                    <div className="grid grid-cols-1 gap-1">
-                      <div className={`flex items-center gap-2 text-xs ${passwordStrength.minLength ? 'text-green-600' : 'text-muted-foreground'}`}>
-                        {passwordStrength.minLength ? <CheckCircle className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
-                        At least 8 characters
-                      </div>
-                      <div className={`flex items-center gap-2 text-xs ${passwordStrength.hasUpper ? 'text-green-600' : 'text-muted-foreground'}`}>
-                        {passwordStrength.hasUpper ? <CheckCircle className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
-                        One uppercase letter
-                      </div>
-                      <div className={`flex items-center gap-2 text-xs ${passwordStrength.hasLower ? 'text-green-600' : 'text-muted-foreground'}`}>
-                        {passwordStrength.hasLower ? <CheckCircle className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
-                        One lowercase letter
-                      </div>
-                      <div className={`flex items-center gap-2 text-xs ${passwordStrength.hasNumber ? 'text-green-600' : 'text-muted-foreground'}`}>
-                        {passwordStrength.hasNumber ? <CheckCircle className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
-                        One number
-                      </div>
-                      <div className={`flex items-center gap-2 text-xs ${passwordStrength.hasSpecial ? 'text-green-600' : 'text-muted-foreground'}`}>
-                        {passwordStrength.hasSpecial ? <CheckCircle className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
-                        One special character
+                {/* New Password */}
+                <div className="space-y-2">
+                  <Label htmlFor="newPassword" className="text-white">New Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="newPassword"
+                      type={showNewPassword ? "text" : "password"}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      required
+                      className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
+                      placeholder="Enter your new password"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                    >
+                      {showNewPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+
+                  {/* Password Strength Indicators */}
+                  {newPassword && (
+                    <div className="space-y-2 mt-3">
+                      <p className="text-sm font-medium">Password Requirements:</p>
+                      <div className="grid grid-cols-1 gap-1">
+                        <div className={`flex items-center gap-2 text-xs ${passwordStrength.minLength ? 'text-green-600' : 'text-muted-foreground'}`}>
+                          {passwordStrength.minLength ? <CheckCircle className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
+                          At least 8 characters
+                        </div>
+                        <div className={`flex items-center gap-2 text-xs ${passwordStrength.hasUpper ? 'text-green-600' : 'text-muted-foreground'}`}>
+                          {passwordStrength.hasUpper ? <CheckCircle className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
+                          One uppercase letter
+                        </div>
+                        <div className={`flex items-center gap-2 text-xs ${passwordStrength.hasLower ? 'text-green-600' : 'text-muted-foreground'}`}>
+                          {passwordStrength.hasLower ? <CheckCircle className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
+                          One lowercase letter
+                        </div>
+                        <div className={`flex items-center gap-2 text-xs ${passwordStrength.hasNumber ? 'text-green-600' : 'text-muted-foreground'}`}>
+                          {passwordStrength.hasNumber ? <CheckCircle className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
+                          One number
+                        </div>
+                        <div className={`flex items-center gap-2 text-xs ${passwordStrength.hasSpecial ? 'text-green-600' : 'text-muted-foreground'}`}>
+                          {passwordStrength.hasSpecial ? <CheckCircle className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
+                          One special character
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Confirm New Password */}
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                <div className="relative">
-                  <Input
-                    id="confirmPassword"
-                    type={showConfirmPassword ? "text" : "password"}
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                    className="pr-10"
-                    placeholder="Confirm your new password"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  >
-                    {showConfirmPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </Button>
+                  )}
                 </div>
-                
-                {confirmPassword && newPassword !== confirmPassword && (
-                  <p className="text-sm text-red-600">Passwords do not match</p>
-                )}
+
+                {/* Confirm New Password */}
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword" className="text-white">Confirm New Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="confirmPassword"
+                      type={showConfirmPassword ? "text" : "password"}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                      className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
+                      placeholder="Confirm your new password"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                  
+                  {confirmPassword && newPassword !== confirmPassword && (
+                    <p className="text-sm text-red-600">Passwords do not match</p>
+                  )}
+                </div>
+
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  disabled={loading || !passwordStrength.isStrong || newPassword !== confirmPassword}
+                >
+                  {loading ? (
+                    <div className="flex items-center gap-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Updating Password...
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Shield className="h-4 w-4" />
+                      Update Password
+                    </div>
+                  )}
+                </Button>
+              </form>
+
+              <div className="mt-6 text-center">
+                <Link 
+                  to="/profile" 
+                  className="text-sm text-muted-foreground hover:text-primary"
+                >
+                  Back to Profile
+                </Link>
               </div>
-
-              <Button 
-                type="submit" 
-                className="w-full" 
-                disabled={loading || !passwordStrength.isStrong || newPassword !== confirmPassword}
-              >
-                {loading ? (
-                  <div className="flex items-center gap-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Updating Password...
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <Shield className="h-4 w-4" />
-                    Update Password
-                  </div>
-                )}
-              </Button>
-            </form>
-
-            <div className="mt-6 text-center">
-              <Link 
-                to="/profile" 
-                className="text-sm text-muted-foreground hover:text-primary"
-              >
-                Back to Profile
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>  
       </div>
     </div>
   );

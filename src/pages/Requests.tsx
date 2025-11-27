@@ -22,10 +22,10 @@ const Requests = () => {
   };
 
   return (
-    <div className="pink-yellow-shadow min-h-screen pt-32">
-      <div className="max-w-7xl mx-auto">
+    <div className="pink-yellow-shadow min-h-screen pt-32 pb-20">
+      <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold tracking-tight text-white">Deposit & Withdrawal Requests</h1>
+            <h1 className="text-2xl sm:text-4xl font-bold tracking-tight text-white">Deposit & <span className="text-[var(--yellowcolor)]">Withdrawal</span> Requests</h1>
             <p className="text-muted-foreground mt-2">
               Manage your financial transactions and track request status
             </p>
@@ -77,8 +77,8 @@ const Requests = () => {
           </div>
 
           <Tabs defaultValue="requests" className="space-y-6">
-            <div className="flex items-center justify-between">
-              <TabsList>
+            <div className="flex items-center flex-wrap sm:flex-nowrap justify-between">
+              <TabsList className="sm:mb-0 mb-4">
                 <TabsTrigger value="requests">My Requests</TabsTrigger>
                 <TabsTrigger value="new">New Request</TabsTrigger>
               </TabsList>
@@ -103,7 +103,7 @@ const Requests = () => {
           </Tabs>
 
           {showForm && (
-            <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="fixed inset-0 pink-yellow-shadow  backdrop-blur-sm z-50 flex items-center justify-center p-4">
               <div className="relative">
                 <Button
                   variant="outline"

@@ -22,14 +22,14 @@ const Blog = () => {
 
            {/* Header */}
         <div className="text-center py-10 md:py-12 lg:py-24 px-6 animate-slide-up bg-black/20">
-        <div className="max-w-4xl mx-auto">
-           <Skeleton className="h-12 w-full mx-auto mb-4 opacity-50" />
-           <Skeleton className="h-6 w-full mx-auto opacity-50" />
+          <div className="max-w-4xl mx-auto">
+            <Skeleton className="h-12 w-full mx-auto mb-4 opacity-50" />
+            <Skeleton className="h-6 w-full mx-auto opacity-50" />
+          </div>
         </div>
-</div>
 
          <div className="px-6 py-10 md:py-12 lg:py-24">
-     <div className="max-w-7xl mx-auto">
+          <div className="max-w-7xl mx-auto">
         
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 ">
             {[...Array(6)].map((_, i) => (
@@ -51,69 +51,67 @@ const Blog = () => {
   }
 
   return (
-    <div className="min-h-screen pink-yellow-shadow pt-16">
+    <div className="min-h-screen pt-16">
 
          {/* Header */}
-        <div className="text-center py-10 md:py-12 lg:py-24 px-6 animate-slide-up bg-black/20">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="mb-6 font-inter font-bold uppercase text-white text-3xl md:text-4xl lg:text-5xl xl:text-6xl">
-            Catholic <span className="text-[var(--yellowcolor)]">Faith & Prayer</span>
-          </h1>
-          <p className="max-w-2xl mx-auto font-inter text-lg md:text-[20px] font-normal text-white">
-            Daily prayers, spiritual guidance, and charitable mission updates from Peaceful Investment
-          </p>
-        </div>
-        </div>
-
-
-      <div className="px-6 py-10 md:py-12 xl:py-20">
-     <div className="max-w-7xl mx-auto">
-
-        {/* Category Filter */}
-        <div className="flex flex-wrap gap-3 mb-8 md:mb-12 justify-center">
-          <Badge
-            variant={selectedCategory === 'all' ? 'default' : 'outline'}
-            className="cursor-pointer hover:scale-105 transition-transform px-4 py-2 text-white"
-            onClick={() => setSelectedCategory('all')}
-          >
-            All Posts
-          </Badge>
-          {categories.map((category) => (
-            <Badge
-              key={category.slug}
-              variant={selectedCategory === category.slug ? 'default' : 'outline'}
-              className="cursor-pointer hover:scale-105 transition-transform px-4 py-2"
-              style={{
-                backgroundColor: selectedCategory === category.slug ? category.color : 'transparent',
-                borderColor: category.color,
-                color: selectedCategory === category.slug ? 'white' : category.color,
-              }}
-              onClick={() => setSelectedCategory(category.slug)}
-            >
-              {category.name}
-            </Badge>
-          ))}
-        </div>
-
-        {/* Blog Posts Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredPosts.map((post) => (
-            <BlogPostCard key={post.id} post={post} />
-          ))}
-        </div>
-
-        {filteredPosts.length === 0 && (
-          <div className="text-center py-16">
-            <h3 className="text-2xl font-semibold text-white mb-3">
-              No posts found
-            </h3>
-            <p className="text-muted-foreground">
-              No blog posts are available in this category yet.
+        <div className="text-center py-10 md:py-12 lg:py-24 px-6 animate-slide-up">
+          <div className="max-w-7xl mx-auto">
+            <h1 className="mb-6 font-inter font-bold uppercase text-3xl md:text-4xl lg:text-5xl xl:text-6xl">
+              Catholic <span className="text-[var(--yellowcolor)]">Faith & Prayer</span>
+            </h1>
+            <p className="max-w-2xl mx-auto font-inter text-lg md:text-[20px] font-normal">
+              Daily prayers, spiritual guidance, and charitable mission updates from Peaceful Investment
             </p>
           </div>
-        )}
-      </div>
-      </div>
+        </div>
+
+        <div className="px-6 py-10 md:py-12 xl:py-20 pink-yellow-shadow">
+          <div className="max-w-7xl mx-auto">
+            {/* Category Filter */}
+            <div className="flex flex-wrap gap-3 mb-8 md:mb-12 justify-center">
+              <Badge
+                variant={selectedCategory === 'all' ? 'default' : 'outline'}
+                className="cursor-pointer hover:scale-105 transition-transform px-4 py-2 text-white"
+                onClick={() => setSelectedCategory('all')}
+              >
+                All Posts
+              </Badge>
+              {categories.map((category) => (
+                <Badge
+                  key={category.slug}
+                  variant={selectedCategory === category.slug ? 'default' : 'outline'}
+                  className="cursor-pointer hover:scale-105 transition-transform px-4 py-2"
+                  style={{
+                    backgroundColor: selectedCategory === category.slug ? category.color : 'transparent',
+                    borderColor: category.color,
+                    color: selectedCategory === category.slug ? 'white' : category.color,
+                  }}
+                  onClick={() => setSelectedCategory(category.slug)}
+                >
+                  {category.name}
+                </Badge>
+              ))}
+            </div>
+
+            {/* Blog Posts Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {filteredPosts.map((post) => (
+                <BlogPostCard key={post.id} post={post} />
+              ))}
+            </div>
+
+            {filteredPosts.length === 0 && (
+              <div className="text-center py-16">
+                <h3 className="text-2xl font-semibold text-white mb-3">
+                  No posts found
+                </h3>
+                <p className="text-muted-foreground">
+                  No blog posts are available in this category yet.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
 
       <Footer />
     </div>

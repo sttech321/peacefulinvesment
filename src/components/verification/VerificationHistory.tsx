@@ -61,7 +61,7 @@ export const VerificationHistory: React.FC<VerificationHistoryProps> = ({ reques
     return (
       <div className="text-center py-8">
         <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-        <h3 className="text-lg font-semibold mb-2">No Verification History</h3>
+        <h3 className="text-lg font-semibold mb-2 text-white">No Verification History</h3>
         <p className="text-muted-foreground">
           You haven't submitted any verification requests yet.
         </p>
