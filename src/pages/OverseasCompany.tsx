@@ -165,11 +165,11 @@ const OverseasCompany = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pt-20 pb-12">
+    <div className="min-h-screen pink-yellow-shadow pt-20 pb-12">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-foreground mb-4">
+        <div className="text-center mb-8 pt-10">
+          <h1 className="text-4xl mb-4 font-inter font-bold text-white">
             Overseas Company Registration
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -183,7 +183,7 @@ const OverseasCompany = () => {
           <Card className="text-center">
             <CardContent className="pt-6">
               <DollarSign className="h-12 w-12 text-primary mx-auto mb-3" />
-              <h3 className="font-semibold mb-2">All Fees Covered</h3>
+              <h3 className="font-semibold mb-2 text-white">All Fees Covered</h3>
               <p className="text-sm text-muted-foreground">
                 Complete registration with no additional costs
               </p>
@@ -192,7 +192,7 @@ const OverseasCompany = () => {
           <Card className="text-center">
             <CardContent className="pt-6">
               <Clock className="h-12 w-12 text-primary mx-auto mb-3" />
-              <h3 className="font-semibold mb-2">6-9 Business Days</h3>
+              <h3 className="font-semibold mb-2 text-white">6-9 Business Days</h3>
               <p className="text-sm text-muted-foreground">
                 Fast processing with dedicated support
               </p>
@@ -201,7 +201,7 @@ const OverseasCompany = () => {
           <Card className="text-center">
             <CardContent className="pt-6">
               <Globe className="h-12 w-12 text-primary mx-auto mb-3" />
-              <h3 className="font-semibold mb-2">Global Jurisdictions</h3>
+              <h3 className="font-semibold mb-2 text-white">Global Jurisdictions</h3>
               <p className="text-sm text-muted-foreground">
                 Multiple offshore locations available
               </p>
@@ -210,12 +210,14 @@ const OverseasCompany = () => {
         </div>
 
         <Tabs defaultValue="request" className="space-y-6">
+          <div className="bg-gradient-pink-to-yellow mb-5 rounded-lg p-[2px] lg:mb-12">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="request">New Request</TabsTrigger>
             <TabsTrigger value="status">Current Status</TabsTrigger>
             <TabsTrigger value="company">Company Info</TabsTrigger>
+           
           </TabsList>
-
+ </div>
           {/* New Request Tab */}
           <TabsContent value="request">
             <Card>
@@ -241,7 +243,7 @@ const OverseasCompany = () => {
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="grid gap-4">
                     <div>
-                      <Label htmlFor="companyName1">
+                      <Label htmlFor="companyName1" className="text-sm font-medium leading-none text-muted-foreground pb-2">
                         First Choice Company Name *
                       </Label>
                       <Input
@@ -251,16 +253,18 @@ const OverseasCompany = () => {
                         placeholder="Enter your preferred company name"
                         disabled={hasActiveRequest}
                         required
+                        className="rounded-[8px] border-0 shadow-none mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
                       />
                     </div>
 
                     <div>
-                      <Label htmlFor="companyName2">
+                      <Label htmlFor="companyName2" className="text-sm font-medium leading-none text-muted-foreground pb-2">
                         Second Choice Company Name
                       </Label>
                       <Input
                         id="companyName2"
                         value={formData.companyName2}
+                        className="mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent"
                         onChange={(e) => setFormData({ ...formData, companyName2: e.target.value })}
                         placeholder="Enter alternative company name"
                         disabled={hasActiveRequest}
@@ -268,11 +272,12 @@ const OverseasCompany = () => {
                     </div>
 
                     <div>
-                      <Label htmlFor="companyName3">
+                      <Label htmlFor="companyName3" className="text-sm font-medium leading-none text-muted-foreground pb-2">
                         Third Choice Company Name
                       </Label>
                       <Input
                         id="companyName3"
+                        className="mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent"
                         value={formData.companyName3}
                         onChange={(e) => setFormData({ ...formData, companyName3: e.target.value })}
                         placeholder="Enter third choice company name"
@@ -281,16 +286,16 @@ const OverseasCompany = () => {
                     </div>
 
                     <div>
-                      <Label htmlFor="jurisdiction">Jurisdiction *</Label>
+                      <Label htmlFor="jurisdiction" className="text-sm font-medium leading-none text-muted-foreground pb-2">Jurisdiction *</Label>
                       <Select 
                         value={formData.jurisdiction} 
                         onValueChange={(value) => setFormData({ ...formData, jurisdiction: value })}
                         disabled={hasActiveRequest}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent">
                           <SelectValue placeholder="Select jurisdiction" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
                           {JURISDICTIONS.map((jurisdiction) => (
                             <SelectItem key={jurisdiction} value={jurisdiction}>
                               {jurisdiction}
@@ -301,16 +306,16 @@ const OverseasCompany = () => {
                     </div>
 
                     <div>
-                      <Label htmlFor="businessType">Business Type *</Label>
+                      <Label htmlFor="businessType" className="text-sm font-medium leading-none text-muted-foreground pb-2">Business Type *</Label>
                       <Select 
                         value={formData.businessType} 
                         onValueChange={(value) => setFormData({ ...formData, businessType: value })}
                         disabled={hasActiveRequest}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent">
                           <SelectValue placeholder="Select business type" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
                           {BUSINESS_TYPES.map((type) => (
                             <SelectItem key={type} value={type}>
                               {type}
@@ -321,7 +326,7 @@ const OverseasCompany = () => {
                     </div>
 
                     <div>
-                      <Label htmlFor="businessDescription">
+                      <Label htmlFor="businessDescription" className="text-sm font-medium leading-none text-muted-foreground pb-2">
                         Business Description
                       </Label>
                       <Textarea
@@ -329,16 +334,17 @@ const OverseasCompany = () => {
                         value={formData.businessDescription}
                         onChange={(e) => setFormData({ ...formData, businessDescription: e.target.value })}
                         placeholder="Briefly describe your business activities"
-                        className="min-h-[100px]"
+                        className="min-h-[100px] mt-1"
                         disabled={hasActiveRequest}
                       />
                     </div>
 
                     <div>
-                      <Label htmlFor="contactEmail">Contact Email *</Label>
+                      <Label htmlFor="contactEmail" className="text-sm font-medium leading-none text-muted-foreground pb-2">Contact Email *</Label>
                       <Input
                         id="contactEmail"
                         type="email"
+                        className="mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent"
                         value={formData.contactEmail}
                         onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })}
                         placeholder="your@email.com"
