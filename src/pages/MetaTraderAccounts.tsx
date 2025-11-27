@@ -278,7 +278,7 @@ export default function MetaTraderAccounts() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {accounts.map((account) => (
               <div className="mb-3 border-0 shadow-none bg-gradient-pink-to-yellow  hover:glow-primary rounded-sm p-[2px]">
-                <Card key={account.id} className="p-0 rounded-sm  transition-all duration-300">
+                <Card key={account.id} className="p-0 rounded-sm  transition-all duration-300 bg-black">
                   <CardHeader className="pb-3">
                     <div className="flex justify-between items-start">
                       <div>
@@ -291,7 +291,7 @@ export default function MetaTraderAccounts() {
                         <Badge className={getStatusColor(account.status.toLowerCase())}>
                           {account.status}
                         </Badge>
-                        <Badge className="bg-secondary/80 text-secondary-foreground hover:bg-secondary/90 font-open-sans  justify-center">
+                        <Badge className="bg-secondary/80 text-secondary-foreground hover:bg-secondary/10 font-open-sans  justify-center">
                           Live
                         </Badge>
                       </div>

@@ -98,10 +98,10 @@ const VerificationCenter: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <div className="min-h-screen pink-yellow-shadow pt-28 pb-12">
+      <div className="container mx-auto px-4 py-8 max-w-4xl pb-16">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Verification Center</h1>
+          <h1 className="text-3xl font-bold mb-2 text-white ">Verification Center</h1>
           <p className="text-muted-foreground">
             Manage your account verification and access all platform features
           </p>
@@ -115,7 +115,7 @@ const VerificationCenter: React.FC = () => {
               Account Verification Status
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-6 mt-4 sm:mt-0">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className={`p-2 rounded-full ${config.color}`}>
@@ -134,7 +134,7 @@ const VerificationCenter: React.FC = () => {
 
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span>Verification Progress</span>
+                <span className='text-white'>Verification Progress</span>
                 <span>{progress}%</span>
               </div>
               <Progress value={progress} className="h-2" />
@@ -219,7 +219,7 @@ const VerificationCenter: React.FC = () => {
                       userStatus === 'verified' ? 'text-green-500' : 
                       userStatus === 'pending_verification' ? 'text-yellow-500' : 'text-red-500'
                     }`} />
-                    <h3 className="text-lg font-semibold mb-2">{config.text}</h3>
+                    <h3 className="text-lg font-semibold mb-2 text-white">{config.text}</h3>
                     <p className="text-muted-foreground">{config.description}</p>
                   </div>
                 </CardContent>
