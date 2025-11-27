@@ -170,7 +170,7 @@ const OverseasCompany = () => {
         {/* Header */}
         <div className="text-center mb-8 pt-10">
           <h1 className="text-4xl mb-4 font-inter font-bold text-white">
-            Overseas Company Registration
+            Overseas Company <span className="text-primary"> Registration </span>
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Register your international company with full support from Peaceful Investment. 
@@ -217,7 +217,7 @@ const OverseasCompany = () => {
             <TabsTrigger value="company">Company Info</TabsTrigger>
            
           </TabsList>
- </div>
+      </div>
           {/* New Request Tab */}
           <TabsContent value="request">
             <Card>
@@ -264,7 +264,7 @@ const OverseasCompany = () => {
                       <Input
                         id="companyName2"
                         value={formData.companyName2}
-                        className="mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent"
+                       className="rounded-[8px] border-0 shadow-none mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
                         onChange={(e) => setFormData({ ...formData, companyName2: e.target.value })}
                         placeholder="Enter alternative company name"
                         disabled={hasActiveRequest}
@@ -277,7 +277,7 @@ const OverseasCompany = () => {
                       </Label>
                       <Input
                         id="companyName3"
-                        className="mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent"
+                        className="rounded-[8px] border-0 shadow-none mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
                         value={formData.companyName3}
                         onChange={(e) => setFormData({ ...formData, companyName3: e.target.value })}
                         placeholder="Enter third choice company name"
@@ -292,7 +292,7 @@ const OverseasCompany = () => {
                         onValueChange={(value) => setFormData({ ...formData, jurisdiction: value })}
                         disabled={hasActiveRequest}
                       >
-                        <SelectTrigger className="mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent">
+                        <SelectTrigger className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                           <SelectValue placeholder="Select jurisdiction" />
                         </SelectTrigger>
                         <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
@@ -312,7 +312,7 @@ const OverseasCompany = () => {
                         onValueChange={(value) => setFormData({ ...formData, businessType: value })}
                         disabled={hasActiveRequest}
                       >
-                        <SelectTrigger className="mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent">
+                        <SelectTrigger className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                           <SelectValue placeholder="Select business type" />
                         </SelectTrigger>
                         <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
@@ -344,7 +344,7 @@ const OverseasCompany = () => {
                       <Input
                         id="contactEmail"
                         type="email"
-                        className="mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent"
+                        className="rounded-[8px] border-0 shadow-none mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
                         value={formData.contactEmail}
                         onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })}
                         placeholder="your@email.com"
@@ -371,7 +371,7 @@ const OverseasCompany = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <History className="h-5 w-5" />
+                  <History className="h-5 w-5 text-primary" />
                   Request Status
                 </CardTitle>
                 <CardDescription>
@@ -462,7 +462,7 @@ const OverseasCompany = () => {
                 ) : (
                   <div className="text-center py-8">
                     <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-                    <h3 className="font-semibold mb-2">No Active Requests</h3>
+                    <h3 className="font-semibold mb-2 text-white">No Active Requests</h3>
                     <p className="text-sm text-muted-foreground">
                       You don't have any active company registration requests.
                     </p>
@@ -477,7 +477,7 @@ const OverseasCompany = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <CheckCircle className="h-5 w-5" />
+                  <CheckCircle className="h-5 w-5 text-primary" />
                   Registered Companies
                 </CardTitle>
                 <CardDescription>
@@ -529,10 +529,8 @@ const OverseasCompany = () => {
                 ) : (
                   <div className="text-center py-8">
                     <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-                    <h3 className="font-semibold mb-2">No Registered Companies</h3>
-                    <p className="text-sm text-muted-foreground">
-                      You don't have any registered companies yet.
-                    </p>
+                    <h3 className="font-semibold mb-2 text-white">No Registered Companies</h3>
+                    <p className="text-sm text-muted-foreground">You don't have any registered companies yet. </p>
                   </div>
                 )}
               </CardContent>

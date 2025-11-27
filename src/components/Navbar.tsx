@@ -42,13 +42,13 @@ const Navbar = () => {
         { name: 'Trading', href: '/trading' },
         { name: 'Accounts', href: '/meta-trader-accounts' },
         { name: 'Referrals', href: '/referrals' },
-        { name: 'Blog', href: '/blog' },
+        { name: 'Catholic', href: '/blog' },
         { name: 'Contact', href: '/contact' },
       ]
     : [
         { name: 'Home', href: '/' },
         { name: 'Downloads', href: '/downloads' },
-        { name: 'Blog', href: '/blog' },
+        { name: 'Catholic', href: '/blog' },
         { name: 'Contact', href: '/contact' },
         { name: 'About', href: '/about' },
         { name: 'Features', href: '/#features' },
@@ -213,9 +213,9 @@ const Navbar = () => {
               className='p-1 text-muted-foreground hover:text-foreground'
             >
               {isOpen ? (
-                <X className='h-5 w-5' />
+                <X className='h-7 w-7' />
               ) : (
-                <Menu className='h-5 w-5' />
+                <Menu className='h-7 w-7' />
               )}
             </button>
           </div>
@@ -285,9 +285,9 @@ const Navbar = () => {
                 )}
 
                 <div className='mt-2 space-y-2 border-t border-border/40 px-3 py-3'>
-                  <div className='flex justify-center'>
+                  {/* <div className='flex justify-center'>
                     <ThemeToggle />
-                  </div>
+                  </div> */}
                   {user ? (
                     <div className='space-y-2'>
                       <p className='truncate px-3 text-xs text-muted-foreground'>
