@@ -196,14 +196,14 @@ const RequestForm = ({ onSuccess }: RequestFormProps) => {
               name="type"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Request Type</FormLabel>
+                  <FormLabel className="text-white">Request Type</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                         <SelectValue placeholder="Select request type" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
+                    <SelectContent  className='border-secondary-foreground bg-black/90 text-white'>
                       <SelectItem value="deposit">Deposit</SelectItem>
                       <SelectItem value="withdrawal">Withdrawal</SelectItem>
                     </SelectContent>
@@ -219,16 +219,17 @@ const RequestForm = ({ onSuccess }: RequestFormProps) => {
                 name="amount"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Amount</FormLabel>
+                    <FormLabel className="text-white">Amount</FormLabel>
                     <FormControl>
                       <Input 
                         type="number" 
                         step="0.01"
+                        className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
                         placeholder="0.00"
                         {...field} 
                         value={field.value || ""}
                         onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
-                      />
+                      />  
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -240,14 +241,14 @@ const RequestForm = ({ onSuccess }: RequestFormProps) => {
                 name="currency"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Currency</FormLabel>
+                    <FormLabel className="text-white">Currency</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                           <SelectValue placeholder="Select currency" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                      <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
                         <SelectItem value="USD">USD - US Dollar</SelectItem>
                         <SelectItem value="EUR">EUR - Euro</SelectItem>
                         <SelectItem value="GBP">GBP - British Pound</SelectItem>
@@ -271,14 +272,14 @@ const RequestForm = ({ onSuccess }: RequestFormProps) => {
               name="payment_method"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Payment Method</FormLabel>
+                  <FormLabel className="text-white">Payment Method</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                         <SelectValue placeholder="Select payment method" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
+                    <SelectContent  className='border-secondary-foreground bg-black/90 text-white'>
                       {paymentMethods.map((method) => (
                         <SelectItem key={method} value={method}>
                           {method}
@@ -296,10 +297,11 @@ const RequestForm = ({ onSuccess }: RequestFormProps) => {
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Description (Optional)</FormLabel>
+                  <FormLabel className="text-white">Description (Optional)</FormLabel>
                   <FormControl>
                     <Textarea 
                       placeholder="Additional information about your request..."
+                      className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none'
                       {...field} 
                     />
                   </FormControl>
