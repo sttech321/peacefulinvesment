@@ -223,7 +223,7 @@ const Navbar = () => {
 
         {/* Mobile Navigation */}
         {isOpen && (
-          <div className='fixed inset-x-0 top-16 z-50 border-t border-border/40 bg-[#0c0715]/85 shadow-lg backdrop-blur-xl lg:hidden'>
+          <div className='fixed inset-x-0 top-[80px] z-50 border-t border-border/40 bg-[#0c0715]/85 shadow-lg backdrop-blur-xl lg:hidden'>
             <div className='w-full max-w-full overflow-x-hidden'>
               <div className='space-y-1 px-3 py-2'>
                 {/* Main nav links */}
