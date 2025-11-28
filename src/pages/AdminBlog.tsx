@@ -342,7 +342,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-white/90">
                         {categories.map((category) => (
                           <SelectItem key={category.slug} value={category.slug}>
                             {category.name}
@@ -363,7 +363,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-white/90">
                         <SelectItem value="draft">Draft</SelectItem>
                         <SelectItem value="published">Published</SelectItem>
                         <SelectItem value="archived">Archived</SelectItem>

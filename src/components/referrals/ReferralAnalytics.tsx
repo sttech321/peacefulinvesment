@@ -133,7 +133,7 @@ const ReferralAnalytics = ({ referral, signups, payments }: ReferralAnalyticsPro
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-white">This Month's Earnings</span>
-            <span className="text-lg font-bold">
+            <span className="text-lg font-bold text-white">
               ${thisMonthEarnings.toFixed(2)} / ${monthlyTarget.toFixed(2)}
             </span>
           </div>
