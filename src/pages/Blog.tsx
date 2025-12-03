@@ -7,6 +7,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useBlog, BlogPost, BlogCategory } from "@/hooks/useBlog";
 import Footer from "@/components/Footer";
 
+// Side images
+import Left01 from "@/assets/left-01.jpg";
+import Left02 from "@/assets/left-02.jpg";
+import Left03 from "@/assets/left-03.jpg";
+import Right01 from "@/assets/right-01.jpg";
+import Right02 from "@/assets/right-02.jpg";
+import Right03 from "@/assets/right-03.jpg";
+
 /**
  * Blog.tsx — Parent badges with single expandable children row
  *
@@ -112,7 +120,7 @@ const Blog = () => {
 
   // Toggle single open parent (only one open at a time)
   const toggleOpenParent = (parentId: string) => {
-    setOpenParentId((prev) => (prev === parentId ? null : parentId));
+    setOpenParentId((prev) => (prev === parentId ? null : prev === parentId ? null : parentId));
   };
 
   const showAll = () => {
@@ -125,10 +133,8 @@ const Blog = () => {
     const result: { node: BlogCategory; depth: number }[] = [];
     const visit = (id: string, depth: number) => {
       const children = childrenMap.get(id) ?? [];
-      // sort already handled; iterate in order
       children.forEach((child) => {
         result.push({ node: child, depth });
-        // recurse
         visit(child.id, depth + 1);
       });
     };
@@ -175,113 +181,175 @@ const Blog = () => {
 
   return (
     <div className="min-h-screen pink-yellow-shadow pt-20">
-      {/* Header */}
-      <div className="text-center py-10 md:py-12 lg:py-24 px-6 animate-slide-up bg-black/20">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="mb-6 font-inter font-bold uppercase text-white text-3xl md:text-4xl lg:text-5xl xl:text-6xl">
-            Catholic <span className="text-[var(--yellowcolor)]">Faith & Prayer</span>
-          </h1>
-          <p className="max-w-2xl mx-auto font-inter text-lg md:text-[20px] font-normal text-white">
-            Daily prayers, spiritual guidance, and charitable mission updates from Peaceful Investment
-          </p>
+      {/* Header with side images */}
+      <div className="animate-slide-up bg-black/20 px-6 py-10 text-center md:py-12 lg:py-24">
+        <div className="flex grid-cols-1 flex-wrap items-center justify-center gap-8 md:grid-cols-2 lg:grid-cols-3 lg:flex-nowrap">
+          <div className="imgLeft01 max-w-40">
+            <Link
+              to="https://www.miracolieucaristici.org/en/Liste/scheda_c.html?nat=argentina&wh=buenosaires&ct=Buenos%20Aires,%201992-1994-1996"
+              target="_blank"
+              className="inline-block bg-white p-1"
+            >
+              <img src={Left01} alt="Left 01" />
+            </Link>
+          </div>
+
+          <div className="mx-auto w-full max-w-7xl">
+            <h1 className="mb-6 font-inter font-bold uppercase text-white text-3xl md:text-4xl lg:text-5xl xl:text-6xl">
+              Catholic <span className="text-[var(--yellowcolor)]">Faith &amp; Prayer</span>
+            </h1>
+            <p className="max-w-2xl mx-auto font-inter text-lg md:text-[20px] font-normal text-white">
+              Daily prayers, spiritual guidance, and charitable mission updates from Peaceful Investment
+            </p>
+          </div>
+
+          <div className="imgRight01 max-w-40">
+            <Link
+              to="https://www.miracolieucaristici.org/en/Liste/scheda.html?nat=india&wh=chirattakonam&ct=Chirattakonam,%202001"
+              target="_blank"
+              className="inline-block bg-white p-1"
+            >
+              <img src={Right01} alt="Right 01" />
+            </Link>
+          </div>
         </div>
       </div>
 
+      {/* Main content with side images */}
       <div className="px-6 py-10 md:py-12 xl:py-20">
-        <div className="max-w-7xl mx-auto">
-          {/* Category Filter */}
-          <div className="flex flex-col gap-3 mb-8 md:mb-12 items-center">
-            <div className="flex flex-wrap gap-3 justify-center">
-              <Badge
-                variant={selectedCategory === "all" ? "default" : "outline"}
-                className="cursor-pointer hover:scale-105 transition-transform px-4 py-2 text-white"
-                onClick={showAll}
-              >
-                All Posts
-              </Badge>
+        <div className="flex grid-cols-1 flex-wrap justify-center gap-8 md:grid-cols-2 lg:grid-cols-3 lg:flex-nowrap">
+          {/* Left column images */}
+          <div className="imgLeft01 max-w-40">
+            <Link
+              to="https://www.miracolieucaristici.org/en/Liste/scheda_c.html?nat=polonia&wh=sokolka&ct=Sok%C3%B3%C5%82ka%202008"
+              target="_blank"
+              className="inline-block bg-white p-1 mb-4"
+            >
+              <img src={Left02} alt="Left 02" />
+            </Link>
 
-              {/* Parent badges */}
-              {parents.map((parent) => {
-                const children = childrenMap.get(parent.id) ?? [];
-                const hasChildren = children.length > 0;
-                const isActive = selectedCategory === parent.slug || selectedCategory === parent.id;
-                return (
-                  <Badge
-                    key={parent.id}
-                    variant={isActive ? "default" : "outline"}
-                    className="cursor-pointer hover:scale-105 transition-transform px-4 py-2 flex items-center"
-                    style={{
-                      backgroundColor: isActive ? parent.color : "transparent",
-                      borderColor: parent.color,
-                      color: isActive ? "white" : parent.color,
-                    }}
-                    onClick={() => {
-                      setSelectedCategory(parent.slug);
-                      toggleOpenParent(parent.id);
-                    }}
-                    title={parent.description ?? parent.name}
-                  >
-                    {parent.name}
-                    {hasChildren && (
-                      <span
-                        style={{
-                          fontSize: 10,
-                          marginLeft: 8,
-                          opacity: 0.9,
-                          transform: openParentId === parent.id ? "rotate(180deg)" : "none",
-                          transition: "transform .12s ease",
-                        }}
-                      >
-                        ▾
-                      </span>
-                    )}
-                  </Badge>
-                );
-              })}
-            </div>
+            <Link
+              to="https://knightsoftheholyrosary.wordpress.com/2012/06/23/the-sacred-heart-of-jesus-the-immaculate-heart-of-mary-and-the-message-of-fatima/"
+              target="_blank"
+              className="inline-block bg-white p-1"
+            >
+              <img src={Left03} alt="Left 03" />
+            </Link>
+          </div>
 
-            {/* Single children row (for the open parent) */}
-            {openParentId && openChildren.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2 justify-center">
-                {/* flatten children (multi-level) into a single row with indentation */}
-                {openChildren.map(({ node, depth }) => {
-                  const isActive = selectedCategory === node.slug || selectedCategory === node.id;
+          {/* Center content (categories + posts) */}
+          <div className="mx-auto w-full max-w-7xl">
+            {/* Category Filter */}
+            <div className="flex flex-col gap-3 mb-8 md:mb-12 items-center">
+              <div className="flex flex-wrap gap-3 justify-center">
+                <Badge
+                  variant={selectedCategory === "all" ? "default" : "outline"}
+                  className="cursor-pointer hover:scale-105 transition-transform px-4 py-2 text-white"
+                  onClick={showAll}
+                >
+                  All Posts
+                </Badge>
+
+                {/* Parent badges */}
+                {parents.map((parent) => {
+                  const children = childrenMap.get(parent.id) ?? [];
+                  const hasChildren = children.length > 0;
+                  const isActive = selectedCategory === parent.slug || selectedCategory === parent.id;
                   return (
                     <Badge
-                      key={node.id}
+                      key={parent.id}
                       variant={isActive ? "default" : "outline"}
-                      className="cursor-pointer transition-transform px-3 py-1 text-sm"
+                      className="cursor-pointer hover:scale-105 transition-transform px-4 py-2 flex items-center"
                       style={{
-                        marginLeft: depth === 1 ? 0 : depth * 6,
-                        backgroundColor: isActive ? node.color : "transparent",
-                        borderColor: node.color,
-                        color: isActive ? "white" : node.color,
+                        backgroundColor: isActive ? parent.color : "transparent",
+                        borderColor: parent.color,
+                        color: isActive ? "white" : parent.color,
                       }}
                       onClick={() => {
-                        setSelectedCategory(node.slug);
+                        setSelectedCategory(parent.slug);
+                        toggleOpenParent(parent.id);
                       }}
+                      title={parent.description ?? parent.name}
                     >
-                      {node.name}
+                      {parent.name}
+                      {hasChildren && (
+                        <span
+                          style={{
+                            fontSize: 10,
+                            marginLeft: 8,
+                            opacity: 0.9,
+                            transform: openParentId === parent.id ? "rotate(180deg)" : "none",
+                            transition: "transform .12s ease",
+                          }}
+                        >
+                          ▾
+                        </span>
+                      )}
                     </Badge>
                   );
                 })}
               </div>
+
+              {/* Single children row (for the open parent) */}
+              {openParentId && openChildren.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2 justify-center">
+                  {openChildren.map(({ node, depth }) => {
+                    const isActive = selectedCategory === node.slug || selectedCategory === node.id;
+                    return (
+                      <Badge
+                        key={node.id}
+                        variant={isActive ? "default" : "outline"}
+                        className="cursor-pointer transition-transform px-3 py-1 text-sm"
+                        style={{
+                          marginLeft: depth === 1 ? 0 : depth * 6,
+                          backgroundColor: isActive ? node.color : "transparent",
+                          borderColor: node.color,
+                          color: isActive ? "white" : node.color,
+                        }}
+                        onClick={() => {
+                          setSelectedCategory(node.slug);
+                        }}
+                      >
+                        {node.name}
+                      </Badge>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Blog Posts Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {filteredPosts.map((post) => (
+                <BlogPostCard key={post.id} post={post} categories={categories} />
+              ))}
+            </div>
+
+            {filteredPosts.length === 0 && (
+              <div className="text-center py-16">
+                <h3 className="text-2xl font-semibold text-white mb-3">No posts found</h3>
+                <p className="text-muted-foreground">No blog posts are available in this category yet.</p>
+              </div>
             )}
           </div>
 
-          {/* Blog Posts Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredPosts.map((post) => (
-              <BlogPostCard key={post.id} post={post} categories={categories} />
-            ))}
+          {/* Right column images */}
+          <div className="imgRight01 max-w-40">
+            <Link
+              to="https://www.miracolieucaristici.org/en/Liste/scheda_c.html?nat=polonia&wh=sokolka&ct=Sok%C3%B3%C5%82ka%202008"
+              target="_blank"
+              className="inline-block bg-white p-1 mb-4"
+            >
+              <img src={Right02} alt="Right 02" />
+            </Link>
+            <Link
+              to="https://knightsoftheholyrosary.wordpress.com/2012/06/23/the-sacred-heart-of-jesus-the-immaculate-heart-of-mary-and-the-message-of-fatima/"
+              target="_blank"
+              className="inline-block bg-white p-1"
+            >
+              <img src={Right03} alt="Right 03" />
+            </Link>
           </div>
-
-          {filteredPosts.length === 0 && (
-            <div className="text-center py-16">
-              <h3 className="text-2xl font-semibold text-white mb-3">No posts found</h3>
-              <p className="text-muted-foreground">No blog posts are available in this category yet.</p>
-            </div>
-          )}
         </div>
       </div>
 

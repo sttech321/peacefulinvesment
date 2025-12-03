@@ -60,7 +60,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       )}
 
       {/* Top bar */}
-      <div className="sticky top-0 z-30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
+      <div className="sticky top-0 z-30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border h-[80px]">
         <div className="flex items-center justify-between px-6 py-4">
           <Button
             variant="ghost"
@@ -83,7 +83,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
       {/* Sidebar */}
       <div className={`
-        fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border transform transition-transform duration-200 ease-in-out lg:fixed lg:translate-x-0 lg:inset-auto lg:flex-shrink-0 lg:top-16 lg:h-[calc(100vh-4rem)]
+        fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border transform transition-transform duration-200 ease-in-out lg:fixed lg:translate-x-0 lg:inset-auto lg:flex-shrink-0 lg:top-[81px] lg:h-[calc(100vh-4rem)]
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         <div className="flex flex-col h-full">

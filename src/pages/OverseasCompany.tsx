@@ -334,7 +334,7 @@ const OverseasCompany = () => {
                         value={formData.businessDescription}
                         onChange={(e) => setFormData({ ...formData, businessDescription: e.target.value })}
                         placeholder="Briefly describe your business activities"
-                        className="min-h-[100px] mt-1"
+                        className="min-h-[100px] mt-1 rounded-[8px] border-0 shadow-none mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
                         disabled={hasActiveRequest}
                       />
                     </div>
