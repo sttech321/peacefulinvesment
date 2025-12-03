@@ -181,8 +181,8 @@ const CreateAccount = () => {
         if (!formData.phone.trim()) errors.push("Phone number is required");
         if (!formData.address.trim()) errors.push("Address is required");
         if (!formData.country.trim()) errors.push("Country is required");
-        if (!formData.state.trim()) errors.push("State is required");
-        if (!formData.city.trim()) errors.push("City is required");
+        // if (!formData.state.trim()) errors.push("State is required");
+        // if (!formData.city.trim()) errors.push("City is required");
         if (!formData.zipCode.trim()) errors.push("ZIP code is required");
         break;
       case 3:

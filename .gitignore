@@ -111,3 +111,5 @@ Thumbs.db
 # Misc
 *.tgz
 *.tar.gz
+
+/supabase/.temp/

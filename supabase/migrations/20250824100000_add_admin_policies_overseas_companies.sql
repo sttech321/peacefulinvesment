@@ -1,11 +1,17 @@
--- Add admin policies for overseas company requests
+-- 1) Ensure profiles table exists BEFORE using it in policies
+ALTER TABLE public.profiles
+ADD COLUMN IF NOT EXISTS role text;
+
+ 
+
+-- 3) Add admin policies for overseas company requests
 CREATE POLICY "Admins can view all company requests" 
 ON public.overseas_company_requests 
 FOR SELECT 
 USING (
   EXISTS (
     SELECT 1 FROM public.profiles 
-    WHERE profiles.user_id = auth.uid() 
+    WHERE profiles.id = auth.uid() 
     AND profiles.role = 'admin'
   )
 );
@@ -16,19 +22,19 @@ FOR UPDATE
 USING (
   EXISTS (
     SELECT 1 FROM public.profiles 
-    WHERE profiles.user_id = auth.uid() 
+    WHERE profiles.id = auth.uid() 
     AND profiles.role = 'admin'
   )
 );
 
--- Add admin policies for overseas companies
+-- 4) Add admin policies for overseas companies
 CREATE POLICY "Admins can view all companies" 
 ON public.overseas_companies 
 FOR SELECT 
 USING (
   EXISTS (
     SELECT 1 FROM public.profiles 
-    WHERE profiles.user_id = auth.uid() 
+    WHERE profiles.id = auth.uid() 
     AND profiles.role = 'admin'
   )
 );
@@ -39,7 +45,7 @@ FOR INSERT
 WITH CHECK (
   EXISTS (
     SELECT 1 FROM public.profiles 
-    WHERE profiles.user_id = auth.uid() 
+    WHERE profiles.id = auth.uid() 
     AND profiles.role = 'admin'
   )
 );
@@ -50,7 +56,7 @@ FOR UPDATE
 USING (
   EXISTS (
     SELECT 1 FROM public.profiles 
-    WHERE profiles.user_id = auth.uid() 
+    WHERE profiles.id = auth.uid() 
     AND profiles.role = 'admin'
   )
 );
