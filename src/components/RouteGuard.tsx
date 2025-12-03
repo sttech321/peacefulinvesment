@@ -30,10 +30,16 @@ const RouteGuard = ({ children }: RouteGuardProps) => {
     }
 
     // If authenticated and profile not complete, redirect to onboarding (but allow create-account access)
-    if (user && profile && !profile.has_completed_profile && location.pathname !== '/create-account' && !location.pathname.startsWith('/auth')) {
-      navigate('/create-account');
-      return;
-    }
+    if (
+    user &&
+    profile &&
+    !profile.has_completed_profile &&
+    !['/create-account', '/overseas-company'].includes(location.pathname) &&
+    !location.pathname.startsWith('/auth')
+  ) {
+    navigate('/create-account');
+    return;
+  }
 
     // If authenticated with complete profile but on create-account page
     if (user && profile && profile.has_completed_profile && location.pathname === '/create-account') {

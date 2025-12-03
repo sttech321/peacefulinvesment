@@ -229,7 +229,7 @@ const CreateAccount = () => {
       case 9:
         // USA clients must complete overseas company registration
         if (formData.isUSAClient && !formData.overseasCompanyCompleted) {
-          errors.push("Overseas company registration is required for USA clients before trading access");
+         // errors.push("Overseas company registration is required for USA clients before trading access");
         }
         break;
     }
@@ -254,6 +254,7 @@ const CreateAccount = () => {
   };
 
   const handleSubmit = async () => {
+    
     if (!validateCurrentStep()) return;
 
     setIsSubmitting(true);

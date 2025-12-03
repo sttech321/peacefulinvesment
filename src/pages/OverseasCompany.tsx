@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom"; 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,6 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useProfile } from "@/hooks/useProfile";
+
 import { 
   Building2, 
   Clock, 
@@ -49,8 +52,11 @@ const BUSINESS_TYPES = [
 ];
 
 const OverseasCompany = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { profile } = useProfile(); 
+  
   const { 
     requests, 
     companyInfo, 
@@ -70,13 +76,13 @@ const OverseasCompany = () => {
   });
 
   const [files, setFiles] = useState<FileList | null>(null);
-
+ 
   const currentRequest = requests?.[0];
   const hasActiveRequest = currentRequest && currentRequest.status !== 'completed' && currentRequest.status !== 'rejected';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+      
     if (!formData.companyName1 || !formData.jurisdiction || !formData.businessType) {
       toast({
         title: "Missing Information",
@@ -116,6 +122,12 @@ const OverseasCompany = () => {
         businessDescription: "",
         contactEmail: user?.email || ""
       });
+
+      if (user && profile && !profile.has_completed_profile) {
+        navigate('/create-account');
+      }
+
+
     } catch (error) {
       toast({
         title: "Submission Failed",

@@ -31,7 +31,7 @@ const OverseasCompanyStep: React.FC<OverseasCompanyStepProps> = ({
   const [isRedirecting, setIsRedirecting] = useState(false);
 
   const handleRedirectToOverseasCompany = async () => {
-    setIsRedirecting(true);
+   setIsRedirecting(true);
     
     // Add a small delay for better UX
     await new Promise(resolve => setTimeout(resolve, 500));
@@ -142,7 +142,7 @@ const OverseasCompanyStep: React.FC<OverseasCompanyStepProps> = ({
           </div>
 
           {/* Action Button */}
-          <div className="text-center">
+          {/* <div className="text-center">
             <Button 
               onClick={handleRedirectToOverseasCompany}
               disabled={isRedirecting}
@@ -161,7 +161,7 @@ const OverseasCompanyStep: React.FC<OverseasCompanyStepProps> = ({
                 </>
               )}
             </Button>
-          </div>
+          </div> */}
 
           {/* Additional Info */}
           <div className="text-center text-xs text-muted-foreground">

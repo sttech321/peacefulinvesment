@@ -332,7 +332,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
         </div>
 
         {/* State Selector */}
-        <div className="space-y-2">
+        {/* <div className="space-y-2">
           {showLabels && (
             <Label htmlFor="state" className="flex items-center space-x-1">
               <Building className="h-3 w-3" />
@@ -363,10 +363,10 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
               ))}
             </SelectContent>
           </Select>
-        </div>
+        </div> */}
 
         {/* City Selector */}
-        <div className="space-y-2">
+        {/* <div className="space-y-2">
           {showLabels && (
             <Label htmlFor="city" className="flex items-center space-x-1">
               <MapPin className="h-3 w-3" />
@@ -411,7 +411,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
               ))}
             </SelectContent>
           </Select>
-        </div>
+        </div> */}
       </div>
 
       {/* Selected Location Display */}
