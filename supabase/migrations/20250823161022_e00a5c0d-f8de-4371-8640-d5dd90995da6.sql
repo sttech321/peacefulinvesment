@@ -57,33 +57,33 @@ CREATE TRIGGER update_metatrader_accounts_updated_at
   EXECUTE FUNCTION public.update_metatrader_accounts_updated_at();
 
 -- Insert sample data for testing
-INSERT INTO public.metatrader_accounts (user_id, login, server, balance, equity, margin, free_margin, currency, status, account_type, leverage) VALUES
--- Note: This will only work if there are actual users in the auth.users table
--- You can remove this section if you want to avoid sample data
-(
-  (SELECT id FROM auth.users LIMIT 1),
-  'MT5001234',
-  'MetaQuotes-Demo',
-  10000.00,
-  10150.50,
-  200.00,
-  9950.50,
-  'USD',
-  'active',
-  'demo',
-  500
-),
-(
-  (SELECT id FROM auth.users LIMIT 1),
-  'MT5005678',
-  'IC Markets-Live',
-  5000.00,
-  4850.25,
-  150.00,
-  4700.25,
-  'EUR',
-  'active',
-  'live',
-  200
-)
-ON CONFLICT DO NOTHING;
+-- INSERT INTO public.metatrader_accounts (user_id, login, server, balance, equity, margin, free_margin, currency, status, account_type, leverage) VALUES
+-- -- Note: This will only work if there are actual users in the auth.users table
+-- -- You can remove this section if you want to avoid sample data
+-- (
+--   (SELECT id FROM auth.users LIMIT 1),
+--   'MT5001234',
+--   'MetaQuotes-Demo',
+--   10000.00,
+--   10150.50,
+--   200.00,
+--   9950.50,
+--   'USD',
+--   'active',
+--   'demo',
+--   500
+-- ),
+-- (
+--   (SELECT id FROM auth.users LIMIT 1),
+--   'MT5005678',
+--   'IC Markets-Live',
+--   5000.00,
+--   4850.25,
+--   150.00,
+--   4700.25,
+--   'EUR',
+--   'active',
+--   'live',
+--   200
+-- )
+-- ON CONFLICT DO NOTHING;

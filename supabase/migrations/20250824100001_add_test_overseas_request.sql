@@ -1,4 +1,4 @@
--- Insert a test overseas company request (only if no requests exist)
+-- Insert a test overseas company request (only if a user with role='user' exists)
 INSERT INTO public.overseas_company_requests (
   user_id,
   company_names,
@@ -10,15 +10,14 @@ INSERT INTO public.overseas_company_requests (
   submitted_at
 )
 SELECT 
-  profiles.user_id,
+  p.id, -- or p.user_id depending on your schema!
   ARRAY['Test Company Ltd', 'Test Corp International'],
   'United Kingdom',
   'LLC',
   'A test company for development purposes',
-  profiles.email,
+  p.email,
   'pending',
   NOW()
-FROM public.profiles 
-WHERE profiles.role = 'user' 
-LIMIT 1
-ON CONFLICT DO NOTHING;
+FROM public.profiles p
+WHERE p.role = 'user'
+LIMIT 1;

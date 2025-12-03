@@ -16,3 +16,6 @@ ADD COLUMN investment_experience TEXT,
 ADD COLUMN risk_tolerance TEXT,
 ADD COLUMN investment_goals TEXT[],
 ADD COLUMN documents_uploaded BOOLEAN DEFAULT FALSE;
+ADD COLUMN IF NOT EXISTS is_usa_client boolean DEFAULT false,
+ADD COLUMN IF NOT EXISTS overseas_company_required boolean DEFAULT false,
+ADD COLUMN IF NOT EXISTS overseas_company_completed boolean DEFAULT false;

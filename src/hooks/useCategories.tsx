@@ -16,6 +16,7 @@ export interface BlogCategory {
   created_at?: string;
   updated_at?: string;
   subcategories?: Subcategory[];
+  parent_id?: string | null;
 }
 
 export interface CategoryMap {
@@ -31,6 +32,7 @@ type CreateCategoryInput = {
   slug: string;
   description?: string;
   color?: string;
+  parent_id?: string | null;
 };
 
 type UpdateCategoryInput = Partial<
@@ -64,6 +66,7 @@ export function useCategories() {
           created_at: cat.created_at,
           updated_at: cat.updated_at,
           subcategories: cat.blog_subcategories || [],
+          parent_id: cat.parent_id ?? null,
         })) ?? [];
 
       setCategories(mapped);
@@ -101,17 +104,12 @@ export function useCategories() {
             slug: input.slug,
             description: input.description ?? null,
             color: input.color ?? "#6B7280",
+            parent_id: input.parent_id ?? null, // <-- include parent_id
           },
         ])
         .select(
           `
-          id,
-          name,
-          slug,
-          description,
-          color,
-          created_at,
-          updated_at
+         *
         `
         )
         .single();
@@ -140,13 +138,7 @@ export function useCategories() {
         .eq("id", id)
         .select(
           `
-          id,
-          name,
-          slug,
-          description,
-          color,
-          created_at,
-          updated_at
+         *
         `
         )
         .single();
