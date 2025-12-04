@@ -94,11 +94,11 @@ export default function MetaTraderAccounts() {
     // Special handling for no account linked error
     if (error === 'no_accounts_found') {
       return (
-        <div className="min-h-screen pink-yellow-shadow">
+        <div className="min-h-screen pink-yellow-shadow pt-24">
           <div className="container mx-auto px-4 py-8">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
               <div>
-                <h1 className="text-3xl font-bold text-foreground mb-2">MetaTrader Accounts</h1>
+                <h1 className="text-3xl font-bold text-white mb-2">MetaTrader Accounts</h1>
                 <p className="text-muted-foreground font-open-sans">
                   Monitor and manage your trading accounts in real-time
                 </p>
@@ -152,11 +152,11 @@ export default function MetaTraderAccounts() {
       );
     } else if (error === 'no_account_linked') {
       return (
-        <div className="min-h-screen pink-yellow-shadow">
+        <div className="min-h-screen pink-yellow-shadow pt-24">
           <div className="container mx-auto px-4 py-8">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4 ">
               <div>
-                <h1 className="text-3xl font-bold text-foreground mb-2">MetaTrader Accounts</h1>
+                <h1 className="text-3xl font-bold text-white mb-2">MetaTrader Accounts</h1>
                 <p className="text-muted-foreground">
                   Monitor and manage your trading accounts in real-time
                 </p>
@@ -164,15 +164,15 @@ export default function MetaTraderAccounts() {
             </div>
 
             <div className="text-center py-12">
-              <Card className="glass-card max-w-2xl mx-auto">
+              <Card className="glass-card max-w-2xl mx-auto bg-black">
                 <CardContent className="pt-8 pb-8">
                   <div className="flex flex-col items-center space-y-6">
-                    <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center">
-                      <Clock className="h-8 w-8 text-amber-600" />
+                    <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center bg-primary/10">
+                      <Clock className="h-8 w-8 text-primary" />
                     </div>
                     
                     <div className="space-y-2">
-                      <h3 className="text-2xl font-semibold text-foreground">No Trading Account Linked</h3>
+                      <h3 className="text-2xl font-semibold text-white">No Trading Account Linked</h3>
                       <p className="text-muted-foreground max-w-md">
                         Your trading account hasn't been linked to your profile yet. This usually happens during the account setup process.
                       </p>
