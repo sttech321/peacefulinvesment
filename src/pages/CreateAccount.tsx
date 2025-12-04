@@ -27,7 +27,7 @@ export interface FormData {
   lastName: string;
   dateOfBirth: string;
   socialSecurityNumber: string;
-  
+
   // Contact Information
   phone: string;
   address: string;
@@ -37,7 +37,7 @@ export interface FormData {
   stateCode: string;
   city: string;
   zipCode: string;
-  
+
   // Employment Information
   employmentStatus: string;
   employer: string;
@@ -49,25 +49,25 @@ export interface FormData {
   employerZip: string;
   businessNature: string;
   occupation: string;
-  
+
   // Financial Status
   annualIncome: number;
   netWorth: number;
   liquidNetWorth: number;
-  
+
   // Security Setup
   securityQuestions: Array<{ question: string; answer: string }>;
-  
+
   // Document Upload
   documents: File[];
   documentsByType: Record<string, File[]>;
-  
+
   // Investment Experience
   investmentExperience: string;
   riskTolerance: string;
   investmentGoals: string[];
   investmentTimeHorizon: string;
-  
+
   // USA Client Requirements
   isUSAClient: boolean;
   overseasCompanyRequired: boolean;
@@ -79,7 +79,7 @@ const TOTAL_STEPS = 8; // Will be 9 for USA clients
 
 const CreateAccount = () => {
   const { user, loading: authLoading } = useAuth();
-  const { profile, loading: profileLoading, updateProfile } = useProfile();
+  const { profile, loading: profileLoading, updateProfile, refetchProfile } = useProfile();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -127,17 +127,17 @@ const CreateAccount = () => {
     overseasCompanyCompleted: false,
     overseasCompanyId: undefined,
   });
-  
+
   const [stepErrors, setStepErrors] = useState<Record<number, string[]>>({});
 
   // Note: CreateAccount should be accessible without authentication for referral links
   // The authentication check is handled by the RouteGuard component
 
-  useEffect(() => {
-    if (!profileLoading && profile?.has_completed_profile) {
-      navigate("/dashboard");
-    }
-  }, [profile, profileLoading, navigate]);
+  // useEffect(() => {
+  //   if (!profileLoading && profile?.has_completed_profile) {
+  //     navigate("/dashboard");
+  //   }
+  // }, [profile, profileLoading, navigate]);
 
   // Redirect unauthenticated users to auth page with referral code
   useEffect(() => {
@@ -153,7 +153,7 @@ const CreateAccount = () => {
   const updateFormData = (stepData: Partial<FormData>) => {
     setFormData(prev => {
       const newData = { ...prev, ...stepData };
-      
+
       // Check if this is a USA client and update accordingly
       const isUSAClient = newData.countryCode === 'US' || newData.country === 'United States';
       if (isUSAClient !== prev.isUSAClient) {
@@ -162,14 +162,14 @@ const CreateAccount = () => {
         newData.overseasCompanyCompleted = false;
         newData.overseasCompanyId = undefined;
       }
-      
+
       return newData;
     });
   };
 
   const validateCurrentStep = (): boolean => {
     const errors: string[] = [];
-    
+
     switch (currentStep) {
       case 1:
         if (!formData.firstName.trim()) errors.push("First name is required");
@@ -211,7 +211,7 @@ const CreateAccount = () => {
       case 6:
         // Check if at least one required document type has files
         const requiredDocumentTypes = ['drivers_license_front', 'drivers_license_back', 'passport'];
-        const hasRequiredDocuments = requiredDocumentTypes.some(type => 
+        const hasRequiredDocuments = requiredDocumentTypes.some(type =>
           formData.documentsByType[type] && formData.documentsByType[type].length > 0
         );
         if (!hasRequiredDocuments) {
@@ -229,7 +229,7 @@ const CreateAccount = () => {
       case 9:
         // USA clients must complete overseas company registration
         if (formData.isUSAClient && !formData.overseasCompanyCompleted) {
-         // errors.push("Overseas company registration is required for USA clients before trading access");
+          // errors.push("Overseas company registration is required for USA clients before trading access");
         }
         break;
     }
@@ -254,7 +254,6 @@ const CreateAccount = () => {
   };
 
   const handleSubmit = async () => {
-    
     if (!validateCurrentStep()) return;
 
     setIsSubmitting(true);
@@ -278,25 +277,23 @@ const CreateAccount = () => {
         investment_experience: formData.investmentExperience,
         risk_tolerance: formData.riskTolerance,
         investment_goals: formData.investmentGoals,
-        documents_uploaded: Object.values(formData.documentsByType || {}).flat().length > 0,
+        documents_uploaded:
+          Object.values(formData.documentsByType || {}).flat().length > 0,
         has_completed_profile: true,
       };
 
-      // Step 2: Verifying Documents
+      // Step 2–5: fake loading steps (unchanged)
       setLoadingStep(2);
       await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // Step 3: Setting Up Security
       setLoadingStep(3);
       await new Promise(resolve => setTimeout(resolve, 1500));
 
-      // Step 4: Preparing Investment Profile
       setLoadingStep(4);
       await new Promise(resolve => setTimeout(resolve, 1500));
 
-      // Step 5: Finalizing Account
       setLoadingStep(5);
-      
+
       // Add USA client information to profile updates
       const finalProfileUpdates = {
         ...profileUpdates,
@@ -306,17 +303,21 @@ const CreateAccount = () => {
         overseas_company_id: formData.overseasCompanyId,
       };
 
+      // ✅ First update profile in DB + in-memory via useProfile
       const { error } = await updateProfile(finalProfileUpdates);
 
       if (error) {
         setIsSubmitting(false);
         toast({
-          title: "Error",
-          description: "Failed to save profile. Please try again.",
-          variant: "destructive",
+          title: 'Error',
+          description: 'Failed to save profile. Please try again.',
+          variant: 'destructive',
         });
         return;
       }
+
+      // (Optional) extra safety – refetch AFTER update, not before
+      // await refetchProfile();
 
       // Success delay for better UX
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -324,30 +325,29 @@ const CreateAccount = () => {
       // Handle USA client redirect
       if (formData.isUSAClient) {
         toast({
-          title: "Account Created!",
-          description: "Your account has been created. You'll now be redirected to complete your overseas company registration.",
+          title: 'Account Created!',
+          description:
+            "Your account has been created. You'll now be redirected to complete your overseas company registration.",
         });
-        
-        // Redirect USA clients to overseas company page
-        navigate("/overseas-company");
+        navigate('/overseas-company');
       } else {
         toast({
-          title: "Profile Complete!",
-          description: "Welcome to Peaceful Investment. Your account is now set up.",
+          title: 'Profile Complete!',
+          description:
+            'Welcome to Peaceful Investment. Your account is now set up.',
         });
-        
-        // Redirect non-USA clients to dashboard
-        navigate("/dashboard");
+        navigate('/dashboard', { state: { fromOnboarding: true } });
       }
     } catch (error) {
       setIsSubmitting(false);
       toast({
-        title: "Error",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'An unexpected error occurred. Please try again.',
+        variant: 'destructive',
       });
     }
   };
+
 
   const renderStep = () => {
     const stepProps = {

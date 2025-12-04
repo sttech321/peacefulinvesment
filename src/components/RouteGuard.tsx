@@ -14,47 +14,52 @@ const RouteGuard = ({ children }: RouteGuardProps) => {
   const location = useLocation();
 
   useEffect(() => {
-    // Don't do anything while loading
     if (authLoading || profileLoading) return;
 
-    // If not authenticated and trying to access protected routes
-    if (!user && location.pathname.startsWith('/dashboard')) {
-      navigate('/auth');
+    const path = location.pathname;
+    const state = location.state as { fromOnboarding?: boolean } | null;
+    const fromOnboarding = state?.fromOnboarding;
+
+    // 1️⃣ Not authenticated → protect dashboard
+    if (!user) {
+      if (path.startsWith("/dashboard")) {
+        navigate("/auth");
+      }
       return;
     }
 
-    // If authenticated but trying to access auth page
-    if (user && location.pathname === '/auth') {
-      navigate('/');
+    // From here: user is authenticated
+
+    // 2️⃣ Authenticated but on /auth → send home
+    if (path === "/auth") {
+      navigate("/");
       return;
     }
 
-    // If authenticated and profile not complete, redirect to onboarding (but allow create-account access)
+    // 3️⃣ Profile incomplete → force onboarding,
+    //    BUT allow a one-time pass if we *just* came from onboarding
     if (
-    user &&
-    profile &&
-    !profile.has_completed_profile &&
-    !['/create-account', '/overseas-company'].includes(location.pathname) &&
-    !location.pathname.startsWith('/auth')
-  ) {
-    navigate('/create-account');
-    return;
-  }
-
-    // If authenticated with complete profile but on create-account page
-    if (user && profile && profile.has_completed_profile && location.pathname === '/create-account') {
-      navigate('/dashboard');
+      profile &&
+      !profile.has_completed_profile &&
+      !fromOnboarding && // ← this is the key
+      !["/create-account", "/overseas-company"].includes(path) &&
+      !path.startsWith("/auth")
+    ) {
+      navigate("/create-account");
       return;
     }
 
-    // If trying to access dashboard without completing profile
-    if (user && profile && !profile.has_completed_profile && location.pathname.startsWith('/dashboard')) {
-      navigate('/create-account');
+    // 4️⃣ Profile complete but still on create-account → go to dashboard
+    if (
+      profile &&
+      profile.has_completed_profile &&
+      path === "/create-account"
+    ) {
+      navigate("/dashboard");
       return;
     }
-  }, [user, profile, authLoading, profileLoading, location.pathname, navigate]);
+  }, [user, profile, authLoading, profileLoading, location.pathname, location.state, navigate]);
 
-  // Show loading while checking authentication and profile
   if (authLoading || (user && profileLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center pink-yellow-shadow">

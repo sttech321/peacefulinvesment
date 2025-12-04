@@ -50,7 +50,6 @@ const Auth = () => {
         setErrors({ general: error.message });
       } else {
         setErrors({});
-        // Show success message
         alert('Confirmation email sent! Please check your inbox.');
       }
     } catch (error) {
@@ -61,6 +60,19 @@ const Auth = () => {
       setIsLoading(false);
     }
   };
+
+  // 🔹 NEW: keep isSignUp in sync with ?mode=... and reset form on change
+  useEffect(() => {
+    const mode = searchParams.get('mode');
+    setIsSignUp(mode === 'signup');
+
+    // reset form when mode changes
+    setErrors({});
+    setEmail('');
+    setPassword('');
+    setConfirmPassword('');
+    setFullName('');
+  }, [searchParams]);
 
   // Capture referral code from URL and handle auth errors
   useEffect(() => {
@@ -86,7 +98,6 @@ const Auth = () => {
             general:
               'Email confirmation link has expired. Please enter your email below and click "Resend Confirmation" to get a new link.',
           });
-          // Clear the hash to prevent showing the error again
           window.history.replaceState(
             {},
             document.title,
@@ -96,7 +107,6 @@ const Auth = () => {
           setErrors({
             general: `Authentication error: ${errorDescription || error}`,
           });
-          // Clear the hash to prevent showing the error again
           window.history.replaceState(
             {},
             document.title,
@@ -162,7 +172,6 @@ const Auth = () => {
         );
 
         if (!error) {
-          // Store referral code in localStorage for later processing
           if (referralCode) {
             localStorage.setItem('pendingReferralCode', referralCode);
             console.log(
@@ -171,7 +180,6 @@ const Auth = () => {
             );
           }
 
-          // Don't navigate on signup as user needs to confirm email
           setEmail('');
           setPassword('');
           setConfirmPassword('');
@@ -188,13 +196,20 @@ const Auth = () => {
     }
   };
 
+  // 🔹 UPDATED: toggle mode via URL, keep ref param if present
   const switchMode = () => {
-    setIsSignUp(!isSignUp);
-    setErrors({});
-    setEmail('');
-    setPassword('');
-    setConfirmPassword('');
-    setFullName('');
+    const currentMode = searchParams.get('mode');
+    const nextIsSignUp = !isSignUp;
+
+    const params = new URLSearchParams(searchParams);
+    if (nextIsSignUp) {
+      params.set('mode', 'signup');
+    } else {
+      params.delete('mode');
+    }
+
+    const query = params.toString();
+    navigate(`/auth${query ? `?${query}` : ''}`);
   };
 
   return (
@@ -360,7 +375,7 @@ const Auth = () => {
                     {isLoading ? 'Loading...' : isSignUp ? 'Sign Up' : 'Login'}
                   </Button>
                 </div>
-                {/* Resend Confirmation Button for expired links */}
+
                 {errors.general && errors.general.includes('expired') && (
                   <Button
                     type='button'
