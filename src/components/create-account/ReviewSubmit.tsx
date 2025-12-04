@@ -40,7 +40,7 @@ const ReviewSubmit = ({ formData }: ReviewSubmitProps) => {
     <div className="space-y-6">
       <div className="text-center mb-6">
         <CheckCircle className="h-12 w-12 text-primary mx-auto mb-4" />
-        <h2 className="text-2xl font-bold text-foreground mb-2">
+        <h2 className="text-2xl font-bold text-white mb-2 ">
           Review Your Information
         </h2>
         <p className="text-muted-foreground">
@@ -50,47 +50,47 @@ const ReviewSubmit = ({ formData }: ReviewSubmitProps) => {
 
       <div className="grid gap-6">
         {/* Personal Information */}
-        <Card>
+        <Card className="p-0 bg-white/10 border border-secondary-foreground">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
               <User className="h-5 w-5 text-primary" />
               Personal Information
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Full Name</p>
-                <p className="font-medium">{formData.firstName} {formData.lastName}</p>
+          <CardContent className="space-y-2 pt-0 sm:pt-0">
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="pb-2">
+                <p className="text-sm text-muted-foreground pb-2">Full Name</p>
+                <p className="text-sm font-normal text-white/50 h-10 px-3 p-2 rounded-sm bg-white/10 border-0 leading-[25px]">{formData.firstName} {formData.lastName}</p>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Date of Birth</p>
-                <p className="font-medium">{formData.dateOfBirth}</p>
+              <div className="pb-2">
+                <p className="text-sm text-muted-foreground pb-2">Date of Birth</p>
+                <p className="text-sm font-normal text-white/50 h-10 px-3 p-2 rounded-sm bg-white/10 border-0 leading-[25px]">{formData.dateOfBirth}</p>
               </div>
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Social Security Number</p>
-              <p className="font-medium">***-**-{formData.socialSecurityNumber.slice(-4)}</p>
+            <div className="pb-2">
+              <p className="text-sm text-muted-foreground pb-2">Social Security Number</p>
+              <p className="text-sm font-normal text-white/50 h-10 px-3 p-2 rounded-sm bg-white/10 border-0 leading-[25px]">***-**-{formData.socialSecurityNumber.slice(-4)}</p>
             </div>
           </CardContent>
         </Card>
 
         {/* Contact Information */}
-        <Card>
+        <Card className="p-0 bg-white/10 border border-secondary-foreground">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
               <MapPin className="h-5 w-5 text-primary" />
               Contact Information
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
-            <div>
-              <p className="text-sm text-muted-foreground">Phone</p>
-              <p className="font-medium">{formData.phone}</p>
+          <CardContent className="space-y-2 pt-0 sm:pt-0">
+            <div className="pb-2">
+              <p className="text-sm text-muted-foreground pb-2">Phone</p>
+              <p className="text-sm font-normal text-white/50 h-10 px-3 p-2 rounded-sm bg-white/10 border-0 leading-[25px]">{formData.phone}</p>
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Address</p>
-              <p className="font-medium">
+            <div className="pb-2">
+              <p className="text-sm text-muted-foreground pb-2">Address</p>
+              <p className="text-sm font-normal text-white/50 px-3 p-2 rounded-sm bg-white/10 border-0 leading-[25px]">
                 {formData.address}<br />
                 {formData.city}, {formData.state} {formData.zipCode}
               </p>
@@ -99,57 +99,57 @@ const ReviewSubmit = ({ formData }: ReviewSubmitProps) => {
         </Card>
 
         {/* Employment Information */}
-        <Card>
+        <Card className="p-0 bg-white/10 border border-secondary-foreground">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
               <Briefcase className="h-5 w-5 text-primary" />
               Employment Information
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
-            <div>
-              <p className="text-sm text-muted-foreground">Employment Status</p>
-              <p className="font-medium capitalize">{formData.employmentStatus.replace('-', ' ')}</p>
+          <CardContent className="space-y-2 pt-0 sm:pt-0">
+            <div className="pb-2">
+              <p className="text-sm text-muted-foreground pb-2">Employment Status</p>
+              <p className="text-sm font-normal text-white/50 h-10 px-3 p-2 rounded-sm bg-white/10 border-0 leading-[25px] capitalize">{formData.employmentStatus.replace('-', ' ')}</p>
             </div>
             {formData.employer && (
-              <div>
-                <p className="text-sm text-muted-foreground">Employer</p>
-                <p className="font-medium">{formData.employer}</p>
+              <div className="pb-2">
+                <p className="text-sm text-muted-foreground pb-2">Employer</p>
+                <p className="text-sm font-normal text-white/50 h-10 px-3 p-2 rounded-sm bg-white/10 border-0 leading-[25px]">{formData.employer}</p>
               </div>
             )}
             {formData.occupation && (
-              <div>
-                <p className="text-sm text-muted-foreground">Occupation</p>
-                <p className="font-medium">{formData.occupation}</p>
+              <div className="pb-0">
+                <p className="text-sm text-muted-foreground pb-2">Occupation</p>
+                <p className="text-sm font-normal text-white/50 h-10 px-3 p-2 rounded-sm bg-white/10 border-0 leading-[25px]">{formData.occupation}</p>
               </div>
             )}
           </CardContent>
         </Card>
 
         {/* Financial Information */}
-        <Card>
+        <Card className="p-0 bg-white/10 border border-secondary-foreground">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
               <DollarSign className="h-5 w-5 text-primary" />
               Financial Information
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="space-y-2 pt-0 sm:pt-0">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Annual Income</p>
-                <p className="font-medium">{formatCurrency(formData.annualIncome)}</p>
+              <div className="pb-2">
+                <p className="text-sm text-muted-foreground pb-2">Annual Income</p>
+                <p className="text-sm font-normal text-white/50 h-10 px-3 p-2 rounded-sm bg-white/10 border-0 leading-[25px]">{formatCurrency(formData.annualIncome)}</p>
               </div>
               {formData.netWorth > 0 && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Net Worth</p>
-                  <p className="font-medium">{formatCurrency(formData.netWorth)}</p>
+                <div className="pb-2">
+                  <p className="text-sm text-muted-foreground pb-2">Net Worth</p>
+                  <p className="text-sm font-normal text-white/50 h-10 px-3 p-2 rounded-sm bg-white/10 border-0 leading-[25px]">{formatCurrency(formData.netWorth)}</p>
                 </div>
               )}
               {formData.liquidNetWorth > 0 && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Liquid Net Worth</p>
-                  <p className="font-medium">{formatCurrency(formData.liquidNetWorth)}</p>
+                <div className="pb-2">
+                  <p className="text-sm text-muted-foreground pb-2">Liquid Net Worth</p>
+                  <p className="text-sm font-normal text-white/50 h-10 px-3 p-2 rounded-sm bg-white/10 border-0 leading-[25px]">{formatCurrency(formData.liquidNetWorth)}</p>
                 </div>
               )}
             </div>
@@ -157,61 +157,61 @@ const ReviewSubmit = ({ formData }: ReviewSubmitProps) => {
         </Card>
 
         {/* Security Setup */}
-        <Card>
+        <Card className="p-0 bg-white/10 border border-secondary-foreground">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
               <Shield className="h-5 w-5 text-primary" />
               Security Setup
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div>
-              <p className="text-sm text-muted-foreground">Security Questions</p>
-              <p className="font-medium">{formData.securityQuestions.length} questions configured</p>
+          <CardContent className="space-y-2 pt-0 sm:pt-0">
+            <div className="pb-2">
+              <p className="text-sm text-muted-foreground pb-2">Security Questions</p>
+              <p className="text-sm font-normal text-white/50 h-10 px-3 p-2 rounded-sm bg-white/10 border-0 leading-[25px]">{formData.securityQuestions.length} questions configured</p>
             </div>
           </CardContent>
         </Card>
 
         {/* Documents */}
-        <Card>
+        <Card className="p-0 bg-white/10 border border-secondary-foreground">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
               <FileText className="h-5 w-5 text-primary" />
               Documents
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div>
-              <p className="text-sm text-muted-foreground">Uploaded Documents</p>
+          <CardContent className="space-y-2 pt-0 sm:pt-0">
+            <div className="pb-2">
+              <p className="text-sm text-white">Uploaded Documents</p>
               {(() => {
                 const totalDocs = Object.values(formData.documentsByType || {}).flat().length;
                 const documentTypes = Object.entries(formData.documentsByType || {}).filter(([_, files]) => files.length > 0);
                 
                 return (
                   <>
-                    <p className="font-medium">{totalDocs} document(s) uploaded</p>
+                    <p className="font-normal text-sm text-muted-foreground pt-1">{totalDocs} document(s) uploaded</p>
                     {documentTypes.length > 0 && (
-                      <div className="mt-4 space-y-3">
+                      <div className="mt-4 grid sm:grid-cols-2 gap-4">
                         {documentTypes.map(([docType, files]) => (
                           <div key={docType} className="space-y-2">
-                            <h4 className="text-sm font-medium capitalize">
+                            <h4 className="text-sm font-medium capitalize text-muted-foreground">
                               {docType.replace(/_/g, ' ').replace('front', 'Front').replace('back', 'Back')}
                             </h4>
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="">
                               {files.map((file, index) => (
-                                <div key={index} className="flex items-center space-x-3 p-3 border rounded-md bg-muted/50">
+                                <div key={index} className="flex items-center space-x-3 p-3 border-0 rounded-sm bg-white/10">
                                   {file.type.startsWith('image/') ? (
                                     <img 
                                       src={URL.createObjectURL(file)} 
                                       alt={file.name}
-                                      className="w-16 h-16 object-cover rounded border"
+                                      className="w-12 h-12 object-cover rounded border"
                                     />
                                   ) : (
-                                    <div className="w-16 h-16 bg-blue-100 rounded border flex items-center justify-center">
+                                    <div className="w-12 h-12 bg-blue-100 rounded border flex items-center justify-center">
                                       <span className="text-sm font-medium">PDF</span>
                                     </div>
                                   )}
-                                  <span className="text-sm truncate flex-1">{file.name}</span>
+                                  <span className="text-sm truncate flex-1 text-muted-foreground">{file.name}</span>
                                 </div>
                               ))}
                             </div>
@@ -227,35 +227,35 @@ const ReviewSubmit = ({ formData }: ReviewSubmitProps) => {
         </Card>
 
         {/* Investment Profile */}
-        <Card>
+        <Card className="p-0 bg-white/10 border border-secondary-foreground">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
               <TrendingUp className="h-5 w-5 text-primary" />
               Investment Profile
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="space-y-2 pt-0 sm:pt-0">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Experience Level</p>
-                <p className="font-medium">{getExperienceLabel(formData.investmentExperience)}</p>
+              <div className="pb-2">
+                <p className="text-sm text-muted-foreground pb-2">Experience Level</p>
+                <p className="text-sm font-normal text-white/50 h-10 px-3 p-2 rounded-sm bg-white/10 border-0 leading-[25px]">{getExperienceLabel(formData.investmentExperience)}</p>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Risk Tolerance</p>
-                <p className="font-medium">{getRiskToleranceLabel(formData.riskTolerance)}</p>
+              <div className="pb-2">
+                <p className="text-sm text-muted-foreground pb-2">Risk Tolerance</p>
+                <p className="text-sm font-normal text-white/50 h-10 px-3 p-2 rounded-sm bg-white/10 border-0 leading-[25px]">{getRiskToleranceLabel(formData.riskTolerance)}</p>
               </div>
             </div>
             {formData.investmentTimeHorizon && (
-              <div>
-                <p className="text-sm text-muted-foreground">Time Horizon</p>
-                <p className="font-medium capitalize">{formData.investmentTimeHorizon.replace('-', ' ')}-term</p>
+              <div className="pb-2">
+                <p className="text-sm text-muted-foreground pb-2">Time Horizon</p>
+                <p className="text-sm font-normal text-white/50 h-10 px-3 p-2 rounded-sm bg-white/10 border-0 leading-[25px] capitalize">{formData.investmentTimeHorizon.replace('-', ' ')}-term</p>
               </div>
             )}
-            <div>
-              <p className="text-sm text-muted-foreground">Investment Goals</p>
-              <div className="flex flex-wrap gap-1 mt-1">
+            <div className="pb-2">
+              <p className="text-sm text-muted-foreground pb-2">Investment Goals</p>
+              <div className="flex flex-wrap gap-1 mt-0">
                 {formData.investmentGoals.map((goal, index) => (
-                  <Badge key={index} variant="outline">
+                  <Badge key={index} variant="outline" className="bg-white/10 border-0 text-xs font-normal text-white/50">
                     {goal}
                   </Badge>
                 ))}
@@ -265,10 +265,10 @@ const ReviewSubmit = ({ formData }: ReviewSubmitProps) => {
         </Card>
       </div>
 
-      <Separator />
+      <Separator className="bg-white/20" />
 
-      <div className="bg-muted/20 p-4 rounded-lg">
-        <h4 className="font-semibold mb-2">Next Steps</h4>
+      <div className="bg-white/10 p-4 border border-secondary-foreground rounded-sm">
+        <h4 className="font-semibold mb-2 text-white">Next Steps</h4>
         <ul className="text-sm space-y-1 text-muted-foreground">
           <li>• Your application will be reviewed within 1-2 business days</li>
           <li>• We may contact you for additional verification if needed</li>

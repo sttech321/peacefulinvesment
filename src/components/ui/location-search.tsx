@@ -153,7 +153,7 @@ const LocationSearch: React.FC<LocationSearchProps> = ({
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={handleKeyDown}
           onFocus={() => query.length >= 2 && setIsOpen(true)}
-          className="pl-10 pr-12"
+          className="pl-10 pr-12 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent"
         />
         {enableGeolocation && (
           <Button
@@ -175,7 +175,7 @@ const LocationSearch: React.FC<LocationSearchProps> = ({
 
       {/* Search Results */}
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-popover border border-border rounded-md shadow-lg">
+        <div className="absolute top-full left-0 right-0 z-50 mt-1 rounded-md shadow-lg border border-secondary-foreground bg-black/90 text-white">
           <ScrollArea className="max-h-80">
             <div ref={resultsRef} className="p-1">
               {isLoading ? (
@@ -194,8 +194,8 @@ const LocationSearch: React.FC<LocationSearchProps> = ({
                       className={cn(
                         "flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors",
                         index === selectedIndex 
-                          ? "bg-accent text-accent-foreground" 
-                          : "hover:bg-accent hover:text-accent-foreground"
+                          ? "bg-white text-accent-foreground" 
+                          : "hover:bg-white/10 hover:text-accent-foreground"
                       )}
                       onClick={() => handleLocationSelect(result)}
                     >

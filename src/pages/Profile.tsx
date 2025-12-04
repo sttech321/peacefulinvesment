@@ -106,7 +106,7 @@ const Profile = () => {
     return (
       <div className="min-h-screen pink-yellow-shadow pt-28 px-4">
         <div className="max-w-7xl mx-auto flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-white" />
+         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary" bis_skin_checked="1"></div>
         </div>
       </div>
     );
@@ -184,7 +184,7 @@ const Profile = () => {
                             <FormLabel className="text-white">Full Name</FormLabel>
                             <FormControl>
                               <Input
-                               className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
+                               className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
                                {...field} disabled={!isEditing} />
                             </FormControl>
                             <FormMessage />
@@ -200,7 +200,7 @@ const Profile = () => {
                             <FormLabel className="text-white">Phone Number</FormLabel>
                             <FormControl>
                               <Input
-                               className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
+                               className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
                                {...field} disabled={!isEditing} />
                             </FormControl>
                             <FormMessage />
@@ -217,7 +217,7 @@ const Profile = () => {
                           <FormLabel className="text-white">Address</FormLabel>
                           <FormControl>
                             <Input 
-                              className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
+                              className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
                               {...field} disabled={!isEditing} />
                           </FormControl>
                           <FormMessage />
@@ -234,7 +234,7 @@ const Profile = () => {
                             <FormLabel className="text-white">City</FormLabel>
                             <FormControl>
                               <Input 
-                                className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
+                                className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
                                 {...field} disabled={!isEditing} />
                             </FormControl>
                             <FormMessage />
@@ -250,7 +250,7 @@ const Profile = () => {
                             <FormLabel className="text-white">State</FormLabel>
                             <FormControl>
                               <Input 
-                                className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
+                                className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
                                 {...field} disabled={!isEditing} />
                             </FormControl>
                             <FormMessage />
@@ -266,7 +266,7 @@ const Profile = () => {
                             <FormLabel className="text-white">ZIP Code</FormLabel>
                             <FormControl>
                               <Input 
-                              className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
+                              className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
                               {...field} disabled={!isEditing} />
                             </FormControl>
                             <FormMessage />
@@ -284,7 +284,7 @@ const Profile = () => {
                             <FormLabel className="text-white">Employment Status</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value} disabled={!isEditing}>
                               <FormControl>
-                                <SelectTrigger className="rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent" style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
+                                <SelectTrigger className="rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400" style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                                   <SelectValue placeholder="Select employment status" />
                                 </SelectTrigger>
                               </FormControl>
@@ -309,7 +309,7 @@ const Profile = () => {
                             <FormLabel className="text-white">Employer</FormLabel>
                             <FormControl>
                               <Input 
-                                className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
+                                className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
                                 {...field} disabled={!isEditing} />
                             </FormControl>
                             <FormMessage />
@@ -327,7 +327,7 @@ const Profile = () => {
                           <FormControl>
                             <Input 
                               type="number" 
-                              className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
+                              className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
                               {...field} 
                               value={field.value || ""}
                               onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
@@ -348,7 +348,7 @@ const Profile = () => {
                             <FormLabel className="text-white">Investment Experience</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value} disabled={!isEditing}>
                               <FormControl>
-                                <SelectTrigger className="rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent" style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
+                                <SelectTrigger className="rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400" style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                                   <SelectValue placeholder="Select experience level" />
                                 </SelectTrigger>
                               </FormControl>
@@ -372,7 +372,7 @@ const Profile = () => {
                             <FormLabel className="text-white">Risk Tolerance</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value} disabled={!isEditing}>
                               <FormControl>
-                                <SelectTrigger className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
+                                <SelectTrigger className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                                   <SelectValue placeholder="Select risk tolerance" />
                                 </SelectTrigger>
                               </FormControl>

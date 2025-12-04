@@ -304,7 +304,7 @@ const OverseasCompany = () => {
                         onValueChange={(value) => setFormData({ ...formData, jurisdiction: value })}
                         disabled={hasActiveRequest}
                       >
-                        <SelectTrigger className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
+                        <SelectTrigger className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                           <SelectValue placeholder="Select jurisdiction" />
                         </SelectTrigger>
                         <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
@@ -324,7 +324,7 @@ const OverseasCompany = () => {
                         onValueChange={(value) => setFormData({ ...formData, businessType: value })}
                         disabled={hasActiveRequest}
                       >
-                        <SelectTrigger className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
+                        <SelectTrigger className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                           <SelectValue placeholder="Select business type" />
                         </SelectTrigger>
                         <SelectContent className='border-secondary-foreground bg-black/90 text-white'>

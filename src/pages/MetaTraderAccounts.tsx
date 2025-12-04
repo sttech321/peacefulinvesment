@@ -94,11 +94,11 @@ export default function MetaTraderAccounts() {
     // Special handling for no account linked error
     if (error === 'no_accounts_found') {
       return (
-        <div className="min-h-screen pink-yellow-shadow">
+        <div className="min-h-screen pink-yellow-shadow pt-24">
           <div className="container mx-auto px-4 py-8">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
               <div>
-                <h1 className="text-3xl font-bold text-foreground mb-2">MetaTrader Accounts</h1>
+                <h1 className="text-3xl font-bold text-white mb-2">MetaTrader Accounts</h1>
                 <p className="text-muted-foreground font-open-sans">
                   Monitor and manage your trading accounts in real-time
                 </p>
@@ -152,11 +152,11 @@ export default function MetaTraderAccounts() {
       );
     } else if (error === 'no_account_linked') {
       return (
-        <div className="min-h-screen pink-yellow-shadow">
+        <div className="min-h-screen pink-yellow-shadow pt-24">
           <div className="container mx-auto px-4 py-8">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4 ">
               <div>
-                <h1 className="text-3xl font-bold text-foreground mb-2">MetaTrader Accounts</h1>
+                <h1 className="text-3xl font-bold text-white mb-2">MetaTrader Accounts</h1>
                 <p className="text-muted-foreground">
                   Monitor and manage your trading accounts in real-time
                 </p>
@@ -164,41 +164,44 @@ export default function MetaTraderAccounts() {
             </div>
 
             <div className="text-center py-12">
-              <Card className="glass-card max-w-2xl mx-auto">
+              <Card className="glass-card max-w-3xl mx-auto bg-black">
                 <CardContent className="pt-8 pb-8">
                   <div className="flex flex-col items-center space-y-6">
-                    <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center">
-                      <Clock className="h-8 w-8 text-amber-600" />
+                    <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center bg-primary/10">
+                      <Clock className="h-8 w-8 text-primary" />
                     </div>
                     
                     <div className="space-y-2">
-                      <h3 className="text-2xl font-semibold text-foreground">No Trading Account Linked</h3>
+                      <h3 className="text-2xl font-semibold text-white">No Trading Account Linked</h3>
                       <p className="text-muted-foreground max-w-md">
                         Your trading account hasn't been linked to your profile yet. This usually happens during the account setup process.
                       </p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-lg">
-                      <Link to="/overseas-company">
-                        <Button className="w-full glass-card" variant="outline">
+                      <Link to="/overseas-company" className="items-center rounded-sm border-0 text-white bg-gradient-pink-to-yellow p-[2px]">
+                        <Button className="flex bg-black items-center h-full px-0 pl-[10px] pr-[16px] py-2 rounded-sm gap-0 font-inter text-xs font-semibold uppercase text-white hover:bg-gradient-pink-to-yellow w-full border-0" variant="outline"> 
                           <ExternalLink className="h-4 w-4 mr-2" />
                           Open Overseas Company
+                           
                         </Button>
                       </Link>
                       
                       <Button 
                         onClick={handleRefresh} 
                         variant="outline" 
-                        className="w-full glass-card"
+                        className="flex items-center rounded-sm border-0 text-white bg-gradient-pink-to-yellow p-[2px]"
                       >
+                        <span className="bg-gradient-yellow-to-pink hover:bg-gradient-pink-to-yellow flex items-center h-full px-0 pl-[16px] pr-[10px] py-2 rounded-sm gap-0 font-inter text-xs font-semibold uppercase text-white w-full text-center justify-center">
                         <RefreshCw className="h-4 w-4 mr-2" />
                         Check Again
+                        </span>
                       </Button>
                     </div>
 
-                    <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                      <p className="text-sm text-blue-700 dark:text-blue-300">
-                        <strong>What's happening?</strong> Your account is being verified and linked to our trading system. 
+                    <div className="mt-6 p-4 bg-white/10 border border-secondary-foreground text-white rounded-sm">
+                      <p className="text-sm text-white">
+                        <strong className="text-red-500">What's happening?</strong> Your account is being verified and linked to our trading system. 
                         This process typically takes 24-48 hours after completing the overseas company setup.
                       </p>
                     </div>
@@ -264,11 +267,16 @@ export default function MetaTraderAccounts() {
         {/* Accounts Grid */}
         {accounts.length === 0 ? (
           <div className="text-center py-12">
-            <Card className="glass-card max-w-md mx-auto">
+            <Card className="max-w-md mx-auto border border-muted/20 p-4 bg-black">
               <CardContent className="pt-6">
-                <TrendingUp className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-xl font-semibold mb-2">No Accounts Found</h3>
-                <p className="text-muted-foreground">
+
+                 <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center bg-primary/10 mx-auto mb-6">
+                      <TrendingUp className="h-8 w-8 text-primary" />
+                    </div>
+
+                
+                <h3 className="text-xl font-semibold mb-2 text-white">No Accounts Found</h3>
+                <p className="text-muted-foreground text-sm">
                   You don't have any MetaTrader accounts set up yet. Connect your accounts to start trading.
                 </p>
               </CardContent>

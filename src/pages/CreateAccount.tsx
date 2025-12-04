@@ -181,8 +181,8 @@ const CreateAccount = () => {
         if (!formData.phone.trim()) errors.push("Phone number is required");
         if (!formData.address.trim()) errors.push("Address is required");
         if (!formData.country.trim()) errors.push("Country is required");
-        // if (!formData.state.trim()) errors.push("State is required");
-        // if (!formData.city.trim()) errors.push("City is required");
+        if (!formData.state.trim()) errors.push("State is required");
+       if (!formData.city.trim()) errors.push("City is required");
         if (!formData.zipCode.trim()) errors.push("ZIP code is required");
         break;
       case 3:
@@ -382,7 +382,7 @@ const CreateAccount = () => {
 
   if (authLoading || profileLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex items-center justify-center pink-yellow-shadow">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
       </div>
     );
@@ -397,11 +397,11 @@ const CreateAccount = () => {
   const progress = (currentStep / maxSteps) * 100;
 
   return (
-    <div className="min-h-screen bg-background pt-16 pb-8">
-      <div className="max-w-4xl mx-auto p-6">
+    <div className="min-h-screen pt-20 pb-0">
+      <div className="max-w-4xl mx-auto p-6 pt-10 pb-12">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">
-            Complete Your Account Setup
+          <h1 className="font-inter text-2xl font-bold uppercase text-white md:text-3xl mb-2">
+            Complete Your <span className="text-[var(--yellowcolor)]">Account Setup</span>
           </h1>
           <p className="text-muted-foreground">
             Step {currentStep} of {maxSteps} - Please provide the required information to activate your investment account.
@@ -419,7 +419,8 @@ const CreateAccount = () => {
         </div>
 
         {/* Form Card */}
-        <Card className="glass-card">
+        <div className="bg-gradient-pink-to-yellow rounded-sm p-[2px]">
+        <Card className="bg-black rounded-sm border-0 p-0">
           <CardHeader>
             <CardTitle className="text-xl">
               {currentStep === 1 && "Personal Information"}
@@ -444,40 +445,50 @@ const CreateAccount = () => {
               {currentStep === 9 && "Required for USA clients - Complete overseas company registration"}
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-6 pt-0 sm:pt-0">
             {renderStep()}
 
             {/* Navigation Buttons */}
-            <div className="flex justify-between pt-6 border-t">
+            <div className="flex justify-between pt-1 border-0 border-secondary-foreground">
+              
               <Button
                 variant="outline"
                 onClick={handleBack}
                 disabled={currentStep === 1}
-                className="flex items-center gap-2"
+                className="flex items-center rounded-sm border-0 text-white bg-gradient-pink-to-yellow p-[2px]"
               >
-                <ChevronLeft className="h-4 w-4" />
+                <span className="bg-black flex items-center h-full px-0 pl-[10px] pr-[16px] py-2 rounded-sm gap-0 font-inter text-xs font-semibold uppercase text-white hover:bg-gradient-pink-to-yellow">
+                <ChevronLeft className="h-4 w-4 mr-1" />
                 Back
+                </span>
               </Button>
+            
 
               {currentStep < maxSteps ? (
                 <Button
                   onClick={handleNext}
-                  className="flex items-center gap-2"
+                  className="flex items-center rounded-sm border-0 text-white bg-gradient-pink-to-yellow p-[2px]"
                 >
+                    <span className="bg-gradient-yellow-to-pink hover:bg-gradient-pink-to-yellow flex items-center h-full px-0 pl-[16px] pr-[10px] py-2 rounded-sm gap-0 font-inter text-xs font-semibold uppercase text-white">
                   Next
                   <ChevronRight className="h-4 w-4" />
+                  </span>
                 </Button>
+                
               ) : (
                 <Button
                   onClick={handleSubmit}
-                  className="bg-primary hover:bg-primary/90"
+                  className="flex items-center rounded-sm border-0 text-white bg-gradient-pink-to-yellow p-[2px]"
                 >
+                  <span className="bg-gradient-yellow-to-pink hover:bg-gradient-pink-to-yellow flex items-center h-full px-0 pl-[16px] pr-[10px] py-2 rounded-sm gap-0 font-inter text-xs font-semibold uppercase text-white">
                   {formData.isUSAClient ? "Complete & Redirect to Overseas Company" : "Complete Account Setup"}
+                  </span>
                 </Button>
               )}
             </div>
           </CardContent>
         </Card>
+        </div>
       </div>
       <Footer />
     </div>

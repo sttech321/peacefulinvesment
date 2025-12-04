@@ -57,10 +57,10 @@ const OverseasCompanyStep: React.FC<OverseasCompanyStepProps> = ({
       )}
 
       {/* USA Client Notice */}
-      <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950 dark:border-blue-800">
-        <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-        <AlertDescription className="text-blue-800 dark:text-blue-200">
-          <strong>USA Client Requirement:</strong> As a USA client, you are required to set up an overseas company 
+       <Alert className="bg-white/10 border border-secondary-foreground text-white rounded-sm">
+        <Info className="h-4 w-4 !text-primary" />
+        <AlertDescription className="text-white">
+          <strong className='text-red-500'>USA Client Requirement:</strong> As a USA client, you are required to set up an overseas company 
           before you can begin trading. This is a regulatory requirement for USA residents.
         </AlertDescription>
       </Alert>
@@ -105,14 +105,14 @@ const OverseasCompanyStep: React.FC<OverseasCompanyStepProps> = ({
             <Building2 className="h-6 w-6 text-primary" />
             Overseas Company Registration Required
           </CardTitle>
-          <CardDescription className="text-base">
+          <CardDescription className="text-sm">
             Complete your overseas company registration to proceed with your investment account
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Requirements List */}
           <div className="space-y-3">
-            <h4 className="font-semibold text-foreground">What you'll need to provide:</h4>
+            <h4 className="font-semibold text-foreground text-white">What you'll need to provide:</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li className="flex items-center gap-2">
                 <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
@@ -135,8 +135,8 @@ const OverseasCompanyStep: React.FC<OverseasCompanyStepProps> = ({
 
           {/* Status Badge */}
           <div className="flex justify-center">
-            <Badge variant="outline" className="px-4 py-2 text-sm">
-              <Clock className="h-4 w-4 mr-2" />
+            <Badge variant="outline" className="px-4 py-2 text-sm bg-primary border-0 text-black flex items-center gap-2">
+              <Clock className="h-4 w-4 mr-0" />
               Required for USA Clients
             </Badge>
           </div>
@@ -174,12 +174,12 @@ const OverseasCompanyStep: React.FC<OverseasCompanyStepProps> = ({
       </Card>
 
       {/* Help Section */}
-      <Card className="bg-muted/50">
+      <Card className="border-secondary-foreground bg-white/10 p-0">
         <CardContent className="pt-6">
           <div className="flex items-start gap-3">
             <Info className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
             <div className="space-y-2">
-              <h4 className="font-semibold">Need Help?</h4>
+              <h4 className="font-semibold text-white">Need Help?</h4>
               <p className="text-sm text-muted-foreground">
                 Our support team is available to help you with the overseas company registration process. 
                 Contact us at <strong>support@peacefulinvestment.com</strong> if you have any questions.
