@@ -172,7 +172,7 @@ function AppContent() {
 function App() {
   const [showSplash, setShowSplash] = React.useState(true);
 
-  if (!showSplash) {
+  if (showSplash) {
     return (
       <LoadingScreen
         timeoutMs={13000}
