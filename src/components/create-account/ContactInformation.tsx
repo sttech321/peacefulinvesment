@@ -43,33 +43,37 @@ const ContactInformation = ({ formData, updateFormData, errors }: ContactInforma
       )}
 
       <div className="space-y-2">
-        <Label htmlFor="phone">Phone Number *</Label>
+        <Label className="text-muted-foreground" htmlFor="phone">Phone Number *</Label>
         <Input
           id="phone"
           type="tel"
           value={formData.phone}
           onChange={(e) => updateFormData({ phone: e.target.value })}
           placeholder="(555) 123-4567"
+           className="rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent"
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="address">Street Address *</Label>
+        <Label className="text-muted-foreground" htmlFor="address">Street Address *</Label>
         <Input
           id="address"
           value={formData.address}
           onChange={(e) => updateFormData({ address: e.target.value })}
           placeholder="123 Main Street"
+          className="rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent"
         />
       </div>
 
       {/* Global Location Selector */}
       <div className="space-y-2">
-        <Label className="text-base font-semibold">Location *</Label>
+        <Label className="text-muted-foreground">Location *</Label>
         <LocationSelector
           value={{
             country: formData.country,
+             countryCode: formData.countryCode,
             state: formData.state,
+            stateCode: formData.stateCode,
             city: formData.city
           }}
           onChange={handleLocationChange}
@@ -85,13 +89,14 @@ const ContactInformation = ({ formData, updateFormData, errors }: ContactInforma
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="zipCode">ZIP/Postal Code *</Label>
+          <Label className="text-muted-foreground" htmlFor="zipCode">ZIP/Postal Code *</Label>
           <Input
             id="zipCode"
             value={formData.zipCode}
             onChange={(e) => updateFormData({ zipCode: e.target.value })}
             placeholder="Enter ZIP/Postal code"
             maxLength={10}
+            className="rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent"
           />
         </div>
       </div>

@@ -26,44 +26,48 @@ const PersonalInformation = ({ formData, updateFormData, errors }: PersonalInfor
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="firstName">First Name *</Label>
+          <Label className="text-muted-foreground" htmlFor="firstName">First Name *</Label>
           <Input
             id="firstName"
             value={formData.firstName}
             onChange={(e) => updateFormData({ firstName: e.target.value })}
             placeholder="Enter your first name"
+            className="rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent"
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="lastName">Last Name *</Label>
+          <Label className="text-muted-foreground" htmlFor="lastName">Last Name *</Label>
           <Input
             id="lastName"
             value={formData.lastName}
             onChange={(e) => updateFormData({ lastName: e.target.value })}
             placeholder="Enter your last name"
+            className="rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent"
           />
         </div>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="dateOfBirth">Date of Birth *</Label>
+        <Label className="text-muted-foreground" htmlFor="dateOfBirth">Date of Birth *</Label>
         <Input
           id="dateOfBirth"
           type="date"
           value={formData.dateOfBirth}
-          onChange={(e) => updateFormData({ dateOfBirth: e.target.value })}
+          onChange={(e) => updateFormData({ dateOfBirth: e.target.value })} 
+          className="rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent placeholder-gray-400"
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="socialSecurityNumber">Driver's License *</Label>
+        <Label className="text-muted-foreground" htmlFor="socialSecurityNumber">Driver's License *</Label>
         <Input
           id="socialSecurityNumber"
           value={formData.socialSecurityNumber}
           onChange={(e) => updateFormData({ socialSecurityNumber: e.target.value })}
           placeholder="Enter your driver's license number"
           maxLength={20}
+          className="rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent"
         />
         <p className="text-sm text-muted-foreground">
           This information is encrypted and used only for identity verification purposes.

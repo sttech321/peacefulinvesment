@@ -190,7 +190,7 @@ const RequestFilters = ({ requests, onFilteredRequestsChange }: RequestFiltersPr
           </div>
 
           <Select value={sortField} onValueChange={(value) => setSortField(value as SortField)}>
-            <SelectTrigger className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
+            <SelectTrigger className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
             <SelectContent className='border-secondary-foreground bg-black/90 text-white'>

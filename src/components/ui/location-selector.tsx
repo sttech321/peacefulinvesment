@@ -252,10 +252,10 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
               size="sm"
               onClick={handleGeolocation}
               disabled={isDetectingLocation}
-              className="text-xs"
+              className="text-xs rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent"
             >
               <Navigation className={cn(
-                "h-3 w-3 mr-1",
+                "h-3 w-3 mr-0",
                 isDetectingLocation && "animate-spin"
               )} />
               {isDetectingLocation ? 'Detecting...' : 'Auto-detect'}
@@ -268,9 +268,9 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
               variant="outline"
               size="sm"
               onClick={() => setShowSearch(!showSearch)}
-              className="text-xs"
+              className="text-xs rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent"
             >
-              <MapPin className="h-3 w-3 mr-1" />
+              <MapPin className="h-3 w-3 mr-0" />
               Search
             </Button>
           )}
@@ -282,9 +282,9 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
             variant="ghost"
             size="sm"
             onClick={clearSelection}
-            className="text-xs text-muted-foreground hover:text-foreground"
+            className="text-xs text-muted-foreground hover:text-foreground hover:bg-white rounded-sm"
           >
-            <X className="h-3 w-3 mr-1" />
+            <X className="h-3 w-3 mr-0" />
             Clear
           </Button>
         )}
@@ -292,12 +292,12 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
 
       {/* Search Component */}
       {showSearch && (
-        <div className="border rounded-md p-3 bg-muted/20">
+        <div className="border rounded-md p-3 border-secondary-foreground bg-black">
           <LocationSearch
             placeholder="Search for any location worldwide..."
             onLocationSelect={handleSearchLocationSelect}
             enableGeolocation={false}
-            showPopulation={showPopulation}
+            showPopulation={showPopulation} 
           />
         </div>
       )}
@@ -307,18 +307,18 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
         {/* Country Selector */}
         <div className="space-y-2">
           {showLabels && (
-            <Label htmlFor="country" className="flex items-center space-x-1">
+            <Label className="text-muted-foreground flex items-center space-x-1" htmlFor="country">
               <Globe className="h-3 w-3" />
               <span>Country {required && <span className="text-red-500">*</span>}</span>
             </Label>
           )}
           <Select value={value.countryCode || ''} onValueChange={handleCountryChange}>
-            <SelectTrigger id="country">
+            <SelectTrigger id="country" className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
               <SelectValue placeholder="Select country">
                 {value.countryCode && countries.find(c => c.code === value.countryCode)?.name}
               </SelectValue>
             </SelectTrigger>
-            <SelectContent className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
+            <SelectContent className="border-secondary-foreground bg-black/90 text-white">
               {countries.map((country) => (
                 <SelectItem key={country.code} value={country.code}>
                   <div className="flex items-center space-x-2">
@@ -332,9 +332,9 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
         </div>
 
         {/* State Selector */}
-        {/* <div className="space-y-2">
+         <div className="space-y-2">
           {showLabels && (
-            <Label htmlFor="state" className="flex items-center space-x-1">
+            <Label className="text-muted-foreground flex items-center space-x-1" htmlFor="state">
               <Building className="h-3 w-3" />
               <span>State/Province {required && <span className="text-red-500">*</span>}</span>
             </Label>
@@ -343,8 +343,9 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
             value={value.stateCode || ''} 
             onValueChange={handleStateChange}
             disabled={!value.countryCode || states.length === 0}
+          
           >
-            <SelectTrigger id="state">
+            <SelectTrigger id="state" className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
               <SelectValue placeholder={
                 !value.countryCode 
                   ? "Select country first" 
@@ -355,7 +356,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
                 {value.stateCode && states.find(s => (s.code || s.name) === value.stateCode)?.name}
               </SelectValue>
             </SelectTrigger>
-            <SelectContent className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
+            <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
               {states.map((state) => (
                 <SelectItem key={state.id} value={state.code || state.name}>
                   {state.name}
@@ -363,12 +364,12 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
               ))}
             </SelectContent>
           </Select>
-        </div> */}
+        </div> 
 
         {/* City Selector */}
-        {/* <div className="space-y-2">
+         <div className="space-y-2">
           {showLabels && (
-            <Label htmlFor="city" className="flex items-center space-x-1">
+            <Label htmlFor="city" className="flex items-center space-x-1 text-muted-foreground">
               <MapPin className="h-3 w-3" />
               <span>City {required && <span className="text-red-500">*</span>}</span>
             </Label>
@@ -378,7 +379,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
             onValueChange={handleCityChange}
             disabled={!value.countryCode || (!value.stateCode && states.length > 0) || cities.length === 0}
           >
-            <SelectTrigger id="city">
+            <SelectTrigger id="city" className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
               <SelectValue placeholder={
                 !value.countryCode 
                   ? "Select country first"
@@ -391,7 +392,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
                 {value.city}
               </SelectValue>
             </SelectTrigger>
-            <SelectContent className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
+            <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
               {cities.map((city) => (
                 <SelectItem key={city.id} value={city.name}>
                   <div className="flex items-center justify-between w-full">
@@ -411,14 +412,14 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
               ))}
             </SelectContent>
           </Select>
-        </div> */}
+        </div>
       </div>
 
       {/* Selected Location Display */}
       {(value.country || value.state || value.city) && (
-        <div className="p-3 bg-muted/20 rounded-md">
+        <div className="p-0">
           <div className="text-sm font-medium text-muted-foreground mb-1">Selected Location:</div>
-          <div className="text-sm">
+          <div className="text-sm text-muted-foreground bg-white/20 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent px-3 py-2 h-10 items-center flex">
             {[value.city, value.state, value.country].filter(Boolean).join(', ')}
           </div>
         </div>

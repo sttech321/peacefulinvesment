@@ -47,15 +47,16 @@ const FinancialStatus = ({ formData, updateFormData, errors }: FinancialStatusPr
       )}
 
       <div className="space-y-2">
-        <Label htmlFor="annualIncome">Annual Income *</Label>
+        <Label className="text-muted-foreground" htmlFor="annualIncome">Annual Income *</Label>
+       
         <Select 
-          value={formData.annualIncome.toString()} 
+          value={formData.annualIncome ? formData.annualIncome.toString() : undefined}
           onValueChange={(value) => updateFormData({ annualIncome: parseInt(value) })}
         >
-          <SelectTrigger>
+          <SelectTrigger className="rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400" style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
             <SelectValue placeholder="Select your annual income range" />
           </SelectTrigger>
-          <SelectContent className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
+          <SelectContent className="border-secondary-foreground bg-black/90 text-white">
             {INCOME_RANGES.map((range) => (
               <SelectItem key={range.value} value={range.value.toString()}>
                 {range.label}
@@ -69,15 +70,15 @@ const FinancialStatus = ({ formData, updateFormData, errors }: FinancialStatusPr
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="netWorth">Net Worth</Label>
+        <Label className="text-muted-foreground" htmlFor="netWorth">Net Worth</Label>
         <Select 
-          value={formData.netWorth.toString()} 
+          value={formData.netWorth ? formData.netWorth.toString() : undefined} 
           onValueChange={(value) => updateFormData({ netWorth: parseInt(value) })}
         >
-          <SelectTrigger>
+          <SelectTrigger className="rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400" style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
             <SelectValue placeholder="Select your net worth range" />
           </SelectTrigger>
-          <SelectContent className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
+          <SelectContent className="border-secondary-foreground bg-black/90 text-white">
             {NET_WORTH_RANGES.map((range) => (
               <SelectItem key={range.value} value={range.value.toString()}>
                 {range.label}
@@ -91,15 +92,15 @@ const FinancialStatus = ({ formData, updateFormData, errors }: FinancialStatusPr
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="liquidNetWorth">Liquid Net Worth</Label>
+        <Label className="text-muted-foreground" htmlFor="liquidNetWorth">Liquid Net Worth</Label>
         <Select 
-          value={formData.liquidNetWorth.toString()} 
+          value={formData.liquidNetWorth ? formData.liquidNetWorth.toString() : undefined} 
           onValueChange={(value) => updateFormData({ liquidNetWorth: parseInt(value) })}
         >
-          <SelectTrigger>
+          <SelectTrigger className="rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400" style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
             <SelectValue placeholder="Select your liquid net worth range" />
           </SelectTrigger>
-          <SelectContent className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
+          <SelectContent className="border-secondary-foreground bg-black/90 text-white">
             {NET_WORTH_RANGES.map((range) => (
               <SelectItem key={range.value} value={range.value.toString()}>
                 {range.label}
@@ -112,8 +113,8 @@ const FinancialStatus = ({ formData, updateFormData, errors }: FinancialStatusPr
         </p>
       </div>
 
-      <div className="p-4 bg-muted/20 rounded-lg">
-        <h4 className="font-medium mb-2">Why do we need this information?</h4>
+      <div className="p-4 bg-white/10 rounded-sm border border-secondary-foreground">
+        <h4 className="font-medium mb-2 text-white">Why do we need this information?</h4>
         <ul className="text-sm text-muted-foreground space-y-1">
           <li>• To ensure we recommend suitable investment products</li>
           <li>• To comply with regulatory requirements (KYC/AML)</li>

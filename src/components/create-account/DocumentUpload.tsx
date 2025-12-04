@@ -134,7 +134,7 @@ const DocumentUpload = ({ formData, updateFormData, errors }: DocumentUploadProp
           <div className="flex items-center gap-3 mb-4">
             <IconComponent className="h-6 w-6 text-primary" />
             <div>
-              <h4 className="font-semibold flex items-center gap-2">
+              <h4 className="font-semibold flex items-center gap-2 text-white">
                 {documentType.name}
                 {documentType.required && <span className="text-red-500">*</span>}
                 {currentFiles.length > 0 && <CheckCircle className="h-4 w-4 text-green-500" />}
@@ -181,7 +181,7 @@ const DocumentUpload = ({ formData, updateFormData, errors }: DocumentUploadProp
           {/* Uploaded Files for this type */}
           {currentFiles.length > 0 && (
             <div className="mt-4 space-y-2">
-              <h5 className="text-sm font-medium">Uploaded Files ({currentFiles.length})</h5>
+              <h5 className="text-sm font-medium text-muted-foreground">Uploaded Files ({currentFiles.length})</h5>
               <div className="space-y-2">
                 {currentFiles.map((file, index) => (
                   <div
@@ -191,7 +191,7 @@ const DocumentUpload = ({ formData, updateFormData, errors }: DocumentUploadProp
                     <div className="flex items-center gap-3">
                       <File className="h-4 w-4 text-primary" />
                       <div>
-                        <p className="font-medium text-sm">{file.name}</p>
+                        <p className="font-medium text-sm text-muted-foreground">{file.name}</p>
                         <p className="text-xs text-muted-foreground">
                           {formatFileSize(file.size)}
                         </p>
@@ -230,7 +230,7 @@ const DocumentUpload = ({ formData, updateFormData, errors }: DocumentUploadProp
       )}
 
       <div>
-        <h3 className="text-lg font-semibold mb-2">Document Upload</h3>
+        <h3 className="text-lg font-semibold mb-2 text-white">Document Upload</h3>
         <p className="text-sm text-muted-foreground mb-6">
           Please upload the required documents for identity verification. Each document type has its own upload area.
         </p>
@@ -241,10 +241,10 @@ const DocumentUpload = ({ formData, updateFormData, errors }: DocumentUploadProp
         <DocumentDropzone key={documentType.id} documentType={documentType} />
       ))}
 
-      <Alert>
-        <Upload className="h-4 w-4" />
+      <Alert className="bg-white/10 border border-secondary-foreground text-white rounded-sm">
+        <Upload className="h-4 w-4 !text-primary" />
         <AlertDescription>
-          <strong>Privacy Notice:</strong> All uploaded documents are encrypted and stored securely. 
+          <strong className="text-red-500">Privacy Notice:</strong> All uploaded documents are encrypted and stored securely. 
           We use this information only for identity verification and regulatory compliance.
         </AlertDescription>
       </Alert>

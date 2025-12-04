@@ -70,19 +70,19 @@ const InvestmentExperience = ({ formData, updateFormData, errors }: InvestmentEx
 
       <div className="flex items-center gap-2 mb-4">
         <TrendingUp className="h-5 w-5 text-primary" />
-        <h3 className="text-lg font-semibold">Investment Profile</h3>
+        <h3 className="text-lg font-semibold text-white">Investment Profile</h3>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="investmentExperience">Investment Experience *</Label>
+        <Label className="text-muted-foreground" htmlFor="investmentExperience">Investment Experience *</Label>
         <Select 
           value={formData.investmentExperience} 
           onValueChange={(value) => updateFormData({ investmentExperience: value })}
         >
-          <SelectTrigger>
+          <SelectTrigger className="rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400" style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
             <SelectValue placeholder="Select your investment experience level" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="border-secondary-foreground bg-black/90 text-white">
             {EXPERIENCE_LEVELS.map((level) => (
               <SelectItem key={level.value} value={level.value}>
                 {level.label}
@@ -93,15 +93,15 @@ const InvestmentExperience = ({ formData, updateFormData, errors }: InvestmentEx
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="riskTolerance">Risk Tolerance *</Label>
+        <Label className="text-muted-foreground" htmlFor="riskTolerance">Risk Tolerance *</Label>
         <Select 
           value={formData.riskTolerance} 
           onValueChange={(value) => updateFormData({ riskTolerance: value })}
         >
-          <SelectTrigger>
+          <SelectTrigger className="rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400" style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
             <SelectValue placeholder="Select your risk tolerance" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="border-secondary-foreground bg-black/90 text-white">
             {RISK_TOLERANCE_OPTIONS.map((option) => (
               <SelectItem key={option.value} value={option.value}>
                 {option.label}
@@ -112,15 +112,15 @@ const InvestmentExperience = ({ formData, updateFormData, errors }: InvestmentEx
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="investmentTimeHorizon">Investment Time Horizon</Label>
+        <Label className="text-muted-foreground" htmlFor="investmentTimeHorizon">Investment Time Horizon</Label>
         <Select 
           value={formData.investmentTimeHorizon} 
           onValueChange={(value) => updateFormData({ investmentTimeHorizon: value })}
         >
-          <SelectTrigger>
+          <SelectTrigger className="rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400" style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
             <SelectValue placeholder="Select your investment time horizon" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="border-secondary-foreground bg-black/90 text-white">
             {TIME_HORIZON_OPTIONS.map((option) => (
               <SelectItem key={option.value} value={option.value}>
                 {option.label}
@@ -131,7 +131,7 @@ const InvestmentExperience = ({ formData, updateFormData, errors }: InvestmentEx
       </div>
 
       <div className="space-y-4">
-        <Label>Investment Goals * (Select all that apply)</Label>
+        <Label className="text-muted-foreground">Investment Goals * (Select all that apply)</Label>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {INVESTMENT_GOALS.map((goal) => (
             <div key={goal} className="flex items-center space-x-2">
@@ -142,7 +142,7 @@ const InvestmentExperience = ({ formData, updateFormData, errors }: InvestmentEx
               />
               <Label
                 htmlFor={goal}
-                className="text-sm font-normal cursor-pointer"
+                className="text-sm font-normal cursor-pointer text-white"
               >
                 {goal}
               </Label>
@@ -152,18 +152,18 @@ const InvestmentExperience = ({ formData, updateFormData, errors }: InvestmentEx
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Alert>
-          <TrendingUp className="h-4 w-4" />
+        <Alert className="bg-white/10 border border-secondary-foreground text-white rounded-sm">
+          <TrendingUp className="h-4 w-4 !text-primary" />
           <AlertDescription>
-            <strong>Risk vs. Return:</strong> Higher risk investments have the potential for higher returns 
+            <strong className="text-red-500">Risk vs. Return:</strong> Higher risk investments have the potential for higher returns 
             but also higher potential losses.
           </AlertDescription>
         </Alert>
 
-        <Alert>
-          <TrendingUp className="h-4 w-4" />
+        <Alert className="bg-white/10 border border-secondary-foreground text-white rounded-sm">
+          <TrendingUp className="h-4 w-4 !text-primary" />
           <AlertDescription>
-            <strong>Diversification:</strong> We'll help you build a diversified portfolio based on 
+            <strong className="text-red-500">Diversification:</strong> We'll help you build a diversified portfolio based on 
             your goals and risk tolerance.
           </AlertDescription>
         </Alert>

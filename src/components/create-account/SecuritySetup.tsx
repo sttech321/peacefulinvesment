@@ -47,7 +47,7 @@ const SecuritySetup = ({ formData, updateFormData, errors }: SecuritySetupProps)
 
       <div className="flex items-center gap-2 mb-4">
         <Shield className="h-5 w-5 text-primary" />
-        <h3 className="text-lg font-semibold">Security Questions</h3>
+        <h3 className="text-lg font-semibold text-white">Security Questions</h3>
       </div>
 
       <p className="text-sm text-muted-foreground mb-6">
@@ -55,19 +55,19 @@ const SecuritySetup = ({ formData, updateFormData, errors }: SecuritySetupProps)
       </p>
 
       {formData.securityQuestions.map((qa, index) => (
-        <div key={index} className="p-4 border rounded-lg space-y-4">
-          <h4 className="font-medium">Security Question {index + 1}</h4>
+        <div key={index} className="p-4 border rounded-sm border-secondary-foreground space-y-4">
+          <h4 className="font-medium text-white">Security Question {index + 1}</h4>
           
           <div className="space-y-2">
-            <Label htmlFor={`question-${index}`}>Question *</Label>
+            <Label className="text-muted-foreground" htmlFor={`question-${index}`}>Question *</Label>
             <Select 
               value={qa.question} 
               onValueChange={(value) => updateSecurityQuestion(index, 'question', value)}
             >
-              <SelectTrigger>
+              <SelectTrigger className="rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400" style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                 <SelectValue placeholder="Select a security question" />
               </SelectTrigger>
-              <SelectContent className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
+              <SelectContent className="border-secondary-foreground bg-black/90 text-white">
                 {SECURITY_QUESTIONS.filter(q => 
                   q === qa.question || !formData.securityQuestions.some(existing => existing.question === q)
                 ).map((question) => (
@@ -80,13 +80,14 @@ const SecuritySetup = ({ formData, updateFormData, errors }: SecuritySetupProps)
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor={`answer-${index}`}>Answer *</Label>
+            <Label className="text-muted-foreground" htmlFor={`answer-${index}`}>Answer *</Label>
             <Input
               id={`answer-${index}`}
               value={qa.answer}
               onChange={(e) => updateSecurityQuestion(index, 'answer', e.target.value)}
               placeholder="Enter your answer"
               type="text"
+              className="rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent"
             />
             <p className="text-xs text-muted-foreground">
               Keep your answer simple and memorable. Avoid special characters.
@@ -95,10 +96,10 @@ const SecuritySetup = ({ formData, updateFormData, errors }: SecuritySetupProps)
         </div>
       ))}
 
-      <Alert>
-        <Shield className="h-4 w-4" />
+      <Alert className="bg-white/10 border border-secondary-foreground text-white rounded-sm">
+        <Shield className="h-4 w-4 !text-primary" />
         <AlertDescription>
-          <strong>Important:</strong> Make sure to remember your answers exactly as you type them. 
+          <strong className="text-red-500">Important:</strong> Make sure to remember your answers exactly as you type them. 
           These questions are case-sensitive and will be used for account recovery.
         </AlertDescription>
       </Alert>

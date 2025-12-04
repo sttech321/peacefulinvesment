@@ -127,7 +127,7 @@ const Navbar = () => {
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant='ghost'
-                      className='flex items-center gap-2 px-3 py-2 border-0 bg-gradient-pink-to-yellow rounded-[10px] text-white hover:text-white'
+                      className='flex items-center gap-2 px-3 py-2 border-0 bg-gradient-pink-to-yellow rounded-[10px] text-white hover:text-white ' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
                     >
                       <User className='h-4 w-4' />
                       <span className='text-sm'>
@@ -137,7 +137,7 @@ const Navbar = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent
-                    className='w-56 border border-border/40 bg-background/95 backdrop-blur-xl'
+                    className='w-56 border-0 bg-white/95 backdrop-blur-xl rounded-sm'
                     align='end'
                   >
                     <DropdownMenuItem asChild>
@@ -169,10 +169,10 @@ const Navbar = () => {
                         </Link>
                       </DropdownMenuItem>
                     )}
-                    <DropdownMenuSeparator />
+                    <DropdownMenuSeparator className='bg-black/10' />
                     <DropdownMenuItem
                       onClick={handleSignOut}
-                      className='flex w-full cursor-pointer items-center gap-2 text-destructive focus:text-destructive'
+                      className='flex w-full cursor-pointer items-center gap-2 text-destructive focus:text-white hover:bg-black hover:text-white'
                     >
                       <LogOut className='h-4 w-4' />
                       Sign Out
