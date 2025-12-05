@@ -33,7 +33,7 @@ export default function AdminRouteGuard({ children }: AdminRouteGuardProps) {
   // Show loading while checking permissions
   if (authLoading || roleLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
           <h2 className="text-xl font-semibold mb-2">Verifying Access</h2>

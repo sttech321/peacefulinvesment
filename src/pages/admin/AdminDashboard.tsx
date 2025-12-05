@@ -153,7 +153,7 @@ export default function AdminDashboard() {
   const getActivityIcon = (type: string) => {
     switch (type) {
       case 'user_registration':
-        return <Users className="h-4 w-4 text-blue-500" />;
+        return <Users className="h-4 w-4 text-primary" />;
       case 'account_created':
         return <CreditCard className="h-4 w-4 text-green-500" />;
       case 'contact_request':
@@ -180,8 +180,8 @@ export default function AdminDashboard() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-          <h2 className="text-xl font-semibold mb-2">Loading Dashboard</h2>
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+          <h2 className="text-xl font-semibold mb-2 text-white pt-5">Loading Dashboard</h2>
           <p className="text-muted-foreground">Fetching system data...</p>
         </div>
       </div>
@@ -193,7 +193,7 @@ export default function AdminDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
+          <h1 className="text-3xl font-bold text-white">Admin Dashboard</h1>
           <p className="text-muted-foreground mt-2">
             System overview and key metrics
           </p>
@@ -215,52 +215,52 @@ export default function AdminDashboard() {
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="glass-card">
+        <Card className="">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-lg font-medium">Total Users</CardTitle>
+            <Users className="h-6 w-6 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalUsers}</div>
+            <div className="text-2xl font-bold text-white">{stats.totalUsers}</div>
             <p className="text-xs text-muted-foreground">
               +{stats.recentRegistrations} this week
             </p>
           </CardContent>
         </Card>
 
-        <Card className="glass-card">
+        <Card className="">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Accounts</CardTitle>
-            <CreditCard className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-lg font-medium">Active Accounts</CardTitle>
+            <CreditCard className="h-6 w-6 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.activeAccounts}</div>
+            <div className="text-2xl font-bold text-white">{stats.activeAccounts}</div>
             <p className="text-xs text-muted-foreground">
               Trading accounts
             </p>
           </CardContent>
         </Card>
 
-        <Card className="glass-card">
+        <Card className="">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Portfolio Value</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-lg font-medium text-white">Portfolio Value</CardTitle>
+            <DollarSign className="h-6 w-6 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(stats.totalPortfolioValue)}</div>
+            <div className="text-2xl font-bold text-white">{formatCurrency(stats.totalPortfolioValue)}</div>
             <p className="text-xs text-muted-foreground">
               Total across all accounts
             </p>
           </CardContent>
         </Card>
 
-        <Card className="glass-card">
+        <Card className="">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Requests</CardTitle>
-            <MessageSquare className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-lg font-medium text-white">Pending Requests</CardTitle>
+            <MessageSquare className="h-6 w-6 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.pendingContactRequests}</div>
+            <div className="text-2xl font-bold text-white">{stats.pendingContactRequests}</div>
             <p className="text-xs text-muted-foreground">
               Contact requests
             </p>
@@ -272,7 +272,7 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Activity */}
         <div className="lg:col-span-2">
-          <Card className="glass-card">
+          <Card className="">
             <CardHeader>
               <CardTitle>Recent Activity</CardTitle>
               <CardDescription>
@@ -284,12 +284,12 @@ export default function AdminDashboard() {
                 {recentActivity.length > 0 ? (
                   recentActivity.map((activity) => (
                     <div key={activity.id} className="flex items-start space-x-3 p-3 bg-muted/20 rounded-lg">
-                      <div className="flex-shrink-0 mt-1">
+                      <div className="flex-shrink-0 mt-1 text-primary">
                         {getActivityIcon(activity.type)}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium">{activity.title}</p>
+                          <p className="text-sm font-medium text-white">{activity.title}</p>
                           {activity.status && getStatusBadge(activity.status)}
                         </div>
                         <p className="text-sm text-muted-foreground">{activity.description}</p>
@@ -312,7 +312,7 @@ export default function AdminDashboard() {
 
         {/* Quick Actions */}
         <div>
-          <Card className="glass-card">
+          <Card className="">
             <CardHeader>
               <CardTitle>Quick Actions</CardTitle>
               <CardDescription>
@@ -321,43 +321,43 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent className="space-y-3">
               <Button asChild className="w-full justify-start" variant="outline">
-                <Link to="/admin/users">
+                <Link to="/admin/users" className="bg-muted/20 border-none text-white hover:bg-muted/10 hover:text-white">
                   <Users className="h-4 w-4 mr-2" />
                   Manage Users
                 </Link>
               </Button>
               
               <Button asChild className="w-full justify-start" variant="outline">
-                <Link to="/admin/accounts">
+                <Link to="/admin/accounts" className="bg-muted/20 border-none text-white hover:bg-muted/10 hover:text-white">
                   <CreditCard className="h-4 w-4 mr-2" />
                   View Accounts
                 </Link>
               </Button>
               
               <Button asChild className="w-full justify-start" variant="outline">
-                <Link to="/admin/referrals">
-                  <Share2 className="h-4 w-4 mr-2" />
+                <Link to="/admin/referrals" className="bg-muted/20 border-none text-white hover:bg-muted/10 hover:text-white">
+                  <Share2 className="h-4 w-4 mr-2 hover:text-white" />
                   Manage Referrals
                 </Link>
               </Button>
               
               <Button asChild className="w-full justify-start" variant="outline">
-                <Link to="/admin/contact-requests">
+                <Link to="/admin/contact-requests" className="bg-muted/20 border-none text-white hover:bg-muted/10 hover:text-white">
                   <MessageSquare className="h-4 w-4 mr-2" />
                   Contact Requests
                 </Link>
               </Button>
               
               <Button asChild className="w-full justify-start" variant="outline">
-                <Link to="/admin/analytics">
+                <Link to="/admin/analytics" className="bg-muted/20 border-none text-white hover:bg-muted/10 hover:text-white">
                   <BarChart3 className="h-4 w-4 mr-2" />
                   View Analytics
                 </Link>
               </Button>
               
               <Button asChild className="w-full justify-start" variant="outline">
-                <Link to="/admin/settings">
-                  <Settings className="h-4 w-4 mr-2" />
+                <Link to="/admin/settings" className="bg-muted/20 border-none text-white hover:bg-muted/10 hover:text-white">
+                  <Settings className="h-4 w-4 mr-2 hover:text-white" />
                   System Settings
                 </Link>
               </Button>

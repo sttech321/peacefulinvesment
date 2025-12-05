@@ -258,7 +258,7 @@ export default function AdminAuditLog() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Audit Log</h1>
+          <h1 className="text-3xl font-bold text-white">Audit Log</h1>
           <p className="text-muted-foreground">
             Track all system activities and admin actions
           </p>
@@ -282,7 +282,7 @@ export default function AdminAuditLog() {
       </div>
 
       {/* Filters */}
-      <Card className="glass-card">
+      <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
         <CardHeader>
           <CardTitle className="flex items-center">
             <Filter className="h-5 w-5 mr-2" />
@@ -333,7 +333,7 @@ export default function AdminAuditLog() {
       </Card>
 
       {/* Audit Log Table */}
-      <Card className="glass-card">
+      <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
         <CardHeader>
           <CardTitle>System Activity Log</CardTitle>
           <CardDescription>
@@ -342,7 +342,7 @@ export default function AdminAuditLog() {
         </CardHeader>
         <CardContent>
           <div className="rounded-md border">
-            <Table>
+            <Table className="border-none p-0 rounded-lg bg-white/5">
               <TableHeader>
                 <TableRow>
                   <TableHead>Action</TableHead>
@@ -361,20 +361,20 @@ export default function AdminAuditLog() {
                     <TableCell>
                       <div className="flex items-center space-x-2">
                         {getActionIcon(log.action)}
-                        <span className="font-medium">{log.action}</span>
+                        <span className="font-medium text-white">{log.action}</span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-2">
                         <User className="h-4 w-4 text-muted-foreground" />
-                        <span>{log.user_email}</span>
+                        <span className="text-white">{log.user_email}</span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline">{log.resource}</Badge>
                     </TableCell>
                     <TableCell>
-                      <div className="max-w-xs truncate" title={log.details}>
+                      <div className="max-w-xs truncate text-white" title={log.details}>
                         {log.details}
                       </div>
                     </TableCell>
@@ -391,7 +391,7 @@ export default function AdminAuditLog() {
                     <TableCell>
                       <div className="flex items-center space-x-2">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">
+                        <span className="text-sm text-white">
                           {new Date(log.created_at).toLocaleString()}
                         </span>
                       </div>
@@ -401,8 +401,9 @@ export default function AdminAuditLog() {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleViewDetails(log)}
+                        className="hover:bg-red-700"
                       >
-                        <Eye className="h-4 w-4" />
+                        <Eye className="h-4 w-4 text-white " />
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -438,7 +439,7 @@ export default function AdminAuditLog() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Resource</label>
+                  <label className="text-sm font-medium text-white">Resource</label>
                   <p className="text-sm">{selectedLog.resource}</p>
                 </div>
                 <div>
@@ -466,7 +467,7 @@ export default function AdminAuditLog() {
               </div>
               <div>
                 <label className="text-sm font-medium text-muted-foreground">User Agent</label>
-                <p className="text-sm bg-muted p-3 rounded-md font-mono text-xs">
+                <p className="text-sm bg-muted p-3 rounded-md font-mono">
                   {selectedLog.user_agent}
                 </p>
               </div>

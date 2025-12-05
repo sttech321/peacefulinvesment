@@ -230,7 +230,7 @@ export default function AdminBlogCategories() {
     rows.push(
       <tr key={node.id} className="border-b">
         <td
-          className="py-2"
+          className="py-2 text-white"
           style={{ paddingLeft: depth === 0 ? 0 : 24 * depth }}
         >
           {depth > 0 ? "— " : ""}
@@ -250,13 +250,14 @@ export default function AdminBlogCategories() {
             variant="outline"
             size="icon"
             onClick={() => startEdit(node)}
+            className="rounded-[8px]"
           >
             <Edit2 className="h-4 w-4" />
           </Button>
           <Button
             variant="outline"
             size="icon"
-            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            className="text-red-600 hover:text-red-700 hover:bg-red-50 rounded-[8px]"
             onClick={() => handleDelete(node.id)}
           >
             <Trash2 className="h-4 w-4" />
@@ -277,7 +278,7 @@ export default function AdminBlogCategories() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Blog Categories</h1>
+          <h1 className="text-2xl font-semibold text-white">Blog Categories</h1>
           <p className="text-sm text-muted-foreground">
             Manage blog categories and their colors.
           </p>
@@ -289,14 +290,14 @@ export default function AdminBlogCategories() {
       </div>
 
       {/* List (tree) */}
-      <div className="bg-card border rounded-lg p-4">
+      <div className="border-muted/20  bg-white/5 border rounded-lg p-4">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b">
-              <th className="text-left py-2">Name</th>
-              <th className="text-left py-2">Slug</th>
-              <th className="text-left py-2">Color</th>
-              <th className="text-left py-2 text-right">Actions</th>
+              <th className="text-left py-2 text-white">Name</th>
+              <th className="text-left py-2 text-white">Slug</th>
+              <th className="text-left py-2 text-white">Color</th>
+              <th className="text-right py-2 text-white">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -304,7 +305,7 @@ export default function AdminBlogCategories() {
               <tr>
                 <td
                   colSpan={4}
-                  className="py-6 text-center text-muted-foreground"
+                  className="py-6 text-center text-white"
                 >
                   No categories yet. Click “Add Category” to create one.
                 </td>

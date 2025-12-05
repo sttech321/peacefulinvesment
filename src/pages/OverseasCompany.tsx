@@ -158,11 +158,11 @@ const OverseasCompany = () => {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'pending': return <Clock className="h-4 w-4" />;
-      case 'processing': return <AlertCircle className="h-4 w-4" />;
-      case 'completed': return <CheckCircle className="h-4 w-4" />;
-      case 'rejected': return <AlertCircle className="h-4 w-4" />;
-      default: return <Clock className="h-4 w-4" />;
+      case 'pending': return <Clock className="h-4 w-4 mr-1" />;
+      case 'processing': return <AlertCircle className="h-4 w-4 mr-1" />;
+      case 'completed': return <CheckCircle className="h-4 w-4 mr-1" />;
+      case 'rejected': return <AlertCircle className="h-4 w-4 mr-1" />;
+      default: return <Clock className="h-4 w-4 mr-1" />;
     }
   };
 
@@ -395,7 +395,7 @@ const OverseasCompany = () => {
                   <div className="space-y-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="font-semibold text-lg">
+                        <h3 className="font-semibold text-lg text-white">
                           {currentRequest.company_names[0]}
                         </h3>
                         <p className="text-sm text-muted-foreground">
@@ -410,7 +410,7 @@ const OverseasCompany = () => {
 
                     <div className="grid gap-4">
                       <div>
-                        <Label className="text-sm font-medium">Submitted</Label>
+                        <Label className="text-sm font-medium text-white">Submitted</Label>
                         <p className="text-sm text-muted-foreground">
                           {new Date(currentRequest.submitted_at).toLocaleDateString()}
                         </p>
