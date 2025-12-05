@@ -343,8 +343,8 @@ export default function AdminAccounts() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-          <h2 className="text-xl font-semibold mb-2">Loading Accounts</h2>
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold mb-2 text-white pt-5">Loading Accounts</h2>
           <p className="text-muted-foreground">Fetching trading accounts...</p>
         </div>
       </div>
@@ -356,7 +356,7 @@ export default function AdminAccounts() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Trading Accounts</h1>
+          <h1 className="text-3xl font-bold text-white">Trading Accounts</h1>
           <p className="text-muted-foreground mt-2">
             Manage MetaTrader trading accounts
           </p>
@@ -474,7 +474,7 @@ export default function AdminAccounts() {
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="glass-card">
+        <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Accounts</CardTitle>
             <CreditCard className="h-4 w-4 text-muted-foreground" />
@@ -487,7 +487,7 @@ export default function AdminAccounts() {
           </CardContent>
         </Card>
 
-        <Card className="glass-card">
+        <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Value</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
@@ -500,7 +500,7 @@ export default function AdminAccounts() {
           </CardContent>
         </Card>
 
-        <Card className="glass-card">
+        <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total P&L</CardTitle>
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
@@ -515,7 +515,7 @@ export default function AdminAccounts() {
           </CardContent>
         </Card>
 
-        <Card className="glass-card">
+        <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Users</CardTitle>
             <User className="h-4 w-4 text-muted-foreground" />
@@ -532,7 +532,7 @@ export default function AdminAccounts() {
       </div>
 
       {/* Filters */}
-      <Card className="glass-card">
+      <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
         <CardHeader>
           <CardTitle>Filters</CardTitle>
           <CardDescription>
@@ -571,7 +571,7 @@ export default function AdminAccounts() {
       </Card>
 
       {/* Accounts List */}
-      <Card className="glass-card">
+      <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
         <CardHeader>
           <CardTitle>Accounts</CardTitle>
           <CardDescription>

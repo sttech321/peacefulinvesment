@@ -228,7 +228,7 @@ const AdminBlog = () => {
 
   // ---------- Early return after hooks only ----------
   if (roleLoading) {
-    return <div className="min-h-screen pt-20 px-6 bg-background">Loading...</div>;
+    return <div className="min-h-screen pt-20 px-6 border border-muted/20 p-0 rounded-lg bg-white/5">Loading...</div>;
   }
   if (!isAdmin()) {
     return null;
@@ -238,11 +238,11 @@ const AdminBlog = () => {
   // Render
   // -------------------------
   return (
-    <div className="min-h-screen pt-20 px-6 bg-background">
+    <div className="min-h-screen pt-0 px-6  p-0 rounded-lg">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Blog Management</h1>
+            <h1 className="text-3xl font-bold text-white">Blog Management</h1>
             <p className="text-muted-foreground">Manage Catholic prayers, charity updates, and articles</p>
           </div>
 
@@ -378,10 +378,10 @@ const AdminBlog = () => {
                 </div>
 
                 <div className="flex justify-end gap-2">
-                  <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+                  <Button type="button" variant="outline" className="rounded-[8px]" onClick={() => setDialogOpen(false)}>
                     Cancel
                   </Button>
-                  <Button type="submit">{editingPost ? "Update Post" : "Create Post"}</Button>
+                  <Button type="submit" className="rounded-[8px]">{editingPost ? "Update Post" : "Create Post"}</Button>
                 </div>
               </form>
             </DialogContent>
@@ -389,9 +389,9 @@ const AdminBlog = () => {
         </div>
 
         {/* Posts Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-10">
           {posts.map((post) => (
-            <Card key={post.id} className="glass-card">
+            <Card key={post.id} className="border border-muted/20 p-0 rounded-lg bg-white/5">
               {post.featured_image && <img src={post.featured_image} alt={post.title} className="w-full h-40 object-cover rounded-t-lg mb-2" />}
 
               <CardHeader>

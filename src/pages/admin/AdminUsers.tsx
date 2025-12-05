@@ -679,7 +679,7 @@ export default function AdminUsers() {
       case 'moderator':
         return <Badge variant="secondary" className="bg-blue-100 text-blue-800">Moderator</Badge>;
       default:
-        return <Badge variant="outline">User</Badge>;
+        return <Badge variant="outline" className="text-white">User</Badge>;
     }
   };
 
@@ -694,7 +694,7 @@ export default function AdminUsers() {
       case 'blocked':
         return <Badge variant="destructive" className="bg-gray-100 text-gray-800">Blocked</Badge>;
       default:
-        return <Badge variant="outline">Unverified</Badge>;
+        return <Badge variant="outline" className="text-white">Unverified</Badge>;
     }
   };
 
@@ -748,8 +748,8 @@ export default function AdminUsers() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-          <h2 className="text-xl font-semibold mb-2">Loading Users</h2>
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold mb-2 text-white pt-5">Loading Users</h2>
           <p className="text-muted-foreground">Fetching user data...</p>
         </div>
       </div>
@@ -761,7 +761,7 @@ export default function AdminUsers() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">User Management</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground text-white">User Management</h1>
           <p className="text-muted-foreground mt-2">
             Manage user accounts, roles, and verification status
           </p>
@@ -769,36 +769,39 @@ export default function AdminUsers() {
         <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="outline"
+            className="rounded-[8px]"
             size="sm"
             onClick={() => handleExport('excel')}
             disabled={processing}
           >
-            <Download className="h-4 w-4 mr-2" />
+            <Download className="h-4 w-4 mr-0" />
             <span className="hidden sm:inline">Excel</span>
           </Button>
           <Button
             variant="outline"
             size="sm"
+            className="rounded-[8px]"
             onClick={() => handleExport('pdf')}
             disabled={processing}
           >
-            <Download className="h-4 w-4 mr-2" />
+            <Download className="h-4 w-4 mr-0" />
             <span className="hidden sm:inline">PDF</span>
           </Button>
           <Button
             variant="outline"
             size="sm"
+            className="rounded-[8px]"
             onClick={fetchUsers}
             disabled={processing}
           >
-            <RefreshCw className="h-4 w-4" />
-            <span className="hidden sm:inline ml-2">Refresh</span>
+            <RefreshCw className="h-4 w-4 mr-0" />
+            <span className="hidden sm:inline ml-0">Refresh</span>
           </Button>
         </div>
       </div>
 
       {/* Filters */}
-      <Card className="glass-card">
+      <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
         <CardHeader>
           <CardTitle>Filters & Search</CardTitle>
           <CardDescription>
@@ -808,19 +811,19 @@ export default function AdminUsers() {
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-4 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search users..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-9 rounded-[8px] border-0 shadow-none mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
               />
             </div>
             <Select value={roleFilter} onValueChange={setRoleFilter}>
-              <SelectTrigger>
+              <SelectTrigger className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                 <SelectValue placeholder="Filter by role" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
                 <SelectItem value="all">All Roles</SelectItem>
                 <SelectItem value="admin">Admin</SelectItem>
                 <SelectItem value="moderator">Moderator</SelectItem>
@@ -828,10 +831,10 @@ export default function AdminUsers() {
               </SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger>
+              <SelectTrigger className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="verified">Verified</SelectItem>
                 <SelectItem value="pending_verification">Pending</SelectItem>
@@ -841,7 +844,7 @@ export default function AdminUsers() {
               </SelectContent>
             </Select>
             <div className="flex items-center justify-center sm:justify-start">
-              <Badge variant="outline">
+              <Badge variant="outline" className="p-2 px-4 text-white h-10 mt-1 rounded-[8px] shadow-none">
                 {filteredUsers.length} users
               </Badge>
             </div>
@@ -851,16 +854,17 @@ export default function AdminUsers() {
 
                 {/* Bulk Actions */}
           {selectedUsers.length > 0 && (
-            <Card className="glass-card border-primary/20">
+            <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
               <CardContent className="pt-6">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div className="flex items-center gap-4">
-                    <span className="text-sm font-medium">
+                    <span className="text-sm font-medium text-white">
                       {selectedUsers.length} user(s) selected
                     </span>
                     <Button
                       variant="outline"
                       size="sm"
+                      className="rounded-[8px]"
                       onClick={clearSelection}
                     >
                       Clear
@@ -868,10 +872,10 @@ export default function AdminUsers() {
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <Select value={newRole} onValueChange={setNewRole}>
-                      <SelectTrigger className="w-32">
+                      <SelectTrigger className="w-32 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400 h-[36px]" style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                         <SelectValue placeholder="Role" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="border-secondary-foreground bg-black/90 text-white">
                         <SelectItem value="user">User</SelectItem>
                         <SelectItem value="moderator">Moderator</SelectItem>
                         <SelectItem value="admin">Admin</SelectItem>
@@ -879,47 +883,52 @@ export default function AdminUsers() {
                     </Select>
                     <Button
                       size="sm"
+                      className="rounded-[8px]"
                       onClick={() => handleBulkAction('approve')}
                       disabled={processing}
                     >
-                      <CheckCircle className="h-4 w-4 mr-2" />
+                      <CheckCircle className="h-4 w-4 mr-0" />
                       <span className="hidden sm:inline">Approve</span>
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
+                      className="rounded-[8px]"
                       onClick={() => handleBulkAction('reject')}
                       disabled={processing}
                     >
-                      <XCircle className="h-4 w-4 mr-2" />
+                      <XCircle className="h-4 w-4 mr-0" />
                       <span className="hidden sm:inline">Reject</span>
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
+                      className="rounded-[8px]"
                       onClick={() => handleBulkAction('suspend')}
                       disabled={processing}
                     >
-                      <Ban className="h-4 w-4 mr-2" />
+                      <Ban className="h-4 w-4 mr-0" />
                       <span className="hidden sm:inline">Suspend</span>
                     </Button>
                     <Button
                       variant="destructive"
                       size="sm"
+                      className="rounded-[8px]"
                       onClick={() => handleBulkAction('delete')}
                       disabled={processing}
                     >
-                      <Trash2 className="h-4 w-4 mr-2" />
+                      <Trash2 className="h-4 w-4 mr-0" />
                       <span className="hidden sm:inline">Delete</span>
                     </Button>
                     {newRole && (
                       <Button
                         variant="secondary"
                         size="sm"
+                        className="rounded-[8px]"
                         onClick={() => handleBulkAction('change_role')}
                         disabled={processing}
                       >
-                        <Settings className="h-4 w-4 mr-2" />
+                        <Settings className="h-4 w-4 mr-0" />
                         <span className="hidden sm:inline">Change Role</span>
                       </Button>
                     )}
@@ -930,7 +939,7 @@ export default function AdminUsers() {
           )}
 
       {/* Users List */}
-      <Card className="glass-card">
+      <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
@@ -943,6 +952,7 @@ export default function AdminUsers() {
               <Button
                 variant="outline"
                 size="sm"
+                className="rounded-[8px]"
                 onClick={selectAllUsers}
               >
                 Select All
@@ -965,7 +975,7 @@ export default function AdminUsers() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-1">
-                        <p className="font-medium truncate">{user.full_name || 'No name'}</p>
+                        <p className="font-medium truncate text-white">{user.full_name || 'No name'}</p>
                         {getRoleBadge(user.role || 'user')}
                         {getStatusBadge(user.status)}
                         {user.is_verified && (
@@ -984,7 +994,7 @@ export default function AdminUsers() {
                           <span>Phone: {user.phone}</span>
                         )}
                         {user.has_completed_profile && (
-                          <Badge variant="outline" className="text-xs">
+                          <Badge variant="outline" className="text-xs text-white">
                             Profile Complete
                           </Badge>
                         )}
@@ -1003,10 +1013,10 @@ export default function AdminUsers() {
                         setActionDialogOpen(true);
                       }}
                     >
-                      <SelectTrigger className="w-24 sm:w-32">
+                      <SelectTrigger className='w-24 sm:w-32 mt-0 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400 h-[36px]' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
                         <SelectItem value="user">User</SelectItem>
                         <SelectItem value="moderator">Moderator</SelectItem>
                         <SelectItem value="admin">Admin</SelectItem>
@@ -1014,17 +1024,18 @@ export default function AdminUsers() {
                     </Select>
                     <Button
                       variant="ghost"
-                      size="sm"
+                      size="sm" 
                       onClick={() => {
                         setSelectedUser(user);
                         setUserDetailsOpen(true);
                       }}
+                       className="text-white bg-gray-800 hover:text-white hover:bg-gray-700 rounded-[8px]"
                     >
-                      <Eye className="h-4 w-4" />
+                      <Eye className="h-4 w-4 text-white" />
                     </Button>
                     <Button
                       variant="ghost"
-                      size="sm"
+                      size="sm" 
                       onClick={() => {
                         setCurrentAction({
                           type: user.status === 'verified' ? 'suspend' : 'approve',
@@ -1032,23 +1043,24 @@ export default function AdminUsers() {
                         });
                         setActionDialogOpen(true);
                       }}
+                       className="text-white bg-green-600 hover:text-white hover:bg-green-700 rounded-[8px]"
                     >
                       {user.status === 'verified' ? (
-                        <Ban className="h-4 w-4" />
+                        <Ban className="h-4 w-4 text-white" />
                       ) : (
-                        <CheckCircle className="h-4 w-4" />
+                        <CheckCircle className="h-4 w-4 text-white" />
                       )}
                     </Button>
                     <Button
                       variant="ghost"
-                      size="sm"
+                      size="sm" 
                       onClick={() => {
                         setUserToDelete(user);
                         setDeleteDialogOpen(true);
                       }}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      className="text-white bg-red-600 hover:text-white hover:bg-red-700 rounded-[8px]"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-4 w-4 " />
                     </Button>
                   </div>
                 </div>
@@ -1065,7 +1077,7 @@ export default function AdminUsers() {
 
       {/* User Details Dialog */}
       <Dialog open={userDetailsOpen} onOpenChange={setUserDetailsOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="sm:max-w-xl sm:w-full w-[300px]">
           <DialogHeader>
             <DialogTitle>User Details</DialogTitle>
             <DialogDescription>
@@ -1084,7 +1096,7 @@ export default function AdminUsers() {
                 </div>
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-3">
                   <div className="flex items-center space-x-2">
                     <Shield className="h-4 w-4 text-muted-foreground" />
@@ -1092,7 +1104,7 @@ export default function AdminUsers() {
                   </div>
                   {selectedUser.phone && (
                     <div className="flex items-center space-x-2">
-                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      <Phone className="h-5 w-5 text-muted-foreground" />
                       <span className="text-sm">{selectedUser.phone}</span>
                     </div>
                   )}
@@ -1133,11 +1145,12 @@ export default function AdminUsers() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between pt-4">
-                <div className="flex items-center space-x-2">
+              <div className="block items-center justify-between pt-4">
+                <div className="flex items-center flex-wrap sm:gap-0 gap-2 space-x-2 mb-4">
                   <Button 
                     variant="outline" 
                     size="sm"
+                    className="gap-0 w-full sm:w-auto"
                     onClick={() => {
                       handleEditUser(selectedUser);
                       setUserDetailsOpen(false);
@@ -1149,6 +1162,7 @@ export default function AdminUsers() {
                   <Button 
                     variant="outline" 
                     size="sm"
+                    className="gap-0 sm:w-auto"
                     onClick={() => {
                       handleViewDocuments(selectedUser);
                       setUserDetailsOpen(false);
@@ -1158,7 +1172,7 @@ export default function AdminUsers() {
                     View Documents
                   </Button>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex flex-wrap sm:gap-0 gap-2 items-center space-x-2">
                   <Button 
                     variant="destructive" 
                     size="sm"
@@ -1167,8 +1181,9 @@ export default function AdminUsers() {
                       setUserDetailsOpen(false);
                       setDeleteDialogOpen(true);
                     }}
+                    className="gap-0 w-full sm:w-auto"
                   >
-                    <Trash2 className="h-4 w-4 mr-2" />
+                    <Trash2 className="h-4 w-4 sm:mr-2" />
                     Delete User
                   </Button>
                   <Button 
@@ -1182,8 +1197,9 @@ export default function AdminUsers() {
                       setActionDialogOpen(true);
                       setUserDetailsOpen(false);
                     }}
+                    className="gap-0 w-full sm:w-auto"
                   >
-                    <Ban className="h-4 w-4 mr-2" />
+                    <Ban className="h-4 w-4 sm:mr-2" />
                     Suspend
                   </Button>
                   <Button 
@@ -1197,8 +1213,9 @@ export default function AdminUsers() {
                       setActionDialogOpen(true);
                       setUserDetailsOpen(false);
                     }}
+                    className="gap-0 w-full sm:w-auto"
                   >
-                    <CheckCircle className="h-4 w-4 mr-2" />
+                    <CheckCircle className="h-4 w-4 sm:mr-2" />
                     Approve
                   </Button>
                 </div>
