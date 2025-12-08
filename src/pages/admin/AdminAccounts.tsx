@@ -352,28 +352,28 @@ export default function AdminAccounts() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6  pt-5 lg:pt-0">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="block sm:flex items items-center justify-between">
+        <div className="mb-4 sm:mb-0">
           <h1 className="text-3xl font-bold text-white">Trading Accounts</h1>
           <p className="text-muted-foreground mt-2">
             Manage MetaTrader trading accounts
           </p>
         </div>
         <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" className="gap-0">
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
           <Dialog open={addAccountOpen} onOpenChange={setAddAccountOpen}>
             <DialogTrigger asChild>
-              <Button size="sm">
+              <Button size="sm" className="gap-0">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Account
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-[340px] rounded-md sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>Create New Trading Account</DialogTitle>
                 <DialogDescription>
@@ -385,10 +385,10 @@ export default function AdminAccounts() {
                 <div>
                   <Label htmlFor="user">Select User *</Label>
                   <Select value={selectedUserEmail} onValueChange={setSelectedUserEmail}>
-                    <SelectTrigger>
+                    <SelectTrigger className='mt-1 rounded-[8px]  shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                       <SelectValue placeholder="Choose a user" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
                       {supabaseUsers.map((user) => (
                         <SelectItem key={user.user_id} value={user.email}>
                           {user.email} {user.full_name && `(${user.full_name})`}
@@ -404,6 +404,7 @@ export default function AdminAccounts() {
                     id="name"
                     placeholder="Enter account name"
                     value={newAccount.name}
+                    className="rounded-[8px] shadow-none mt-1 focus:outline-none placeholder:text-sm focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
                     onChange={(e) => setNewAccount(prev => ({ ...prev, name: e.target.value }))}
                   />
                 </div>
@@ -414,6 +415,7 @@ export default function AdminAccounts() {
                     id="meta_trader_id"
                     placeholder="Enter MetaTrader account ID"
                     value={newAccount.meta_trader_id}
+                    className="rounded-[8px] shadow-none mt-1 focus:outline-none placeholder:text-sm focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
                     onChange={(e) => setNewAccount(prev => ({ ...prev, meta_trader_id: e.target.value }))}
                   />
                 </div>
@@ -425,6 +427,7 @@ export default function AdminAccounts() {
                     type="number"
                     placeholder="Enter initial balance"
                     value={newAccount.balance}
+                     className="rounded-[8px] shadow-none mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
                     onChange={(e) => setNewAccount(prev => ({ ...prev, balance: parseFloat(e.target.value) || 0 }))}
                   />
                 </div>
@@ -435,10 +438,10 @@ export default function AdminAccounts() {
                     value={newAccount.status} 
                     onValueChange={(value) => setNewAccount(prev => ({ ...prev, status: value }))}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className='mt-1 rounded-[8px] shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
                       <SelectItem value="ACTIVE">Active</SelectItem>
                       <SelectItem value="INACTIVE">Inactive</SelectItem>
                       <SelectItem value="SUSPENDED">Suspended</SelectItem>
@@ -457,6 +460,7 @@ export default function AdminAccounts() {
                 </Button>
                 <Button
                   onClick={handleCreateAccount}
+                   className="mb-3 sm:mb-0"
                   disabled={creatingAccount || !selectedUserEmail || !newAccount.name || !newAccount.meta_trader_id}
                 >
                   {creatingAccount ? (
@@ -476,12 +480,12 @@ export default function AdminAccounts() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Accounts</CardTitle>
-            <CreditCard className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-lg font-medium">Total Accounts</CardTitle>
+            <CreditCard className="h-5 w-5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{accounts.length}</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-2xl font-bold text-white">{accounts.length}</div>
+            <p className="text-sm text-muted-foreground">
               {getActiveAccountsCount()} active
             </p>
           </CardContent>
@@ -489,12 +493,12 @@ export default function AdminAccounts() {
 
         <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Value</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-lg font-medium">Total Value</CardTitle>
+            <DollarSign className="h-5 w-5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(calculateTotalValue())}</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-2xl font-bold  text-white">{formatCurrency(calculateTotalValue())}</div>
+            <p className="text-sm text-muted-foreground">
               Portfolio value
             </p>
           </CardContent>
@@ -502,14 +506,14 @@ export default function AdminAccounts() {
 
         <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total P&L</CardTitle>
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-lg font-medium">Total P&L</CardTitle>
+            <BarChart3 className="h-5 w-5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${getPnlColor(calculateTotalPnl())}`}>
+            <div className={`text-2xl font-bold  text-white ${getPnlColor(calculateTotalPnl())}`}>
               {formatCurrency(calculateTotalPnl())}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               Profit/Loss
             </p>
           </CardContent>
@@ -517,14 +521,14 @@ export default function AdminAccounts() {
 
         <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Users</CardTitle>
-            <User className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-lg font-medium">Active Users</CardTitle>
+            <User className="h-5 w-5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-bold  text-white">
               {new Set(accounts.map(acc => acc.userInfo?.email)).size}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               With accounts
             </p>
           </CardContent>
@@ -542,19 +546,19 @@ export default function AdminAccounts() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-4 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search accounts..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-8 rounded-[8px] border-0 shadow-none mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger>
+              <SelectTrigger className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="ACTIVE">Active</SelectItem>
                 <SelectItem value="INACTIVE">Inactive</SelectItem>
@@ -562,7 +566,7 @@ export default function AdminAccounts() {
               </SelectContent>
             </Select>
             <div className="flex items-center space-x-2">
-              <Badge variant="outline">
+              <Badge variant="outline" className="py-2 px-4">
                 {filteredAccounts.length} accounts
               </Badge>
             </div>

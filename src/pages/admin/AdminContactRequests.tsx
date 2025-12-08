@@ -261,7 +261,7 @@ export default function AdminContactRequests() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-          <h2 className="text-xl font-semibold mb-2">Loading Requests</h2>
+          <h2 className="text-xl font-semibold mb-2 text-white">Loading Requests</h2>
           <p className="text-muted-foreground">Fetching contact requests...</p>
         </div>
       </div>
@@ -273,13 +273,13 @@ export default function AdminContactRequests() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Contact Requests</h1>
+          <h1 className="text-3xl font-bold text-white">Contact Requests</h1>
           <p className="text-muted-foreground mt-2">
             Manage customer support requests
           </p>
         </div>
         <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" className="gap-0">
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
@@ -288,55 +288,55 @@ export default function AdminContactRequests() {
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="glass-card">
+        <Card className="border-muted/20  bg-white/5 border rounded-lg p-4">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Requests</CardTitle>
-            <MessageSquare className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-lg font-medium">Total Requests</CardTitle>
+            <MessageSquare className="h-5 w-5 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{requests.length}</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-2xl font-bold text-white">{requests.length}</div>
+            <p className="text-sm text-muted-foreground">
               {getPendingRequestsCount()} pending
             </p>
           </CardContent>
         </Card>
 
-        <Card className="glass-card">
+        <Card className="border-muted/20  bg-white/5 border rounded-lg p-4">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">High Priority</CardTitle>
-            <AlertCircle className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-lg font-medium">High Priority</CardTitle>
+            <AlertCircle className="h-5 w-5 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">{getHighPriorityCount()}</div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               Require attention
             </p>
           </CardContent>
         </Card>
 
-        <Card className="glass-card">
+        <Card className="border-muted/20  bg-white/5 border rounded-lg p-4">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Resolved</CardTitle>
-            <CheckCircle className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-lg font-medium">Resolved</CardTitle>
+            <CheckCircle className="h-5 w-5 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
               {requests.filter(r => r.status === 'resolved').length}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               Successfully handled
             </p>
           </CardContent>
         </Card>
 
-        <Card className="glass-card">
+        <Card className="border-muted/20  bg-white/5 border rounded-lg p-4">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg Response</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-lg font-medium">Avg Response</CardTitle>
+            <Clock className="h-5 w-5 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">2.4h</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-2xl font-bold text-white">2.4h</div>
+            <p className="text-sm text-muted-foreground">
               Response time
             </p>
           </CardContent>
@@ -344,7 +344,7 @@ export default function AdminContactRequests() {
       </div>
 
       {/* Filters */}
-      <Card className="glass-card">
+      <Card className="border-muted/20  bg-white/5 border rounded-lg p-4">
         <CardHeader>
           <CardTitle>Filters</CardTitle>
           <CardDescription>
@@ -354,19 +354,19 @@ export default function AdminContactRequests() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-4 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search requests..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-9 rounded-[8px] border-0 shadow-none mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger>
+              <SelectTrigger className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="in_progress">In Progress</SelectItem>
@@ -375,10 +375,10 @@ export default function AdminContactRequests() {
               </SelectContent>
             </Select>
             <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-              <SelectTrigger>
+              <SelectTrigger className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                 <SelectValue placeholder="Filter by priority" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
                 <SelectItem value="all">All Priorities</SelectItem>
                 <SelectItem value="high">High Priority</SelectItem>
                 <SelectItem value="medium">Medium Priority</SelectItem>
@@ -386,7 +386,7 @@ export default function AdminContactRequests() {
               </SelectContent>
             </Select>
             <div className="flex items-center space-x-2">
-              <Badge variant="outline">
+              <Badge variant="outline" className="py-2 px-4">
                 {filteredRequests.length} requests
               </Badge>
             </div>
@@ -395,7 +395,7 @@ export default function AdminContactRequests() {
       </Card>
 
       {/* Requests List */}
-      <Card className="glass-card">
+      <Card className="border-muted/20  bg-white/5 border rounded-lg p-4">
         <CardHeader>
           <CardTitle>Requests</CardTitle>
           <CardDescription>
@@ -407,20 +407,20 @@ export default function AdminContactRequests() {
             {filteredRequests.length > 0 ? (
               filteredRequests.map((request) => (
                 <div key={request.id} className="flex items-center justify-between p-4 bg-muted/20 rounded-lg">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
+                  <div className="flex items-start space-x-4">
+                    <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center mt-1">
                       <MessageSquare className="h-5 w-5 text-primary" />
                     </div>
                     <div>
                       <div className="flex items-center space-x-2">
-                        <p className="font-medium">{request.subject}</p>
+                        <p className="font-medium text-white">{request.subject}</p>
                         {getPriorityBadge(request.priority)}
                         {getStatusBadge(request.status)}
                       </div>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm text-muted-foreground mt-1">
                         {request.full_name} • {request.email}
                       </p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-muted-foreground flex gap-1 mt-1">
                         {formatDate(request.created_at)} • {getContactMethodIcon(request.contact_method)}
                       </p>
                     </div>
@@ -433,6 +433,7 @@ export default function AdminContactRequests() {
                         setSelectedRequest(request);
                         setReplyDialogOpen(true);
                       }}
+                      className="gap-0 rounded-[8px]"
                     >
                       <Reply className="h-4 w-4 mr-2" />
                       Reply
@@ -441,10 +442,10 @@ export default function AdminContactRequests() {
                       value={request.status}
                       onValueChange={(value) => updateRequestStatus(request.id, value)}
                     >
-                      <SelectTrigger className="w-32">
+                      <SelectTrigger  className='w-22 h-[36px] rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
                         <SelectItem value="pending">Pending</SelectItem>
                         <SelectItem value="in_progress">In Progress</SelectItem>
                         <SelectItem value="resolved">Resolved</SelectItem>
@@ -455,18 +456,19 @@ export default function AdminContactRequests() {
                       variant="ghost"
                       size="sm"
                       onClick={() => {
-                        setSelectedRequest(request);
+                        setSelectedRequest(request);  
                         setRequestDetailsOpen(true);
                       }}
+                      className="bg-muted/30 hover:bg-muted/40"
                     >
-                      <Eye className="h-4 w-4" />
+                      <Eye className="h-5 w-5 text-white" />
                     </Button>
                   </div>
                 </div>
               ))
             ) : (
               <div className="text-center py-8">
-                <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <MessageSquare className="h-12 w-12 text-white mx-auto mb-4" />
                 <p className="text-muted-foreground">No requests found</p>
               </div>
             )}
@@ -476,7 +478,7 @@ export default function AdminContactRequests() {
 
       {/* Request Details Dialog */}
       <Dialog open={requestDetailsOpen} onOpenChange={setRequestDetailsOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-[350px] sm:max-w-md rounded-md">
           <DialogHeader>
             <DialogTitle>Request Details</DialogTitle>
           </DialogHeader>
@@ -532,7 +534,7 @@ export default function AdminContactRequests() {
 
               <div className="space-y-2">
                 <p className="text-sm font-medium">Message:</p>
-                <p className="text-sm text-muted-foreground bg-muted/20 p-3 rounded-lg">
+                <p className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
                   {selectedRequest.message}
                 </p>
               </div>
@@ -570,7 +572,7 @@ export default function AdminContactRequests() {
 
       {/* Reply Dialog */}
       <Dialog open={replyDialogOpen} onOpenChange={setReplyDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-[350px] sm:max-w-md rounded-md">
           <DialogHeader>
             <DialogTitle>Send Reply</DialogTitle>
           </DialogHeader>
@@ -582,6 +584,7 @@ export default function AdminContactRequests() {
               <Textarea
                 placeholder="Enter your reply message..."
                 value={replyMessage}
+                className="rounded-[8px] shadow-none mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
                 onChange={(e) => setReplyMessage(e.target.value)}
                 rows={4}
               />

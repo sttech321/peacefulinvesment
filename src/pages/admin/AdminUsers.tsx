@@ -757,7 +757,7 @@ export default function AdminUsers() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 lg:pt-0 pt-5">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -941,9 +941,9 @@ export default function AdminUsers() {
       {/* Users List */}
       <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Users</CardTitle>
+          <div className="block sm:flex items-center justify-between mb-2 sm:mb-0">
+            <div className="pb-4 sm:pb-0">
+              <CardTitle className="mb-1 sm:mb-0">Users</CardTitle>
               <CardDescription>
                 All registered users in the system
               </CardDescription>
@@ -1257,10 +1257,10 @@ export default function AdminUsers() {
               <div>
                 <label className="text-sm font-medium">New Role</label>
                 <Select value={newRole} onValueChange={setNewRole}>
-                  <SelectTrigger>
+                  <SelectTrigger className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                     <SelectValue placeholder="Select role" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
                     <SelectItem value="user">User</SelectItem>
                     <SelectItem value="moderator">Moderator</SelectItem>
                     <SelectItem value="admin">Admin</SelectItem>
@@ -1402,10 +1402,10 @@ export default function AdminUsers() {
                       value={editForm.employment_status} 
                       onValueChange={(value) => setEditForm(prev => ({ ...prev, employment_status: value }))}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                         <SelectValue placeholder="Select employment status" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
                         <SelectItem value="employed">Employed</SelectItem>
                         <SelectItem value="unemployed">Unemployed</SelectItem>
                         <SelectItem value="self-employed">Self-Employed</SelectItem>
@@ -1440,10 +1440,10 @@ export default function AdminUsers() {
                       value={editForm.investment_experience} 
                       onValueChange={(value) => setEditForm(prev => ({ ...prev, investment_experience: value }))}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                         <SelectValue placeholder="Select experience level" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
                         <SelectItem value="none">None</SelectItem>
                         <SelectItem value="beginner">Beginner</SelectItem>
                         <SelectItem value="some">Some Experience</SelectItem>
@@ -1459,10 +1459,10 @@ export default function AdminUsers() {
                       value={editForm.risk_tolerance} 
                       onValueChange={(value) => setEditForm(prev => ({ ...prev, risk_tolerance: value }))}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                         <SelectValue placeholder="Select risk tolerance" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
                         <SelectItem value="conservative">Conservative</SelectItem>
                         <SelectItem value="moderate">Moderate</SelectItem>
                         <SelectItem value="aggressive">Aggressive</SelectItem>
@@ -1518,10 +1518,10 @@ export default function AdminUsers() {
                     value={editForm.status} 
                     onValueChange={(value) => setEditForm(prev => ({ ...prev, status: value }))}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                       <SelectValue placeholder="Select account status" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
                       <SelectItem value="unverified">Unverified</SelectItem>
                       <SelectItem value="pending_verification">Pending Verification</SelectItem>
                       <SelectItem value="verified">Verified</SelectItem>
