@@ -228,7 +228,7 @@ export default function AdminBlogCategories() {
     const rows: JSX.Element[] = [];
 
     rows.push(
-      <tr key={node.id} className="border-b">
+      <tr key={node.id} className="border-b border-muted/20">
         <td
           className="py-2 text-white"
           style={{ paddingLeft: depth === 0 ? 0 : 24 * depth }}
@@ -283,7 +283,7 @@ export default function AdminBlogCategories() {
             Manage blog categories and their colors.
           </p>
         </div>
-        <Button onClick={startCreate}>
+        <Button onClick={startCreate} className="border-0 gap-0 rounded-[8px]">
           <Plus className="h-4 w-4 mr-2" />
           Add Category
         </Button>
@@ -293,7 +293,7 @@ export default function AdminBlogCategories() {
       <div className="border-muted/20  bg-white/5 border rounded-lg p-4">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b">
+            <tr className="border-b border-muted/20 ">
               <th className="text-left py-2 text-white">Name</th>
               <th className="text-left py-2 text-white">Slug</th>
               <th className="text-left py-2 text-white">Color</th>
@@ -354,6 +354,7 @@ export default function AdminBlogCategories() {
                         value.toLowerCase().trim().replace(/\s+/g, "-"),
                     }));
                   }}
+                  className='rounded-[8px] shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent'
                   placeholder="e.g. Morning Prayers"
                 />
               </div>
@@ -439,7 +440,7 @@ export default function AdminBlogCategories() {
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={saving}>
+              <Button type="submit" disabled={saving} className="rounded-[8px]">
                 {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                 {editingId ? "Save Changes" : "Create Category"}
               </Button>

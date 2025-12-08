@@ -495,7 +495,7 @@ export default function AdminOverseasCompanies() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-          <h2 className="text-xl font-semibold mb-2">Loading Companies</h2>
+          <h2 className="text-xl font-semibold mb-2 text-white">Loading Companies</h2>
           <p className="text-muted-foreground">Fetching overseas companies...</p>
         </div>
       </div>
@@ -503,17 +503,17 @@ export default function AdminOverseasCompanies() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pt-5 lg:pt-0">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Overseas Companies</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white">Overseas Companies</h1>
           <p className="text-muted-foreground mt-2">
             Manage overseas company requests and registrations
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm">
+          <Button className="gap-0" variant="outline" size="sm">
             <Download className="h-4 w-4 mr-2" />
             <span className="hidden sm:inline">Export</span>
           </Button>
@@ -524,6 +524,7 @@ export default function AdminOverseasCompanies() {
               fetchRequests();
               fetchCompanies();
             }}
+            className="gap-0"
           >
             <RefreshCw className="h-4 w-4" />
             <span className="hidden sm:inline ml-2">Refresh</span>
@@ -532,82 +533,82 @@ export default function AdminOverseasCompanies() {
       </div>
 
       {/* Tabs */}
-      <div className="flex space-x-1 bg-muted p-1 rounded-lg">
+      <div className="flex space-x-1 bg-muted/20 p-1 rounded-lg">
         <Button
           variant={activeTab === "requests" ? "default" : "ghost"}
           size="sm"
           onClick={() => setActiveTab("requests")}
-          className="flex-1"
+          className="flex-1 text-white gap-0 hover:text-white hover:bg-muted/20"
         >
-          <FileText className="h-4 w-4 mr-2" />
+          <FileText className="h-4 w-4 mr-2 hover:text-white" />
           Requests ({requests.length})
         </Button>
         <Button
           variant={activeTab === "companies" ? "default" : "ghost"}
           size="sm"
           onClick={() => setActiveTab("companies")}
-          className="flex-1"
+          className="flex-1 text-white gap-0 hover:text-white hover:bg-muted/20"
         >
-          <Building2 className="h-4 w-4 mr-2" />
+          <Building2 className="h-4 w-4 mr-2 " />
           Companies ({companies.length})
         </Button>
       </div>
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="glass-card">
+        <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Requests</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-lg font-medium">Total Requests</CardTitle>
+            <FileText className="h-5 w-5 text-[var(--yellowcolor)]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{requests.length}</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-2xl font-bold text-white">{requests.length}</div>
+            <p className="text-sm text-muted-foreground">
               Company requests
             </p>
           </CardContent>
         </Card>
 
-        <Card className="glass-card">
+        <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Requests</CardTitle>
-            <AlertCircle className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-lg font-medium">Pending Requests</CardTitle>
+            <AlertCircle className="h-5 w-5 text-[var(--yellowcolor)]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-bold text-white">
               {requests.filter(r => r.status === 'pending').length}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               Awaiting review
             </p>
           </CardContent>
         </Card>
 
-        <Card className="glass-card">
+        <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Companies</CardTitle>
-            <Building2 className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-lg font-medium">Active Companies</CardTitle>
+            <Building2 className="h-5 w-5 text-[var(--yellowcolor)]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-bold text-white">
               {companies.filter(c => c.status === 'active').length}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               Registered companies
             </p>
           </CardContent>
         </Card>
 
-        <Card className="glass-card">
+        <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Jurisdictions</CardTitle>
-            <Globe className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-lg font-medium">Jurisdictions</CardTitle>
+            <Globe className="h-5 w-5 text-[var(--yellowcolor)]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-bold text-white">
               {new Set([...companies.map(c => c.jurisdiction), ...requests.map(r => r.jurisdiction)]).size}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               Different jurisdictions
             </p>
           </CardContent>
@@ -618,7 +619,7 @@ export default function AdminOverseasCompanies() {
       {activeTab === "requests" ? (
         <>
           {/* Filters */}
-          <Card className="glass-card">
+          <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
             <CardHeader>
               <CardTitle>Filters</CardTitle>
               <CardDescription>
@@ -628,19 +629,19 @@ export default function AdminOverseasCompanies() {
             <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Search className="absolute left-3 top-4 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Search requests..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
+                    className="pl-8 rounded-[8px] placeholder:text-sm border-0 shadow-none mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
                   />
                 </div>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger>
+                  <SelectTrigger className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                     <SelectValue placeholder="Filter by status" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
                     <SelectItem value="all">All Status</SelectItem>
                     <SelectItem value="pending">Pending</SelectItem>
                     <SelectItem value="processing">Processing</SelectItem>
@@ -650,7 +651,7 @@ export default function AdminOverseasCompanies() {
                   </SelectContent>
                 </Select>
                 <div className="flex items-center justify-center sm:justify-start">
-                  <Badge variant="outline">
+                  <Badge variant="outline" className="py-2 px-4">
                     {filteredRequests.length} requests
                   </Badge>
                 </div>
@@ -659,7 +660,7 @@ export default function AdminOverseasCompanies() {
           </Card>
 
           {/* Requests List */}
-          <Card className="glass-card">
+          <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
             <CardHeader>
               <CardTitle>Company Requests</CardTitle>
               <CardDescription>
@@ -671,17 +672,17 @@ export default function AdminOverseasCompanies() {
                 {filteredRequests.length > 0 ? (
                   filteredRequests.map((request) => (
                     <div key={request.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-muted/20 rounded-lg gap-4">
-                      <div className="flex items-center space-x-4">
+                      <div className="flex items-start space-x-4">
                         <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
                           <FileText className="h-5 w-5 text-primary" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex flex-wrap items-center gap-2 mb-1">
-                            <p className="font-medium truncate">
+                            <p className="font-medium truncate text-white">
                               {request.selected_company_name || request.company_names[0]}
                             </p>
                             {getRequestStatusBadge(request.status)}
-                            <span className={`text-sm ${getBusinessTypeColor(request.business_type)}`}>
+                            <span className={`text-sm text-white ${getBusinessTypeColor(request.business_type)}`}>
                               {request.business_type}
                             </span>
                           </div>
@@ -708,8 +709,9 @@ export default function AdminOverseasCompanies() {
                             setSelectedRequest(request);
                             setRequestDetailsOpen(true);
                           }}
+                          className="bg-gray-800 hover:bg-gray-700"
                         >
-                          <Eye className="h-4 w-4" />
+                          <Eye className="h-4 w-4 text-white" />
                         </Button>
                         {request.status === 'pending' && (
                           <Button
@@ -719,7 +721,7 @@ export default function AdminOverseasCompanies() {
                               setSelectedRequest(request);
                               setRequestDetailsOpen(true);
                             }}
-                            className="text-blue-600 hover:text-blue-700"
+                            className="text-white bg-green-600 hover:bg-green-700 hover:text-white"
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
@@ -729,7 +731,7 @@ export default function AdminOverseasCompanies() {
                   ))
                 ) : (
                   <div className="text-center py-8">
-                    <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <FileText className="h-12 w-12 text-white mx-auto mb-4" />
                     <p className="text-muted-foreground">No requests found</p>
                   </div>
                 )}
@@ -740,7 +742,7 @@ export default function AdminOverseasCompanies() {
       ) : (
         <>
           {/* Filters */}
-          <Card className="glass-card">
+          <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
             <CardHeader>
               <CardTitle>Filters</CardTitle>
               <CardDescription>
@@ -750,19 +752,19 @@ export default function AdminOverseasCompanies() {
             <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Search className="absolute left-3 top-4 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Search companies..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
+                   className="pl-10 rounded-[8px] border-0 shadow-none mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
                   />
                 </div>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger>
+                  <SelectTrigger  className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                     <SelectValue placeholder="Filter by status" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
                     <SelectItem value="all">All Status</SelectItem>
                     <SelectItem value="active">Active</SelectItem>
                     <SelectItem value="inactive">Inactive</SelectItem>
@@ -770,7 +772,7 @@ export default function AdminOverseasCompanies() {
                   </SelectContent>
                 </Select>
                 <div className="flex items-center justify-center sm:justify-start">
-                  <Badge variant="outline">
+                  <Badge variant="outline" className="py-2 px-4">
                     {filteredCompanies.length} companies
                   </Badge>
                 </div>
@@ -779,7 +781,7 @@ export default function AdminOverseasCompanies() {
           </Card>
 
           {/* Companies List */}
-          <Card className="glass-card">
+          <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
             <CardHeader>
               <CardTitle>Companies</CardTitle>
               <CardDescription>
@@ -797,10 +799,10 @@ export default function AdminOverseasCompanies() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex flex-wrap items-center gap-2 mb-1">
-                            <p className="font-medium truncate">{company.company_name}</p>
+                            <p className="font-medium truncate text-white">{company.company_name}</p>
                             {getCompanyStatusBadge(company.status)}
                           </div>
-                          <p className="text-sm text-muted-foreground mb-1 truncate">
+                          <p className="text-sm text-white mb-1 truncate">
                             {company.user?.email || 'Unknown user'}
                           </p>
                           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -821,8 +823,9 @@ export default function AdminOverseasCompanies() {
                             setSelectedCompany(company);
                             setCompanyDetailsOpen(true);
                           }}
+                          className="hover:bg-muted/30"
                         >
-                          <Eye className="h-4 w-4" />
+                          <Eye className="h-4 w-4 text-white" />
                         </Button>
                       </div>
                     </div>
@@ -896,7 +899,6 @@ export default function AdminOverseasCompanies() {
 
                 <div className="space-y-4">
                   <h3 className="font-semibold border-b pb-2">Company Names</h3>
-                  
                   <div className="space-y-2">
                     {selectedRequest.company_names.map((name, index) => (
                       <div key={index} className="flex items-center gap-2">
@@ -934,10 +936,10 @@ export default function AdminOverseasCompanies() {
                         value={selectedCompanyName} 
                         onValueChange={setSelectedCompanyName}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className='mt-1 rounded-[8px] shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                           <SelectValue placeholder="Choose a company name" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
                           {selectedRequest.company_names.map((name, index) => (
                             <SelectItem key={index} value={name}>
                               {name}
@@ -1094,7 +1096,7 @@ export default function AdminOverseasCompanies() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Company Details</DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-muted-foreground">
               View detailed information about the selected company
             </DialogDescription>
           </DialogHeader>

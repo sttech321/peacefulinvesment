@@ -234,7 +234,7 @@ export default function AdminAnalytics() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
+          <h1 className="text-3xl font-bold text-white">Analytics Dashboard</h1>
           <p className="text-muted-foreground">
             Comprehensive insights into your platform's performance
           </p>
@@ -255,9 +255,9 @@ export default function AdminAnalytics() {
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {analyticsData.monthlyStats.map((stat, index) => (
-          <Card key={index} className="glass-card">
+          <Card key={index} className="border-muted/20  bg-white/5 border rounded-lg p-4">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{stat.metric}</CardTitle>
+              <CardTitle className="text-lg font-medium">{stat.metric}</CardTitle>
               {stat.trend === 'up' ? (
                 <TrendingUp className="h-4 w-4 text-green-600" />
               ) : (
@@ -265,8 +265,8 @@ export default function AdminAnalytics() {
               )}
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-              <p className={`text-xs ${stat.trend === 'up' ? 'text-green-600' : 'text-red-600'}`}>
+              <div className="text-2xl font-bold text-white">{stat.value}</div>
+              <p className={`text-sm ${stat.trend === 'up' ? 'text-green-600' : 'text-red-600'}`}>
                 {stat.change} from last month
               </p>
             </CardContent>
@@ -275,8 +275,8 @@ export default function AdminAnalytics() {
       </div>
 
       {/* Charts */}
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList>
+      <Tabs defaultValue="overview" className="space-y-6 ">
+        <TabsList className="mb-10 grid grid-cols-4 bg-muted/10 rounded-lg p-1">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="users">User Analytics</TabsTrigger>
           <TabsTrigger value="accounts">Account Performance</TabsTrigger>
@@ -286,23 +286,25 @@ export default function AdminAnalytics() {
         <TabsContent value="overview" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* User Growth Chart */}
-            <Card className="glass-card">
+            <Card className="border-muted/20  bg-white/5 border rounded-lg p-4">
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <span>User Growth</span>
-                  <div className="flex space-x-2">
+                  <div className="flex space-x-2 gap-0">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleExport('excel', 'users')}
+                      className="text-black gap-0"
                     >
-                      <Download className="h-4 w-4 mr-2" />
+                      <Download className="h-4 w-4 mr-2 text-black" />
                       Excel
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleExport('pdf', 'users')}
+                      className="text-black gap-0"
                     >
                       <Download className="h-4 w-4 mr-2" />
                       PDF
@@ -331,7 +333,7 @@ export default function AdminAnalytics() {
             </Card>
 
             {/* User Distribution */}
-            <Card className="glass-card">
+            <Card className="border-muted/20  bg-white/5 border rounded-lg p-4">
               <CardHeader>
                 <CardTitle>User Distribution</CardTitle>
                 <CardDescription>Breakdown by user roles</CardDescription>
@@ -362,7 +364,7 @@ export default function AdminAnalytics() {
         </TabsContent>
 
         <TabsContent value="users" className="space-y-6">
-          <Card className="glass-card">
+          <Card className="border-muted/20  bg-white/5 border rounded-lg p-4">
             <CardHeader>
               <CardTitle>User Growth Analytics</CardTitle>
               <CardDescription>Detailed user registration and activity metrics</CardDescription>
@@ -396,7 +398,7 @@ export default function AdminAnalytics() {
         </TabsContent>
 
         <TabsContent value="accounts" className="space-y-6">
-          <Card className="glass-card">
+          <Card className="border-muted/20  bg-white/5 border rounded-lg p-4">
             <CardHeader>
               <CardTitle>Account Performance</CardTitle>
               <CardDescription>Account status and performance metrics</CardDescription>
@@ -419,7 +421,7 @@ export default function AdminAnalytics() {
         </TabsContent>
 
         <TabsContent value="revenue" className="space-y-6">
-          <Card className="glass-card">
+          <Card className="border-muted/20  bg-white/5 border rounded-lg p-4">
             <CardHeader>
               <CardTitle>Revenue Analytics</CardTitle>
               <CardDescription>Financial performance and trends</CardDescription>

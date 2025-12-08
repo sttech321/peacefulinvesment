@@ -530,7 +530,7 @@ export default function AdminReferrals() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-          <h2 className="text-xl font-semibold mb-2">Loading Referrals</h2>
+          <h2 className="text-xl font-semibold mb-2 text-white">Loading Referrals</h2>
           <p className="text-muted-foreground">Fetching referral data...</p>
         </div>
       </div>
@@ -538,17 +538,17 @@ export default function AdminReferrals() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pt-5 lg:pt-0">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Referral Management</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white">Referral Management</h1>
           <p className="text-muted-foreground mt-2">
             Manage all user referrals, payments, and analytics
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" className="gap-0">
             <Download className="h-4 w-4 mr-2" />
             <span className="hidden sm:inline">Export</span>
           </Button>
@@ -556,6 +556,7 @@ export default function AdminReferrals() {
             variant="outline"
             size="sm"
             onClick={fetchAllData}
+            className="gap-0"
           >
             <RefreshCw className="h-4 w-4" />
             <span className="hidden sm:inline ml-2">Refresh</span>
@@ -565,52 +566,52 @@ export default function AdminReferrals() {
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="glass-card">
+        <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Referrals</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-lg font-medium">Total Referrals</CardTitle>
+            <Users className="h-5 w-5 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalReferrals}</div>
+            <div className="text-2xl font-bold text-white">{stats.totalReferrals}</div>
             <p className="text-xs text-muted-foreground">
               All referral programs
             </p>
           </CardContent>
         </Card>
 
-        <Card className="glass-card">
+        <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Earnings</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-lg font-medium">Total Earnings</CardTitle>
+            <DollarSign className="h-5 w-5 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(stats.totalEarnings)}</div>
+            <div className="text-2xl font-bold text-white">{formatCurrency(stats.totalEarnings)}</div>
             <p className="text-xs text-muted-foreground">
               Commission generated
             </p>
           </CardContent>
         </Card>
 
-        <Card className="glass-card">
+        <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Referrals</CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-lg font-medium">Active Referrals</CardTitle>
+            <Target className="h-5 w-5 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.activeReferrals}</div>
+            <div className="text-2xl font-bold text-white">{stats.activeReferrals}</div>
             <p className="text-xs text-muted-foreground">
               Currently active
             </p>
           </CardContent>
         </Card>
 
-        <Card className="glass-card">
+        <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Referrals</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-lg font-medium">Pending Referrals</CardTitle>
+            <Clock className="h-5 w-5 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.pendingReferrals}</div>
+            <div className="text-2xl font-bold text-white">{stats.pendingReferrals}</div>
             <p className="text-xs text-muted-foreground">
               Awaiting deposits
             </p>
@@ -620,7 +621,7 @@ export default function AdminReferrals() {
 
       {/* Top Performer */}
       {stats.topEarner && (
-        <Card className="glass-card">
+        <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Award className="h-5 w-5 text-yellow-500" />
@@ -649,29 +650,29 @@ export default function AdminReferrals() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="referrals" className="flex items-center gap-2">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 bg-muted/20 rounded-lg">
+          <TabsTrigger value="referrals" className="flex items-center gap-2 mb-3">
             <Users className="h-4 w-4" />
             Referrals ({referrals.length})
           </TabsTrigger>
-          <TabsTrigger value="payments" className="flex items-center gap-2">
+          <TabsTrigger value="payments" className="flex items-center gap-2 mb-3">
             <DollarSign className="h-4 w-4" />
             Payments ({payments.length})
           </TabsTrigger>
-          <TabsTrigger value="signups" className="flex items-center gap-2">
+          <TabsTrigger value="signups" className="flex items-center gap-2 mb-3">
             <User className="h-4 w-4" />
             Signups ({signups.length})
           </TabsTrigger>
-          <TabsTrigger value="analytics" className="flex items-center gap-2">
+          <TabsTrigger value="analytics" className="flex items-center gap-2 mb-3">
             <BarChart3 className="h-4 w-4" />
             Analytics
           </TabsTrigger>
         </TabsList>
 
         {/* Referrals Tab */}
-        <TabsContent value="referrals" className="space-y-6">
+        <TabsContent value="referrals" className="space-y-6 pt-4 sm:pt-0">
           {/* Filters */}
-          <Card className="glass-card">
+          <Card className="border border-muted/20 p-0 mt-3 sm:mt-0 rounded-lg bg-white/5">
             <CardHeader>
               <CardTitle>Filters</CardTitle>
               <CardDescription>
@@ -681,19 +682,19 @@ export default function AdminReferrals() {
             <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Search className="absolute left-3 top-4 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Search referrals..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
+                    className="pl-9 rounded-[8px] border-0 shadow-none mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
                   />
                 </div>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger>
+                  <SelectTrigger className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                     <SelectValue placeholder="Filter by status" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
                     <SelectItem value="all">All Status</SelectItem>
                     <SelectItem value="pending">Pending</SelectItem>
                     <SelectItem value="deposited">Deposited</SelectItem>
@@ -711,7 +712,7 @@ export default function AdminReferrals() {
           </Card>
 
           {/* Referrals List */}
-          <Card className="glass-card">
+          <Card className="border border-muted/20 p-0  rounded-lg bg-white/5">
             <CardHeader>
               <CardTitle>All Referrals</CardTitle>
               <CardDescription>
@@ -778,7 +779,7 @@ export default function AdminReferrals() {
                   ))
                 ) : (
                   <div className="text-center py-8">
-                    <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <Users className="h-12 w-12 text-primary mx-auto mb-4" />
                     <p className="text-muted-foreground">No referrals found</p>
                   </div>
                 )}
@@ -788,9 +789,9 @@ export default function AdminReferrals() {
         </TabsContent>
 
         {/* Payments Tab */}
-        <TabsContent value="payments" className="space-y-6">
+        <TabsContent value="payments" className="space-y-6 pt-4 sm:pt-0">
           {/* Filters */}
-          <Card className="glass-card">
+          <Card className="border border-muted/20 p-0 mt-3 sm:mt-0 rounded-lg bg-white/5">
             <CardHeader>
               <CardTitle>Filters</CardTitle>
               <CardDescription>
@@ -800,12 +801,12 @@ export default function AdminReferrals() {
             <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Search className="absolute left-3 top-4 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Search payments..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
+                   className="pl-9 rounded-[8px] border-0 shadow-none mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
                   />
                 </div>
                 <div className="flex items-center justify-center sm:justify-start">
@@ -818,7 +819,7 @@ export default function AdminReferrals() {
           </Card>
 
           {/* Payments List */}
-          <Card className="glass-card">
+          <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
@@ -868,7 +869,7 @@ export default function AdminReferrals() {
                   ))
                 ) : (
                   <div className="text-center py-8">
-                    <DollarSign className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <DollarSign className="h-12 w-12 text-primary mx-auto mb-4" />
                     <p className="text-muted-foreground">No payments found</p>
                   </div>
                 )}
@@ -878,9 +879,9 @@ export default function AdminReferrals() {
         </TabsContent>
 
         {/* Signups Tab */}
-        <TabsContent value="signups" className="space-y-6">
+        <TabsContent value="signups" className="space-y-6 pt-4 sm:pt-0">
           {/* Filters */}
-          <Card className="glass-card">
+          <Card className="border border-muted/20 p-0 mt-3 sm:mt-0 rounded-lg bg-white/5">
             <CardHeader>
               <CardTitle>Filters</CardTitle>
               <CardDescription>
@@ -890,12 +891,12 @@ export default function AdminReferrals() {
             <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Search className="absolute left-3 top-4 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Search signups..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
+                    className="pl-9 rounded-[8px] border-0 shadow-none mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
                   />
                 </div>
                 <div className="flex items-center justify-center sm:justify-start">
@@ -908,7 +909,7 @@ export default function AdminReferrals() {
           </Card>
 
           {/* Signups List */}
-          <Card className="glass-card">
+          <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
             <CardHeader>
               <CardTitle>Referral Signups</CardTitle>
               <CardDescription>
@@ -951,7 +952,7 @@ export default function AdminReferrals() {
                   ))
                 ) : (
                   <div className="text-center py-8">
-                    <User className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <User className="h-12 w-12 mx-auto mb-4 text-primary" />
                     <p className="text-muted-foreground">No signups found</p>
                   </div>
                 )}
@@ -961,10 +962,10 @@ export default function AdminReferrals() {
         </TabsContent>
 
         {/* Analytics Tab */}
-        <TabsContent value="analytics" className="space-y-6">
+        <TabsContent value="analytics" className="space-y-6 pt-4 sm:pt-0">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Performance Chart */}
-            <Card className="glass-card">
+            <Card className="border border-muted/20 p-0 mt-3 sm:mt-0 rounded-lg bg-white/5">
               <CardHeader>
                 <CardTitle>Referral Performance</CardTitle>
                 <CardDescription>
@@ -974,7 +975,7 @@ export default function AdminReferrals() {
               <CardContent>
                 <div className="h-64 flex items-center justify-center">
                   <div className="text-center">
-                    <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <BarChart3 className="h-12 w-12 text-primary mx-auto mb-4" />
                     <p className="text-muted-foreground">Chart coming soon</p>
                   </div>
                 </div>
@@ -982,7 +983,7 @@ export default function AdminReferrals() {
             </Card>
 
             {/* Top Referrers */}
-            <Card className="glass-card">
+            <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
               <CardHeader>
                 <CardTitle>Top Referrers</CardTitle>
                 <CardDescription>
@@ -1140,7 +1141,7 @@ export default function AdminReferrals() {
 
       {/* Payment Dialog */}
       <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-[340px] sm:max-w-lg rounded-lg">
           <DialogHeader>
             <DialogTitle>Record Commission Payment</DialogTitle>
             <DialogDescription>
@@ -1154,10 +1155,10 @@ export default function AdminReferrals() {
                 value={newPayment.referral_id} 
                 onValueChange={(value) => setNewPayment(prev => ({ ...prev, referral_id: value }))}
               >
-                <SelectTrigger>
+                <SelectTrigger className='mt-1 rounded-[8px] shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                   <SelectValue placeholder="Choose a referral" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
                   {referrals.map((referral) => (
                     <SelectItem key={referral.id} value={referral.id}>
                       {referral.user?.full_name || 'Unknown'} - {referral.referral_code}
@@ -1176,6 +1177,7 @@ export default function AdminReferrals() {
                 value={newPayment.amount}
                 onChange={(e) => setNewPayment(prev => ({ ...prev, amount: e.target.value }))}
                 placeholder="Enter payment amount"
+                className="mt-1"
               />
             </div>
 
@@ -1187,6 +1189,7 @@ export default function AdminReferrals() {
                 onChange={(e) => setNewPayment(prev => ({ ...prev, notes: e.target.value }))}
                 placeholder="Add any notes about this payment..."
                 rows={3}
+                className="mt-1"
               />
             </div>
           </div>
@@ -1199,6 +1202,7 @@ export default function AdminReferrals() {
             </Button>
             <Button
               onClick={handleCreatePayment}
+              className="gap-0 mb-3 sm:mb-0"
               disabled={creatingPayment || !newPayment.referral_id || !newPayment.amount}
             >
               {creatingPayment ? (

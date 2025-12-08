@@ -189,10 +189,10 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 lg:pt-0 pt-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="block sm:flex items-center justify-between">
+        <div className="mb-2 sm:mb-0">
           <h1 className="text-3xl font-bold text-white">Admin Dashboard</h1>
           <p className="text-muted-foreground mt-2">
             System overview and key metrics
@@ -201,7 +201,7 @@ export default function AdminDashboard() {
         <div className="flex items-center space-x-2">
           <Badge 
             variant={stats.systemHealth === 'healthy' ? 'default' : 'destructive'}
-            className="flex items-center space-x-1"
+            className="flex items-center space-x-1 py-2"
           >
             {stats.systemHealth === 'healthy' ? (
               <CheckCircle className="h-3 w-3" />
@@ -272,7 +272,7 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Activity */}
         <div className="lg:col-span-2">
-          <Card className="">
+          <Card className="h-full">
             <CardHeader>
               <CardTitle>Recent Activity</CardTitle>
               <CardDescription>
@@ -321,42 +321,42 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent className="space-y-3">
               <Button asChild className="w-full justify-start" variant="outline">
-                <Link to="/admin/users" className="bg-muted/20 border-none text-white hover:bg-muted/10 hover:text-white">
+                <Link to="/admin/users" className="bg-muted/20 border-none text-white hover:bg-muted/30 hover:text-white">
                   <Users className="h-4 w-4 mr-2" />
                   Manage Users
                 </Link>
               </Button>
               
               <Button asChild className="w-full justify-start" variant="outline">
-                <Link to="/admin/accounts" className="bg-muted/20 border-none text-white hover:bg-muted/10 hover:text-white">
+                <Link to="/admin/accounts" className="bg-muted/20 border-none text-white hover:bg-muted/30 hover:text-white">
                   <CreditCard className="h-4 w-4 mr-2" />
                   View Accounts
                 </Link>
               </Button>
               
               <Button asChild className="w-full justify-start" variant="outline">
-                <Link to="/admin/referrals" className="bg-muted/20 border-none text-white hover:bg-muted/10 hover:text-white">
+                <Link to="/admin/referrals" className="bg-muted/20 border-none text-white hover:bg-muted/30 hover:text-white">
                   <Share2 className="h-4 w-4 mr-2 hover:text-white" />
                   Manage Referrals
                 </Link>
               </Button>
               
               <Button asChild className="w-full justify-start" variant="outline">
-                <Link to="/admin/contact-requests" className="bg-muted/20 border-none text-white hover:bg-muted/10 hover:text-white">
+                <Link to="/admin/contact-requests" className="bg-muted/20 border-none text-white hover:bg-muted/30 hover:text-white">
                   <MessageSquare className="h-4 w-4 mr-2" />
                   Contact Requests
                 </Link>
               </Button>
               
               <Button asChild className="w-full justify-start" variant="outline">
-                <Link to="/admin/analytics" className="bg-muted/20 border-none text-white hover:bg-muted/10 hover:text-white">
+                <Link to="/admin/analytics" className="bg-muted/20 border-none text-white hover:bg-muted/30 hover:text-white">
                   <BarChart3 className="h-4 w-4 mr-2" />
                   View Analytics
                 </Link>
               </Button>
               
               <Button asChild className="w-full justify-start" variant="outline">
-                <Link to="/admin/settings" className="bg-muted/20 border-none text-white hover:bg-muted/10 hover:text-white">
+                <Link to="/admin/settings" className="bg-muted/20 border-none text-white hover:bg-muted/30 hover:text-white">
                   <Settings className="h-4 w-4 mr-2 hover:text-white" />
                   System Settings
                 </Link>

@@ -266,6 +266,7 @@ export default function AdminAuditLog() {
         <div className="flex space-x-2">
           <Button
             variant="outline"
+            className="border-0 gap-0 rounded-[8px]"
             onClick={() => handleExport('excel')}
           >
             <Download className="h-4 w-4 mr-2" />
@@ -273,6 +274,7 @@ export default function AdminAuditLog() {
           </Button>
           <Button
             variant="outline"
+            className="border-0 gap-0 rounded-[8px]"
             onClick={() => handleExport('pdf')}
           >
             <Download className="h-4 w-4 mr-2" />
@@ -297,14 +299,16 @@ export default function AdminAuditLog() {
                 placeholder="Search logs..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 rounded-[8px] border-0 shadow-none mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
+
               />
             </div>
             <Select value={severityFilter} onValueChange={setSeverityFilter}>
-              <SelectTrigger>
+              <SelectTrigger   className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
+>
                 <SelectValue placeholder="Severity" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
                 <SelectItem value="all">All Severities</SelectItem>
                 <SelectItem value="low">Low</SelectItem>
                 <SelectItem value="medium">Medium</SelectItem>
@@ -313,10 +317,10 @@ export default function AdminAuditLog() {
               </SelectContent>
             </Select>
             <Select value={actionFilter} onValueChange={setActionFilter}>
-              <SelectTrigger>
+              <SelectTrigger className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                 <SelectValue placeholder="Action" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
                 <SelectItem value="all">All Actions</SelectItem>
                 <SelectItem value="LOGIN">Login</SelectItem>
                 <SelectItem value="CREATE">Create</SelectItem>
@@ -341,12 +345,12 @@ export default function AdminAuditLog() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border">
+          <div className="rounded-md border border-muted/20 overflow-x-auto">
             <Table className="border-none p-0 rounded-lg bg-white/5">
               <TableHeader>
-                <TableRow>
+                <TableRow className="border-b border-muted/20">
                   <TableHead>Action</TableHead>
-                  <TableHead>User</TableHead>
+                  <TableHead >User</TableHead>
                   <TableHead>Resource</TableHead>
                   <TableHead>Details</TableHead>
                   <TableHead>Severity</TableHead>
@@ -357,7 +361,7 @@ export default function AdminAuditLog() {
               </TableHeader>
               <TableBody>
                 {filteredLogs.map((log) => (
-                  <TableRow key={log.id}>
+                  <TableRow className="border-b border-muted/20" key={log.id}>
                     <TableCell>
                       <div className="flex items-center space-x-2">
                         {getActionIcon(log.action)}
@@ -416,23 +420,23 @@ export default function AdminAuditLog() {
 
       {/* Details Dialog */}
       <Dialog open={showDetails} onOpenChange={setShowDetails}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-[360px] sm:max-w-2xl rounded-md">
           <DialogHeader>
             <DialogTitle>Audit Log Details</DialogTitle>
           </DialogHeader>
           {selectedLog && (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">ID</label>
+                  <label className="text-sm font-medium text-black">ID</label>
                   <p className="text-sm">{selectedLog.id}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">User Email</label>
+                  <label className="text-sm font-medium text-black">User Email</label>
                   <p className="text-sm">{selectedLog.user_email}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Action</label>
+                  <label className="text-sm font-medium text-black">Action</label>
                   <div className="flex items-center space-x-2">
                     {getActionIcon(selectedLog.action)}
                     <span className="text-sm font-medium">{selectedLog.action}</span>
@@ -443,30 +447,30 @@ export default function AdminAuditLog() {
                   <p className="text-sm">{selectedLog.resource}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Resource ID</label>
+                  <label className="text-sm font-medium text-black">Resource ID</label>
                   <p className="text-sm">{selectedLog.resource_id}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Severity</label>
+                  <label className="text-sm font-medium text-black">Severity</label>
                   <Badge className={getSeverityColor(selectedLog.severity)}>
                     {selectedLog.severity}
                   </Badge>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">IP Address</label>
+                  <label className="text-sm font-medium text-black">IP Address</label>
                   <p className="text-sm font-mono">{selectedLog.ip_address}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Timestamp</label>
+                  <label className="text-sm font-medium text-black">Timestamp</label>
                   <p className="text-sm">{new Date(selectedLog.created_at).toLocaleString()}</p>
                 </div>
               </div>
               <div>
-                <label className="text-sm font-medium text-muted-foreground">Details</label>
+                <label className="text-sm font-medium text-black">Details</label>
                 <p className="text-sm bg-muted p-3 rounded-md">{selectedLog.details}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-muted-foreground">User Agent</label>
+                <label className="text-sm font-medium text-black">User Agent</label>
                 <p className="text-sm bg-muted p-3 rounded-md font-mono">
                   {selectedLog.user_agent}
                 </p>

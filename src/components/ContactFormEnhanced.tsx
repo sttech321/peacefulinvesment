@@ -204,10 +204,10 @@ export default function ContactFormEnhanced({ onSuccess }: ContactFormEnhancedPr
           <div className="space-y-2">
             <Label htmlFor="subject">Subject *</Label>
             <Select onValueChange={(value) => setValue("subject", value)}>
-              <SelectTrigger>
+              <SelectTrigger className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                 <SelectValue placeholder="Select a subject" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
                 {subjects.map((subject) => (
                   <SelectItem key={subject} value={subject}>
                     {subject}
@@ -224,10 +224,10 @@ export default function ContactFormEnhanced({ onSuccess }: ContactFormEnhancedPr
           <div className="space-y-2">
             <Label htmlFor="priority">Priority</Label>
             <Select onValueChange={(value: "low" | "medium" | "high") => setValue("priority", value)}>
-              <SelectTrigger>
+              <SelectTrigger className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                 <SelectValue placeholder="Select priority" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
                 <SelectItem value="low">Low</SelectItem>
                 <SelectItem value="medium">Medium</SelectItem>
                 <SelectItem value="high">High</SelectItem>
@@ -256,10 +256,10 @@ export default function ContactFormEnhanced({ onSuccess }: ContactFormEnhancedPr
           <div className="space-y-2">
             <Label htmlFor="contactMethod">Preferred Contact Method</Label>
             <Select onValueChange={(value: "email" | "phone") => setValue("contactMethod", value)}>
-              <SelectTrigger>
+              <SelectTrigger className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                 <SelectValue placeholder="Select contact method" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
                 <SelectItem value="email">Email</SelectItem>
                 <SelectItem value="phone">Phone</SelectItem>
               </SelectContent>

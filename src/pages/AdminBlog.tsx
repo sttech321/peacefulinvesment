@@ -312,10 +312,10 @@ const AdminBlog = () => {
                     </div> */}
 
                     <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
-                      <SelectTrigger>
+                      <SelectTrigger className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
                         {/* only show default 'General' if no category with slug 'general' */}
                         {!categoryOptions.some((o) => o.slug === "general") && (
                           <SelectItem key="default-general" value="general">
@@ -349,7 +349,7 @@ const AdminBlog = () => {
                   <div>
                     <Label htmlFor="status">Status</Label>
                     <Select value={formData.status} onValueChange={(value: any) => setFormData({ ...formData, status: value })}>
-                      <SelectTrigger>
+                      <SelectTrigger className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-white/90">

@@ -257,10 +257,10 @@ const DocumentUpload = ({ requestId, onDocumentsChange, existingDocuments = [] }
                     value={upload.document_type}
                     onValueChange={(value) => updatePendingUpload(index, 'document_type', value)}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                       <SelectValue placeholder="Select document type" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
                       {documentTypes.map((type) => (
                         <SelectItem key={type.value} value={type.value}>
                           {type.label}
