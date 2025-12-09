@@ -757,7 +757,7 @@ export default function AdminUsers() {
   }
 
   return (
-    <div className="space-y-6 lg:pt-0 pt-5">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -769,7 +769,7 @@ export default function AdminUsers() {
         <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="outline"
-            className="rounded-[8px]"
+            className="rounded-[8px] hover:bg-white/80 border-0"
             size="sm"
             onClick={() => handleExport('excel')}
             disabled={processing}
@@ -780,7 +780,7 @@ export default function AdminUsers() {
           <Button
             variant="outline"
             size="sm"
-            className="rounded-[8px]"
+            className="rounded-[8px] hover:bg-white/80 border-0"
             onClick={() => handleExport('pdf')}
             disabled={processing}
           >
@@ -790,7 +790,7 @@ export default function AdminUsers() {
           <Button
             variant="outline"
             size="sm"
-            className="rounded-[8px]"
+            className="rounded-[8px] hover:bg-white/80 border-0"
             onClick={fetchUsers}
             disabled={processing}
           >
@@ -864,7 +864,7 @@ export default function AdminUsers() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="rounded-[8px]"
+                      className="rounded-[8px] hover:bg-white/80 border-0"
                       onClick={clearSelection}
                     >
                       Clear
@@ -883,7 +883,7 @@ export default function AdminUsers() {
                     </Select>
                     <Button
                       size="sm"
-                      className="rounded-[8px]"
+                      className="rounded-[8px] border-0 hover:bg-primary/80"
                       onClick={() => handleBulkAction('approve')}
                       disabled={processing}
                     >
@@ -893,7 +893,7 @@ export default function AdminUsers() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="rounded-[8px]"
+                      className="rounded-[8px] border-0 hover:bg-white/80"
                       onClick={() => handleBulkAction('reject')}
                       disabled={processing}
                     >
@@ -903,7 +903,7 @@ export default function AdminUsers() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="rounded-[8px]"
+                      className="rounded-[8px] border-0 hover:bg-white/80"
                       onClick={() => handleBulkAction('suspend')}
                       disabled={processing}
                     >
@@ -913,7 +913,7 @@ export default function AdminUsers() {
                     <Button
                       variant="destructive"
                       size="sm"
-                      className="rounded-[8px]"
+                      className="rounded-[8px] border-0 hover:bg-red-600/80"
                       onClick={() => handleBulkAction('delete')}
                       disabled={processing}
                     >
@@ -924,7 +924,7 @@ export default function AdminUsers() {
                       <Button
                         variant="secondary"
                         size="sm"
-                        className="rounded-[8px]"
+                        className="rounded-[8px] border-0 hover:bg-white/80"
                         onClick={() => handleBulkAction('change_role')}
                         disabled={processing}
                       >
@@ -952,7 +952,7 @@ export default function AdminUsers() {
               <Button
                 variant="outline"
                 size="sm"
-                className="rounded-[8px]"
+                className="rounded-[8px] hover:bg-white/80 border-0"
                 onClick={selectAllUsers}
               >
                 Select All
@@ -1067,7 +1067,7 @@ export default function AdminUsers() {
               ))
             ) : (
               <div className="text-center py-8">
-                <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <Users className="h-12 w-12 text-primary mx-auto mb-4" />
                 <p className="text-muted-foreground">No users found</p>
               </div>
             )}

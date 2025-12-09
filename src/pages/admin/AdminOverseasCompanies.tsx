@@ -494,8 +494,8 @@ export default function AdminOverseasCompanies() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-          <h2 className="text-xl font-semibold mb-2 text-white">Loading Companies</h2>
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto mb-4"></div>
+          <h2 className="ext-xl font-semibold mb-2 text-white pt-5">Loading Companies</h2>
           <p className="text-muted-foreground">Fetching overseas companies...</p>
         </div>
       </div>
@@ -503,7 +503,7 @@ export default function AdminOverseasCompanies() {
   }
 
   return (
-    <div className="space-y-6 pt-5 lg:pt-0">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -513,7 +513,7 @@ export default function AdminOverseasCompanies() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button className="gap-0" variant="outline" size="sm">
+          <Button className="gap-0 rounded-[8px] hover:bg-white/80 border-0" variant="outline" size="sm">
             <Download className="h-4 w-4 mr-2" />
             <span className="hidden sm:inline">Export</span>
           </Button>
@@ -524,7 +524,7 @@ export default function AdminOverseasCompanies() {
               fetchRequests();
               fetchCompanies();
             }}
-            className="gap-0"
+            className="gap-0 rounded-[8px] hover:bg-white/80 border-0"
           >
             <RefreshCw className="h-4 w-4" />
             <span className="hidden sm:inline ml-2">Refresh</span>
@@ -651,7 +651,7 @@ export default function AdminOverseasCompanies() {
                   </SelectContent>
                 </Select>
                 <div className="flex items-center justify-center sm:justify-start">
-                  <Badge variant="outline" className="py-2 px-4">
+                  <Badge variant="outline" className="py-2 px-4 rounded-[8px] h-[40px] mt-1">
                     {filteredRequests.length} requests
                   </Badge>
                 </div>
@@ -709,7 +709,7 @@ export default function AdminOverseasCompanies() {
                             setSelectedRequest(request);
                             setRequestDetailsOpen(true);
                           }}
-                          className="bg-gray-800 hover:bg-gray-700"
+                          className="bg-gray-800 hover:bg-gray-700 rounded-[8px]"
                         >
                           <Eye className="h-4 w-4 text-white" />
                         </Button>
@@ -721,7 +721,7 @@ export default function AdminOverseasCompanies() {
                               setSelectedRequest(request);
                               setRequestDetailsOpen(true);
                             }}
-                            className="text-white bg-green-600 hover:bg-green-700 hover:text-white"
+                            className="text-white bg-green-600 hover:bg-green-700 hover:text-white rounded-[8px]"
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
@@ -731,7 +731,7 @@ export default function AdminOverseasCompanies() {
                   ))
                 ) : (
                   <div className="text-center py-8">
-                    <FileText className="h-12 w-12 text-white mx-auto mb-4" />
+                    <FileText className="h-12 w-12 text-primary mx-auto mb-4" />
                     <p className="text-muted-foreground">No requests found</p>
                   </div>
                 )}
@@ -772,7 +772,7 @@ export default function AdminOverseasCompanies() {
                   </SelectContent>
                 </Select>
                 <div className="flex items-center justify-center sm:justify-start">
-                  <Badge variant="outline" className="py-2 px-4">
+                  <Badge variant="outline" className="py-2 px-4 rounded-[8px] h-[40px] mt-1">
                     {filteredCompanies.length} companies
                   </Badge>
                 </div>
@@ -823,7 +823,7 @@ export default function AdminOverseasCompanies() {
                             setSelectedCompany(company);
                             setCompanyDetailsOpen(true);
                           }}
-                          className="hover:bg-muted/30"
+                          className="hover:bg-muted/30 rounded-[8px]"
                         >
                           <Eye className="h-4 w-4 text-white" />
                         </Button>
@@ -832,7 +832,7 @@ export default function AdminOverseasCompanies() {
                   ))
                 ) : (
                   <div className="text-center py-8">
-                    <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <Building2 className="h-12 w-12 text-primary mx-auto mb-4 " />
                     <p className="text-muted-foreground">No companies found</p>
                   </div>
                 )}
@@ -936,7 +936,7 @@ export default function AdminOverseasCompanies() {
                         value={selectedCompanyName} 
                         onValueChange={setSelectedCompanyName}
                       >
-                        <SelectTrigger className='mt-1 rounded-[8px] shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
+                        <SelectTrigger className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }>
                           <SelectValue placeholder="Choose a company name" />
                         </SelectTrigger>
                         <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
@@ -952,6 +952,7 @@ export default function AdminOverseasCompanies() {
                     <div>
                       <Label htmlFor="admin_notes">Admin Notes</Label>
                       <Textarea
+                      className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
                         id="admin_notes"
                         value={adminNotes}
                         onChange={(e) => setAdminNotes(e.target.value)}
@@ -962,25 +963,27 @@ export default function AdminOverseasCompanies() {
 
                     <div className="flex gap-2">
                       <Button
+                      className="rounded-[8px]"
                         onClick={() => handleProcessRequest(selectedRequest, 'select_name')}
                         disabled={processingRequest || !selectedCompanyName}
                       >
                         {processingRequest ? (
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
                         ) : (
-                          <CheckCircle className="h-4 w-4 mr-2" />
+                          <CheckCircle className="h-4 w-4 mr-1" />
                         )}
                         Select Name
                       </Button>
                       <Button
                         variant="destructive"
+                        className="rounded-[8px]"
                         onClick={() => handleProcessRequest(selectedRequest, 'reject')}
                         disabled={processingRequest}
                       >
                         {processingRequest ? (
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
                         ) : (
-                          <XCircle className="h-4 w-4 mr-2" />
+                          <XCircle className="h-4 w-4 mr-1" />
                         )}
                         Reject Request
                       </Button>
@@ -1093,9 +1096,9 @@ export default function AdminOverseasCompanies() {
 
       {/* Company Details Dialog */}
       <Dialog open={companyDetailsOpen} onOpenChange={setCompanyDetailsOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-[90%] sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Company Details</DialogTitle>
+            <DialogTitle>Company Details ggg</DialogTitle>
             <DialogDescription className="text-muted-foreground">
               View detailed information about the selected company
             </DialogDescription>

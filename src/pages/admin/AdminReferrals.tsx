@@ -529,8 +529,8 @@ export default function AdminReferrals() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-          <h2 className="text-xl font-semibold mb-2 text-white">Loading Referrals</h2>
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold mb-2 text-white pt-5">Loading Referrals </h2>
           <p className="text-muted-foreground">Fetching referral data...</p>
         </div>
       </div>
@@ -538,7 +538,7 @@ export default function AdminReferrals() {
   }
 
   return (
-    <div className="space-y-6 pt-5 lg:pt-0">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -548,7 +548,7 @@ export default function AdminReferrals() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" className="gap-0">
+          <Button variant="outline" size="sm" className="gap-0 rounded-[8px] hover:bg-white/80 border-0">
             <Download className="h-4 w-4 mr-2" />
             <span className="hidden sm:inline">Export</span>
           </Button>
@@ -556,7 +556,7 @@ export default function AdminReferrals() {
             variant="outline"
             size="sm"
             onClick={fetchAllData}
-            className="gap-0"
+            className="gap-0 rounded-[8px] hover:bg-white/80 border-0"
           >
             <RefreshCw className="h-4 w-4" />
             <span className="hidden sm:inline ml-2">Refresh</span>
@@ -703,7 +703,7 @@ export default function AdminReferrals() {
                   </SelectContent>
                 </Select>
                 <div className="flex items-center justify-center sm:justify-start">
-                  <Badge variant="outline">
+                  <Badge variant="outline" className="rounded-[8px] h-10 mt-1">
                     {filteredReferrals.length} referrals
                   </Badge>
                 </div>
@@ -810,7 +810,7 @@ export default function AdminReferrals() {
                   />
                 </div>
                 <div className="flex items-center justify-center sm:justify-start">
-                  <Badge variant="outline">
+                  <Badge variant="outline" className="rounded-[8px] h-10 mt-1">
                     {filteredPayments.length} payments
                   </Badge>
                 </div>
@@ -830,7 +830,7 @@ export default function AdminReferrals() {
                 </div>
                 <Button
                   onClick={() => setPaymentDialogOpen(true)}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 rounded-[8px] border-0 hover:bg-primary/80"
                 >
                   <Plus className="h-4 w-4" />
                   Record Payment
@@ -900,7 +900,7 @@ export default function AdminReferrals() {
                   />
                 </div>
                 <div className="flex items-center justify-center sm:justify-start">
-                  <Badge variant="outline">
+                  <Badge variant="outline" className="rounded-[8px] h-10 mt-1">
                     {filteredSignups.length} signups
                   </Badge>
                 </div>
@@ -1177,7 +1177,8 @@ export default function AdminReferrals() {
                 value={newPayment.amount}
                 onChange={(e) => setNewPayment(prev => ({ ...prev, amount: e.target.value }))}
                 placeholder="Enter payment amount"
-                className="mt-1"
+                className="mt-1 rounded-[8px] shadow-none border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none"
+                 style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
               />
             </div>
 
@@ -1189,7 +1190,8 @@ export default function AdminReferrals() {
                 onChange={(e) => setNewPayment(prev => ({ ...prev, notes: e.target.value }))}
                 placeholder="Add any notes about this payment..."
                 rows={3}
-                className="mt-1"
+                className="mt-1 rounded-[8px] shadow-none border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none resize-none"
+                 style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
               />
             </div>
           </div>

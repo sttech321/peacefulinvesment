@@ -228,7 +228,15 @@ const AdminBlog = () => {
 
   // ---------- Early return after hooks only ----------
   if (roleLoading) {
-    return <div className="min-h-screen pt-20 px-6 border border-muted/20 p-0 rounded-lg bg-white/5">Loading...</div>;
+    return (
+    <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold mb-2 text-white pt-5">Loading Blog Posts </h2>
+          <p className="text-muted-foreground">Fetching blog post data...</p>
+        </div>
+      </div>
+    );
   }
   if (!isAdmin()) {
     return null;
@@ -248,12 +256,12 @@ const AdminBlog = () => {
 
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button onClick={resetForm}>
-                <Plus className="w-4 h-4 mr-2" />
+              <Button onClick={resetForm} className="rounded-[8px] hover:bg-primary/80">
+                <Plus className="w-4 h-4 mr-1" />
                 New Post
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto border-0">
               <DialogHeader>
                 <DialogTitle>{editingPost ? "Edit Blog Post" : "Create New Blog Post"}</DialogTitle>
               </DialogHeader>
@@ -264,6 +272,8 @@ const AdminBlog = () => {
                   <Input
                     id="featured_image"
                     type="file"
+                    className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none"
+                    style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
                     accept="image/*"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
@@ -282,6 +292,8 @@ const AdminBlog = () => {
                     <Label htmlFor="title">Title</Label>
                     <Input
                       id="title"
+                      className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none"
+                    style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
                       value={formData.title}
                       onChange={(e) => setFormData({ ...formData, title: e.target.value, slug: generateSlug(e.target.value) })}
                       required
@@ -289,18 +301,21 @@ const AdminBlog = () => {
                   </div>
                   <div>
                     <Label htmlFor="slug">Slug</Label>
-                    <Input id="slug" value={formData.slug} onChange={(e) => setFormData({ ...formData, slug: e.target.value })} required />
+                    <Input id="slug" className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none"
+                    style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties } value={formData.slug} onChange={(e) => setFormData({ ...formData, slug: e.target.value })} required />
                   </div>
                 </div>
 
                 <div>
                   <Label htmlFor="excerpt">Excerpt</Label>
-                  <Textarea id="excerpt" value={formData.excerpt} onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })} rows={2} />
+                  <Textarea id="excerpt" className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none resize-none h-15"
+                    style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties } value={formData.excerpt} onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })} rows={2} />
                 </div>
 
                 <div>
                   <Label htmlFor="content">Content (Markdown)</Label>
-                  <Textarea id="content" value={formData.content} onChange={(e) => setFormData({ ...formData, content: e.target.value })} rows={15} required />
+                  <Textarea id="content" className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none resize-none h-20"
+                    style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties } value={formData.content} onChange={(e) => setFormData({ ...formData, content: e.target.value })} rows={15} required />
                 </div>
 
                 <div className="grid grid-cols-3 gap-4">
@@ -312,7 +327,7 @@ const AdminBlog = () => {
                     </div> */}
 
                     <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
-                      <SelectTrigger className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
+                      <SelectTrigger className='mt-1 rounded-[8px] shadow-none border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
@@ -349,7 +364,7 @@ const AdminBlog = () => {
                   <div>
                     <Label htmlFor="status">Status</Label>
                     <Select value={formData.status} onValueChange={(value: any) => setFormData({ ...formData, status: value })}>
-                      <SelectTrigger className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
+                      <SelectTrigger className='mt-1 rounded-[8px] shadow-none border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-white/90">
@@ -362,26 +377,26 @@ const AdminBlog = () => {
 
                   <div>
                     <Label htmlFor="tags">Tags (comma-separated)</Label>
-                    <Input id="tags" value={formData.tags} onChange={(e) => setFormData({ ...formData, tags: e.target.value })} placeholder="prayer, morning, catholic" />
+                    <Input id="tags" className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none" style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties } value={formData.tags} onChange={(e) => setFormData({ ...formData, tags: e.target.value })} placeholder="prayer, morning, catholic" />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="meta_title">Meta Title (SEO)</Label>
-                    <Input id="meta_title" value={formData.meta_title} onChange={(e) => setFormData({ ...formData, meta_title: e.target.value })} />
+                    <Input id="meta_title" value={formData.meta_title} onChange={(e) => setFormData({ ...formData, meta_title: e.target.value })} className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none" style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties } />
                   </div>
                   <div>
                     <Label htmlFor="meta_description">Meta Description (SEO)</Label>
-                    <Input id="meta_description" value={formData.meta_description} onChange={(e) => setFormData({ ...formData, meta_description: e.target.value })} />
+                    <Input id="meta_description" value={formData.meta_description} onChange={(e) => setFormData({ ...formData, meta_description: e.target.value })} className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none" style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties } />
                   </div>
                 </div>
 
                 <div className="flex justify-end gap-2">
-                  <Button type="button" variant="outline" className="rounded-[8px]" onClick={() => setDialogOpen(false)}>
+                  <Button type="button" variant="outline" className="rounded-[8px] border-0 hover:bg-white/80" onClick={() => setDialogOpen(false)}>
                     Cancel
                   </Button>
-                  <Button type="submit" className="rounded-[8px]">{editingPost ? "Update Post" : "Create Post"}</Button>
+                  <Button type="submit" className="rounded-[8px] border-0 hover:bg-primary/80">{editingPost ? "Update Post" : "Create Post"}</Button>
                 </div>
               </form>
             </DialogContent>
@@ -401,7 +416,7 @@ const AdminBlog = () => {
                   </Badge>
 
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Eye className="w-3 h-3" />
+                    <Eye className="w-4 h-4 text-primary" />
                     {post.view_count}
                   </div>
                 </div>
@@ -414,20 +429,20 @@ const AdminBlog = () => {
               <CardContent>
                 <div className="flex items-center gap-4 text-xs text-muted-foreground mb-4">
                   <div className="flex items-center gap-1">
-                    <Calendar className="w-3 h-3" />
+                    <Calendar className="w-3 h-3 text-primary" />
                     {new Date(post.created_at).toLocaleDateString()}
                   </div>
                   <div className="flex items-center gap-1">
-                    <Tag className="w-3 h-3" />
+                    <Tag className="w-3 h-3 text-primary" />
                     {post.tags.length} tags
                   </div>
                 </div>
 
                 <div className="flex justify-end gap-2">
-                  <Button size="sm" variant="outline" onClick={() => handleEdit(post)}>
+                  <Button size="sm" className="rounded-[8px] border-0" variant="outline" onClick={() => handleEdit(post)}>
                     <Edit className="w-4 h-4" />
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => handleDelete(post.id)} className="text-destructive hover:text-destructive">
+                  <Button size="sm" className="rounded-[8px] border-0 text-destructive hover:text-destructive" variant="outline" onClick={() => handleDelete(post.id)}>
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>

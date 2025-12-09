@@ -352,7 +352,7 @@ export default function AdminAccounts() {
   }
 
   return (
-    <div className="space-y-6  pt-5 lg:pt-0">
+    <div className="space-y-6">
       {/* Header */}
       <div className="block sm:flex items items-center justify-between">
         <div className="mb-4 sm:mb-0">
@@ -362,13 +362,13 @@ export default function AdminAccounts() {
           </p>
         </div>
         <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" className="gap-0">
+          <Button variant="outline" size="sm" className="gap-0 rounded-[8px] hover:bg-white/80 border-0">
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
           <Dialog open={addAccountOpen} onOpenChange={setAddAccountOpen}>
             <DialogTrigger asChild>
-              <Button size="sm" className="gap-0">
+              <Button size="sm" className="gap-0 rounded-[8px] hover:bg-primary/80 border-0">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Account
               </Button>
@@ -385,7 +385,7 @@ export default function AdminAccounts() {
                 <div>
                   <Label htmlFor="user">Select User *</Label>
                   <Select value={selectedUserEmail} onValueChange={setSelectedUserEmail}>
-                    <SelectTrigger className='mt-1 rounded-[8px]  shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
+                    <SelectTrigger className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }>
                       <SelectValue placeholder="Choose a user" />
                     </SelectTrigger>
                     <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
@@ -404,7 +404,8 @@ export default function AdminAccounts() {
                     id="name"
                     placeholder="Enter account name"
                     value={newAccount.name}
-                    className="rounded-[8px] shadow-none mt-1 focus:outline-none placeholder:text-sm focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
+                    className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none"
+                    style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
                     onChange={(e) => setNewAccount(prev => ({ ...prev, name: e.target.value }))}
                   />
                 </div>
@@ -415,7 +416,8 @@ export default function AdminAccounts() {
                     id="meta_trader_id"
                     placeholder="Enter MetaTrader account ID"
                     value={newAccount.meta_trader_id}
-                    className="rounded-[8px] shadow-none mt-1 focus:outline-none placeholder:text-sm focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
+                   className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none"
+                    style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
                     onChange={(e) => setNewAccount(prev => ({ ...prev, meta_trader_id: e.target.value }))}
                   />
                 </div>
@@ -427,7 +429,8 @@ export default function AdminAccounts() {
                     type="number"
                     placeholder="Enter initial balance"
                     value={newAccount.balance}
-                     className="rounded-[8px] shadow-none mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
+                     className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none"
+                    style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
                     onChange={(e) => setNewAccount(prev => ({ ...prev, balance: parseFloat(e.target.value) || 0 }))}
                   />
                 </div>
@@ -453,6 +456,7 @@ export default function AdminAccounts() {
               <DialogFooter>
                 <Button
                   variant="outline"
+                  className="rounded-[8px] border-0 hover:bg-muted/20"
                   onClick={() => setAddAccountOpen(false)}
                   disabled={creatingAccount}
                 >
@@ -460,13 +464,13 @@ export default function AdminAccounts() {
                 </Button>
                 <Button
                   onClick={handleCreateAccount}
-                   className="mb-3 sm:mb-0"
+                   className="mb-3 sm:mb-0 rounded-[8px] hover:bg-primary/80"
                   disabled={creatingAccount || !selectedUserEmail || !newAccount.name || !newAccount.meta_trader_id}
                 >
                   {creatingAccount ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
                   ) : (
-                    <CheckCircle className="h-4 w-4 mr-2" />
+                    <CheckCircle className="h-4 w-4 mr-1" />
                   )}
                   Create Account
                 </Button>
@@ -481,7 +485,7 @@ export default function AdminAccounts() {
         <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-lg font-medium">Total Accounts</CardTitle>
-            <CreditCard className="h-5 w-5 text-muted-foreground" />
+            <CreditCard className="h-5 w-5 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-white">{accounts.length}</div>
@@ -494,7 +498,7 @@ export default function AdminAccounts() {
         <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-lg font-medium">Total Value</CardTitle>
-            <DollarSign className="h-5 w-5 text-muted-foreground" />
+            <DollarSign className="h-5 w-5 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold  text-white">{formatCurrency(calculateTotalValue())}</div>
@@ -507,7 +511,7 @@ export default function AdminAccounts() {
         <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-lg font-medium">Total P&L</CardTitle>
-            <BarChart3 className="h-5 w-5 text-muted-foreground" />
+            <BarChart3 className="h-5 w-5 text-primary" />
           </CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold  text-white ${getPnlColor(calculateTotalPnl())}`}>
@@ -522,7 +526,7 @@ export default function AdminAccounts() {
         <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-lg font-medium">Active Users</CardTitle>
-            <User className="h-5 w-5 text-muted-foreground" />
+            <User className="h-5 w-5 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold  text-white">
@@ -566,7 +570,7 @@ export default function AdminAccounts() {
               </SelectContent>
             </Select>
             <div className="flex items-center space-x-2">
-              <Badge variant="outline" className="py-2 px-4">
+              <Badge variant="outline" className="py-2 px-4 rounded-[8px] h-[36px]">
                 {filteredAccounts.length} accounts
               </Badge>
             </div>
@@ -630,7 +634,7 @@ export default function AdminAccounts() {
               ))
             ) : (
               <div className="text-center py-8">
-                <CreditCard className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <CreditCard className="h-12 w-12 text-primary mx-auto mb-4" />
                 <p className="text-muted-foreground">No accounts found</p>
               </div>
             )}

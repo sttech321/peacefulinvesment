@@ -329,8 +329,11 @@ export default function AdminAuditLog() {
                 <SelectItem value="FAILED_LOGIN">Failed Login</SelectItem>
               </SelectContent>
             </Select>
-            <div className="text-sm text-muted-foreground flex items-center">
-              {filteredLogs.length} of {auditLogs.length} logs
+            <div className="text-sm text-muted-foreground flex items-center">             
+
+               <Badge variant="outline" className="py-2 px-4 h-10 rounded-[8px] mt-1">
+               {filteredLogs.length} of {auditLogs.length} logs
+              </Badge>
             </div>
           </div>
         </CardContent>
@@ -348,20 +351,20 @@ export default function AdminAuditLog() {
           <div className="rounded-md border border-muted/20 overflow-x-auto">
             <Table className="border-none p-0 rounded-lg bg-white/5">
               <TableHeader>
-                <TableRow className="border-b border-muted/20">
-                  <TableHead>Action</TableHead>
-                  <TableHead >User</TableHead>
-                  <TableHead>Resource</TableHead>
-                  <TableHead>Details</TableHead>
-                  <TableHead>Severity</TableHead>
-                  <TableHead>IP Address</TableHead>
-                  <TableHead>Timestamp</TableHead>
-                  <TableHead>Actions</TableHead>
+                <TableRow className="border-b border-muted/20 hover:bg-white/15 bg-white/15 text-white">
+                  <TableHead className="text-white">Action</TableHead>
+                  <TableHead className="text-white">User</TableHead>
+                  <TableHead className="text-white">Resource</TableHead>
+                  <TableHead className="text-white">Details</TableHead>
+                  <TableHead className="text-white">Severity</TableHead>
+                  <TableHead className="text-white">IP Address</TableHead>
+                  <TableHead className="text-white">Timestamp</TableHead>
+                  <TableHead className="text-white">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredLogs.map((log) => (
-                  <TableRow className="border-b border-muted/20" key={log.id}>
+                  <TableRow className="border-b border-muted/20 hover:bg-white/10" key={log.id}>
                     <TableCell>
                       <div className="flex items-center space-x-2">
                         {getActionIcon(log.action)}
@@ -394,7 +397,7 @@ export default function AdminAuditLog() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-2">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <Calendar className="h-4 w-4 text-primary" />
                         <span className="text-sm text-white">
                           {new Date(log.created_at).toLocaleString()}
                         </span>
@@ -405,7 +408,7 @@ export default function AdminAuditLog() {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleViewDetails(log)}
-                        className="hover:bg-red-700"
+                        className="hover:bg-red-700 rounded-[8px] border-0"
                       >
                         <Eye className="h-4 w-4 text-white " />
                       </Button>

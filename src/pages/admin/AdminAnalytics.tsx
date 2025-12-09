@@ -35,6 +35,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { exportToExcel, exportToPDF, formatDataForExport } from "@/utils/exportUtils";
 import { useToast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
+import { SelectValue } from "@radix-ui/react-select";
 
 interface AnalyticsData {
   userGrowth: any[];
@@ -220,9 +222,9 @@ export default function AdminAnalytics() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex items-center justify-center h-64 min-h-[400px]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="mt-2 text-muted-foreground">Loading analytics...</p>
         </div>
       </div>
@@ -240,15 +242,23 @@ export default function AdminAnalytics() {
           </p>
         </div>
         <div className="flex items-center space-x-2">
-          <select
-            value={timeRange}
-            onChange={(e) => setTimeRange(e.target.value)}
-            className="px-3 py-2 border rounded-md"
-          >
-            <option value="7d">Last 7 days</option>
-            <option value="30d">Last 30 days</option>
-            <option value="90d">Last 90 days</option>
-          </select>
+          <Select
+  value={timeRange}
+  onValueChange={(value) => setTimeRange(value)}
+>
+  <SelectTrigger 
+    className="w-32 h-[36px] rounded-[8PX] border shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
+    style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
+  >
+    <SelectValue placeholder="Select range" />
+  </SelectTrigger>
+
+  <SelectContent className="border-secondary-foreground bg-black/90 text-white">
+    <SelectItem value="7d">Last 7 days</SelectItem>
+    <SelectItem value="30d">Last 30 days</SelectItem>
+    <SelectItem value="90d">Last 90 days</SelectItem>
+  </SelectContent>
+</Select>
         </div>
       </div>
 
@@ -295,7 +305,7 @@ export default function AdminAnalytics() {
                       variant="outline"
                       size="sm"
                       onClick={() => handleExport('excel', 'users')}
-                      className="text-black gap-0"
+                      className="text-black gap-0 rounded-[8px] border-0 hover:bg-white/80"
                     >
                       <Download className="h-4 w-4 mr-2 text-black" />
                       Excel
@@ -304,7 +314,7 @@ export default function AdminAnalytics() {
                       variant="outline"
                       size="sm"
                       onClick={() => handleExport('pdf', 'users')}
-                      className="text-black gap-0"
+                      className="text-black gap-0 rounded-[8px] border-0 hover:bg-white/80"
                     >
                       <Download className="h-4 w-4 mr-2" />
                       PDF

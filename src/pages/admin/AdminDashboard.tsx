@@ -189,7 +189,7 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="space-y-6 lg:pt-0 pt-5">
+    <div className="space-y-6">
       {/* Header */}
       <div className="block sm:flex items-center justify-between">
         <div className="mb-2 sm:mb-0">
@@ -201,12 +201,12 @@ export default function AdminDashboard() {
         <div className="flex items-center space-x-2">
           <Badge 
             variant={stats.systemHealth === 'healthy' ? 'default' : 'destructive'}
-            className="flex items-center space-x-1 py-2"
+            className="flex items-center space-x-1 py-2 rounded-[8px]"
           >
             {stats.systemHealth === 'healthy' ? (
-              <CheckCircle className="h-3 w-3" />
+              <CheckCircle className="h-3 w-3 mr-1" />
             ) : (
-              <AlertCircle className="h-3 w-3" />
+              <AlertCircle className="h-3 w-3 mr-1" />
             )}
             <span>System {stats.systemHealth}</span>
           </Badge>
@@ -321,42 +321,42 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent className="space-y-3">
               <Button asChild className="w-full justify-start" variant="outline">
-                <Link to="/admin/users" className="bg-muted/20 border-none text-white hover:bg-muted/30 hover:text-white">
+                <Link to="/admin/users" className="bg-muted/20 border-none text-white hover:bg-white/30 hover:text-white">
                   <Users className="h-4 w-4 mr-2" />
                   Manage Users
                 </Link>
               </Button>
               
               <Button asChild className="w-full justify-start" variant="outline">
-                <Link to="/admin/accounts" className="bg-muted/20 border-none text-white hover:bg-muted/30 hover:text-white">
+                <Link to="/admin/accounts" className="bg-muted/20 border-none text-white hover:bg-white/30 hover:text-white">
                   <CreditCard className="h-4 w-4 mr-2" />
                   View Accounts
                 </Link>
               </Button>
               
               <Button asChild className="w-full justify-start" variant="outline">
-                <Link to="/admin/referrals" className="bg-muted/20 border-none text-white hover:bg-muted/30 hover:text-white">
+                <Link to="/admin/referrals" className="bg-muted/20 border-none text-white hover:bg-white/30 hover:text-white">
                   <Share2 className="h-4 w-4 mr-2 hover:text-white" />
                   Manage Referrals
                 </Link>
               </Button>
               
               <Button asChild className="w-full justify-start" variant="outline">
-                <Link to="/admin/contact-requests" className="bg-muted/20 border-none text-white hover:bg-muted/30 hover:text-white">
+                <Link to="/admin/contact-requests" className="bg-muted/20 border-none text-white hover:bg-white/30 hover:text-white">
                   <MessageSquare className="h-4 w-4 mr-2" />
                   Contact Requests
                 </Link>
               </Button>
               
               <Button asChild className="w-full justify-start" variant="outline">
-                <Link to="/admin/analytics" className="bg-muted/20 border-none text-white hover:bg-muted/30 hover:text-white">
+                <Link to="/admin/analytics" className="bg-muted/20 border-none text-white hover:bg-white/30 hover:text-white">
                   <BarChart3 className="h-4 w-4 mr-2" />
                   View Analytics
                 </Link>
               </Button>
               
               <Button asChild className="w-full justify-start" variant="outline">
-                <Link to="/admin/settings" className="bg-muted/20 border-none text-white hover:bg-muted/30 hover:text-white">
+                <Link to="/admin/settings" className="bg-muted/20 border-none text-white hover:bg-white/30 hover:text-white">
                   <Settings className="h-4 w-4 mr-2 hover:text-white" />
                   System Settings
                 </Link>
