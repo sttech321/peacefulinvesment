@@ -153,7 +153,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       </div>
 
       {/* Main content */}
-      <div className="lg:ml-64 lg:pt-16 pink-yellow-shadow min-h-screen">
+      <div className="lg:ml-64 pt-10 lg:pt-16 pink-yellow-shadow min-h-screen">
         {/* Page content */}
         <main className="p-6 pt-0">
           {children}

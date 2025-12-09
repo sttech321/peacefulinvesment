@@ -101,9 +101,12 @@ export default function AdminBlogCategories() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[300px]">
-        <Loader2 className="h-6 w-6 animate-spin mr-2" />
-        <span>Loading categories…</span>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold mb-2 text-white pt-5">Loading Blog Categories </h2>
+          <p className="text-muted-foreground">Fetching blog category data...</p>
+        </div>
       </div>
     );
   }
@@ -228,16 +231,16 @@ export default function AdminBlogCategories() {
     const rows: JSX.Element[] = [];
 
     rows.push(
-      <tr key={node.id} className="border-b border-muted/20">
+      <tr key={node.id} className="border-b border-muted/20 last:border-0 hover:bg-white/10">
         <td
-          className="py-2 text-white"
-          style={{ paddingLeft: depth === 0 ? 0 : 24 * depth }}
+          className="py-2 text-white px-4 whitespace-nowrap"
+          style={{ paddingLeft: depth === 0 ? 16 : 24 * depth }}
         >
           {depth > 0 ? "— " : ""}
           {node.name}
         </td>
-        <td className="py-2 text-muted-foreground">{node.slug}</td>
-        <td className="py-2">
+        <td className="py-2 text-muted-foreground px-4 whitespace-nowrap">{node.slug}</td>
+        <td className="py-2 px-4 whitespace-nowrap">
           <Badge
             className="text-xs"
             style={{ backgroundColor: node.color, color: "white" }}
@@ -245,19 +248,19 @@ export default function AdminBlogCategories() {
             {node.color}
           </Badge>
         </td>
-        <td className="py-2 text-right space-x-2">
+        <td className="py-2 text-right px-4 space-x-2 whitespace-nowrap">
           <Button
             variant="outline"
             size="icon"
             onClick={() => startEdit(node)}
-            className="rounded-[8px]"
+            className="rounded-[8px] border-0 hover:bg-white/80"
           >
             <Edit2 className="h-4 w-4" />
           </Button>
           <Button
             variant="outline"
             size="icon"
-            className="text-red-600 hover:text-red-700 hover:bg-red-50 rounded-[8px]"
+            className="text-red-600 hover:text-red-700 hover:bg-red-50 rounded-[8px] border-0"
             onClick={() => handleDelete(node.id)}
           >
             <Trash2 className="h-4 w-4" />
@@ -290,14 +293,14 @@ export default function AdminBlogCategories() {
       </div>
 
       {/* List (tree) */}
-      <div className="border-muted/20  bg-white/5 border rounded-lg p-4">
+      <div className="border-muted/20  bg-white/5 border rounded-lg p-0 overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-muted/20 ">
-              <th className="text-left py-2 text-white">Name</th>
-              <th className="text-left py-2 text-white">Slug</th>
-              <th className="text-left py-2 text-white">Color</th>
-              <th className="text-right py-2 text-white">Actions</th>
+            <tr className="border-b border-muted/20 hover:bg-white/15 bg-white/15">
+              <th className="text-left px-4 py-4 text-white">Name</th>
+              <th className="text-left px-4 py-4 text-white">Slug</th>
+              <th className="text-left px-4 py-4 text-white">Color</th>
+              <th className="text-right px-4 py-4 text-white">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -354,7 +357,8 @@ export default function AdminBlogCategories() {
                         value.toLowerCase().trim().replace(/\s+/g, "-"),
                     }));
                   }}
-                  className='rounded-[8px] shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent'
+                 className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none"
+                                     style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
                   placeholder="e.g. Morning Prayers"
                 />
               </div>
@@ -365,6 +369,8 @@ export default function AdminBlogCategories() {
                   value={form.slug}
                   onChange={handleChange}
                   placeholder="morning-prayers"
+                  className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none"
+                                      style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
                 />
               </div>
             </div>
@@ -378,6 +384,8 @@ export default function AdminBlogCategories() {
                 value={form.description}
                 onChange={handleChange}
                 rows={2}
+                className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none resize-none"
+                                    style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
               />
             </div>
 
@@ -387,7 +395,7 @@ export default function AdminBlogCategories() {
                 Parent (optional)
               </label>
 
-              <div className="border rounded p-2 max-h-64 overflow-auto bg-white">
+              <div className="border border-muted-foreground/60 rounded p-2 max-h-64 overflow-auto bg-white">
                 {/* "No parent" row */}
                 <div
                   className={`flex items-center justify-between px-3 py-2 mb-1 rounded ${form.parent_id === null ? "bg-slate-100" : ""
@@ -423,7 +431,7 @@ export default function AdminBlogCategories() {
                   name="color"
                   value={form.color}
                   onChange={handleChange}
-                  className="w-16 h-10 rounded border"
+                  className="w-16 h-10 rounded-[8px] border"
                 />
               </div>
               <span className="text-xs text-muted-foreground">
@@ -437,10 +445,11 @@ export default function AdminBlogCategories() {
                 variant="outline"
                 onClick={() => setOpen(false)}
                 disabled={saving}
+                className="rounded-[8px] border-0"
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={saving} className="rounded-[8px]">
+              <Button type="submit" disabled={saving} className="rounded-[8px] border-0 hover:bg-primary/80">
                 {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                 {editingId ? "Save Changes" : "Create Category"}
               </Button>

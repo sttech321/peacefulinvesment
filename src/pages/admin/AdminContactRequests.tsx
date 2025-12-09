@@ -260,8 +260,8 @@ export default function AdminContactRequests() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-          <h2 className="text-xl font-semibold mb-2 text-white">Loading Requests</h2>
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold mb-2 text-white pt-5">Loading Requests</h2>
           <p className="text-muted-foreground">Fetching contact requests...</p>
         </div>
       </div>
@@ -279,7 +279,7 @@ export default function AdminContactRequests() {
           </p>
         </div>
         <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" className="gap-0">
+          <Button variant="outline" size="sm" className="gap-0 rounded-[8px] hover:bg-white/80 border-0">
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
@@ -386,7 +386,7 @@ export default function AdminContactRequests() {
               </SelectContent>
             </Select>
             <div className="flex items-center space-x-2">
-              <Badge variant="outline" className="py-2 px-4">
+              <Badge variant="outline" className="py-2 px-4 h-10 rounded-[8px] mt-1">
                 {filteredRequests.length} requests
               </Badge>
             </div>
@@ -433,7 +433,7 @@ export default function AdminContactRequests() {
                         setSelectedRequest(request);
                         setReplyDialogOpen(true);
                       }}
-                      className="gap-0 rounded-[8px]"
+                      className="gap-0 rounded-[8px] border-0"
                     >
                       <Reply className="h-4 w-4 mr-2" />
                       Reply
@@ -459,7 +459,7 @@ export default function AdminContactRequests() {
                         setSelectedRequest(request);  
                         setRequestDetailsOpen(true);
                       }}
-                      className="bg-muted/30 hover:bg-muted/40"
+                      className="bg-muted/30 hover:bg-muted/40 rounded-[8px] border-0"
                     >
                       <Eye className="h-5 w-5 text-white" />
                     </Button>
@@ -468,7 +468,7 @@ export default function AdminContactRequests() {
               ))
             ) : (
               <div className="text-center py-8">
-                <MessageSquare className="h-12 w-12 text-white mx-auto mb-4" />
+                <MessageSquare className="h-12 w-12 text-primary mx-auto mb-4" />
                 <p className="text-muted-foreground">No requests found</p>
               </div>
             )}
@@ -552,16 +552,17 @@ export default function AdminContactRequests() {
                 <Button 
                   variant="outline" 
                   size="sm"
+                  className="rounded-[8px] border-0"
                   onClick={() => {
                     setRequestDetailsOpen(false);
                     setReplyDialogOpen(true);
                   }}
                 >
-                  <Reply className="h-4 w-4 mr-2" />
+                  <Reply className="h-4 w-4 mr-1" />
                   Reply
                 </Button>
-                <Button variant="destructive" size="sm">
-                  <Trash2 className="h-4 w-4 mr-2" />
+                <Button variant="destructive" size="sm" className="rounded-[8px] border-0">
+                  <Trash2 className="h-4 w-4 mr-1" />
                   Delete
                 </Button>
               </div>
@@ -590,10 +591,10 @@ export default function AdminContactRequests() {
               />
             </div>
             <div className="flex items-center justify-between">
-              <Button variant="outline" onClick={() => setReplyDialogOpen(false)}>
+              <Button variant="outline" onClick={() => setReplyDialogOpen(false)} className="rounded-[8px] border-0">
                 Cancel
               </Button>
-              <Button onClick={sendReply} disabled={!replyMessage.trim()}>
+              <Button onClick={sendReply} disabled={!replyMessage.trim()} className="rounded-[8px] border-0 hover:bg-primary/80">
                 Send Reply
               </Button>
             </div>

@@ -757,7 +757,7 @@ export default function AdminUsers() {
   }
 
   return (
-    <div className="space-y-6 lg:pt-0 pt-5">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -769,7 +769,7 @@ export default function AdminUsers() {
         <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="outline"
-            className="rounded-[8px]"
+            className="rounded-[8px] hover:bg-white/80 border-0"
             size="sm"
             onClick={() => handleExport('excel')}
             disabled={processing}
@@ -780,7 +780,7 @@ export default function AdminUsers() {
           <Button
             variant="outline"
             size="sm"
-            className="rounded-[8px]"
+            className="rounded-[8px] hover:bg-white/80 border-0"
             onClick={() => handleExport('pdf')}
             disabled={processing}
           >
@@ -790,7 +790,7 @@ export default function AdminUsers() {
           <Button
             variant="outline"
             size="sm"
-            className="rounded-[8px]"
+            className="rounded-[8px] hover:bg-white/80 border-0"
             onClick={fetchUsers}
             disabled={processing}
           >
@@ -864,7 +864,7 @@ export default function AdminUsers() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="rounded-[8px]"
+                      className="rounded-[8px] hover:bg-white/80 border-0"
                       onClick={clearSelection}
                     >
                       Clear
@@ -883,7 +883,7 @@ export default function AdminUsers() {
                     </Select>
                     <Button
                       size="sm"
-                      className="rounded-[8px]"
+                      className="rounded-[8px] border-0 hover:bg-primary/80"
                       onClick={() => handleBulkAction('approve')}
                       disabled={processing}
                     >
@@ -893,7 +893,7 @@ export default function AdminUsers() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="rounded-[8px]"
+                      className="rounded-[8px] border-0 hover:bg-white/80"
                       onClick={() => handleBulkAction('reject')}
                       disabled={processing}
                     >
@@ -903,7 +903,7 @@ export default function AdminUsers() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="rounded-[8px]"
+                      className="rounded-[8px] border-0 hover:bg-white/80"
                       onClick={() => handleBulkAction('suspend')}
                       disabled={processing}
                     >
@@ -913,7 +913,7 @@ export default function AdminUsers() {
                     <Button
                       variant="destructive"
                       size="sm"
-                      className="rounded-[8px]"
+                      className="rounded-[8px] border-0 hover:bg-red-600/80"
                       onClick={() => handleBulkAction('delete')}
                       disabled={processing}
                     >
@@ -924,7 +924,7 @@ export default function AdminUsers() {
                       <Button
                         variant="secondary"
                         size="sm"
-                        className="rounded-[8px]"
+                        className="rounded-[8px] border-0 hover:bg-white/80"
                         onClick={() => handleBulkAction('change_role')}
                         disabled={processing}
                       >
@@ -952,7 +952,7 @@ export default function AdminUsers() {
               <Button
                 variant="outline"
                 size="sm"
-                className="rounded-[8px]"
+                className="rounded-[8px] hover:bg-white/80 border-0"
                 onClick={selectAllUsers}
               >
                 Select All
@@ -1067,7 +1067,7 @@ export default function AdminUsers() {
               ))
             ) : (
               <div className="text-center py-8">
-                <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <Users className="h-12 w-12 text-primary mx-auto mb-4" />
                 <p className="text-muted-foreground">No users found</p>
               </div>
             )}
@@ -1150,7 +1150,7 @@ export default function AdminUsers() {
                   <Button 
                     variant="outline" 
                     size="sm"
-                    className="gap-0 w-full sm:w-auto"
+                    className="gap-0 w-full sm:w-auto rounded-[8px] border-0 hover:bg-white/10"
                     onClick={() => {
                       handleEditUser(selectedUser);
                       setUserDetailsOpen(false);
@@ -1162,7 +1162,7 @@ export default function AdminUsers() {
                   <Button 
                     variant="outline" 
                     size="sm"
-                    className="gap-0 sm:w-auto"
+                    className="gap-0 sm:w-auto rounded-[8px] border-0 hover:bg-white/10"
                     onClick={() => {
                       handleViewDocuments(selectedUser);
                       setUserDetailsOpen(false);
@@ -1181,7 +1181,7 @@ export default function AdminUsers() {
                       setUserDetailsOpen(false);
                       setDeleteDialogOpen(true);
                     }}
-                    className="gap-0 w-full sm:w-auto"
+                    className="gap-0 w-full sm:w-auto rounded-[8px] border-0 hover:bg-red-600/80"
                   >
                     <Trash2 className="h-4 w-4 sm:mr-2" />
                     Delete User
@@ -1197,7 +1197,7 @@ export default function AdminUsers() {
                       setActionDialogOpen(true);
                       setUserDetailsOpen(false);
                     }}
-                    className="gap-0 w-full sm:w-auto"
+                    className="gap-0 w-full sm:w-auto rounded-[8px] border-0 hover:bg-red-600/80"
                   >
                     <Ban className="h-4 w-4 sm:mr-2" />
                     Suspend
@@ -1213,7 +1213,7 @@ export default function AdminUsers() {
                       setActionDialogOpen(true);
                       setUserDetailsOpen(false);
                     }}
-                    className="gap-0 w-full sm:w-auto"
+                    className="gap-0 w-full sm:w-auto rounded-[8px] border-0 hover:bg-white/80"
                   >
                     <CheckCircle className="h-4 w-4 sm:mr-2" />
                     Approve
@@ -1257,7 +1257,7 @@ export default function AdminUsers() {
               <div>
                 <label className="text-sm font-medium">New Role</label>
                 <Select value={newRole} onValueChange={setNewRole}>
-                  <SelectTrigger className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
+                  <SelectTrigger className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400'  style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }>
                     <SelectValue placeholder="Select role" />
                   </SelectTrigger>
                   <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
@@ -1276,18 +1276,22 @@ export default function AdminUsers() {
                 value={actionNote}
                 onChange={(e) => setActionNote(e.target.value)}
                 rows={3}
+                className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none resize-none"
+                                    style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
               />
             </div>
           </div>
           <DialogFooter>
             <Button
               variant="outline"
+              className="rounded-[8px] border-0 hover:bg-white/80"
               onClick={() => setActionDialogOpen(false)}
               disabled={processing}
             >
               Cancel
             </Button>
             <Button
+            className="rounded-[8px] border-0 hover:bg-primary/80"
               onClick={() => {
                 if (currentAction) {
                   const actionWithNote = {
@@ -1300,9 +1304,9 @@ export default function AdminUsers() {
               disabled={processing || (currentAction?.type === 'change_role' && !newRole)}
             >
               {processing ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
               ) : (
-                <CheckCircle className="h-4 w-4 mr-2" />
+                <CheckCircle className="h-4 w-4 mr-1" />
               )}
               Confirm
             </Button>
@@ -1342,6 +1346,8 @@ export default function AdminUsers() {
                       value={editForm.full_name}
                       onChange={(e) => setEditForm(prev => ({ ...prev, full_name: e.target.value }))}
                       placeholder="Enter full name"
+                      className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none"
+                                          style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
                     />
                   </div>
 
@@ -1351,6 +1357,8 @@ export default function AdminUsers() {
                       value={editForm.phone}
                       onChange={(e) => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
                       placeholder="Enter phone number"
+                      className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none"
+                                          style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
                     />
                   </div>
 
@@ -1360,6 +1368,8 @@ export default function AdminUsers() {
                       value={editForm.address}
                       onChange={(e) => setEditForm(prev => ({ ...prev, address: e.target.value }))}
                       placeholder="Enter address"
+                      className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none"
+                                          style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
                     />
                   </div>
 
@@ -1370,6 +1380,8 @@ export default function AdminUsers() {
                         value={editForm.city}
                         onChange={(e) => setEditForm(prev => ({ ...prev, city: e.target.value }))}
                         placeholder="Enter city"
+                        className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none"
+                                            style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
                       />
                     </div>
                     <div>
@@ -1378,6 +1390,8 @@ export default function AdminUsers() {
                         value={editForm.state}
                         onChange={(e) => setEditForm(prev => ({ ...prev, state: e.target.value }))}
                         placeholder="Enter state"
+                        className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none"
+                                            style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
                       />
                     </div>
                   </div>
@@ -1388,6 +1402,8 @@ export default function AdminUsers() {
                       value={editForm.zip_code}
                       onChange={(e) => setEditForm(prev => ({ ...prev, zip_code: e.target.value }))}
                       placeholder="Enter ZIP code"
+                      className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none"
+                                          style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
                     />
                   </div>
                 </div>
@@ -1402,7 +1418,7 @@ export default function AdminUsers() {
                       value={editForm.employment_status} 
                       onValueChange={(value) => setEditForm(prev => ({ ...prev, employment_status: value }))}
                     >
-                      <SelectTrigger className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
+                      <SelectTrigger className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }>
                         <SelectValue placeholder="Select employment status" />
                       </SelectTrigger>
                       <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
@@ -1421,6 +1437,8 @@ export default function AdminUsers() {
                       value={editForm.employer}
                       onChange={(e) => setEditForm(prev => ({ ...prev, employer: e.target.value }))}
                       placeholder="Enter employer name"
+                       className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none"
+                                          style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
                     />
                   </div>
 
@@ -1431,6 +1449,8 @@ export default function AdminUsers() {
                       value={editForm.annual_income}
                       onChange={(e) => setEditForm(prev => ({ ...prev, annual_income: parseInt(e.target.value) || 0 }))}
                       placeholder="Enter annual income"
+                       className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none"
+                                          style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
                     />
                   </div>
 
@@ -1440,7 +1460,7 @@ export default function AdminUsers() {
                       value={editForm.investment_experience} 
                       onValueChange={(value) => setEditForm(prev => ({ ...prev, investment_experience: value }))}
                     >
-                      <SelectTrigger className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
+                      <SelectTrigger className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }>
                         <SelectValue placeholder="Select experience level" />
                       </SelectTrigger>
                       <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
@@ -1459,7 +1479,7 @@ export default function AdminUsers() {
                       value={editForm.risk_tolerance} 
                       onValueChange={(value) => setEditForm(prev => ({ ...prev, risk_tolerance: value }))}
                     >
-                      <SelectTrigger className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
+                      <SelectTrigger className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }>
                         <SelectValue placeholder="Select risk tolerance" />
                       </SelectTrigger>
                       <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
@@ -1518,7 +1538,7 @@ export default function AdminUsers() {
                     value={editForm.status} 
                     onValueChange={(value) => setEditForm(prev => ({ ...prev, status: value }))}
                   >
-                    <SelectTrigger className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
+                    <SelectTrigger className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }>
                       <SelectValue placeholder="Select account status" />
                     </SelectTrigger>
                     <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
@@ -1535,6 +1555,7 @@ export default function AdminUsers() {
               <DialogFooter>
                 <Button
                   variant="outline"
+                  className="rounded-[8px] border-0 hover:bg-white/80"
                   onClick={() => {
                     setEditDialogOpen(false);
                     setEditingUser(null);
@@ -1545,12 +1566,13 @@ export default function AdminUsers() {
                 </Button>
                 <Button
                   onClick={handleSaveUser}
+                  className="rounded-[8px] border-0 hover:bg-primary/80"
                   disabled={processing}
                 >
                   {processing ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
                   ) : (
-                <CheckCircle className="h-4 w-4 mr-2" />
+                <CheckCircle className="h-4 w-4 mr-1" />
               )}
                   Save Changes
                 </Button>
@@ -1577,7 +1599,7 @@ export default function AdminUsers() {
             </div>
           ) : verificationRequests.length === 0 ? (
             <div className="text-center py-8">
-              <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <FileText className="h-12 w-12 mx-auto text-primary mb-4" />
               <p className="text-muted-foreground">No verification documents found for this user.</p>
             </div>
           ) : (
@@ -1613,6 +1635,7 @@ export default function AdminUsers() {
                         <Button
                           size="sm"
                           variant="outline"
+                          className="rounded-[8px] border-0"
                           onClick={() => setVerificationAction('request_more_info')}
                         >
                           <MessageSquare className="h-4 w-4 mr-1" />
@@ -1621,6 +1644,7 @@ export default function AdminUsers() {
                         <Button
                           size="sm"
                           variant="destructive"
+                          className="rounded-[8px] border-0"
                           onClick={() => setVerificationAction('reject')}
                         >
                           <X className="h-4 w-4 mr-1" />
@@ -1628,6 +1652,7 @@ export default function AdminUsers() {
                         </Button>
                         <Button
                           size="sm"
+                          className="rounded-[8px] border-0"
                           onClick={() => setVerificationAction('approve')}
                         >
                           <Check className="h-4 w-4 mr-1" />
@@ -1702,6 +1727,8 @@ export default function AdminUsers() {
                     value={verificationNote}
                     onChange={(e) => setVerificationNote(e.target.value)}
                     rows={3}
+                    className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none resize-none"
+                                        style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
                   />
                 </div>
                 
@@ -1709,6 +1736,7 @@ export default function AdminUsers() {
                   <Button
                     size="sm"
                     variant="outline"
+                    className="rounded-[8px] border-0"
                     onClick={() => {
                       setVerificationAction(null);
                       setVerificationNote("");
@@ -1718,6 +1746,7 @@ export default function AdminUsers() {
                   </Button>
                   <Button
                     size="sm"
+                    className="rounded-[8px] border-0"
                     variant={
                       verificationAction === 'approve' ? 'default' :
                       verificationAction === 'reject' ? 'destructive' : 'secondary'
@@ -1781,6 +1810,8 @@ export default function AdminUsers() {
                   value={deleteReason}
                   onChange={(e) => setDeleteReason(e.target.value)}
                   rows={3}
+                  className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none resize-none"
+                                      style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
                 />
               </div>
 
@@ -1804,6 +1835,7 @@ export default function AdminUsers() {
           <DialogFooter>
             <Button
               variant="outline"
+              className="rounded-[8px] border-0 hover:bg-white/80"
               onClick={() => {
                 setDeleteDialogOpen(false);
                 setUserToDelete(null);
@@ -1815,13 +1847,14 @@ export default function AdminUsers() {
             </Button>
             <Button
               variant="destructive"
+              className="rounded-[8px] border-0 hover:bg-red-700"
               onClick={handleDeleteUser}
               disabled={processing}
             >
               {processing ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
               ) : (
-                <Trash2 className="h-4 w-4 mr-2" />
+                <Trash2 className="h-4 w-4 mr-1" />
               )}
               Delete User
             </Button>

@@ -35,8 +35,8 @@ export default function AdminRouteGuard({ children }: AdminRouteGuardProps) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-          <h2 className="text-xl font-semibold mb-2">Verifying Access</h2>
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold mb-2 text-white pt-5">Verifying Access</h2>
           <p className="text-muted-foreground">Checking admin permissions...</p>
         </div>
       </div>
