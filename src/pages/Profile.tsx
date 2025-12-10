@@ -136,8 +136,8 @@ const Profile = () => {
                     <User className="h-12 w-12" />
                   </AvatarFallback>
                 </Avatar>
-                <Button variant="outline" size="sm">
-                  <Upload className="h-4 w-4 mr-2" />
+                <Button variant="outline" size="sm" className="rounded-[8px] font-inter border-0 shadow-none hover:bg-white/80">
+                  <Upload className="h-4 w-4 mr-1" />
                   Change Photo
                 </Button>
                 <div className="space-y-2 text-sm">
@@ -161,12 +161,12 @@ const Profile = () => {
                 {!isEditing && (
                   <div className="flex gap-2">
                     <Link to="/change-password">
-                      <Button variant="outline" size="sm">
-                        <Lock className="h-4 w-4 mr-2" />
+                      <Button variant="outline" size="sm" className="rounded-[8px] font-inter border-0 shadow-none hover:bg-white/80">
+                        <Lock className="h-4 w-4 mr-1" />
                         Change Password
                       </Button>
                     </Link>
-                    <Button variant="outline" onClick={() => setIsEditing(true)}>
+                    <Button variant="outline" onClick={() => setIsEditing(true)} size="sm" className="rounded-[8px] font-inter border-0 shadow-none hover:bg-white/80">
                       Edit Profile
                     </Button>
                   </div>
@@ -181,7 +181,7 @@ const Profile = () => {
                         name="full_name"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-white">Full Name</FormLabel>
+                            <FormLabel className="text-sm font-medium leading-none text-muted-foreground">Full Name</FormLabel>
                             <FormControl>
                               <Input
                                className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
@@ -197,7 +197,7 @@ const Profile = () => {
                         name="phone"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-white">Phone Number</FormLabel>
+                            <FormLabel className="text-sm font-medium leading-none text-muted-foreground">Phone Number</FormLabel>
                             <FormControl>
                               <Input
                                className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
@@ -214,7 +214,7 @@ const Profile = () => {
                       name="address"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-white">Address</FormLabel>
+                          <FormLabel className="text-sm font-medium leading-none text-muted-foreground">Address</FormLabel>
                           <FormControl>
                             <Input 
                               className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
@@ -231,7 +231,7 @@ const Profile = () => {
                         name="city"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-white">City</FormLabel>
+                            <FormLabel className="text-sm font-medium leading-none text-muted-foreground">City</FormLabel>
                             <FormControl>
                               <Input 
                                 className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
@@ -247,7 +247,7 @@ const Profile = () => {
                         name="state"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-white">State</FormLabel>
+                            <FormLabel className="text-sm font-medium leading-none text-muted-foreground">State</FormLabel>
                             <FormControl>
                               <Input 
                                 className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
@@ -263,7 +263,7 @@ const Profile = () => {
                         name="zip_code"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-white">ZIP Code</FormLabel>
+                            <FormLabel className="text-sm font-medium leading-none text-muted-foreground">ZIP Code</FormLabel>
                             <FormControl>
                               <Input 
                               className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
@@ -281,7 +281,7 @@ const Profile = () => {
                         name="employment_status"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-white">Employment Status</FormLabel>
+                            <FormLabel className="text-sm font-medium leading-none text-muted-foreground">Employment Status</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value} disabled={!isEditing}>
                               <FormControl>
                                 <SelectTrigger className="rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400" style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
@@ -306,7 +306,7 @@ const Profile = () => {
                         name="employer"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-white">Employer</FormLabel>
+                            <FormLabel className="text-sm font-medium leading-none text-muted-foreground">Employer</FormLabel>
                             <FormControl>
                               <Input 
                                 className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
@@ -323,7 +323,7 @@ const Profile = () => {
                       name="annual_income"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-white">Annual Income</FormLabel>
+                          <FormLabel className="text-sm font-medium leading-none text-muted-foreground">Annual Income</FormLabel>
                           <FormControl>
                             <Input 
                               type="number" 
@@ -345,7 +345,7 @@ const Profile = () => {
                         name="investment_experience"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-white">Investment Experience</FormLabel>
+                            <FormLabel className="text-sm font-medium leading-none text-muted-foreground">Investment Experience</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value} disabled={!isEditing}>
                               <FormControl>
                                 <SelectTrigger className="rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400" style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
@@ -369,7 +369,7 @@ const Profile = () => {
                         name="risk_tolerance"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-white">Risk Tolerance</FormLabel>
+                            <FormLabel className="text-sm font-medium leading-none text-muted-foreground">Risk Tolerance</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value} disabled={!isEditing}>
                               <FormControl>
                                 <SelectTrigger className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
@@ -390,13 +390,14 @@ const Profile = () => {
 
                     {isEditing && (
                       <div className="flex gap-4 pt-4">
-                        <Button type="submit" disabled={isUpdating}>
+                        <Button type="submit" className="rounded-[8px] font-inter border-0 shadow-none hover:bg-primary/80" disabled={isUpdating}>
                           {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                           Save Changes
                         </Button>
                         <Button 
                           type="button" 
                           variant="outline"
+                          className="rounded-[8px] font-inter border-0 shadow-none hover:bg-white/80"
                           onClick={() => {
                             setIsEditing(false);
                             form.reset();

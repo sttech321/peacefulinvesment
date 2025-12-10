@@ -169,8 +169,8 @@ const Dashboard = () => {
         <div className="max-w-7xl mx-auto p-6">
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
-              <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-              <h2 className="text-xl font-semibold mb-2 text-white">Loading Dashboard Data</h2>
+              <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto mb-4"></div>
+              <h2 className="text-xl font-semibold mb-2 text-white pt-5">Loading Dashboard Data</h2>
               <p className="text-muted-foreground">Fetching your trading account information...</p>
             </div>
           </div>
@@ -325,7 +325,7 @@ const Dashboard = () => {
                       </div>
                       <p className="text-muted-foreground font-open-sans">No trading accounts found</p>
                       <Link to="/overseas-company">
-                        <Button variant="outline" className="mt-4">
+                        <Button variant="outline" className="mt-4 rounded-[8px] font-inter border-0 shadow-none hover:bg-white/80" size="sm">
                           Create Account
                         </Button>
                       </Link>
@@ -382,7 +382,7 @@ const Dashboard = () => {
                         No trading accounts linked to your profile
                       </p>
                       <Link to="/overseas-company">
-                        <Button variant="outline" className="font-open-sans" size="sm">
+                        <Button variant="outline" className="rounded-[8px] font-inter border-0 shadow-none hover:bg-white/80" size="sm">
                           Create Your First Account
                         </Button>
                       </Link>

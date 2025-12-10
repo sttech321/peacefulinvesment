@@ -165,15 +165,15 @@ const VerificationCenter: React.FC = () => {
                 Complete verification to access these features:
               </p>
               <div className="grid md:grid-cols-3 gap-4">
-                <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-white/90">
                   <CheckCircle className="h-5 w-5 text-green-500" />
                   <span className="text-sm">Trading Tools</span>
                 </div>
-                <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-white/90">
                   <CheckCircle className="h-5 w-5 text-green-500" />
                   <span className="text-sm">Company Creation</span>
                 </div>
-                <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-white/90">
                   <CheckCircle className="h-5 w-5 text-green-500" />
                   <span className="text-sm">Referral Program</span>
                 </div>
@@ -201,7 +201,7 @@ const VerificationCenter: React.FC = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-3">
                     <Upload className="h-6 w-6 text-primary" />
-                    Upload Verification Documents
+                    Upload Verification Documents 
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
