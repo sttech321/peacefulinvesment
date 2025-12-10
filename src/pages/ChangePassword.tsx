@@ -147,7 +147,7 @@ const ChangePassword = () => {
 
                 {/* Current Password */}
                 <div className="space-y-2">
-                  <Label htmlFor="currentPassword" className="text-white">Current Password</Label>
+                  <Label htmlFor="currentPassword" className="text-sm font-medium leading-none text-muted-foreground">Current Password</Label>
                   <div className="relative">
                     <Input
                       id="currentPassword"
@@ -176,7 +176,7 @@ const ChangePassword = () => {
 
                 {/* New Password */}
                 <div className="space-y-2">
-                  <Label htmlFor="newPassword" className="text-white">New Password</Label>
+                  <Label htmlFor="newPassword" className="text-sm font-medium leading-none text-muted-foreground">New Password</Label>
                   <div className="relative">
                     <Input
                       id="newPassword"
@@ -234,7 +234,7 @@ const ChangePassword = () => {
 
                 {/* Confirm New Password */}
                 <div className="space-y-2">
-                  <Label htmlFor="confirmPassword" className="text-white">Confirm New Password</Label>
+                  <Label htmlFor="confirmPassword" className="text-sm font-medium leading-none text-muted-foreground">Confirm New Password</Label>
                   <div className="relative">
                     <Input
                       id="confirmPassword"
