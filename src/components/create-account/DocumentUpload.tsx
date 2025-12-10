@@ -230,10 +230,10 @@ const DocumentUpload = ({ formData, updateFormData, errors }: DocumentUploadProp
       )}
 
       <div>
-        <h3 className="text-lg font-semibold mb-2 text-white">Document Upload</h3>
+        {/* <h3 className="text-lg font-semibold mb-2 text-white">Document Upload</h3>
         <p className="text-sm text-muted-foreground mb-6">
           Please upload the required documents for identity verification. Each document type has its own upload area.
-        </p>
+        </p> */}
       </div>
 
       {/* Individual Document Upload Areas */}
