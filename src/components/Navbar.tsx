@@ -22,7 +22,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useUserRole } from '@/hooks/useUserRole';
-import logoAnimation from '@/assets/logo-animation.gif';
+import logoAnimation from '@/assets/new-logo.gif';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -75,7 +75,7 @@ const Navbar = () => {
             <img
               src={logoAnimation}
               alt='Peaceful Investment'
-              className='h-16 w-16 rounded-full'
+              className='h-auto w-full max-w-[65px]'
             />
             {/* <span className='truncate text-lg font-bold text-foreground text-white sm:text-xl'>
               Peaceful Investment
