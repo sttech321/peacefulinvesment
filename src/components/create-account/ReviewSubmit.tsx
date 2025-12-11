@@ -70,7 +70,11 @@ const ReviewSubmit = ({ formData }: ReviewSubmitProps) => {
             </div>
             <div className="pb-2">
               <p className="text-sm text-muted-foreground pb-2">Social Security Number</p>
-              <p className="text-sm font-normal text-white/50 h-10 px-3 p-2 rounded-sm bg-white/10 border-0 leading-[25px]">***-**-{formData.socialSecurityNumber.slice(-4)}</p>
+              <p className="text-sm font-normal text-white/50 h-10 px-3 p-2 rounded-sm bg-white/10 border-0 leading-[25px]">
+                {formData.socialSecurityNumber && formData.socialSecurityNumber.length >= 4 
+                  ? `***-**-${formData.socialSecurityNumber.slice(-4)}` 
+                  : 'Not provided'}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -109,7 +113,9 @@ const ReviewSubmit = ({ formData }: ReviewSubmitProps) => {
           <CardContent className="space-y-2 pt-0 sm:pt-0">
             <div className="pb-2">
               <p className="text-sm text-muted-foreground pb-2">Employment Status</p>
-              <p className="text-sm font-normal text-white/50 h-10 px-3 p-2 rounded-sm bg-white/10 border-0 leading-[25px] capitalize">{formData.employmentStatus.replace('-', ' ')}</p>
+              <p className="text-sm font-normal text-white/50 h-10 px-3 p-2 rounded-sm bg-white/10 border-0 leading-[25px] capitalize">
+                {formData.employmentStatus ? formData.employmentStatus.replace('-', ' ') : 'Not provided'}
+              </p>
             </div>
             {formData.employer && (
               <div className="pb-2">
@@ -198,22 +204,40 @@ const ReviewSubmit = ({ formData }: ReviewSubmitProps) => {
                               {docType.replace(/_/g, ' ').replace('front', 'Front').replace('back', 'Back')}
                             </h4>
                             <div className="">
-                              {files.map((file, index) => (
-                                <div key={index} className="flex items-center space-x-3 p-3 border-0 rounded-sm bg-white/10">
-                                  {file.type.startsWith('image/') ? (
-                                    <img 
-                                      src={URL.createObjectURL(file)} 
-                                      alt={file.name}
-                                      className="w-12 h-12 object-cover rounded border"
-                                    />
-                                  ) : (
-                                    <div className="w-12 h-12 bg-blue-100 rounded border flex items-center justify-center">
-                                      <span className="text-sm font-medium">PDF</span>
-                                    </div>
-                                  )}
-                                  <span className="text-sm truncate flex-1 text-muted-foreground">{file.name}</span>
-                                </div>
-                              ))}
+                              {files.filter(Boolean).map((file, index) => {
+                                
+                                // Handle both File objects and plain objects from localStorage
+                                const fileName = file.name || file.fileName || 'Document';
+                                const fileType = file.type || (fileName ? fileName.split('.').pop()?.toLowerCase() : '');
+                                const fileUrl = file.url || (file instanceof File ? URL.createObjectURL(file) : null);
+                                const isImage = fileType && (
+                                  fileType.startsWith('image/') || 
+                                  ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(fileType)
+                                );
+                                
+                                return (
+                                  <div key={index} className="flex items-center space-x-3 p-3 border-0 rounded-sm bg-white/10">
+                                    {isImage && fileUrl ? (
+                                      <img 
+                                        src={fileUrl} 
+                                        alt={fileName}
+                                        className="w-12 h-12 object-cover rounded border"
+                                        onError={(e) => {
+                                          // Fallback if image fails to load
+                                          e.currentTarget.style.display = 'none';
+                                          e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                        }}
+                                      />
+                                    ) : null}
+                                    {!isImage || !fileUrl ? (
+                                      <div className="w-12 h-12 bg-blue-100 rounded border flex items-center justify-center">
+                                        <span className="text-sm font-medium">PDF</span>
+                                      </div>
+                                    ) : null}
+                                    <span className="text-sm truncate flex-1 text-muted-foreground">{fileName}</span>
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
                         ))}
@@ -248,17 +272,23 @@ const ReviewSubmit = ({ formData }: ReviewSubmitProps) => {
             {formData.investmentTimeHorizon && (
               <div className="pb-2">
                 <p className="text-sm text-muted-foreground pb-2">Time Horizon</p>
-                <p className="text-sm font-normal text-white/50 h-10 px-3 p-2 rounded-sm bg-white/10 border-0 leading-[25px] capitalize">{formData.investmentTimeHorizon.replace('-', ' ')}-term</p>
+                <p className="text-sm font-normal text-white/50 h-10 px-3 p-2 rounded-sm bg-white/10 border-0 leading-[25px] capitalize">
+                  {formData.investmentTimeHorizon.replace('-', ' ')}-term
+                </p>
               </div>
             )}
             <div className="pb-2">
               <p className="text-sm text-muted-foreground pb-2">Investment Goals</p>
               <div className="flex flex-wrap gap-1 mt-0">
-                {formData.investmentGoals.map((goal, index) => (
-                  <Badge key={index} variant="outline" className="bg-white/10 border-0 text-xs font-normal text-white/50">
-                    {goal}
-                  </Badge>
-                ))}
+                {formData.investmentGoals && Array.isArray(formData.investmentGoals) && formData.investmentGoals.length > 0 ? (
+                  formData.investmentGoals.map((goal, index) => (
+                    <Badge key={index} variant="outline" className="bg-white/10 border-0 text-xs font-normal text-white/50">
+                      {goal}
+                    </Badge>
+                  ))
+                ) : (
+                  <span className="text-sm text-muted-foreground">No goals specified</span>
+                )}
               </div>
             </div>
           </CardContent>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ChevronLeft, ChevronRight, User, Lock, Upload, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useProfile, UserProfile } from "@/hooks/useProfile";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -30,8 +31,8 @@ import OverseasCompanyStep from "@/components/create-account/OverseasCompanyStep
 import { FormData } from "@/pages/CreateAccount";
 
 const TOTAL_STEPS = 8; // Base steps; USA clients will have +1
-const PROFILE_STEP_KEY = "profile_current_step";
-const PROFILE_FORM_DATA_KEY = "profile_form_data";
+const getProfileStepKey = (userId: string) => `profile_current_step_${userId}`;
+const getProfileFormDataKey = (userId: string) => `profile_form_data_${userId}`;
 
 // Whitelist of allowed columns for updates in the profiles table.
 // Update this list to exactly match your DB schema (snake_case).
@@ -75,6 +76,7 @@ type ProfileFormValues = z.infer<typeof profileSchema>;
 
 const Profile = () => {
   const { profile, loading, updateProfile, refetchProfile } = useProfile();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSaving, setIsSaving] = useState(false);
@@ -82,6 +84,9 @@ const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [showStepFlow, setShowStepFlow] = useState(true);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRefStepFlow = useRef<HTMLInputElement>(null);
 
   // Form for completed profile view
   const form = useForm<ProfileFormValues>({
@@ -230,13 +235,15 @@ const Profile = () => {
         });
       } else {
         // Load saved step for step flow; clamp to computed max steps
-        const savedStep = localStorage.getItem(PROFILE_STEP_KEY);
-        if (savedStep) {
-          const parsed = parseInt(savedStep, 10);
-          const max = computedMaxSteps(mapProfileToFormData(profile).isUSAClient);
-          if (!isNaN(parsed) && parsed >= 1 && parsed <= max) {
-            console.log("Initial load - Restoring saved step:", parsed);
-            setCurrentStep(parsed);
+        if (user?.id) {
+          const savedStep = localStorage.getItem(getProfileStepKey(user.id));
+          if (savedStep) {
+            const parsed = parseInt(savedStep, 10);
+            const max = computedMaxSteps(mapProfileToFormData(profile).isUSAClient);
+            if (!isNaN(parsed) && parsed >= 1 && parsed <= max) {
+              console.log("Initial load - Restoring saved step:", parsed);
+              setCurrentStep(parsed);
+            }
           }
         }
       }
@@ -269,7 +276,9 @@ const Profile = () => {
 
   // Initialize formData from profile or saved data (only once)
   const initializeFormData = (): FormData => {
-    const savedData = localStorage.getItem(PROFILE_FORM_DATA_KEY);
+    if (!user?.id) return mapProfileToFormData(profile);
+    
+    const savedData = localStorage.getItem(getProfileFormDataKey(user.id));
     if (savedData) {
       try {
         const parsed = JSON.parse(savedData);
@@ -285,8 +294,17 @@ const Profile = () => {
     return mapProfileToFormData(profile);
   };
 
+  // Reset initialization when user changes
   useEffect(() => {
-    if (!loading && profile && !isInitialized) {
+    if (user?.id) {
+      console.log("Profile page - Current user ID:", user.id, "Email:", user.email);
+      setIsInitialized(false);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!loading && profile && !isInitialized && user?.id) {
+      console.log("Profile page - Loading profile for user:", user.id, "Profile:", profile);
       const initialData = initializeFormData();
       setFormData(initialData);
       // clamp current step to allowed range after initialization
@@ -297,30 +315,30 @@ const Profile = () => {
       setIsInitialized(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile, loading, isInitialized]);
+  }, [profile, loading, isInitialized, user?.id]);
 
   // Auto-save form data to localStorage whenever it changes — only after initialized
   useEffect(() => {
-    if (!isInitialized) return;
+    if (!isInitialized || !user?.id) return;
     if (formData && Object.keys(formData).length > 0) {
       try {
-        localStorage.setItem(PROFILE_FORM_DATA_KEY, JSON.stringify(formData));
+        localStorage.setItem(getProfileFormDataKey(user.id), JSON.stringify(formData));
       } catch (e) {
         console.error("Could not write profile form data to localStorage", e);
       }
     }
-  }, [formData, isInitialized]);
+  }, [formData, isInitialized, user?.id]);
 
   // Save current step to localStorage whenever it changes — only after initialized
   useEffect(() => {
-    if (!isInitialized || currentStep < 1) return;
+    if (!isInitialized || currentStep < 1 || !user?.id) return;
     try {
-      localStorage.setItem(PROFILE_STEP_KEY, currentStep.toString());
+      localStorage.setItem(getProfileStepKey(user.id), currentStep.toString());
       console.log("Saved step to localStorage:", currentStep);
     } catch (e) {
       console.error("Could not save step to localStorage", e);
     }
-  }, [currentStep, isInitialized]);
+  }, [currentStep, isInitialized, user?.id]);
 
   const updateFormData = (stepData: Partial<FormData>) => {
     setFormData(prev => {
@@ -416,7 +434,7 @@ const Profile = () => {
         break;
       case 9:
         if (formData.isUSAClient && formData.overseasCompanyRequired && !formData.overseasCompanyCompleted) {
-          //errors.push("Overseas company registration must be completed for USA clients");
+          // errors.push("Overseas company registration must be completed for USA clients");
         }
         break;
       default:
@@ -533,10 +551,12 @@ const Profile = () => {
         });
         // still attempt refetch and local persistence
         try { await refetchProfile(); } catch (e) { console.warn("Refetch failed:", e); }
-        try {
-          localStorage.setItem(PROFILE_FORM_DATA_KEY, JSON.stringify(formData));
-          localStorage.setItem(PROFILE_STEP_KEY, currentStep.toString());
-        } catch (e) { /* ignore */ }
+        if (user?.id) {
+          try {
+            localStorage.setItem(getProfileFormDataKey(user.id), JSON.stringify(formData));
+            localStorage.setItem(getProfileStepKey(user.id), currentStep.toString());
+          } catch (e) { /* ignore */ }
+        }
         return true;
       }
 
@@ -548,11 +568,13 @@ const Profile = () => {
         console.warn("Error refetching profile:", refetchError);
       }
 
-      try {
-        localStorage.setItem(PROFILE_FORM_DATA_KEY, JSON.stringify(formData));
-        localStorage.setItem(PROFILE_STEP_KEY, currentStep.toString());
-      } catch (e) {
-        console.warn("LocalStorage write failed:", e);
+      if (user?.id) {
+        try {
+          localStorage.setItem(getProfileFormDataKey(user.id), JSON.stringify(formData));
+          localStorage.setItem(getProfileStepKey(user.id), currentStep.toString());
+        } catch (e) {
+          console.warn("LocalStorage write failed:", e);
+        }
       }
 
       toast({ title: "Progress Saved", description: "Your profile information has been saved successfully." });
@@ -595,9 +617,11 @@ const Profile = () => {
       if (currentStep < maxSteps) {
         const nextStep = currentStep + 1;
         setCurrentStep(nextStep);
-        try {
-          localStorage.setItem(PROFILE_STEP_KEY, nextStep.toString());
-        } catch (e) { /* ignore */ }
+        if (user?.id) {
+          try {
+            localStorage.setItem(getProfileStepKey(user.id), nextStep.toString());
+          } catch (e) { /* ignore */ }
+        }
         console.log("Moved to step:", nextStep);
       }
     } else {
@@ -632,6 +656,103 @@ const Profile = () => {
         toast({ title: "Error", description: msg || "Failed to mark profile as completed.", variant: "destructive" });
       }
     }
+  };
+
+  // Handle avatar image upload
+  const handleAvatarUpload = async (file: File) => {
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid File",
+        description: "Please select an image file (JPG, PNG, etc.)",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      toast({
+        title: "File Too Large",
+        description: "Please select an image smaller than 5MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      // Convert image to base64
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        try {
+          const base64String = reader.result as string;
+          
+          // Update profile with base64 avatar
+          const result = await updateProfile({ avatar_url: base64String });
+          
+          if (result?.error) {
+            const msg = extractErrorMessage(result.error);
+            toast({
+              title: "Upload Failed",
+              description: msg || "Failed to upload avatar",
+              variant: "destructive",
+            });
+          } else {
+            toast({
+              title: "Success",
+              description: "Profile picture updated successfully",
+            });
+            // Refetch to get updated profile
+            await refetchProfile();
+          }
+        } catch (error) {
+          const msg = extractErrorMessage(error);
+          toast({
+            title: "Upload Failed",
+            description: msg || "An error occurred while uploading",
+            variant: "destructive",
+          });
+        } finally {
+          setUploadingAvatar(false);
+        }
+      };
+      
+      reader.onerror = () => {
+        toast({
+          title: "Upload Failed",
+          description: "Failed to read image file",
+          variant: "destructive",
+        });
+        setUploadingAvatar(false);
+      };
+      
+      reader.readAsDataURL(file);
+    } catch (error) {
+      const msg = extractErrorMessage(error);
+      toast({
+        title: "Upload Failed",
+        description: msg || "An unexpected error occurred",
+        variant: "destructive",
+      });
+      setUploadingAvatar(false);
+    }
+  };
+
+  // Handle file input change
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      handleAvatarUpload(file);
+    }
+    // Reset input so same file can be selected again
+    event.target.value = '';
+  };
+
+  // Trigger file input click
+  const triggerFileInput = (ref: React.RefObject<HTMLInputElement>) => {
+    ref.current?.click();
   };
 
   // Form submit handler for completed profile view
@@ -721,9 +842,31 @@ const Profile = () => {
                       <User className="h-12 w-12" />
                     </AvatarFallback>
                   </Avatar>
-                  <Button variant="outline" size="sm">
-                    <Upload className="h-4 w-4 mr-2" />
-                    Change Photo
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="rounded-[8px] border-0 hover:bg-white/80"
+                    onClick={() => triggerFileInput(fileInputRef)}
+                    disabled={uploadingAvatar}
+                  >
+                    {uploadingAvatar ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                        Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="h-4 w-4 mr-1" />
+                        Change Photo
+                      </>
+                    )}
                   </Button>
                   <div className="space-y-2 text-sm">
                     <p className="font-medium text-muted-foreground">{profile?.full_name || "No name set"}</p>
@@ -746,12 +889,12 @@ const Profile = () => {
                   {!isEditing && (
                     <div className="flex gap-2">
                       <Link to="/change-password">
-                        <Button variant="outline" size="sm">
-                          <Lock className="h-4 w-4 mr-2" />
+                        <Button variant="outline" size="sm" className="rounded-[8px] border-0 hover:bg-white/80 h-10">
+                          <Lock className="h-4 w-4 mr-1" />
                           Change Password
                         </Button>
                       </Link>
-                      <Button variant="outline" onClick={() => setIsEditing(true)}>
+                      <Button variant="outline" className="rounded-[8px] border-0 hover:bg-white/80 h-10" onClick={() => setIsEditing(true)}>
                         Edit Profile
                       </Button>
                     </div>
@@ -766,7 +909,7 @@ const Profile = () => {
                           name="full_name"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-white">Full Name</FormLabel>
+                              <FormLabel className="text-sm font-medium leading-none text-muted-foreground">Full Name</FormLabel>
                               <FormControl>
                                 <Input
                                   className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
@@ -782,7 +925,7 @@ const Profile = () => {
                           name="phone"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-white">Phone Number</FormLabel>
+                              <FormLabel className="text-sm font-medium leading-none text-muted-foreground">Phone Number</FormLabel>
                               <FormControl>
                                 <Input
                                   className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
@@ -799,7 +942,7 @@ const Profile = () => {
                         name="address"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-white">Address</FormLabel>
+                            <FormLabel className="text-sm font-medium leading-none text-muted-foreground">Address</FormLabel>
                             <FormControl>
                               <Input
                                 className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
@@ -816,7 +959,7 @@ const Profile = () => {
                           name="city"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-white">City</FormLabel>
+                              <FormLabel className="text-sm font-medium leading-none text-muted-foreground">City</FormLabel>
                               <FormControl>
                                 <Input
                                   className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
@@ -832,7 +975,7 @@ const Profile = () => {
                           name="state"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-white">State</FormLabel>
+                              <FormLabel className="text-sm font-medium leading-none text-muted-foreground">State</FormLabel>
                               <FormControl>
                                 <Input
                                   className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
@@ -848,7 +991,7 @@ const Profile = () => {
                           name="zip_code"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-white">ZIP Code</FormLabel>
+                              <FormLabel className="text-sm font-medium leading-none text-muted-foreground">ZIP Code</FormLabel>
                               <FormControl>
                                 <Input
                                   className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
@@ -866,7 +1009,7 @@ const Profile = () => {
                           name="employment_status"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-white">Employment Status</FormLabel>
+                              <FormLabel className="text-sm font-medium leading-none text-muted-foreground">Employment Status</FormLabel>
                               <Select onValueChange={field.onChange} value={field.value} disabled={!isEditing}>
                                 <FormControl>
                                   <SelectTrigger className="rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400" style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
@@ -891,7 +1034,7 @@ const Profile = () => {
                           name="employer"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-white">Employer</FormLabel>
+                              <FormLabel className="text-sm font-medium leading-none text-muted-foreground">Employer</FormLabel>
                               <FormControl>
                                 <Input
                                   className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
@@ -908,7 +1051,7 @@ const Profile = () => {
                         name="annual_income"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-white">Annual Income</FormLabel>
+                            <FormLabel className="text-sm font-medium leading-none text-muted-foreground">Annual Income</FormLabel>
                             <FormControl>
                               <Input
                                 type="number"
@@ -930,7 +1073,7 @@ const Profile = () => {
                           name="investment_experience"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-white">Investment Experience</FormLabel>
+                              <FormLabel className="text-sm font-medium leading-none text-muted-foreground">Investment Experience</FormLabel>
                               <Select onValueChange={field.onChange} value={field.value} disabled={!isEditing}>
                                 <FormControl>
                                   <SelectTrigger className="rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400" style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
@@ -954,7 +1097,7 @@ const Profile = () => {
                           name="risk_tolerance"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-white">Risk Tolerance</FormLabel>
+                              <FormLabel className="text-sm font-medium leading-none text-muted-foreground">Risk Tolerance</FormLabel>
                               <Select onValueChange={field.onChange} value={field.value} disabled={!isEditing}>
                                 <FormControl>
                                   <SelectTrigger className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
@@ -975,13 +1118,14 @@ const Profile = () => {
 
                       {isEditing && (
                         <div className="flex gap-4 pt-4">
-                          <Button type="submit" disabled={isUpdating}>
+                          <Button type="submit" className="rounded-[8px] border-0 hover:bg-primary/80" disabled={isUpdating}>
                             {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Save Changes
                           </Button>
                           <Button
                             type="button"
                             variant="outline"
+                            className="rounded-[8px] border-0 hover:bg-white/80"
                             onClick={() => {
                               setIsEditing(false);
                               form.reset();

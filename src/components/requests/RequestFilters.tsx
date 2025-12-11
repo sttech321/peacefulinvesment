@@ -185,7 +185,7 @@ const RequestFilters = ({ requests, onFilteredRequestsChange }: RequestFiltersPr
               placeholder="Search requests..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
+              className="pl-9 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent"
             />
           </div>
 
@@ -204,7 +204,7 @@ const RequestFilters = ({ requests, onFilteredRequestsChange }: RequestFiltersPr
           <Button
             variant="outline"
             onClick={() => toggleSort(sortField)}
-            className="justify-start"
+            className="justify-start rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent"
           >
             {sortDirection === 'asc' ? (
               <SortAsc className="h-4 w-4 mr-2" />
@@ -218,7 +218,7 @@ const RequestFilters = ({ requests, onFilteredRequestsChange }: RequestFiltersPr
         {/* Filter Row */}
         <div className="grid gap-4 md:grid-cols-4">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent">
+            <SelectTrigger className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
               <SelectValue placeholder="All Statuses" />
             </SelectTrigger>
             <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
@@ -232,7 +232,7 @@ const RequestFilters = ({ requests, onFilteredRequestsChange }: RequestFiltersPr
           </Select>
 
           <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent">
+            <SelectTrigger className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
               <SelectValue placeholder="All Types" />
             </SelectTrigger>
             <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
@@ -246,7 +246,7 @@ const RequestFilters = ({ requests, onFilteredRequestsChange }: RequestFiltersPr
           </Select>
 
           <Select value={paymentMethodFilter} onValueChange={setPaymentMethodFilter}>
-            <SelectTrigger className="focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent">
+            <SelectTrigger className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
               <SelectValue placeholder="All Payment Methods" />
             </SelectTrigger>
             <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
@@ -260,7 +260,7 @@ const RequestFilters = ({ requests, onFilteredRequestsChange }: RequestFiltersPr
           </Select>
 
           <Select value={currencyFilter} onValueChange={setCurrencyFilter}>
-            <SelectTrigger className="focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent">
+            <SelectTrigger className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
               <SelectValue placeholder="All Currencies" />
             </SelectTrigger>
             <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
@@ -280,7 +280,7 @@ const RequestFilters = ({ requests, onFilteredRequestsChange }: RequestFiltersPr
             <label className="text-sm font-medium text-white">Min Amount</label>
             <Input
               type="number"
-              className="focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent"
+              className="rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent"
               placeholder="0.00"
               value={amountMin}
               onChange={(e) => setAmountMin(e.target.value)}
@@ -291,7 +291,7 @@ const RequestFilters = ({ requests, onFilteredRequestsChange }: RequestFiltersPr
             <label className="text-sm font-medium text-white">Max Amount</label>
             <Input
               type="number"
-              className="focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent"
+              className="rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent"
               placeholder="0.00"
               value={amountMax}
               onChange={(e) => setAmountMax(e.target.value)}
@@ -301,7 +301,7 @@ const RequestFilters = ({ requests, onFilteredRequestsChange }: RequestFiltersPr
           <div className="space-y-2">
             <label className="text-sm font-medium text-white">From Date</label>
             <Popover>
-              <PopoverTrigger asChild className="focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent">
+              <PopoverTrigger asChild className="rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent">
                 <Button
                   variant="outline"
                   className={cn(
@@ -328,7 +328,7 @@ const RequestFilters = ({ requests, onFilteredRequestsChange }: RequestFiltersPr
           <div className="space-y-2">
             <label className="text-sm font-medium text-white">To Date</label>
             <Popover>
-              <PopoverTrigger asChild className="focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent">
+              <PopoverTrigger asChild className="rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent">
                 <Button
                   variant="outline"
                   className={cn(
@@ -340,7 +340,7 @@ const RequestFilters = ({ requests, onFilteredRequestsChange }: RequestFiltersPr
                   {dateTo ? format(dateTo, "PPP") : "Pick a date"}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 border-secondary-foreground bg-black/90 text-white">
+              <PopoverContent className="w-auto p-0 border-secondary-foreground bg-black/90 text-white ">
                 <Calendar
                   mode="single"
                   selected={dateTo}

@@ -122,7 +122,7 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onSubmit, loadin
     <div className="space-y-6">
       {/* Document Requirements */}
       <div>
-        <h3 className="text-lg font-semibold mb-4">Document Requirements</h3>
+        <h3 className="text-lg font-semibold mb-4 text-muted-foreground">Document Requirements</h3>
         <div className="space-y-4">
           <div className="p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
             <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-2">Required Documents (Choose One):</h4>
@@ -170,7 +170,7 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onSubmit, loadin
 
       {/* Upload Area */}
       <div>
-        <h3 className="text-lg font-semibold mb-4">Upload Documents</h3>
+        <h3 className="text-lg font-semibold mb-4 text-muted-foreground">Upload Documents</h3>
         
         {errors.length > 0 && (
           <Alert className="mb-4">
@@ -196,10 +196,10 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onSubmit, loadin
           <input {...getInputProps()} />
           <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
           {isDragActive ? (
-            <p className="text-lg">Drop the files here...</p>
+            <p className="text-lg text-muted-foreground">Drop the files here...</p>
           ) : (
             <div>
-              <p className="text-lg mb-2">Drag & drop files here, or click to select</p>
+              <p className="text-lg mb-2 text-muted-foreground">Drag & drop files here, or click to select</p>
               <p className="text-sm text-muted-foreground">
                 Supports JPG, PNG, PDF files up to 10MB each
               </p>
@@ -211,13 +211,13 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onSubmit, loadin
       {/* Uploaded Files */}
       {uploadedFiles.length > 0 && (
         <div>
-          <h3 className="text-lg font-semibold mb-4">Uploaded Files</h3>
+          <h3 className="text-lg font-semibold mb-4 text-muted-foreground">Uploaded Files</h3>
           <div className="space-y-3">
             {uploadedFiles.map((file, index) => (
-              <div key={index} className="flex items-center gap-3 p-3 border rounded-lg">
+              <div key={index} className="flex items-center gap-3 p-3 border border-muted/20 rounded-lg">
                 <File className="h-5 w-5 text-primary" />
                 <div className="flex-1">
-                  <p className="font-medium">{file.name}</p>
+                  <p className="font-medium text-muted-foreground">{file.name}</p>
                   <p className="text-sm text-muted-foreground">
                     {formatFileSize(file.size)}
                   </p>
@@ -226,7 +226,7 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onSubmit, loadin
                   variant="ghost"
                   size="sm"
                   onClick={() => removeFile(index)}
-                  className="text-red-500 hover:text-red-700"
+                  className="text-red-500 hover:text-red-700 rounded-[8px]"
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -241,7 +241,7 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onSubmit, loadin
         <Button 
           onClick={handleSubmit}
           disabled={uploadedFiles.length === 0 || loading}
-          className="px-8"
+          className="px-8 rounded-[8px]"
         >
           {loading ? (
             <>
