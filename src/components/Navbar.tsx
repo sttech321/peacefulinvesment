@@ -67,7 +67,7 @@ const Navbar = () => {
     >
       <div className='mx-auto max-w-7xl'>
         <div className='flex h-[80px] min-w-0 items-center justify-between'>
-          {/* Logo */}
+          {/* Logo */} 
           <Link
             to='/'
             className='flex min-w-0 flex-shrink-0 items-center space-x-2 outline-none'
