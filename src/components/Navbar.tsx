@@ -67,7 +67,7 @@ const Navbar = () => {
     >
       <div className='mx-auto max-w-7xl'>
         <div className='flex h-[80px] min-w-0 items-center justify-between'>
-          {/* Logo */}
+          {/* Logo */} 
           <Link
             to='/'
             className='flex min-w-0 flex-shrink-0 items-center space-x-2 outline-none'
@@ -75,7 +75,7 @@ const Navbar = () => {
             <img
               src={logoAnimation}
               alt='Peaceful Investment'
-              className='h-auto w-full max-w-[65px]'
+              className='h-full w-full max-w-[68px]'
             />
             {/* <span className='truncate text-lg font-bold text-foreground text-white sm:text-xl'>
               Peaceful Investment
