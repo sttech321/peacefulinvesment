@@ -75,7 +75,7 @@ const Navbar = () => {
             <img
               src={logoAnimation}
               alt='Peaceful Investment'
-              className='h-auto w-full max-w-[65px]'
+              className='h-full w-full max-w-[68px]'
             />
             {/* <span className='truncate text-lg font-bold text-foreground text-white sm:text-xl'>
               Peaceful Investment
