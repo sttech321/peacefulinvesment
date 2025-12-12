@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom"; 
+import { useNavigate, useSearchParams } from "react-router-dom"; 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -53,9 +53,11 @@ const BUSINESS_TYPES = [
 
 const OverseasCompany = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { toast } = useToast();
-  const { profile } = useProfile(); 
+  const { profile, updateProfile, refetchProfile } = useProfile();
+  const fromProfile = searchParams.get('from') === 'profile'; 
   
   const { 
     requests, 
@@ -76,9 +78,45 @@ const OverseasCompany = () => {
   });
 
   const [files, setFiles] = useState<FileList | null>(null);
+  const [hasRedirected, setHasRedirected] = useState(false);
  
   const currentRequest = requests?.[0];
   const hasActiveRequest = currentRequest && currentRequest.status !== 'completed' && currentRequest.status !== 'rejected';
+  
+  // Check if overseas company is completed (has companyInfo or status is completed)
+  const isOverseasCompanyCompleted = (companyInfo && companyInfo.length > 0) || currentRequest?.status === 'completed';
+  
+  // Redirect back to profile when company is completed (after admin approval)
+  useEffect(() => {
+    if (fromProfile && isOverseasCompanyCompleted && !hasRedirected && companyInfo && companyInfo.length > 0) {
+      // Update profile to mark overseas company as completed
+      updateProfile({
+        overseas_company_completed: true,
+        overseas_company_id: companyInfo[0]?.id,
+        has_completed_profile: true // Ensure profile is marked as completed
+      } as any).then(async () => {
+        // Wait for profile to be refetched to ensure completed view shows
+        await refetchProfile();
+        setHasRedirected(true);
+        toast({
+          title: 'Overseas Company Completed!',
+          description: 'Redirecting back to your profile...',
+        });
+        // Small delay for better UX, then redirect
+        setTimeout(() => {
+          navigate('/profile');
+        }, 1500);
+      }).catch(async (err) => {
+        console.error('Error updating profile:', err);
+        // Still refetch and redirect even if update fails
+        await refetchProfile();
+        setHasRedirected(true);
+        setTimeout(() => {
+          navigate('/profile');
+        }, 1500);
+      });
+    }
+  }, [fromProfile, isOverseasCompanyCompleted, hasRedirected, companyInfo, navigate, toast, updateProfile, refetchProfile, currentRequest]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -123,6 +161,31 @@ const OverseasCompany = () => {
         contactEmail: user?.email || ""
       });
 
+      // Update profile to mark overseas company as required
+      if (updateProfile) {
+        try {
+          await updateProfile({
+            overseas_company_required: true,
+            has_completed_profile: true // Keep profile as completed
+          } as any);
+        } catch (err) {
+          console.warn("Failed to update profile:", err);
+        }
+      }
+
+      // If user came from profile flow, redirect back to profile after submission
+      if (fromProfile) {
+        toast({
+          title: "Request Submitted",
+          description: "Your request has been submitted. Redirecting back to profile...",
+        });
+        setTimeout(() => {
+          navigate('/profile');
+        }, 1500);
+        return;
+      }
+
+      // For users coming from create-account flow
       if (user && profile && !profile.has_completed_profile) {
         navigate('/create-account');
       }
@@ -346,7 +409,7 @@ const OverseasCompany = () => {
                         value={formData.businessDescription}
                         onChange={(e) => setFormData({ ...formData, businessDescription: e.target.value })}
                         placeholder="Briefly describe your business activities"
-                        className="min-h-[100px] mt-1 rounded-[8px] border-0 shadow-none mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
+                        className="min-h-[100px] mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
                         disabled={hasActiveRequest}
                       />
                     </div>

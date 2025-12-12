@@ -11,9 +11,11 @@ export interface UserProfile {
   address: string | null;
   city: string | null;
   state: string | null;
+  state_code?: string | null;
   zip_code: string | null;
   employment_status: string | null;
   employer: string | null;
+  employer_country?: string | null;
   annual_income: number | null;
   investment_experience: string | null;
   risk_tolerance: string | null;
@@ -23,6 +25,11 @@ export interface UserProfile {
   status: string | null;
   created_at: string;
   updated_at: string;
+  overseas_company_required?: boolean;
+  overseas_company_completed?: boolean;
+  overseas_company_id?: string | null;
+  is_usa_client?: boolean;
+  [key: string]: any; // Allow additional fields from database
 }
 
 function useProfile() {
