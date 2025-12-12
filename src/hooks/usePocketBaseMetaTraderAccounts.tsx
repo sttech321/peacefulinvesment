@@ -30,6 +30,8 @@ function usePocketBaseMetaTraderAccounts() {
       return;
     }
     setLastFetchTime(now);
+    
+    console.log('[usePocketBaseMetaTraderAccounts] Fetching accounts for user:', user.email);
 
     try {
       setLoading(true);
@@ -56,21 +58,32 @@ function usePocketBaseMetaTraderAccounts() {
         setError('no_accounts_found');
       }
     } catch (err) {
-      console.error('Error fetching PocketBase accounts:', err);
+      console.error('[usePocketBaseMetaTraderAccounts] Error fetching accounts:', err);
       
       // Handle specific PocketBase errors
       if (err instanceof Error) {
-        if (err.message.includes('auto-cancelled') || err.message.includes('cancelled')) {
+        const errorMessage = err.message || String(err);
+        console.error('[usePocketBaseMetaTraderAccounts] Error details:', {
+          message: errorMessage,
+          name: err.name,
+          stack: err.stack
+        });
+        
+        if (errorMessage.includes('auto-cancelled') || errorMessage.includes('cancelled')) {
           setError('Request was cancelled. Please try again.');
-        } else if (err.message.includes('timeout')) {
+        } else if (errorMessage.includes('timeout') || errorMessage.includes('network')) {
           setError('Request timed out. Please check your connection and try again.');
-        } else if (err.message.includes('Failed to authenticate')) {
+        } else if (errorMessage.includes('Failed to authenticate') || errorMessage.includes('authentication')) {
           setError('Authentication failed. Please try again later.');
+        } else if (errorMessage.includes('Failed to fetch')) {
+          setError('Failed to connect to server. Please check your internet connection.');
         } else {
-          setError(err.message);
+          setError(`Failed to load accounts: ${errorMessage}`);
         }
       } else {
-        setError('Failed to fetch accounts. Please try again.');
+        const errorStr = String(err);
+        console.error('[usePocketBaseMetaTraderAccounts] Unknown error type:', err);
+        setError(`Failed to fetch accounts: ${errorStr}`);
       }
     } finally {
       setLoading(false);

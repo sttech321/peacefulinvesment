@@ -43,6 +43,7 @@ function useProfile() {
     if (!user) return;
 
     try {
+      console.log('[useProfile] Fetching profile for user ID:', user.id, 'Email:', user.email);
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -50,9 +51,10 @@ function useProfile() {
         .maybeSingle();
 
       if (error) throw error;
+      console.log('[useProfile] Profile fetched:', data);
       setProfile(data);
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      console.error('[useProfile] Error fetching profile:', error);
     } finally {
       setLoading(false);
     }

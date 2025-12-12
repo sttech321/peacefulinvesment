@@ -81,23 +81,23 @@ const Footer = () => {
                     <path
                       d='M18.4611 1H6.82037C3.60587 1 1 3.57436 1 6.75V18.25C1 21.4256 3.60587 24 6.82037 24H18.4611C21.6756 24 24.2815 21.4256 24.2815 18.25V6.75C24.2815 3.57436 21.6756 1 18.4611 1Z'
                       stroke='#F3B800'
-                      stroke-width='2'
-                      stroke-linecap='round'
-                      stroke-linejoin='round'
+                      strokeWidth='2'
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
                     />
                     <path
                       d='M17.2969 11.7758C17.4406 12.7329 17.2751 13.7104 16.824 14.5692C16.3729 15.428 15.6592 16.1245 14.7844 16.5595C13.9096 16.9945 12.9182 17.1459 11.9512 16.9922C10.9843 16.8385 10.091 16.3874 9.39847 15.7033C8.70594 15.0191 8.24941 14.1367 8.09381 13.1814C7.93821 12.2261 8.09148 11.2467 8.5318 10.3825C8.97213 9.51823 9.67709 8.81315 10.5464 8.36752C11.4157 7.9219 12.4052 7.75842 13.374 7.90035C14.3622 8.04511 15.2771 8.50003 15.9835 9.1979C16.6899 9.89577 17.1504 10.7996 17.2969 11.7758Z'
                       stroke='#F3B800'
-                      stroke-width='2'
-                      stroke-linecap='round'
-                      stroke-linejoin='round'
+                      strokeWidth='2'
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
                     />
                     <path
                       d='M19.0425 6.1748H19.0535'
                       stroke='white'
-                      stroke-width='2'
-                      stroke-linecap='round'
-                      stroke-linejoin='round'
+                      strokeWidth='2'
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
                     />
                   </svg>
                 </Link>{' '}
@@ -112,9 +112,9 @@ const Footer = () => {
                     <path
                       d='M13.8088 0.800049H10.2609C8.69264 0.800049 7.18859 1.40585 6.07966 2.48418C4.97072 3.56252 4.34772 5.02505 4.34772 6.55005V10H0.799805V14.6H4.34772V23.8H9.07828V14.6H12.6262L13.8088 10H9.07828V6.55005C9.07828 6.24505 9.20288 5.95254 9.42466 5.73688C9.64645 5.52121 9.94726 5.40005 10.2609 5.40005H13.8088V0.800049Z'
                       stroke='#F3B800'
-                      stroke-width='1.6'
-                      stroke-linecap='round'
-                      stroke-linejoin='round'
+                      strokeWidth='1.6'
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
                     />
                   </svg>
                 </Link>
