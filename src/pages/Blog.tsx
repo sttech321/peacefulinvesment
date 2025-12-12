@@ -28,11 +28,10 @@ import Right03 from "@/assets/right-03.jpg";
  */
 
 const Blog = () => {
-  const { posts, categories, loading } = useBlog();
+  const { posts, categories, loading, initializing } = useBlog();
 
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [openParentId, setOpenParentId] = useState<string | null>(null);
-
   // Build maps and parents list
   const { parents, childrenMap, idMap, slugMap } = useMemo(() => {
     const idMap = new Map<string, BlogCategory>();
@@ -148,33 +147,11 @@ const Blog = () => {
     return buildFlattenedChildren(openParentId);
   }, [openParentId, childrenMap]);
 
-  if (loading) {
+  // Keep loader visible until we have either posts or categories to render.
+  if (initializing || loading || (!posts.length && !categories.length)) {
     return (
-      <div className="min-h-screen pink-yellow-shadow pt-16">
-        <div className="text-center py-10 md:py-12 lg:py-24 px-6 animate-slide-up bg-black/20">
-          <div className="max-w-4xl mx-auto">
-            <Skeleton className="h-12 w-full mx-auto mb-4 opacity-50" />
-            <Skeleton className="h-6 w-full mx-auto opacity-50" />
-          </div>
-        </div>
-
-        <div className="px-6 py-10 md:py-12 lg:py-24">
-          <div className="max-w-7xl mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {[...Array(6)].map((_, i) => (
-                <Card className="bg-black/20 glass-card shadow-none opacity-50" key={i}>
-                  <CardHeader>
-                    <Skeleton className="h-6 w-full mb-2" />
-                    <Skeleton className="h-4 w-3/4" />
-                  </CardHeader>
-                  <CardContent>
-                    <Skeleton className="h-32 w-full" />
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </div>
+      <div className="min-h-screen pink-yellow-shadow flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -325,7 +302,7 @@ const Blog = () => {
               ))}
             </div>
 
-            {filteredPosts.length === 0 && (
+            {!loading && (posts.length > 0 || categories.length > 0) && filteredPosts.length === 0 && (
               <div className="text-center py-16">
                 <h3 className="text-2xl font-semibold text-white mb-3">No posts found</h3>
                 <p className="text-muted-foreground">No blog posts are available in this category yet.</p>

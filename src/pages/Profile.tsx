@@ -1,3 +1,4 @@
+// Profile.tsx
 import React, { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -34,30 +35,58 @@ const TOTAL_STEPS = 8; // Base steps; USA clients will have +1
 const getProfileStepKey = (userId: string) => `profile_current_step_${userId}`;
 const getProfileFormDataKey = (userId: string) => `profile_form_data_${userId}`;
 
-// Whitelist of allowed columns for updates in the profiles table.
-// Update this list to exactly match your DB schema (snake_case).
+/* ADDED: Expanded allowed columns list to include all fields we persist to profiles table.
+   Ensure these columns exist in your DB schema. */
+// >>> ADDED
 const ALLOWED_PROFILE_COLUMNS = [
   "full_name",
+  "first_name",
+  "last_name",
+  "date_of_birth",
+  "ssn_last4",
+  "ssn_encrypted",
+  "avatar_url",
   "phone",
   "address",
   "city",
   "state",
+  "state_code",
   "zip_code",
+  "country",
+  "country_code",
   "employment_status",
   "employer",
+  "employer_country",
+  "employer_address_line1",
+  "employer_address_line2",
+  "employer_city",
+  "employer_state",
+  "employer_zip",
+  "occupation",
+  "business_nature",
   "annual_income",
+  "net_worth",
+  "liquid_net_worth",
   "investment_experience",
   "risk_tolerance",
   "investment_goals",
-  "country_code",
+  "investment_time_horizon",
+  "documents",
+  "documents_by_type",
+  "security_questions",
+  "documents_uploaded",
+  "status",
+  "role",
   "is_usa_client",
   "overseas_company_required",
   "overseas_company_completed",
   "overseas_company_id",
   "has_completed_profile",
-  // add/remove columns as per your DB schema
+  "email",
+  "metadata",
 ];
 
+/* Basic zod schema used in completed-profile editing form */
 const profileSchema = z.object({
   full_name: z.string().min(1, "Full name is required"),
   phone: z.string().optional(),
@@ -74,10 +103,135 @@ const profileSchema = z.object({
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
 
+/* ------------------------------
+   Helper functions (ADDED)
+   ------------------------------ */
+
+// >>> ADDED: safe SSN last4 extractor — do NOT store full SSN on client
+const extractSSNLast4 = (ssnRaw?: string): string | null => {
+  if (!ssnRaw) return null;
+  const digits = (ssnRaw || "").replace(/\D/g, "");
+  return digits.length >= 4 ? digits.slice(-4) : null;
+};
+
+// >>> ADDED: Build snake_case payload from FormData
+const buildProfilePayload = (form: FormData, profile?: UserProfile | null) => {
+  const nameParts = [form.firstName?.trim(), form.lastName?.trim()].filter(Boolean);
+  const fullName = nameParts.length ? nameParts.join(" ") : profile?.full_name || null;
+
+  const payload: Record<string, any> = {
+    // identity
+    first_name: form.firstName || null,
+    last_name: form.lastName || null,
+    full_name: fullName,
+    date_of_birth: form.dateOfBirth || null,
+    ssn_last4: extractSSNLast4(form.socialSecurityNumber),
+
+    // contact
+    phone: form.phone || null,
+    address: form.address || null,
+    city: form.city || null,
+    state: form.state || null,
+    state_code: form.stateCode || null,
+    zip_code: form.zipCode || null,
+    country: form.country || null,
+    country_code: form.countryCode || null,
+
+    // employment
+    employment_status: form.employmentStatus || null,
+    employer: form.employer || null,
+    employer_country: form.employerCountry || null,
+    employer_address_line1: form.employerAddressLine1 || null,
+    employer_address_line2: form.employerAddressLine2 || null,
+    employer_city: form.employerCity || null,
+    employer_state: form.employerState || null,
+    employer_zip: form.employerZip || null,
+    occupation: form.occupation || null,
+    business_nature: form.businessNature || null,
+
+    // finances
+    annual_income:
+      typeof form.annualIncome === "number" && !isNaN(form.annualIncome) ? form.annualIncome : null,
+    net_worth: typeof form.netWorth === "number" ? form.netWorth : null,
+    liquid_net_worth: typeof form.liquidNetWorth === "number" ? form.liquidNetWorth : null,
+
+    // investing
+    investment_experience: form.investmentExperience || null,
+    investment_time_horizon: form.investmentTimeHorizon || null,
+    risk_tolerance: form.riskTolerance || null,
+    investment_goals: Array.isArray(form.investmentGoals) ? form.investmentGoals : [],
+
+    // documents & security questions stored in JSONB
+    documents: Array.isArray(form.documents) ? form.documents : [],
+    documents_by_type: form.documentsByType || {},
+    security_questions: Array.isArray(form.securityQuestions)
+      ? form.securityQuestions.map((q) => ({
+          question: q.question || null,
+          // DO NOT send plaintext answers to DB — mask for safety, server should handle verification
+          answer_masked: q.answer ? "***MASKED***" : null,
+        }))
+      : [],
+
+    // flags
+    documents_uploaded: Object.values(form.documentsByType || {}).flat().length > 0,
+    is_usa_client: !!form.isUSAClient,
+    overseas_company_required: !!form.overseasCompanyRequired,
+    overseas_company_completed: !!form.overseasCompanyCompleted,
+    overseas_company_id: form.overseasCompanyId || null,
+
+    // avatar + metadata (if present on form)
+    avatar_url: (form as any).avatar_url || null,
+    metadata: (form as any).metadata || null,
+
+    has_completed_profile: !!(form as any).hasCompletedProfile || false,
+  };
+
+  return payload;
+};
+
+// >>> ADDED: sanitize payload to only DB-allowed columns
+const sanitizeForProfileUpdate = (payload: Record<string, any>) => {
+  const sanitized: Record<string, any> = {};
+  for (const key of ALLOWED_PROFILE_COLUMNS) {
+    if (Object.prototype.hasOwnProperty.call(payload, key)) {
+      sanitized[key] = payload[key];
+    }
+  }
+  return sanitized;
+};
+
+// >>> ADDED: extract meaningful error messages
+const extractErrorMessage = (err: any): string => {
+  if (!err) return "Failed to save progress. Please try again.";
+  if (typeof err === "string") return err;
+  if (err instanceof Error) return err.message;
+  if (err.message && typeof err.message === "string") return err.message;
+  if (err.detail && typeof err.detail === "string") return err.detail;
+  if (err.data && typeof err.data.message === "string") return err.data.message;
+  if (err.errors && typeof err.errors === "object") {
+    try {
+      const first = Object.keys(err.errors)[0];
+      const msg = Array.isArray(err.errors[first]) ? err.errors[first][0] : err.errors[first];
+      if (msg) return msg;
+    } catch (e) {
+      // ignore
+    }
+  }
+  try {
+    return JSON.stringify(err);
+  } catch (e) {
+    return String(err);
+  }
+};
+
+/* ------------------------------
+   Component starts here
+   ------------------------------ */
 const Profile = () => {
   const { profile, loading, updateProfile, refetchProfile } = useProfile();
   const { user } = useAuth();
   const { toast } = useToast();
+
   const [currentStep, setCurrentStep] = useState(1);
   const [isSaving, setIsSaving] = useState(false);
   const [stepErrors, setStepErrors] = useState<Record<number, string[]>>({});
@@ -87,6 +241,9 @@ const Profile = () => {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fileInputRefStepFlow = useRef<HTMLInputElement>(null);
+
+  // >>> ADDED: prevents repeated restoring of saved step
+  const restoredRef = useRef(false);
 
   // Form for completed profile view
   const form = useForm<ProfileFormValues>({
@@ -116,7 +273,6 @@ const Profile = () => {
     const firstName = nameParts[0] || "";
     const lastName = nameParts.slice(1).join(" ") || "";
 
-    // Safely read fields (avoid @ts-ignore if possible)
     const isUSAClient = Boolean((profileData as any)?.is_usa_client);
     const countryCode = (profileData as any)?.country_code || "";
     const country = (profileData as any)?.country || "";
@@ -124,39 +280,41 @@ const Profile = () => {
     return {
       firstName,
       lastName,
-      dateOfBirth: "",
-      socialSecurityNumber: "",
+      dateOfBirth: (profileData as any)?.date_of_birth || "",
+      socialSecurityNumber: "", // never hydrate full SSN
       phone: profileData.phone || "",
       address: profileData.address || "",
       country: country || "",
       countryCode: countryCode || (isUSAClient ? "US" : ""),
       state: profileData.state || "",
-      stateCode: "",
+      stateCode: profileData.state_code || "",
       city: profileData.city || "",
       zipCode: profileData.zip_code || "",
       employmentStatus: profileData.employment_status || "",
       employer: profileData.employer || "",
-      employerCountry: "",
-      employerAddressLine1: "",
-      employerAddressLine2: "",
-      employerCity: "",
-      employerState: "",
-      employerZip: "",
-      businessNature: "",
-      occupation: "",
+      employerCountry: profileData.employer_country || "",
+      employerAddressLine1: (profileData as any)?.employer_address_line1 || "",
+      employerAddressLine2: (profileData as any)?.employer_address_line2 || "",
+      employerCity: (profileData as any)?.employer_city || "",
+      employerState: (profileData as any)?.employer_state || "",
+      employerZip: (profileData as any)?.employer_zip || "",
+      businessNature: (profileData as any)?.business_nature || "",
+      occupation: (profileData as any)?.occupation || "",
       annualIncome: profileData.annual_income || 0,
-      netWorth: 0,
-      liquidNetWorth: 0,
-      securityQuestions: [
-        { question: "", answer: "" },
-        { question: "", answer: "" },
-      ],
-      documents: [],
-      documentsByType: {},
+      netWorth: (profileData as any)?.net_worth || 0,
+      liquidNetWorth: (profileData as any)?.liquid_net_worth || 0,
+      securityQuestions:
+        (profileData as any)?.security_questions?.map((q: any) => ({ question: q.question || "", answer: "" })) ||
+        [
+          { question: "", answer: "" },
+          { question: "", answer: "" },
+        ],
+      documents: (profileData as any)?.documents || [],
+      documentsByType: (profileData as any)?.documents_by_type || {},
       investmentExperience: profileData.investment_experience || "",
       riskTolerance: profileData.risk_tolerance || "",
       investmentGoals: (profileData as any)?.investment_goals || [],
-      investmentTimeHorizon: "",
+      investmentTimeHorizon: (profileData as any)?.investment_time_horizon || "",
       isUSAClient: isUSAClient || countryCode === "US" || country === "United States",
       overseasCompanyRequired: (profileData as any)?.overseas_company_required || isUSAClient || false,
       overseasCompanyCompleted: (profileData as any)?.overseas_company_completed || false,
@@ -212,6 +370,14 @@ const Profile = () => {
   // derive max steps based on isUSAClient
   const computedMaxSteps = (isUSA: boolean) => TOTAL_STEPS + (isUSA ? 1 : 0);
 
+  // Save in-flight guard to avoid overlapping saves (ADDED)
+  const saveInFlightRef = useRef(false);
+
+  // Autosave refs (ADDED)
+  const AUTO_SAVE_DELAY_MS = 1200;
+  const autosaveTimerRef = useRef<number | null>(null);
+  const isFirstAutosaveRef = useRef(true);
+
   // Check if profile is completed and determine which view to show
   useEffect(() => {
     if (!loading && profile) {
@@ -219,7 +385,6 @@ const Profile = () => {
       setShowStepFlow(!isCompleted);
 
       if (isCompleted) {
-        console.log("Profile completed - Loading data:", profile);
         form.reset({
           full_name: profile.full_name || "",
           phone: profile.phone || "",
@@ -235,26 +400,26 @@ const Profile = () => {
         });
       } else {
         // Load saved step for step flow; clamp to computed max steps
-        if (user?.id) {
+        if (user?.id && !restoredRef.current && currentStep === 1) {
           const savedStep = localStorage.getItem(getProfileStepKey(user.id));
           if (savedStep) {
             const parsed = parseInt(savedStep, 10);
             const max = computedMaxSteps(mapProfileToFormData(profile).isUSAClient);
             if (!isNaN(parsed) && parsed >= 1 && parsed <= max) {
-              console.log("Initial load - Restoring saved step:", parsed);
+              console.log("Restoring saved step (one-time):", parsed);
               setCurrentStep(parsed);
             }
           }
+          restoredRef.current = true;
         }
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile, loading]);
 
-  // Separate effect to update form when profile data changes (for completed profile view)
+  // Update completed-profile form when profile changes
   useEffect(() => {
     if (!loading && profile && !showStepFlow && (profile as any).has_completed_profile) {
-      console.log("Updating form with profile data:", profile);
       const formDataToSet = {
         full_name: profile.full_name || "",
         phone: profile.phone || "",
@@ -267,8 +432,8 @@ const Profile = () => {
         annual_income: profile.annual_income || undefined,
         investment_experience: profile.investment_experience || "",
         risk_tolerance: profile.risk_tolerance || "",
+        investment_goals: profile.investment_goals || [],
       };
-      console.log("Form data to set:", formDataToSet);
       form.reset(formDataToSet);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -277,7 +442,7 @@ const Profile = () => {
   // Initialize formData from profile or saved data (only once)
   const initializeFormData = (): FormData => {
     if (!user?.id) return mapProfileToFormData(profile);
-    
+
     const savedData = localStorage.getItem(getProfileFormDataKey(user.id));
     if (savedData) {
       try {
@@ -297,18 +462,16 @@ const Profile = () => {
   // Reset initialization when user changes
   useEffect(() => {
     if (user?.id) {
-      console.log("Profile page - Current user ID:", user.id, "Email:", user.email);
       setIsInitialized(false);
     }
   }, [user?.id]);
 
   useEffect(() => {
     if (!loading && profile && !isInitialized && user?.id) {
-      console.log("Profile page - Loading profile for user:", user.id, "Profile:", profile);
       const initialData = initializeFormData();
       setFormData(initialData);
       // clamp current step to allowed range after initialization
-      setCurrentStep(prev => {
+      setCurrentStep((prev) => {
         const max = computedMaxSteps(initialData.isUSAClient);
         return Math.min(Math.max(1, prev), max);
       });
@@ -334,14 +497,46 @@ const Profile = () => {
     if (!isInitialized || currentStep < 1 || !user?.id) return;
     try {
       localStorage.setItem(getProfileStepKey(user.id), currentStep.toString());
-      console.log("Saved step to localStorage:", currentStep);
     } catch (e) {
-      console.error("Could not save step to localStorage", e);
+      console.error("Could not save step to localStorage:", e);
     }
   }, [currentStep, isInitialized, user?.id]);
 
+  /* ADDED: Debounced autosave whenever formData changes (skip validation) */
+  useEffect(() => {
+    if (!isInitialized || !user?.id) return;
+
+    // skip initial autosave on first mount
+    if (isFirstAutosaveRef.current) {
+      isFirstAutosaveRef.current = false;
+      return;
+    }
+
+    if (autosaveTimerRef.current) {
+      window.clearTimeout(autosaveTimerRef.current);
+    }
+
+    autosaveTimerRef.current = window.setTimeout(async () => {
+      try {
+        // lightweight autosave: skip validation (don't block user)
+        // >>> CHANGED: autosave should be silent (no toast)
+        await saveProgress(true, { showToast: false });
+      } catch (e) {
+        console.warn("Autosave failed:", e);
+      }
+    }, AUTO_SAVE_DELAY_MS);
+
+    return () => {
+      if (autosaveTimerRef.current) {
+        window.clearTimeout(autosaveTimerRef.current);
+        autosaveTimerRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData, currentStep, isInitialized, user?.id]);
+
   const updateFormData = (stepData: Partial<FormData>) => {
-    setFormData(prev => {
+    setFormData((prev) => {
       const merged: FormData = { ...prev, ...stepData };
 
       // Normalize country checks
@@ -365,9 +560,8 @@ const Profile = () => {
 
       // Clamp currentStep if needed
       const newMax = computedMaxSteps(next.isUSAClient);
-      setCurrentStep(prevStep => Math.min(prevStep, newMax));
+      setCurrentStep((prevStep) => Math.min(prevStep, newMax));
 
-      console.log("Updated formData - isUSAClient:", next.isUSAClient, "countryCode:", merged.countryCode, "country:", merged.country);
       return next;
     });
   };
@@ -410,13 +604,13 @@ const Profile = () => {
         if (!formData.annualIncome || formData.annualIncome <= 0) errors.push("Annual income is required");
         break;
       case 5:
-        if (formData.securityQuestions.some(q => !q.question || !q.answer?.trim())) {
+        if (formData.securityQuestions.some((q) => !q.question || !q.answer?.trim())) {
           errors.push("All security questions and answers are required");
         }
         break;
       case 6: {
         const requiredDocumentTypes = ["drivers_license_front", "drivers_license_back", "passport"];
-        const hasRequiredDocuments = requiredDocumentTypes.some(type =>
+        const hasRequiredDocuments = requiredDocumentTypes.some((type) =>
           Boolean((formData.documentsByType as any)?.[type]?.length)
         );
         if (!hasRequiredDocuments) {
@@ -434,56 +628,22 @@ const Profile = () => {
         break;
       case 9:
         if (formData.isUSAClient && formData.overseasCompanyRequired && !formData.overseasCompanyCompleted) {
-          // errors.push("Overseas company registration must be completed for USA clients");
+          // optional enforcement
         }
         break;
       default:
         break;
     }
 
-    setStepErrors(prev => ({ ...prev, [currentStep]: errors }));
+    setStepErrors((prev) => ({ ...prev, [currentStep]: errors }));
     return errors.length === 0;
   };
 
-  // Helper: sanitize payload to allowed DB columns
-  const sanitizeForProfileUpdate = (payload: Record<string, any>) => {
-    const sanitized: Record<string, any> = {};
-    for (const key of ALLOWED_PROFILE_COLUMNS) {
-      if (Object.prototype.hasOwnProperty.call(payload, key)) {
-        sanitized[key] = payload[key];
-      }
-    }
-    return sanitized;
-  };
+  /* ADDED: saveProgress now accepts options to suppress toast for autosave */
+  // >>> CHANGED: new signature with options { showToast?: boolean }
+  const saveProgress = async (skipValidation = false, options?: { showToast?: boolean }) => {
+    const showToast = options?.showToast ?? true; // default true for manual saves
 
-  // Helper: extract meaningful error message from common shapes
-  const extractErrorMessage = (err: any): string => {
-    if (!err) return "Failed to save progress. Please try again.";
-    if (typeof err === "string") return err;
-    if (err instanceof Error) return err.message;
-    if (err.message && typeof err.message === "string") return err.message;
-    if (err.detail && typeof err.detail === "string") return err.detail;
-    if (err.data && typeof err.data.message === "string") return err.data.message;
-    // PostgREST/Supabase: sometimes returns { code, message, details, hint }
-    if (err.message && typeof err.message === "string") return err.message;
-    if (err.errors && typeof err.errors === "object") {
-      try {
-        const first = Object.keys(err.errors)[0];
-        const msg = Array.isArray(err.errors[first]) ? err.errors[first][0] : err.errors[first];
-        if (msg) return msg;
-      } catch (e) {
-        // ignore
-      }
-    }
-    try {
-      return JSON.stringify(err);
-    } catch (e) {
-      return String(err);
-    }
-  };
-
-  // Save progress implementation (defensive)
-  const saveProgress = async (skipValidation = false) => {
     if (!skipValidation) {
       const isValid = validateCurrentStep();
       if (!isValid) {
@@ -491,37 +651,33 @@ const Profile = () => {
       }
     }
 
+    // Avoid overlapping saves
+    if (saveInFlightRef.current) {
+      console.warn("Save already in flight — skipping concurrent save");
+      return true;
+    }
+
+    saveInFlightRef.current = true;
     setIsSaving(true);
+
     try {
-      const nameParts = [formData.firstName?.trim(), formData.lastName?.trim()].filter(Boolean);
-      const fullName = nameParts.length ? nameParts.join(" ") : profile?.full_name || null;
+      const rawPayload = buildProfilePayload(formData, profile);
+      const profileUpdates = sanitizeForProfileUpdate(rawPayload);
 
-      const rawUpdates: Record<string, any> = {
-        full_name: fullName,
-        phone: formData.phone || null,
-        address: formData.address || null,
-        city: formData.city || null,
-        state: formData.state || null,
-        zip_code: formData.zipCode || null,
-        employment_status: formData.employmentStatus || null,
-        employer: formData.employer || null,
-        annual_income: typeof formData.annualIncome === "number" && !isNaN(formData.annualIncome) ? formData.annualIncome : null,
-        investment_experience: formData.investmentExperience || null,
-        risk_tolerance: formData.riskTolerance || null,
-        investment_goals: Array.isArray(formData.investmentGoals) ? formData.investmentGoals : [],
-        // send only country_code to DB (avoid 'country' if it doesn't exist)
-        country_code: formData.countryCode || null,
-        is_usa_client: !!formData.isUSAClient,
-        overseas_company_required: !!formData.overseasCompanyRequired,
-        overseas_company_completed: !!formData.overseasCompanyCompleted,
-        overseas_company_id: formData.overseasCompanyId ?? null,
-      };
-
-      // Sanitize payload to only DB-allowed columns
-      const profileUpdates = sanitizeForProfileUpdate(rawUpdates);
-
-      console.log("Current formData:", formData);
       console.log("Saving profile updates (sanitized):", profileUpdates);
+
+      // nothing to persist? still persist local draft and return true
+      if (Object.keys(profileUpdates).length === 0) {
+        if (user?.id) {
+          try {
+            localStorage.setItem(getProfileFormDataKey(user.id), JSON.stringify(formData));
+            localStorage.setItem(getProfileStepKey(user.id), currentStep.toString());
+          } catch (e) {
+            console.warn("LocalStorage write failed:", e);
+          }
+        }
+        return true;
+      }
 
       let result;
       try {
@@ -529,38 +685,16 @@ const Profile = () => {
       } catch (err) {
         console.error("updateProfile threw:", err);
         const msg = extractErrorMessage(err);
-        toast({ title: "Error", description: msg, variant: "destructive" });
+        if (showToast) toast({ title: "Error", description: msg, variant: "destructive" });
         return false;
       }
-
-      console.log("updateProfile result:", result);
 
       if (result?.error) {
         console.error("Save error:", result.error);
         const errorMessage = extractErrorMessage(result.error);
-        toast({ title: "Error", description: errorMessage, variant: "destructive" });
+        if (showToast) toast({ title: "Error", description: errorMessage, variant: "destructive" });
         return false;
       }
-
-      if (!result?.data) {
-        console.warn("No data returned from updateProfile:", result);
-        toast({
-          title: "Warning",
-          description: "Save completed but no data was returned. Please refresh the page.",
-          variant: "destructive",
-        });
-        // still attempt refetch and local persistence
-        try { await refetchProfile(); } catch (e) { console.warn("Refetch failed:", e); }
-        if (user?.id) {
-          try {
-            localStorage.setItem(getProfileFormDataKey(user.id), JSON.stringify(formData));
-            localStorage.setItem(getProfileStepKey(user.id), currentStep.toString());
-          } catch (e) { /* ignore */ }
-        }
-        return true;
-      }
-
-      console.log("Profile saved successfully:", result.data);
 
       try {
         await refetchProfile();
@@ -577,21 +711,45 @@ const Profile = () => {
         }
       }
 
-      toast({ title: "Progress Saved", description: "Your profile information has been saved successfully." });
+      // >>> CHANGED: only show success toast when showToast === true
+      if (showToast) {
+        toast({ title: "Progress Saved", description: "Your profile information has been saved successfully." });
+      }
+
       return true;
     } catch (error: any) {
       console.error("Save exception:", error);
       const msg = extractErrorMessage(error);
-      toast({ title: "Error", description: msg || "An unexpected error occurred while saving.", variant: "destructive" });
+      if (showToast) toast({ title: "Error", description: msg || "An unexpected error occurred while saving.", variant: "destructive" });
       return false;
     } finally {
       setIsSaving(false);
+      saveInFlightRef.current = false;
     }
   };
 
   // Save and validate (for "Next" button)
   const saveCurrentStep = async () => {
     return await saveProgress(false);
+  };
+
+  /* ADDED/CHANGED: handleBack now attempts a non-blocking silent save before going back */
+  const handleBack = async () => {
+    console.log("handleBack called — currentStep:", currentStep);
+
+    // silent non-blocking save (no toast)
+    try {
+      const saved = await saveProgress(true, { showToast: false });
+      console.log("saveProgress returned:", saved);
+    } catch (e) {
+      console.warn("saveProgress threw on back:", e);
+    }
+
+    setCurrentStep((prev) => {
+      const next = Math.max(1, prev - 1);
+      console.log(`Navigating back from ${prev} to ${next}`);
+      return next;
+    });
   };
 
   const handleNext = async () => {
@@ -611,32 +769,20 @@ const Profile = () => {
       return;
     }
 
-    const saved = await saveProgress(false);
+    const saved = await saveProgress(false); // manual save -> toast on success
     if (saved) {
       const maxSteps = computedMaxSteps(formData.isUSAClient);
       if (currentStep < maxSteps) {
         const nextStep = currentStep + 1;
         setCurrentStep(nextStep);
-        if (user?.id) {
-          try {
-            localStorage.setItem(getProfileStepKey(user.id), nextStep.toString());
-          } catch (e) { /* ignore */ }
-        }
-        console.log("Moved to step:", nextStep);
       }
     } else {
       console.error("Failed to save before proceeding to next step");
     }
   };
 
-  const handleBack = () => {
-    if (currentStep > 1) {
-      setCurrentStep(prev => prev - 1);
-    }
-  };
-
   const handleSaveAndContinue = async () => {
-    await saveProgress(true);
+    await saveProgress(true, { showToast: true }); // manual request -> show toast
   };
 
   const handleCompleteProfile = async () => {
@@ -645,7 +791,14 @@ const Profile = () => {
       const { error } = await updateProfile({ has_completed_profile: true });
       if (!error) {
         try { await refetchProfile(); } catch (_) { /* ignore */ }
-        // Update UI immediately
+        if (user?.id) {
+          try {
+            localStorage.removeItem(getProfileFormDataKey(user.id));
+            localStorage.removeItem(getProfileStepKey(user.id));
+          } catch (e) {
+            console.warn("Could not clear localStorage after completion", e);
+          }
+        }
         setShowStepFlow(false);
         toast({
           title: 'Profile Completed!',
@@ -658,9 +811,8 @@ const Profile = () => {
     }
   };
 
-  // Handle avatar image upload
+  // Handle avatar image upload (unchanged)
   const handleAvatarUpload = async (file: File) => {
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       toast({
         title: "Invalid File",
@@ -670,7 +822,6 @@ const Profile = () => {
       return;
     }
 
-    // Validate file size (max 5MB)
     const maxSize = 5 * 1024 * 1024; // 5MB
     if (file.size > maxSize) {
       toast({
@@ -683,15 +834,12 @@ const Profile = () => {
 
     setUploadingAvatar(true);
     try {
-      // Convert image to base64
       const reader = new FileReader();
       reader.onloadend = async () => {
         try {
           const base64String = reader.result as string;
-          
-          // Update profile with base64 avatar
           const result = await updateProfile({ avatar_url: base64String });
-          
+
           if (result?.error) {
             const msg = extractErrorMessage(result.error);
             toast({
@@ -704,7 +852,6 @@ const Profile = () => {
               title: "Success",
               description: "Profile picture updated successfully",
             });
-            // Refetch to get updated profile
             await refetchProfile();
           }
         } catch (error) {
@@ -718,7 +865,7 @@ const Profile = () => {
           setUploadingAvatar(false);
         }
       };
-      
+
       reader.onerror = () => {
         toast({
           title: "Upload Failed",
@@ -727,7 +874,7 @@ const Profile = () => {
         });
         setUploadingAvatar(false);
       };
-      
+
       reader.readAsDataURL(file);
     } catch (error) {
       const msg = extractErrorMessage(error);
@@ -746,7 +893,6 @@ const Profile = () => {
     if (file) {
       handleAvatarUpload(file);
     }
-    // Reset input so same file can be selected again
     event.target.value = '';
   };
 
@@ -775,11 +921,13 @@ const Profile = () => {
     }
   };
 
+  // renderStep gets saveProgress passed so child step components can call it if desired
   const renderStep = () => {
     const stepProps = {
       formData,
       updateFormData,
       errors: stepErrors[currentStep] || [],
+      saveProgress, // steps can trigger manual or silent saves
     };
 
     switch (currentStep) {
@@ -823,9 +971,7 @@ const Profile = () => {
         <div className="max-w-7xl mx-auto space-y-8 pb-20">
           <div className="text-center">
             <h1 className="text-4xl font-bold tracking-tight text-primary">Profile</h1>
-            <p className="text-muted-foreground mt-2">
-              Manage your personal information and preferences
-            </p>
+            <p className="text-muted-foreground mt-2">Manage your personal information and preferences</p>
           </div>
 
           <div className="grid gap-8 md:grid-cols-3 ">
@@ -833,7 +979,9 @@ const Profile = () => {
             <div className="bg-gradient-pink-to-yellow hover:glow-primary w-full rounded-sm border-0 p-[2px] shadow-none">
               <Card className="bg-black rounded-sm min-h-full">
                 <CardHeader>
-                  <CardTitle className="text-center text-3xl">Profile <span className="text-primary">Picture</span></CardTitle>
+                  <CardTitle className="text-center text-3xl">
+                    Profile <span className="text-primary">Picture</span>
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="text-center space-y-4">
                   <Avatar className="h-24 w-24 mx-auto">
@@ -842,16 +990,10 @@ const Profile = () => {
                       <User className="h-12 w-12" />
                     </AvatarFallback>
                   </Avatar>
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileChange}
-                    accept="image/*"
-                    className="hidden"
-                  />
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
+                  <Button
+                    variant="outline"
+                    size="sm"
                     className="rounded-[8px] border-0 hover:bg-white/80"
                     onClick={() => triggerFileInput(fileInputRef)}
                     disabled={uploadingAvatar}
@@ -873,9 +1015,7 @@ const Profile = () => {
                     <p className="text-muted-foreground">
                       Status: <span className="capitalize">{profile?.status || "Unverified"}</span>
                     </p>
-                    <p className="text-muted-foreground">
-                      Profile: {(profile as any)?.has_completed_profile ? "Complete" : "Incomplete"}
-                    </p>
+                    <p className="text-muted-foreground">Profile: {(profile as any)?.has_completed_profile ? "Complete" : "Incomplete"}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -901,7 +1041,7 @@ const Profile = () => {
                   )}
                 </CardHeader>
                 <CardContent>
-                  <Form {...form} key={profile?.id || 'profile-form'}>
+                  <Form {...form} key={profile?.id || "profile-form"}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                       <div className="grid gap-4 md:grid-cols-2">
                         <FormField
@@ -912,8 +1052,11 @@ const Profile = () => {
                               <FormLabel className="text-sm font-medium leading-none text-muted-foreground">Full Name</FormLabel>
                               <FormControl>
                                 <Input
-                                  className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
-                                  {...field} disabled={!isEditing} />
+                                  className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400'
+                                  style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
+                                  {...field}
+                                  disabled={!isEditing}
+                                />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -928,8 +1071,11 @@ const Profile = () => {
                               <FormLabel className="text-sm font-medium leading-none text-muted-foreground">Phone Number</FormLabel>
                               <FormControl>
                                 <Input
-                                  className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
-                                  {...field} disabled={!isEditing} />
+                                  className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400'
+                                  style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
+                                  {...field}
+                                  disabled={!isEditing}
+                                />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -945,8 +1091,11 @@ const Profile = () => {
                             <FormLabel className="text-sm font-medium leading-none text-muted-foreground">Address</FormLabel>
                             <FormControl>
                               <Input
-                                className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
-                                {...field} disabled={!isEditing} />
+                                className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400'
+                                style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
+                                {...field}
+                                disabled={!isEditing}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -962,8 +1111,11 @@ const Profile = () => {
                               <FormLabel className="text-sm font-medium leading-none text-muted-foreground">City</FormLabel>
                               <FormControl>
                                 <Input
-                                  className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
-                                  {...field} disabled={!isEditing} />
+                                  className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400'
+                                  style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
+                                  {...field}
+                                  disabled={!isEditing}
+                                />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -978,8 +1130,11 @@ const Profile = () => {
                               <FormLabel className="text-sm font-medium leading-none text-muted-foreground">State</FormLabel>
                               <FormControl>
                                 <Input
-                                  className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
-                                  {...field} disabled={!isEditing} />
+                                  className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400'
+                                  style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
+                                  {...field}
+                                  disabled={!isEditing}
+                                />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -994,8 +1149,11 @@ const Profile = () => {
                               <FormLabel className="text-sm font-medium leading-none text-muted-foreground">ZIP Code</FormLabel>
                               <FormControl>
                                 <Input
-                                  className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
-                                  {...field} disabled={!isEditing} />
+                                  className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400'
+                                  style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
+                                  {...field}
+                                  disabled={!isEditing}
+                                />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -1016,7 +1174,7 @@ const Profile = () => {
                                     <SelectValue placeholder="Select employment status" />
                                   </SelectTrigger>
                                 </FormControl>
-                                <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
+                                <SelectContent className="border-secondary-foreground bg-black/90 text-white">
                                   <SelectItem value="employed">Employed</SelectItem>
                                   <SelectItem value="self-employed">Self-employed</SelectItem>
                                   <SelectItem value="unemployed">Unemployed</SelectItem>
@@ -1037,8 +1195,11 @@ const Profile = () => {
                               <FormLabel className="text-sm font-medium leading-none text-muted-foreground">Employer</FormLabel>
                               <FormControl>
                                 <Input
-                                  className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
-                                  {...field} disabled={!isEditing} />
+                                  className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400'
+                                  style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
+                                  {...field}
+                                  disabled={!isEditing}
+                                />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -1055,7 +1216,8 @@ const Profile = () => {
                             <FormControl>
                               <Input
                                 type="number"
-                                className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
+                                className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400'
+                                style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
                                 {...field}
                                 value={field.value || ""}
                                 onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
@@ -1080,7 +1242,7 @@ const Profile = () => {
                                     <SelectValue placeholder="Select experience level" />
                                   </SelectTrigger>
                                 </FormControl>
-                                <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
+                                <SelectContent className="border-secondary-foreground bg-black/90 text-white">
                                   <SelectItem value="beginner">Beginner</SelectItem>
                                   <SelectItem value="intermediate">Intermediate</SelectItem>
                                   <SelectItem value="advanced">Advanced</SelectItem>
@@ -1100,11 +1262,11 @@ const Profile = () => {
                               <FormLabel className="text-sm font-medium leading-none text-muted-foreground">Risk Tolerance</FormLabel>
                               <Select onValueChange={field.onChange} value={field.value} disabled={!isEditing}>
                                 <FormControl>
-                                  <SelectTrigger className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
+                                  <SelectTrigger className="rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400" style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                                     <SelectValue placeholder="Select risk tolerance" />
                                   </SelectTrigger>
                                 </FormControl>
-                                <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
+                                <SelectContent className="border-secondary-foreground bg-black/90 text-white">
                                   <SelectItem value="low">Low</SelectItem>
                                   <SelectItem value="medium">Medium</SelectItem>
                                   <SelectItem value="high">High</SelectItem>
@@ -1168,9 +1330,7 @@ const Profile = () => {
             <h1 className="text-4xl font-bold tracking-tight text-primary">
               Update Your <span className="text-[var(--yellowcolor)]">Profile</span>
             </h1>
-            <p className="text-muted-foreground mt-2">
-              Complete your profile information step by step. Your progress is saved automatically.
-            </p>
+            <p className="text-muted-foreground mt-2">Complete your profile information step by step. Your progress is saved automatically.</p>
             <div className="flex justify-center gap-2 mt-4">
               <Link to="/change-password">
                 <Button variant="outline" size="sm">
@@ -1190,6 +1350,8 @@ const Profile = () => {
               {formData.isUSAClient && currentStep === 8 && " (Step 9: Overseas Company Registration will follow)"}
               {formData.isUSAClient && currentStep === 9 && " - USA clients must complete overseas company registration"}
             </h2>
+            {/* ADDED: small saving indicator */}
+            <div className="text-sm text-muted-foreground">{isSaving ? "Saving…" : "All changes saved locally"}</div>
           </div>
 
           {/* Progress Bar */}
