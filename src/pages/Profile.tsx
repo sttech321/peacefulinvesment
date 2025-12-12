@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChevronLeft, ChevronRight, User, Lock, Upload, Loader2 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useProfile, UserProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -231,6 +231,7 @@ const Profile = () => {
   const { profile, loading, updateProfile, refetchProfile } = useProfile();
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const [currentStep, setCurrentStep] = useState(1);
   const [isSaving, setIsSaving] = useState(false);
@@ -788,9 +789,11 @@ const Profile = () => {
   const handleCompleteProfile = async () => {
     const saved = await saveProgress(false);
     if (saved) {
+      // Check if USA client BEFORE updating profile - if yes, redirect immediately
+      const isUSAClient = formData.isUSAClient || Boolean((profile as any)?.is_usa_client);
+      
       const { error } = await updateProfile({ has_completed_profile: true });
       if (!error) {
-        try { await refetchProfile(); } catch (_) { /* ignore */ }
         if (user?.id) {
           try {
             localStorage.removeItem(getProfileFormDataKey(user.id));
@@ -799,6 +802,22 @@ const Profile = () => {
             console.warn("Could not clear localStorage after completion", e);
           }
         }
+       
+        // If USA client, redirect immediately to overseas company form
+        if (isUSAClient) {
+          toast({
+            title: 'Profile Completed!',
+            description: 'Redirecting to overseas company registration...',
+          });
+          // Redirect immediately - don't wait for profile refetch
+          navigate('/overseas-company?from=profile');
+          return;
+        }
+
+        // For non-USA clients, refetch and show completed view
+        try { 
+          await refetchProfile(); 
+        } catch (_) { /* ignore */ }
         setShowStepFlow(false);
         toast({
           title: 'Profile Completed!',
