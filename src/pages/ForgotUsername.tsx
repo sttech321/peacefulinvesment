@@ -107,12 +107,13 @@ const ForgotUsername = () => {
 
   if (resultSent) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="pink-yellow-shadow flex items-center justify-center p-4 pt-32 pb-16 min-h-screen">
         <div className="container mx-auto px-4 max-w-md">
-          <Card>
+          <div className="border-0 shadow-none bg-gradient-pink-to-yellow rounded-sm p-[2px] hover:glow-primary">
+          <Card className="bg-black rounded-sm block border-0 shadow-none">
             <CardHeader className="text-center">
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4 mx-auto">
-                <CheckCircle className="h-6 w-6 text-green-600" />
+              <div className="w-14 h-14 bg-primary/10 rounded-lg flex items-center justify-center mb-4 mx-auto">
+                <CheckCircle className="h-6 w-6 text-primary" />
               </div>
               <CardTitle className="text-2xl">Recovery Information Sent</CardTitle>
               <CardDescription>
@@ -120,7 +121,7 @@ const ForgotUsername = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <Alert>
+              <Alert className="bg-muted/10 rounded-lg border-0 shadow-none text-white [&>svg]:text-white">
                 {searchMethod === 'email' ? <Mail className="h-4 w-4" /> : <Phone className="h-4 w-4" />}
                 <AlertDescription>
                   <div className="space-y-2">
@@ -136,18 +137,18 @@ const ForgotUsername = () => {
                 </AlertDescription>
               </Alert>
 
-              <div className="space-y-4">
+              <div className="space-y-4 text-center">
                 <Button 
                   onClick={() => setResultSent(false)}
                   variant="outline"
-                  className="w-full"
+                  className="w-full download-btn-primary font-inter text-sm font-semibold uppercase border-0"
                 >
                   Try Another {searchMethod === 'email' ? 'Email' : 'Phone Number'}
                 </Button>
                 
-                <Link to="/auth">
-                  <Button variant="ghost" className="w-full">
-                    <ArrowLeft className="h-4 w-4 mr-2" />
+                <Link to="/auth" className="text-white inline-block mx-auto justify-center">
+                  <Button variant="ghost" className="w-full hover:text-primary hover:bg-transparent">
+                    <ArrowLeft className="h-4 w-4 mr-1" />
                     Back to Login
                   </Button>
                 </Link>
@@ -163,13 +164,14 @@ const ForgotUsername = () => {
               </div>
             </CardContent>
           </Card>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="pink-yellow-shadow flex items-center justify-center p-4 min-h-screen">
+    <div className="pink-yellow-shadow flex items-center justify-center p-4 pt-32 pb-16 min-h-screen">
       <div className="container mx-auto px-4 max-w-md">
          <div className="border-0 shadow-none bg-gradient-pink-to-yellow rounded-sm p-[2px] hover:glow-primary">
         <Card className="bg-black rounded-sm block border-0 shadow-none">
