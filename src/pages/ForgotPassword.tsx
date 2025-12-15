@@ -59,7 +59,7 @@ const ForgotPassword = () => {
 
   if (emailSent) {
     return (
-      <div className="pink-yellow-shadow flex items-center justify-center p-4 min-h-screen">
+      <div className="pink-yellow-shadow flex items-center justify-center p-4 pt-32 pb-16 min-h-screen">
       <div className="container mx-auto px-4 max-w-md">
          <div className="border-0 shadow-none bg-gradient-pink-to-yellow rounded-sm p-[2px] hover:glow-primary">
         <Card className="bg-black rounded-sm block border-0 shadow-none">
@@ -125,7 +125,7 @@ const ForgotPassword = () => {
   return (
 
     
-    <div className="pink-yellow-shadow flex items-center justify-center p-4 min-h-screen">
+    <div className="pink-yellow-shadow flex items-center justify-center p-4 pt-32 pb-16 min-h-screen">
       <div className="container mx-auto px-4 max-w-md">
          <div className="border-0 shadow-none bg-gradient-pink-to-yellow rounded-sm p-[2px] hover:glow-primary">
         <Card className="bg-black rounded-sm block border-0 shadow-none">
