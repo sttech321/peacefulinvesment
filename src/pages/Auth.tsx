@@ -214,7 +214,7 @@ const Auth = () => {
 
   return (
     <div>
-      <div className='pink-yellow-shadow flex min-h-screen items-center justify-center p-4'>
+      <div className='pink-yellow-shadow flex min-h-screen items-center justify-center p-4 pt-32 pb-16'>
         <div className='bg-gradient-pink-to-yellow hover:glow-primary w-full max-w-md rounded-sm border-0 p-[2px] shadow-none'>
           <Card className='block rounded-sm border-0 bg-black shadow-none'>
             <CardHeader className='text-center'>

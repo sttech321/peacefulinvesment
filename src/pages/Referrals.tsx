@@ -218,9 +218,10 @@ const Referrals = () => {
                       <Input 
                         value={referral.referral_link} 
                         readOnly 
-                        className="bg-muted/90"
+                        className="rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                        style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
                       />
-                      <Button onClick={copyReferralLink} variant="outline" size="icon">
+                      <Button onClick={copyReferralLink} variant="outline" size="icon" className="rounded-[8px] shadow-none mt-1 border-0 box-shadow-none">
                         <Copy className="h-4 w-4" />
                       </Button>
                     </div>
@@ -228,7 +229,7 @@ const Referrals = () => {
                     <div className="flex gap-2">
                       <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
                         <DialogTrigger asChild>
-                          <Button className="flex items-center gap-2">
+                          <Button className="flex items-center gap-2 rounded-[8px]">
                             <Mail className="h-4 w-4" />
                             Send Invitation
                           </Button>
@@ -247,6 +248,8 @@ const Referrals = () => {
                                 id="email"
                                 type="email"
                                 placeholder="Enter email address"
+                                className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none"
+                    style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
                                 value={inviteEmail}
                                 onChange={(e) => setInviteEmail(e.target.value)}
                               />
@@ -256,6 +259,8 @@ const Referrals = () => {
                               <Input
                                 id="subject"
                                 value={inviteSubject}
+                                className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none"
+                    style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
                                 onChange={(e) => setInviteSubject(e.target.value)}
                               />
                             </div>
@@ -265,6 +270,8 @@ const Referrals = () => {
                                 id="message"
                                 placeholder="Enter your message"
                                 value={inviteMessage}
+                                className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none resize-none"
+                    style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
                                 onChange={(e) => setInviteMessage(e.target.value)}
                                 rows={4}
                               />
@@ -273,14 +280,13 @@ const Referrals = () => {
                               <Send className="h-4 w-4 mr-2" />
                               Send Invitation
                             </Button> */}
-                            <span className='bg-gradient-pink-to-yellow inline-block rounded-[12px] p-[2px]'>
-                              <Button
-                                onClick={handleSendInvite}
-                                className='bg-gradient-yellow-to-pink hover:bg-gradient-pink-to-yellow block h-[35px] rounded-[10px] border-0 p-0 px-5 font-inter text-xs font-semibold uppercase text-white'
-                              >
-                                Send Invitation
-                              </Button>
-                            </span>
+                               
+                              <Button  onClick={handleSendInvite} 
+                              className="flex items-center gap-2 rounded-[8px]">
+                            <Mail className="h-4 w-4" />
+                            Send Invitation
+                          </Button>
+                           
                           </div>
                         </DialogContent>
                       </Dialog>
@@ -308,7 +314,7 @@ const Referrals = () => {
                         <Users className="h-5 w-5 text-[var(--yellowcolor)]" />
                         Recent Signups
                       </h3>
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-sm text-muted-foreground pb-2">
                         People who joined using your referral link
                       </div>
                     </div>
@@ -320,9 +326,9 @@ const Referrals = () => {
                       ) : (
                         <div className="space-y-3">
                           {signups.slice(0, 5).map((signup) => (
-                            <div key={signup.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                            <div key={signup.id} className="flex items-center justify-between p-3 bg-white/20 rounded-lg">
                               <div>
-                                <p className="text-sm font-medium">New User Signup</p>
+                                <p className="text-sm font-medium text-white">New User Signup</p>
                                 <p className="text-xs text-muted-foreground">
                                   {formatDate(signup.signup_date)}
                                 </p>
