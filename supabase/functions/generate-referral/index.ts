@@ -104,7 +104,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const referralCode = codeData;
     // Use production domain for referral links
-    const referralLink = `https://www.peacefulinvestment.com/create-account?ref=${referralCode}`;
+    const referralLink = `https://ccw8gc8c4w480c8g4so44k4k.peacefulinvestment.com/auth?mode=signup&ref=${referralCode}`;
 
     // Create new referral
     const { data: newReferral, error: createError } = await supabase
