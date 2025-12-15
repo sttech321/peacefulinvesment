@@ -205,13 +205,7 @@ const Blog = () => {
               <img src={Left02} alt="Left 02" />
             </Link>
 
-            <Link
-              to="https://knightsoftheholyrosary.wordpress.com/2012/06/23/the-sacred-heart-of-jesus-the-immaculate-heart-of-mary-and-the-message-of-fatima/"
-              target="_blank"
-              className="inline-block bg-white p-1"
-            >
-              <img src={Left03} alt="Left 03" />
-            </Link>
+           
           </div>
 
           {/* Center content (categories + posts) */}
@@ -319,13 +313,7 @@ const Blog = () => {
             >
               <img src={Right02} alt="Right 02" />
             </Link>
-            <Link
-              to="https://knightsoftheholyrosary.wordpress.com/2012/06/23/the-sacred-heart-of-jesus-the-immaculate-heart-of-mary-and-the-message-of-fatima/"
-              target="_blank"
-              className="inline-block bg-white p-1"
-            >
-              <img src={Right03} alt="Right 03" />
-            </Link>
+            
           </div>
         </div>
       </div>
