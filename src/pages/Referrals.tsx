@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Copy, Share2, Mail, DollarSign, Users, TrendingUp, Calendar, ArrowUpRight, Send, BarChart3, Target } from "lucide-react";
+import { Copy, Share2, Mail, DollarSign, Users, TrendingUp, Calendar, ArrowUpRight, Send, BarChart3, Target, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import ReferralAnalytics from "@/components/referrals/ReferralAnalytics";
 import SocialShare from "@/components/referrals/SocialShare";
@@ -18,7 +18,7 @@ import Footer from "@/components/Footer";
 
 const Referrals = () => {
   const { user } = useAuth();
-  const { referral, payments, signups, loading, generateReferralLink, copyReferralLink, sendInvitation } = useReferrals();
+  const { referral, payments, signups, loading, generating, generateReferralLink, copyReferralLink, sendInvitation } = useReferrals();
   
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteSubject, setInviteSubject] = useState("Join me on this amazing trading platform!");
@@ -118,8 +118,19 @@ const Referrals = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button onClick={handleGenerateLink} className="w-full sm:w-auto">
-                Generate My Referral Link
+              <Button 
+                onClick={handleGenerateLink} 
+                className="w-full sm:w-auto"
+                disabled={generating}
+              >
+                {generating ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  "Generate My Referral Link"
+                )}
               </Button>
             </CardContent>
           </Card>
