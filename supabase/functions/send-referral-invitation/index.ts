@@ -35,8 +35,9 @@ const handler = async (req: Request): Promise<Response> => {
     // Use the actual referral link from the database
     const referralLink = referral_link || `https://www.peacefulinvestment.com/create-account?ref=${referral_code}`;
 
+    // Using verified domain email - domain must be verified in Resend
     const emailResponse = await resend.emails.send({
-      from: "Referrals <onboarding@resend.dev>",
+      from: "Peaceful Investment <noreply@peacefulinvestment.com>",
       to: [to_email],
       subject: subject || "You've been invited to join our platform!",
       html: `
