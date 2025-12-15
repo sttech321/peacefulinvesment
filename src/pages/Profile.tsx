@@ -1333,10 +1333,10 @@ const Profile = () => {
   const progress = (currentStep / maxSteps) * 100;
 
   return (
-    <div className="min-h-screen pink-yellow-shadow pt-20 pb-0">
-      <div className="max-w-7xl mx-auto space-y-8 pb-20">
+    <div className="min-h-screen pink-yellow-shadow pt-24 pb-0">
+      <div className="max-w-7xl mx-auto space-y-8 pb-16">
         {/* Profile Header with Avatar */}
-        <div className="text-center space-y-4">
+        <div className="text-center space-y-4 pt-7">
           <div className="flex justify-center">
             <Avatar className="h-24 w-24">
               <AvatarImage src={profile?.avatar_url} />
@@ -1362,7 +1362,7 @@ const Profile = () => {
         </div>
 
         {/* Step-based Profile Form */}
-        <div className="max-w-4xl mx-auto p-6 pt-10 pb-12">
+        <div className="max-w-4xl mx-auto p-6 pt-10 pb-0">
           <div className="mb-8">
             <h2 className="font-inter text-2xl font-bold uppercase text-white md:text-3xl mb-2">
               Step {currentStep} of {maxSteps}
