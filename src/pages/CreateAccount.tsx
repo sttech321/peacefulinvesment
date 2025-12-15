@@ -266,6 +266,7 @@ const CreateAccount = () => {
 
       const profileUpdates = {
         full_name: `${formData.firstName} ${formData.lastName}`,
+        date_of_birth: formData.dateOfBirth,
         phone: formData.phone,
         address: formData.address,
         city: formData.city,

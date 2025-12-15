@@ -38,16 +38,24 @@ const RouteGuard = ({ children }: RouteGuardProps) => {
 
     // 3️⃣ Profile incomplete → force onboarding,
     //    BUT allow a one-time pass if we *just* came from onboarding
-    if (
-      profile &&
-      !profile.has_completed_profile &&
-      !fromOnboarding && // ← this is the key
-      !["/create-account", "/overseas-company"].includes(path) &&
-      !path.startsWith("/auth")
-    ) {
-      navigate("/create-account");
+    // if (
+    //   profile &&
+    //   !profile.has_completed_profile &&
+    //   !fromOnboarding && // ← this is the key
+    //   !["/create-account", "/overseas-company"].includes(path) &&
+    //   !path.startsWith("/auth")
+    // ) {
+    //   navigate("/create-account");
+    //   return;
+    // }
+
+    // REMOVE profile check — only block if email not confirmed
+    if (user && !user.email_confirmed_at && path !== "/auth/confirm-email") {
+      navigate("/auth/confirm-email");
       return;
     }
+
+
 
     // 4️⃣ Profile complete but still on create-account → go to dashboard
     if (

@@ -218,12 +218,12 @@ export default function MetaTraderAccounts() {
     return (
       <div className="min-h-screen flex items-center justify-center pink-yellow-shadow">
         <div className="bg-gradient-pink-to-yellow hover:glow-primary relative rounded-lg p-[2px] w-full max-w-sm">
-        <Card className="w-full max-w-md p-0 bg-black rounded-lg w-full">
+        <Card className="w-full max-w-md p-0 bg-black rounded-lg">
           <CardContent className="pt-6">
             <div className="text-center pt-2 pb-3">
               <AlertCircle className="mx-auto h-12 w-12 text-destructive mb-4" />
               <h2 className="text-xl font-semibold mb-2 text-white">Error Loading Accounts</h2>
-              <p className="text-muted-foreground mb-4">Helo {error}</p>
+              <p className="text-muted-foreground mb-4">{error}</p>
 
               <span className="bg-gradient-pink-to-yellow rounded-[12px] p-[2px] inline-block">
               <Button onClick={handleRefresh} variant="outline" className="bg-gradient-yellow-to-pink hover:bg-gradient-pink-to-yellow flex rounded-[10px] border-0 p-0 px-5 font-inter text-sm font-semibold uppercase text-white">

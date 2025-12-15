@@ -40,6 +40,7 @@ export const useBlog = () => {
   const [categories, setCategories] = useState<BlogCategory[]>([]); // flat list
   const [categoriesTree, setCategoriesTree] = useState<CategoryRow[]>([]); // nested tree
   const [loading, setLoading] = useState(true);
+  const [initializing, setInitializing] = useState(true);
 
   const fetchPosts = useCallback(async (status: string = "published") => {
     try {
@@ -62,8 +63,6 @@ export const useBlog = () => {
 
   const fetchCategories = useCallback(async () => {
     try {
-      setLoading(true);
-
       // fetch flat rows including parent_id (ensure column exists in DB)
       const { data, error } = await supabase
         .from("blog_categories")
@@ -103,10 +102,8 @@ export const useBlog = () => {
       // update state
       setCategories(flat);
       setCategoriesTree(roots);
-      setLoading(false);
     } catch (err) {
       console.error("Error fetching categories:", err);
-      setLoading(false);
     }
   }, []);
 
@@ -217,8 +214,10 @@ export const useBlog = () => {
   useEffect(() => {
     const loadInitialData = async () => {
       setLoading(true);
+      setInitializing(true);
       await Promise.all([fetchPosts(), fetchCategories()]);
       setLoading(false);
+      setInitializing(false);
     };
     loadInitialData();
   }, [fetchPosts, fetchCategories]);
@@ -228,6 +227,7 @@ export const useBlog = () => {
     categories, // flat list
     categoriesTree, // nested parents with children[]
     loading,
+    initializing,
     fetchPosts,
     fetchCategories,
     getPostBySlug,
