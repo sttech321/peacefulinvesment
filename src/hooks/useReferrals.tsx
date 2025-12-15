@@ -44,6 +44,7 @@ export const useReferrals = () => {
   const [payments, setPayments] = useState<ReferralPayment[]>([]);
   const [signups, setSignups] = useState<ReferralSignup[]>([]);
   const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Fetch user's referral data
@@ -66,7 +67,11 @@ export const useReferrals = () => {
       }
 
       // Set referral data (null if no referral exists)
-      setReferral(referralData);
+      if (referralData) {
+        setReferral(referralData as Referral);
+      } else {
+        setReferral(null);
+      }
 
       if (referralData) {
         // Get payments for this referral
@@ -116,6 +121,9 @@ export const useReferrals = () => {
     }
 
     try {
+      setGenerating(true);
+      setError(null);
+      
       const { data, error } = await supabase.functions.invoke('generate-referral', {
         body: { user_id: user.id }
       });
@@ -141,6 +149,8 @@ export const useReferrals = () => {
         description: err.message || "Failed to generate referral link",
         variant: "destructive",
       });
+    } finally {
+      setGenerating(false);
     }
   };
 
@@ -178,6 +188,7 @@ export const useReferrals = () => {
       const { data, error } = await supabase.functions.invoke('send-referral-invitation', {
         body: {
           referral_code: referral.referral_code,
+          referral_link: referral.referral_link,
           to_email: email,
           subject,
           message,
@@ -210,6 +221,7 @@ export const useReferrals = () => {
     payments,
     signups,
     loading,
+    generating,
     error,
     generateReferralLink,
     copyReferralLink,

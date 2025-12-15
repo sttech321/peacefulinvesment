@@ -7,10 +7,12 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
 interface InvitationRequest {
   referral_code: string;
+  referral_link: string;
   to_email: string;
   subject: string;
   message: string;
@@ -19,15 +21,19 @@ interface InvitationRequest {
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { 
+      status: 200,
+      headers: corsHeaders 
+    });
   }
 
   try {
-    const { referral_code, to_email, subject, message }: InvitationRequest = await req.json();
+    const { referral_code, referral_link, to_email, subject, message }: InvitationRequest = await req.json();
 
-    console.log("Sending referral invitation:", { referral_code, to_email, subject });
+    console.log("Sending referral invitation:", { referral_code, referral_link, to_email, subject });
 
-    const referralLink = `https://your-app-domain.com/signup?ref=${referral_code}`;
+    // Use the actual referral link from the database
+    const referralLink = referral_link || `https://www.peacefulinvestment.com/create-account?ref=${referral_code}`;
 
     const emailResponse = await resend.emails.send({
       from: "Referrals <onboarding@resend.dev>",
