@@ -27,13 +27,76 @@ const handler = async (req: Request): Promise<Response> => {
     });
   }
 
+  // Only allow POST requests
+  if (req.method !== "POST") {
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
+    });
+  }
+
   try {
-    const { referral_code, referral_link, to_email, subject, message }: InvitationRequest = await req.json();
+    let requestData: InvitationRequest;
+    try {
+      requestData = await req.json();
+    } catch (parseError) {
+      return new Response(JSON.stringify({ error: 'Invalid JSON in request body' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      });
+    }
+
+    const { referral_code, referral_link, to_email, subject, message } = requestData;
+
+    // Validate required fields
+    if (!referral_code || !to_email) {
+      return new Response(JSON.stringify({ error: 'referral_code and to_email are required' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      });
+    }
 
     console.log("Sending referral invitation:", { referral_code, referral_link, to_email, subject });
 
-    // Use the actual referral link from the database
-    const referralLink = referral_link || `https://ccw8gc8c4w480c8g4so44k4k.peacefulinvestment.com/auth?mode=signup&ref=${referral_code}`;
+    // Get base URL dynamically from environment variable or request origin
+    const getBaseUrl = (): string => {
+      // Try environment variable first (set in Supabase Edge Functions secrets)
+      const envBaseUrl = Deno.env.get('APP_BASE_URL');
+      if (envBaseUrl) {
+        return envBaseUrl;
+      }
+      
+      // Try to get from request origin to detect environment
+      const origin = req.headers.get('Origin') || req.headers.get('Referer');
+      if (origin) {
+        try {
+          const url = new URL(origin);
+          const hostname = url.hostname;
+          
+          // Check if it's the dev server
+          if (hostname.includes('ccw8gc8c4w480c8g4so44k4k.peacefulinvestment.com')) {
+            return 'https://ccw8gc8c4w480c8g4so44k4k.peacefulinvestment.com';
+          }
+          
+          // Check if it's production
+          if (hostname.includes('www.peacefulinvestment.com') || hostname === 'peacefulinvestment.com') {
+            return 'https://www.peacefulinvestment.com';
+          }
+          
+          // For other origins (like localhost), use the origin directly
+          return url.origin;
+        } catch {
+          // Invalid URL, continue to fallback
+        }
+      }
+      
+      // Fallback to production URL (live server)
+      return 'https://www.peacefulinvestment.com';
+    };
+    
+    // Use the actual referral link from the database, or generate one dynamically
+    const baseUrl = getBaseUrl().replace(/\/$/, ''); // Remove trailing slash if present
+    const referralLink = referral_link || `${baseUrl}/auth?mode=signup&ref=${referral_code}`;
 
     // Using verified domain email - domain must be verified in Resend
     const emailResponse = await resend.emails.send({

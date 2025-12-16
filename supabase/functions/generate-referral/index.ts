@@ -25,6 +25,14 @@ const handler = async (req: Request): Promise<Response> => {
     });
   }
 
+  // Only allow POST requests
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
+    });
+  }
+
   try {
     // Get the authorization header
     const authHeader = req.headers.get('Authorization');
@@ -47,7 +55,24 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    const { user_id }: ReferralRequest = await req.json();
+    let requestData: ReferralRequest;
+    try {
+      requestData = await req.json();
+    } catch (parseError) {
+      return new Response(JSON.stringify({ error: 'Invalid JSON in request body' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      });
+    }
+
+    const { user_id } = requestData;
+    
+    if (!user_id) {
+      return new Response(JSON.stringify({ error: 'user_id is required' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      });
+    }
 
     // Verify the user_id matches the authenticated user
     if (user_id !== user.id) {
@@ -103,8 +128,45 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const referralCode = codeData;
-    // Use production domain for referral links
-    const referralLink = `https://ccw8gc8c4w480c8g4so44k4k.peacefulinvestment.com/auth?mode=signup&ref=${referralCode}`;
+    
+    // Get base URL dynamically from environment variable or request origin
+    const getBaseUrl = (): string => {
+      // Try environment variable first (set in Supabase Edge Functions secrets)
+      const envBaseUrl = Deno.env.get('APP_BASE_URL');
+      if (envBaseUrl) {
+        return envBaseUrl;
+      }
+      
+      // Try to get from request origin to detect environment
+      const origin = req.headers.get('Origin') || req.headers.get('Referer');
+      if (origin) {
+        try {
+          const url = new URL(origin);
+          const hostname = url.hostname;
+          
+          // Check if it's the dev server
+          if (hostname.includes('ccw8gc8c4w480c8g4so44k4k.peacefulinvestment.com')) {
+            return 'https://ccw8gc8c4w480c8g4so44k4k.peacefulinvestment.com';
+          }
+          
+          // Check if it's production
+          if (hostname.includes('www.peacefulinvestment.com') || hostname === 'peacefulinvestment.com') {
+            return 'https://www.peacefulinvestment.com';
+          }
+          
+          // For other origins (like localhost), use the origin directly
+          return url.origin;
+        } catch {
+          // Invalid URL, continue to fallback
+        }
+      }
+      
+      // Fallback to production URL (live server)
+      return 'https://www.peacefulinvestment.com';
+    };
+    
+    const baseUrl = getBaseUrl().replace(/\/$/, ''); // Remove trailing slash if present
+    const referralLink = `${baseUrl}/auth?mode=signup&ref=${referralCode}`;
 
     // Create new referral
     const { data: newReferral, error: createError } = await supabase
