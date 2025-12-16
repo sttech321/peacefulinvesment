@@ -44,7 +44,6 @@ export const useReferrals = () => {
   const [payments, setPayments] = useState<ReferralPayment[]>([]);
   const [signups, setSignups] = useState<ReferralSignup[]>([]);
   const [loading, setLoading] = useState(true);
-  const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Fetch user's referral data
@@ -68,7 +67,12 @@ export const useReferrals = () => {
 
       // Set referral data (null if no referral exists)
       if (referralData) {
-        setReferral(referralData as Referral);
+        // Ensure status is one of the valid types
+        const referralWithStatus: Referral = {
+          ...referralData,
+          status: (referralData.status as Referral['status']) || 'pending'
+        };
+        setReferral(referralWithStatus);
       } else {
         setReferral(null);
       }
@@ -121,11 +125,14 @@ export const useReferrals = () => {
     }
 
     try {
-      setGenerating(true);
-      setError(null);
+      // Get the current base URL from the browser
+      const baseUrl = window.location.origin;
       
       const { data, error } = await supabase.functions.invoke('generate-referral', {
-        body: { user_id: user.id }
+        body: { 
+          user_id: user.id,
+          base_url: baseUrl // Pass the base URL explicitly
+        }
       });
 
       if (error) throw error;
@@ -149,8 +156,6 @@ export const useReferrals = () => {
         description: err.message || "Failed to generate referral link",
         variant: "destructive",
       });
-    } finally {
-      setGenerating(false);
     }
   };
 
@@ -188,7 +193,6 @@ export const useReferrals = () => {
       const { data, error } = await supabase.functions.invoke('send-referral-invitation', {
         body: {
           referral_code: referral.referral_code,
-          referral_link: referral.referral_link,
           to_email: email,
           subject,
           message,
@@ -214,51 +218,13 @@ export const useReferrals = () => {
 
   useEffect(() => {
     fetchReferralData();
-
-    // Set up real-time subscription for referral updates
-    if (user && referral) {
-      const channel = supabase
-        .channel('referral-updates')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'referral_signups',
-            filter: `referral_id=eq.${referral.id}`,
-          },
-          () => {
-            // Refresh data when signups change
-            fetchReferralData();
-          }
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'referrals',
-            filter: `id=eq.${referral.id}`,
-          },
-          () => {
-            // Refresh data when referral stats change
-            fetchReferralData();
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
-  }, [user, referral?.id]);
+  }, [user]);
 
   return {
     referral,
     payments,
     signups,
     loading,
-    generating,
     error,
     generateReferralLink,
     copyReferralLink,
