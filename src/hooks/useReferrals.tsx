@@ -115,7 +115,10 @@ export const useReferrals = () => {
 
   // Generate referral link
   const generateReferralLink = async () => {
+    console.log('[REFERRAL] generateReferralLink called');
+    
     if (!user) {
+      console.error('[REFERRAL] No user found');
       toast({
         title: "Error",
         description: "You must be logged in to generate a referral link",
@@ -130,14 +133,27 @@ export const useReferrals = () => {
       let baseUrl = window.location.origin;
       const hostname = window.location.hostname;
       
+      console.log('[REFERRAL] Current location:', {
+        origin: window.location.origin,
+        hostname: hostname,
+        href: window.location.href
+      });
+      
       // Normalize production URLs to www.peacefulinvestment.com
       if (hostname === 'www.peacefulinvestment.com' || 
           hostname === 'peacefulinvestment.com' ||
           (hostname.endsWith('.peacefulinvestment.com') && !hostname.includes('ccw8gc8c4w480c8g4so44k4k'))) {
         baseUrl = 'https://www.peacefulinvestment.com';
+        console.log('[REFERRAL] Detected production domain, normalizing to:', baseUrl);
+      } else {
+        console.log('[REFERRAL] Using original base URL:', baseUrl);
       }
       
-      console.log('Generating referral link with base URL:', baseUrl, 'from hostname:', hostname);
+      console.log('[REFERRAL] Calling edge function with:', {
+        user_id: user.id,
+        base_url: baseUrl,
+        hostname: hostname
+      });
       
       const { data, error } = await supabase.functions.invoke('generate-referral', {
         body: { 
@@ -146,21 +162,36 @@ export const useReferrals = () => {
         }
       });
 
-      if (error) throw error;
+      console.log('[REFERRAL] Edge function response:', { data, error });
+
+      if (error) {
+        console.error('[REFERRAL] Edge function error:', error);
+        throw error;
+      }
 
       if (data.referral) {
+        console.log('[REFERRAL] Referral data received:', {
+          id: data.referral.id,
+          referral_code: data.referral.referral_code,
+          referral_link: data.referral.referral_link,
+          message: data.message
+        });
+        
         setReferral(data.referral);
         toast({
           title: "Success",
-          description: data.message || "Referral link generated successfully!",
+          description: data.message || (data.message === 'Referral link updated successfully' ? "Referral link updated to production URL!" : "Referral link generated successfully!"),
         });
         
         // Refresh the data to get payments and signups
+        console.log('[REFERRAL] Refreshing referral data...');
         await fetchReferralData();
+        console.log('[REFERRAL] Referral data refreshed');
       }
 
       return data;
     } catch (err: any) {
+      console.error('[REFERRAL] Error in generateReferralLink:', err);
       setError(err.message);
       toast({
         title: "Error",
@@ -230,6 +261,49 @@ export const useReferrals = () => {
   useEffect(() => {
     fetchReferralData();
   }, [user]);
+
+  // Auto-update referral link if on production but link has dev URL
+  useEffect(() => {
+    if (!user || !referral) {
+      console.log('[REFERRAL] Auto-update check skipped:', { hasUser: !!user, hasReferral: !!referral });
+      return;
+    }
+
+    const hostname = window.location.hostname;
+    const isProduction = hostname === 'www.peacefulinvestment.com' || 
+                        hostname === 'peacefulinvestment.com' ||
+                        (hostname.endsWith('.peacefulinvestment.com') && !hostname.includes('ccw8gc8c4w480c8g4so44k4k'));
+    
+    console.log('[REFERRAL] Auto-update check:', {
+      hostname,
+      isProduction,
+      currentReferralLink: referral.referral_link
+    });
+    
+    if (isProduction && referral.referral_link) {
+      const isDevLink = referral.referral_link.includes('ccw8gc8c4w480c8g4so44k4k.peacefulinvestment.com');
+      
+      console.log('[REFERRAL] Link analysis:', {
+        isDevLink,
+        needsUpdate: isDevLink
+      });
+      
+      if (isDevLink) {
+        // Automatically update the referral link
+        console.log('[REFERRAL] Auto-updating referral link from dev to production URL');
+        generateReferralLink().catch(err => {
+          console.error('[REFERRAL] Failed to auto-update referral link:', err);
+        });
+      } else {
+        console.log('[REFERRAL] Referral link is already correct, no update needed');
+      }
+    } else {
+      console.log('[REFERRAL] Auto-update not needed:', {
+        isProduction,
+        hasReferralLink: !!referral.referral_link
+      });
+    }
+  }, [user, referral?.id, referral?.referral_link]);
 
   return {
     referral,
