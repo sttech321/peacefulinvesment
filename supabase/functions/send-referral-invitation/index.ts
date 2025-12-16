@@ -58,45 +58,28 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Sending referral invitation:", { referral_code, referral_link, to_email, subject });
 
-    // Get base URL dynamically from environment variable or request origin
-    const getBaseUrl = (): string => {
-      // Try environment variable first (set in Supabase Edge Functions secrets)
-      const envBaseUrl = Deno.env.get('APP_BASE_URL');
-      if (envBaseUrl) {
-        return envBaseUrl;
-      }
-      
-      // Try to get from request origin to detect environment
-      const origin = req.headers.get('Origin') || req.headers.get('Referer');
-      if (origin) {
-        try {
-          const url = new URL(origin);
-          const hostname = url.hostname;
-          
-          // Check if it's the dev server
-          if (hostname.includes('ccw8gc8c4w480c8g4so44k4k.peacefulinvestment.com')) {
-            return 'https://ccw8gc8c4w480c8g4so44k4k.peacefulinvestment.com';
-          }
-          
-          // Check if it's production
-          if (hostname.includes('www.peacefulinvestment.com') || hostname === 'peacefulinvestment.com') {
-            return 'https://www.peacefulinvestment.com';
-          }
-          
-          // For other origins (like localhost), use the origin directly
-          return url.origin;
-        } catch {
-          // Invalid URL, continue to fallback
-        }
-      }
-      
-      // Fallback to production URL (live server)
-      return 'https://www.peacefulinvestment.com';
-    };
+    // HARDCODED: Always use production URL for referral links in emails
+    const productionBaseUrl = 'https://www.peacefulinvestment.com';
     
-    // Use the actual referral link from the database, or generate one dynamically
-    const baseUrl = getBaseUrl().replace(/\/$/, ''); // Remove trailing slash if present
-    const referralLink = referral_link || `${baseUrl}/auth?mode=signup&ref=${referral_code}`;
+    // Use the referral_link from database if it exists and is valid, otherwise generate one
+    let referralLink = referral_link;
+    
+    // If referral_link is provided, use it (it should already be production URL from database)
+    // But ensure it's production URL, not dev URL
+    if (referralLink && referralLink.includes('ccw8gc8c4w480c8g4so44k4k.peacefulinvestment.com')) {
+      // Replace dev URL with production URL
+      referralLink = referralLink.replace(
+        'https://ccw8gc8c4w480c8g4so44k4k.peacefulinvestment.com',
+        productionBaseUrl
+      );
+      console.log("Replaced dev URL with production URL in email:", referralLink);
+    } else if (!referralLink) {
+      // Generate referral link if not provided
+      referralLink = `${productionBaseUrl}/auth?mode=signup&ref=${referral_code}`;
+      console.log("Generated referral link for email:", referralLink);
+    }
+    
+    console.log("Final referral link for email:", referralLink);
 
     // Using verified domain email - domain must be verified in Resend
     const emailResponse = await resend.emails.send({
