@@ -85,7 +85,13 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const { user_id, base_url } = requestData;
-    console.log('[EDGE-FUNCTION] Extracted data:', { user_id, base_url });
+    console.log('[EDGE-FUNCTION] ========================================');
+    console.log('[EDGE-FUNCTION] REQUEST DATA RECEIVED:');
+    console.log('[EDGE-FUNCTION] user_id:', user_id);
+    console.log('[EDGE-FUNCTION] base_url:', base_url);
+    console.log('[EDGE-FUNCTION] base_url type:', typeof base_url);
+    console.log('[EDGE-FUNCTION] base_url truthy?', !!base_url);
+    console.log('[EDGE-FUNCTION] ========================================');
     
     if (!user_id) {
       return new Response(JSON.stringify({ error: 'user_id is required' }), {
@@ -104,13 +110,25 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Helper functions for URL detection (define before use)
     const isProductionUrl = (url: string): boolean => {
+      if (!url) {
+        console.log('[EDGE-FUNCTION] isProductionUrl: url is empty/falsy');
+        return false;
+      }
       try {
         const urlObj = new URL(url);
         const hostname = urlObj.hostname;
-        return hostname === 'www.peacefulinvestment.com' || 
-               hostname === 'peacefulinvestment.com' ||
-               (hostname.endsWith('.peacefulinvestment.com') && !hostname.includes('ccw8gc8c4w480c8g4so44k4k'));
-      } catch {
+        console.log('[EDGE-FUNCTION] isProductionUrl check:', { url, hostname });
+        
+        const check1 = hostname === 'www.peacefulinvestment.com';
+        const check2 = hostname === 'peacefulinvestment.com';
+        const check3 = hostname.endsWith('.peacefulinvestment.com') && !hostname.includes('ccw8gc8c4w480c8g4so44k4k');
+        
+        const isProd = check1 || check2 || check3;
+        
+        console.log('[EDGE-FUNCTION] isProductionUrl checks:', { check1, check2, check3, result: isProd });
+        return isProd;
+      } catch (error) {
+        console.error('[EDGE-FUNCTION] isProductionUrl error:', error, 'url was:', url);
         return false;
       }
     };
@@ -124,55 +142,55 @@ const handler = async (req: Request): Promise<Response> => {
       }
     };
 
-    // Get base URL function (will be defined later, but we need the helpers first)
+    // Get base URL function - ALWAYS prioritize base_url from request
     const getBaseUrl = (): string => {
       console.log('[EDGE-FUNCTION] getBaseUrl called');
+      console.log('[EDGE-FUNCTION] base_url from request:', base_url);
       
-      // 1. Try base_url from request body (most reliable - comes from client)
+      // 1. ALWAYS use base_url from request body if provided (most reliable)
       if (base_url) {
-        console.log('[EDGE-FUNCTION] Checking base_url from request:', base_url);
         try {
           const url = new URL(base_url);
           const origin = url.origin;
-          console.log('[EDGE-FUNCTION] Parsed origin:', origin);
+          console.log('[EDGE-FUNCTION] Parsed origin from base_url:', origin);
           
-          // If it's production, use it immediately and return
+          // Normalize production URLs
           if (isProductionUrl(origin)) {
-            console.log('[EDGE-FUNCTION] Production URL detected from base_url:', origin);
+            console.log('[EDGE-FUNCTION] ✅ Production URL detected from base_url, using: https://www.peacefulinvestment.com');
             return 'https://www.peacefulinvestment.com';
           }
           
-          // If it's dev, use dev URL
+          // Use dev URL if it's dev
           if (isDevUrl(origin)) {
-            console.log('[EDGE-FUNCTION] Dev URL detected from base_url:', origin);
+            console.log('[EDGE-FUNCTION] Dev URL detected from base_url, using: https://ccw8gc8c4w480c8g4so44k4k.peacefulinvestment.com');
             return 'https://ccw8gc8c4w480c8g4so44k4k.peacefulinvestment.com';
           }
           
           // For other origins, use the origin directly
-          console.log('[EDGE-FUNCTION] Using origin directly:', origin);
+          console.log('[EDGE-FUNCTION] Using origin directly from base_url:', origin);
           return origin;
         } catch (error) {
-          console.error('[EDGE-FUNCTION] Invalid base_url format:', error);
-          // Invalid URL, continue to next option
+          console.error('[EDGE-FUNCTION] ❌ Invalid base_url format:', error, 'base_url was:', base_url);
+          // Continue to fallback
         }
       } else {
-        console.log('[EDGE-FUNCTION] No base_url in request body');
+        console.warn('[EDGE-FUNCTION] ⚠️ No base_url in request body!');
       }
       
-      // 2. Try environment variable
+      // 2. Try environment variable as fallback
       const envBaseUrl = Deno.env.get('APP_BASE_URL');
       console.log('[EDGE-FUNCTION] APP_BASE_URL env var:', envBaseUrl || 'not set');
       if (envBaseUrl) {
         if (isProductionUrl(envBaseUrl)) {
-          console.log('[EDGE-FUNCTION] Production URL from APP_BASE_URL');
+          console.log('[EDGE-FUNCTION] Using production URL from APP_BASE_URL');
           return 'https://www.peacefulinvestment.com';
         }
         console.log('[EDGE-FUNCTION] Using APP_BASE_URL:', envBaseUrl);
         return envBaseUrl;
       }
       
-      // 3. Default to production
-      console.log('[EDGE-FUNCTION] Defaulting to production URL');
+      // 3. Default to production (safest)
+      console.log('[EDGE-FUNCTION] ⚠️ Defaulting to production URL (no base_url provided)');
       return 'https://www.peacefulinvestment.com';
     };
 
@@ -225,12 +243,13 @@ const handler = async (req: Request): Promise<Response> => {
       const correctReferralLink = `${correctBaseUrl}/auth?mode=signup&ref=${referralCode}`;
       console.log('[EDGE-FUNCTION] Correct referral link should be:', correctReferralLink);
       
-      // If the link is wrong, update it
+      // ALWAYS update if there's a mismatch (force update)
       if (currentLink !== correctReferralLink) {
-        console.log('[EDGE-FUNCTION] Link mismatch detected!');
-        console.log('[EDGE-FUNCTION] Current:', currentLink);
-        console.log('[EDGE-FUNCTION] Correct:', correctReferralLink);
-        console.log('[EDGE-FUNCTION] Updating referral link...');
+        console.log('[EDGE-FUNCTION] 🔄 Link mismatch detected!');
+        console.log('[EDGE-FUNCTION] Current link:', currentLink);
+        console.log('[EDGE-FUNCTION] Correct link:', correctReferralLink);
+        console.log('[EDGE-FUNCTION] Base URL used:', correctBaseUrl);
+        console.log('[EDGE-FUNCTION] Updating referral link in database...');
         
         const { data: updatedReferral, error: updateError } = await supabase
           .from('referrals')
@@ -243,13 +262,25 @@ const handler = async (req: Request): Promise<Response> => {
           .single();
         
         if (updateError) {
-          console.error('[EDGE-FUNCTION] Error updating referral link:', updateError);
-          // Still return the existing referral even if update fails
-        } else if (updatedReferral) {
-          console.log('[EDGE-FUNCTION] Referral link updated successfully:', {
-            old: currentLink,
-            new: updatedReferral.referral_link
+          console.error('[EDGE-FUNCTION] ❌ Error updating referral link:', updateError);
+          console.error('[EDGE-FUNCTION] Update error details:', JSON.stringify(updateError, null, 2));
+          // Return the corrected link even if DB update fails
+          const correctedReferral = {
+            ...existingReferral,
+            referral_link: correctReferralLink
+          };
+          return new Response(JSON.stringify({
+            success: true,
+            referral: correctedReferral,
+            message: 'Referral link corrected (database update may have failed)'
+          }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json', ...corsHeaders },
           });
+        } else if (updatedReferral) {
+          console.log('[EDGE-FUNCTION] ✅ Referral link updated successfully in database!');
+          console.log('[EDGE-FUNCTION] Old link:', currentLink);
+          console.log('[EDGE-FUNCTION] New link:', updatedReferral.referral_link);
           return new Response(JSON.stringify({
             success: true,
             referral: updatedReferral,
@@ -258,9 +289,11 @@ const handler = async (req: Request): Promise<Response> => {
             status: 200,
             headers: { 'Content-Type': 'application/json', ...corsHeaders },
           });
+        } else {
+          console.warn('[EDGE-FUNCTION] ⚠️ Update succeeded but no data returned');
         }
       } else {
-        console.log('[EDGE-FUNCTION] Referral link is already correct, no update needed');
+        console.log('[EDGE-FUNCTION] ✅ Referral link is already correct, no update needed');
       }
       
       console.log('[EDGE-FUNCTION] Returning existing referral');
