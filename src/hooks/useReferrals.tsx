@@ -126,7 +126,18 @@ export const useReferrals = () => {
 
     try {
       // Get the current base URL from the browser
-      const baseUrl = window.location.origin;
+      // Normalize to production URL if it's a production domain
+      let baseUrl = window.location.origin;
+      const hostname = window.location.hostname;
+      
+      // Normalize production URLs to www.peacefulinvestment.com
+      if (hostname === 'www.peacefulinvestment.com' || 
+          hostname === 'peacefulinvestment.com' ||
+          (hostname.endsWith('.peacefulinvestment.com') && !hostname.includes('ccw8gc8c4w480c8g4so44k4k'))) {
+        baseUrl = 'https://www.peacefulinvestment.com';
+      }
+      
+      console.log('Generating referral link with base URL:', baseUrl, 'from hostname:', hostname);
       
       const { data, error } = await supabase.functions.invoke('generate-referral', {
         body: { 

@@ -130,13 +130,54 @@ const handler = async (req: Request): Promise<Response> => {
 
     const referralCode = codeData;
     
+    // Helper function to check if URL is production
+    const isProductionUrl = (url: string): boolean => {
+      try {
+        const urlObj = new URL(url);
+        const hostname = urlObj.hostname;
+        return hostname === 'www.peacefulinvestment.com' || 
+               hostname === 'peacefulinvestment.com' ||
+               hostname.endsWith('.peacefulinvestment.com') && !hostname.includes('ccw8gc8c4w480c8g4so44k4k');
+      } catch {
+        return false;
+      }
+    };
+
+    // Helper function to check if URL is dev/staging
+    const isDevUrl = (url: string): boolean => {
+      try {
+        const urlObj = new URL(url);
+        return urlObj.hostname.includes('ccw8gc8c4w480c8g4so44k4k.peacefulinvestment.com');
+      } catch {
+        return false;
+      }
+    };
+
     // Get base URL dynamically from multiple sources
     const getBaseUrl = (): string => {
+      let detectedProduction = false;
+      let detectedDev = false;
+      let candidateUrl = '';
+      
       // 1. Try base_url from request body (most reliable - comes from client)
       if (base_url) {
         try {
           const url = new URL(base_url);
-          return url.origin;
+          const origin = url.origin;
+          
+          // If it's production, use it immediately and return
+          if (isProductionUrl(origin)) {
+            console.log('Production URL detected from base_url:', origin);
+            return 'https://www.peacefulinvestment.com';
+          }
+          
+          // If it's dev, remember it but don't return yet (check for production first)
+          if (isDevUrl(origin)) {
+            detectedDev = true;
+            candidateUrl = 'https://ccw8gc8c4w480c8g4so44k4k.peacefulinvestment.com';
+          } else {
+            candidateUrl = origin;
+          }
         } catch {
           // Invalid URL, continue to next option
         }
@@ -145,47 +186,71 @@ const handler = async (req: Request): Promise<Response> => {
       // 2. Try environment variable (set in Supabase Edge Functions secrets)
       const envBaseUrl = Deno.env.get('APP_BASE_URL');
       if (envBaseUrl) {
-        return envBaseUrl;
+        // Normalize to production if it's a production URL
+        if (isProductionUrl(envBaseUrl)) {
+          console.log('Production URL detected from APP_BASE_URL:', envBaseUrl);
+          return 'https://www.peacefulinvestment.com';
+        }
+        if (!candidateUrl) {
+          candidateUrl = envBaseUrl;
+        }
       }
       
       // 3. Try to get from request headers (may not work with Supabase invoke)
-      const origin = req.headers.get('Origin') || 
-                     req.headers.get('Referer') ||
-                     req.headers.get('x-forwarded-host') ||
-                     req.headers.get('x-forwarded-proto');
+      const forwardedHost = req.headers.get('x-forwarded-host');
+      const forwardedProto = req.headers.get('x-forwarded-proto') || 'https';
       
+      if (forwardedHost) {
+        const forwardedUrl = `${forwardedProto}://${forwardedHost}`;
+        // Always prefer production over dev - if we detect production anywhere, use it
+        if (isProductionUrl(forwardedUrl)) {
+          console.log('Production URL detected from x-forwarded-host:', forwardedUrl);
+          return 'https://www.peacefulinvestment.com';
+        }
+        if (isDevUrl(forwardedUrl) && !detectedProduction) {
+          detectedDev = true;
+          if (!candidateUrl) {
+            candidateUrl = 'https://ccw8gc8c4w480c8g4so44k4k.peacefulinvestment.com';
+          }
+        } else if (!candidateUrl) {
+          candidateUrl = forwardedUrl;
+        }
+      }
+      
+      const origin = req.headers.get('Origin') || req.headers.get('Referer');
       if (origin) {
         try {
-          // Handle x-forwarded-* headers
-          const forwardedHost = req.headers.get('x-forwarded-host');
-          const forwardedProto = req.headers.get('x-forwarded-proto') || 'https';
-          
-          if (forwardedHost) {
-            return `${forwardedProto}://${forwardedHost}`;
-          }
-          
-          // Try parsing as URL
           const url = new URL(origin);
-          const hostname = url.hostname;
           
-          // Check if it's the dev server
-          if (hostname.includes('ccw8gc8c4w480c8g4so44k4k.peacefulinvestment.com')) {
-            return 'https://ccw8gc8c4w480c8g4so44k4k.peacefulinvestment.com';
-          }
-          
-          // Check if it's production
-          if (hostname.includes('www.peacefulinvestment.com') || hostname === 'peacefulinvestment.com') {
+          // Always prefer production over dev - if we detect production anywhere, use it
+          if (isProductionUrl(url.origin)) {
+            console.log('Production URL detected from headers:', url.origin);
             return 'https://www.peacefulinvestment.com';
           }
           
-          // For other origins (like localhost), use the origin directly
-          return url.origin;
+          // Check if it's the dev server
+          if (isDevUrl(url.origin) && !detectedProduction) {
+            detectedDev = true;
+            if (!candidateUrl) {
+              candidateUrl = 'https://ccw8gc8c4w480c8g4so44k4k.peacefulinvestment.com';
+            }
+          } else if (!candidateUrl) {
+            candidateUrl = url.origin;
+          }
         } catch {
           // Invalid URL, continue to fallback
         }
       }
       
-      // 4. Fallback to production URL
+      // 4. If we have a candidate URL and it's not production, use it
+      // But if we're unsure, always default to production for safety
+      if (candidateUrl && detectedDev && !detectedProduction) {
+        console.log('Using dev URL:', candidateUrl);
+        return candidateUrl;
+      }
+      
+      // 5. Always default to production URL (safest option)
+      console.log('Defaulting to production URL');
       return 'https://www.peacefulinvestment.com';
     };
     
