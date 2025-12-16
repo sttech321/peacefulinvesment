@@ -251,36 +251,9 @@ const handler = async (req: Request): Promise<Response> => {
         referral_link: existingReferral.referral_link
       });
       
-      // FORCE UPDATE: Always check and update if base_url is production
-      let correctBaseUrl = 'https://www.peacefulinvestment.com'; // Default
-      
-      // Direct check of base_url from request
-      if (requestBaseUrl || base_url) {
-        const urlToCheck = (requestBaseUrl || base_url).trim();
-        console.log('[EDGE-FUNCTION] Direct check of base_url for update:', urlToCheck);
-        
-        try {
-          const urlObj = new URL(urlToCheck);
-          const hostname = urlObj.hostname;
-          
-          if (hostname === 'www.peacefulinvestment.com' || 
-              hostname === 'peacefulinvestment.com' ||
-              (hostname.endsWith('.peacefulinvestment.com') && !hostname.includes('ccw8gc8c4w480c8g4so44k4k'))) {
-            correctBaseUrl = 'https://www.peacefulinvestment.com';
-            console.log('[EDGE-FUNCTION] ✅ FORCED PRODUCTION URL for update');
-          } else if (hostname.includes('ccw8gc8c4w480c8g4so44k4k')) {
-            correctBaseUrl = 'https://ccw8gc8c4w480c8g4so44k4k.peacefulinvestment.com';
-            console.log('[EDGE-FUNCTION] Dev URL for update');
-          } else {
-            correctBaseUrl = urlObj.origin;
-          }
-        } catch (error) {
-          console.error('[EDGE-FUNCTION] Error in direct check, using getBaseUrl()');
-          correctBaseUrl = getBaseUrl();
-        }
-      } else {
-        correctBaseUrl = getBaseUrl();
-      }
+      // HARDCODED: Always use production URL for updates
+      const correctBaseUrl = 'https://www.peacefulinvestment.com';
+      console.log('[EDGE-FUNCTION] Using HARDCODED production URL for update:', correctBaseUrl);
       
       const currentLink = existingReferral.referral_link;
       
@@ -400,64 +373,11 @@ const handler = async (req: Request): Promise<Response> => {
 
     const referralCode = codeData;
     
-    // Get base URL - FORCE use of base_url from request if it's production
-    console.log('[EDGE-FUNCTION] ========== CREATING NEW REFERRAL ==========');
-    console.log('[EDGE-FUNCTION] base_url from request:', base_url);
-    console.log('[EDGE-FUNCTION] requestBaseUrl:', requestBaseUrl);
-    
-    // DIRECT CHECK: If base_url is production, use it immediately
-    // ALWAYS default to production for safety
-    let baseUrl = 'https://www.peacefulinvestment.com';
-    
-    const urlToCheck = (requestBaseUrl || base_url || '').toString().trim();
-    console.log('[EDGE-FUNCTION] URL to check:', urlToCheck);
-    console.log('[EDGE-FUNCTION] URL to check type:', typeof urlToCheck);
-    console.log('[EDGE-FUNCTION] URL to check length:', urlToCheck.length);
-    
-    if (urlToCheck) {
-      // SIMPLE STRING CHECK FIRST - most reliable
-      if (urlToCheck.includes('www.peacefulinvestment.com') || 
-          urlToCheck.includes('peacefulinvestment.com') && !urlToCheck.includes('ccw8gc8c4w480c8g4so44k4k')) {
-        baseUrl = 'https://www.peacefulinvestment.com';
-        console.log('[EDGE-FUNCTION] ✅✅✅ STRING CHECK: Production URL detected via string match');
-      } else if (urlToCheck.includes('ccw8gc8c4w480c8g4so44k4k')) {
-        baseUrl = 'https://ccw8gc8c4w480c8g4so44k4k.peacefulinvestment.com';
-        console.log('[EDGE-FUNCTION] Dev URL detected via string match');
-      } else {
-        // Try parsing as URL
-        try {
-          const urlObj = new URL(urlToCheck);
-          const hostname = urlObj.hostname;
-          console.log('[EDGE-FUNCTION] Parsed hostname:', hostname);
-          
-          if (hostname === 'www.peacefulinvestment.com' || 
-              hostname === 'peacefulinvestment.com' ||
-              (hostname.endsWith('.peacefulinvestment.com') && !hostname.includes('ccw8gc8c4w480c8g4so44k4k'))) {
-            baseUrl = 'https://www.peacefulinvestment.com';
-            console.log('[EDGE-FUNCTION] ✅ Production URL detected via hostname check');
-          } else if (hostname.includes('ccw8gc8c4w480c8g4so44k4k')) {
-            baseUrl = 'https://ccw8gc8c4w480c8g4so44k4k.peacefulinvestment.com';
-            console.log('[EDGE-FUNCTION] Dev URL detected via hostname check');
-          } else {
-            baseUrl = urlObj.origin;
-            console.log('[EDGE-FUNCTION] Using parsed origin:', baseUrl);
-          }
-        } catch (error) {
-          console.error('[EDGE-FUNCTION] Error parsing URL, using default production:', error);
-          // Already defaulted to production above
-        }
-      }
-    } else {
-      console.warn('[EDGE-FUNCTION] ⚠️ No base_url provided, using default production');
-    }
-    
-    console.log('[EDGE-FUNCTION] FINAL baseUrl decision:', baseUrl);
-    
-    baseUrl = baseUrl.replace(/\/$/, ''); // Remove trailing slash if present
-    console.log('[EDGE-FUNCTION] Final baseUrl:', baseUrl);
-    
+    // HARDCODED: Always use production URL for referral links
+    const baseUrl = 'https://www.peacefulinvestment.com';
     const referralLink = `${baseUrl}/auth?mode=signup&ref=${referralCode}`;
-    console.log('[EDGE-FUNCTION] Generated referral link:', referralLink);
+    
+    console.log('[EDGE-FUNCTION] Created referral link (HARDCODED PRODUCTION):', referralLink);
 
     console.log('[EDGE-FUNCTION] Creating new referral with:', {
       user_id,
