@@ -214,7 +214,44 @@ export const useReferrals = () => {
 
   useEffect(() => {
     fetchReferralData();
-  }, [user]);
+
+    // Set up real-time subscription for referral updates
+    if (user && referral) {
+      const channel = supabase
+        .channel('referral-updates')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'referral_signups',
+            filter: `referral_id=eq.${referral.id}`,
+          },
+          () => {
+            // Refresh data when signups change
+            fetchReferralData();
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'referrals',
+            filter: `id=eq.${referral.id}`,
+          },
+          () => {
+            // Refresh data when referral stats change
+            fetchReferralData();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [user, referral?.id]);
 
   return {
     referral,

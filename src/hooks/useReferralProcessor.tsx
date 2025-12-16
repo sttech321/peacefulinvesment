@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { useAuth } from './useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useSearchParams } from 'react-router-dom';
@@ -9,14 +9,7 @@ export function useReferralProcessor() {
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (user) {
-      processPendingReferral();
-      processDirectReferral();
-    }
-  }, [user, searchParams]);
-
-  const processPendingReferral = async () => {
+  const processPendingReferral = useCallback(async () => {
     const pendingReferralCode = localStorage.getItem('pendingReferralCode');
     if (!pendingReferralCode || !user) return;
 
@@ -31,6 +24,13 @@ export function useReferralProcessor() {
         .single();
 
       if (referral && !referralError) {
+        // Prevent self-referral
+        if (referral.user_id === user.id) {
+          console.log('Cannot refer yourself');
+          localStorage.removeItem('pendingReferralCode');
+          return;
+        }
+
         // Check if referral signup already exists
         const { data: existingSignup, error: checkError } = await supabase
           .from('referral_signups')
@@ -41,6 +41,11 @@ export function useReferralProcessor() {
 
         if (checkError && checkError.code !== 'PGRST116') {
           console.error('Error checking existing referral signup:', checkError);
+          toast({
+            title: "Error",
+            description: "Failed to check referral status. Please try again.",
+            variant: "destructive",
+          });
           return;
         }
 
@@ -56,6 +61,11 @@ export function useReferralProcessor() {
 
           if (signupError) {
             console.error('Error creating referral signup:', signupError);
+            toast({
+              title: "Error",
+              description: signupError.message || "Failed to record referral signup.",
+              variant: "destructive",
+            });
           } else {
             console.log('Referral signup recorded successfully');
             toast({
@@ -71,15 +81,25 @@ export function useReferralProcessor() {
         }
       } else {
         console.error('Referral not found or error:', referralError);
+        toast({
+          title: "Invalid Referral Code",
+          description: "The referral code you used is not valid.",
+          variant: "destructive",
+        });
         localStorage.removeItem('pendingReferralCode');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error processing pending referral:', error);
+      toast({
+        title: "Error",
+        description: error.message || "An error occurred processing your referral.",
+        variant: "destructive",
+      });
       localStorage.removeItem('pendingReferralCode');
     }
-  };
+  }, [user, toast]);
 
-  const processDirectReferral = async () => {
+  const processDirectReferral = useCallback(async () => {
     const refCode = searchParams.get('ref');
     if (!refCode || !user) return;
 
@@ -94,6 +114,15 @@ export function useReferralProcessor() {
         .single();
 
       if (referral && !referralError) {
+        // Prevent self-referral
+        if (referral.user_id === user.id) {
+          console.log('Cannot refer yourself');
+          const url = new URL(window.location.href);
+          url.searchParams.delete('ref');
+          window.history.replaceState({}, '', url.toString());
+          return;
+        }
+
         // Check if referral signup already exists
         const { data: existingSignup, error: checkError } = await supabase
           .from('referral_signups')
@@ -104,6 +133,11 @@ export function useReferralProcessor() {
 
         if (checkError && checkError.code !== 'PGRST116') {
           console.error('Error checking existing referral signup:', checkError);
+          toast({
+            title: "Error",
+            description: "Failed to check referral status. Please try again.",
+            variant: "destructive",
+          });
           return;
         }
 
@@ -119,6 +153,11 @@ export function useReferralProcessor() {
 
           if (signupError) {
             console.error('Error creating referral signup:', signupError);
+            toast({
+              title: "Error",
+              description: signupError.message || "Failed to record referral signup.",
+              variant: "destructive",
+            });
           } else {
             console.log('Direct referral signup recorded successfully');
             toast({
@@ -139,19 +178,41 @@ export function useReferralProcessor() {
         }
       } else {
         console.error('Direct referral not found or error:', referralError);
+        toast({
+          title: "Invalid Referral Code",
+          description: "The referral code in the URL is not valid.",
+          variant: "destructive",
+        });
         // Clear the URL parameter
         const url = new URL(window.location.href);
         url.searchParams.delete('ref');
         window.history.replaceState({}, '', url.toString());
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error processing direct referral:', error);
+      toast({
+        title: "Error",
+        description: error.message || "An error occurred processing your referral.",
+        variant: "destructive",
+      });
       // Clear the URL parameter
       const url = new URL(window.location.href);
       url.searchParams.delete('ref');
       window.history.replaceState({}, '', url.toString());
     }
-  };
+  }, [user, searchParams, toast]);
+
+  useEffect(() => {
+    if (user) {
+      // Add a small delay to ensure user is fully authenticated
+      const timer = setTimeout(() => {
+        processPendingReferral();
+        processDirectReferral();
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [user, processPendingReferral, processDirectReferral]);
 
   return { processPendingReferral, processDirectReferral };
 }
