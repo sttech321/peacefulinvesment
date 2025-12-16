@@ -91,7 +91,11 @@ const handler = async (req: Request): Promise<Response> => {
     console.log('[EDGE-FUNCTION] base_url:', base_url);
     console.log('[EDGE-FUNCTION] base_url type:', typeof base_url);
     console.log('[EDGE-FUNCTION] base_url truthy?', !!base_url);
+    console.log('[EDGE-FUNCTION] base_url length:', base_url?.length);
     console.log('[EDGE-FUNCTION] ========================================');
+    
+    // Store base_url in a const to ensure it's accessible
+    const requestBaseUrl = base_url;
     
     if (!user_id) {
       return new Response(JSON.stringify({ error: 'user_id is required' }), {
@@ -143,38 +147,68 @@ const handler = async (req: Request): Promise<Response> => {
     };
 
     // Get base URL function - ALWAYS prioritize base_url from request
+    // Use requestBaseUrl to ensure we're using the correct variable
     const getBaseUrl = (): string => {
-      console.log('[EDGE-FUNCTION] getBaseUrl called');
-      console.log('[EDGE-FUNCTION] base_url from request:', base_url);
+      console.log('[EDGE-FUNCTION] ========== getBaseUrl() START ==========');
+      console.log('[EDGE-FUNCTION] requestBaseUrl value:', requestBaseUrl);
+      console.log('[EDGE-FUNCTION] requestBaseUrl type:', typeof requestBaseUrl);
+      console.log('[EDGE-FUNCTION] requestBaseUrl truthy:', !!requestBaseUrl);
+      console.log('[EDGE-FUNCTION] base_url (original):', base_url);
       
       // 1. ALWAYS use base_url from request body if provided (most reliable)
-      if (base_url) {
+      const urlToUse = requestBaseUrl || base_url;
+      console.log('[EDGE-FUNCTION] urlToUse:', urlToUse);
+      
+      if (urlToUse && typeof urlToUse === 'string' && urlToUse.trim() !== '') {
+        console.log('[EDGE-FUNCTION] urlToUse is provided and valid, processing...');
         try {
-          const url = new URL(base_url);
+          const trimmedUrl = urlToUse.trim();
+          console.log('[EDGE-FUNCTION] Creating URL from:', trimmedUrl);
+          const url = new URL(trimmedUrl);
           const origin = url.origin;
-          console.log('[EDGE-FUNCTION] Parsed origin from base_url:', origin);
+          const hostname = url.hostname;
           
-          // Normalize production URLs
-          if (isProductionUrl(origin)) {
-            console.log('[EDGE-FUNCTION] ✅ Production URL detected from base_url, using: https://www.peacefulinvestment.com');
-            return 'https://www.peacefulinvestment.com';
+          console.log('[EDGE-FUNCTION] Parsed URL:', {
+            original: urlToUse,
+            trimmed: trimmedUrl,
+            origin: origin,
+            hostname: hostname
+          });
+          
+          // Check if it's production
+          const isProd = isProductionUrl(origin);
+          console.log('[EDGE-FUNCTION] Production check result:', isProd);
+          
+          if (isProd) {
+            const result = 'https://www.peacefulinvestment.com';
+            console.log('[EDGE-FUNCTION] ✅✅✅ PRODUCTION DETECTED - RETURNING:', result);
+            console.log('[EDGE-FUNCTION] ========== getBaseUrl() END ==========');
+            return result;
           }
           
-          // Use dev URL if it's dev
-          if (isDevUrl(origin)) {
-            console.log('[EDGE-FUNCTION] Dev URL detected from base_url, using: https://ccw8gc8c4w480c8g4so44k4k.peacefulinvestment.com');
-            return 'https://ccw8gc8c4w480c8g4so44k4k.peacefulinvestment.com';
+          // Check if it's dev
+          const isDev = isDevUrl(origin);
+          console.log('[EDGE-FUNCTION] Dev check result:', isDev);
+          
+          if (isDev) {
+            const result = 'https://ccw8gc8c4w480c8g4so44k4k.peacefulinvestment.com';
+            console.log('[EDGE-FUNCTION] Dev detected - RETURNING:', result);
+            console.log('[EDGE-FUNCTION] ========== getBaseUrl() END ==========');
+            return result;
           }
           
           // For other origins, use the origin directly
-          console.log('[EDGE-FUNCTION] Using origin directly from base_url:', origin);
+          console.log('[EDGE-FUNCTION] Using origin directly:', origin);
+          console.log('[EDGE-FUNCTION] ========== getBaseUrl() END ==========');
           return origin;
         } catch (error) {
-          console.error('[EDGE-FUNCTION] ❌ Invalid base_url format:', error, 'base_url was:', base_url);
+          console.error('[EDGE-FUNCTION] ❌ ERROR parsing base_url:', error);
+          console.error('[EDGE-FUNCTION] Failed base_url value:', base_url);
           // Continue to fallback
         }
       } else {
-        console.warn('[EDGE-FUNCTION] ⚠️ No base_url in request body!');
+        console.warn('[EDGE-FUNCTION] ⚠️ base_url is missing, empty, or invalid!');
+        console.warn('[EDGE-FUNCTION] base_url value:', base_url);
       }
       
       // 2. Try environment variable as fallback
@@ -183,14 +217,17 @@ const handler = async (req: Request): Promise<Response> => {
       if (envBaseUrl) {
         if (isProductionUrl(envBaseUrl)) {
           console.log('[EDGE-FUNCTION] Using production URL from APP_BASE_URL');
+          console.log('[EDGE-FUNCTION] ========== getBaseUrl() END ==========');
           return 'https://www.peacefulinvestment.com';
         }
         console.log('[EDGE-FUNCTION] Using APP_BASE_URL:', envBaseUrl);
+        console.log('[EDGE-FUNCTION] ========== getBaseUrl() END ==========');
         return envBaseUrl;
       }
       
       // 3. Default to production (safest)
       console.log('[EDGE-FUNCTION] ⚠️ Defaulting to production URL (no base_url provided)');
+      console.log('[EDGE-FUNCTION] ========== getBaseUrl() END ==========');
       return 'https://www.peacefulinvestment.com';
     };
 
@@ -334,14 +371,55 @@ const handler = async (req: Request): Promise<Response> => {
 
     const referralCode = codeData;
     
-    const baseUrl = getBaseUrl().replace(/\/$/, ''); // Remove trailing slash if present
+    // Get base URL - FORCE use of base_url from request if it's production
+    console.log('[EDGE-FUNCTION] ========== CREATING NEW REFERRAL ==========');
+    console.log('[EDGE-FUNCTION] base_url from request:', base_url);
+    console.log('[EDGE-FUNCTION] requestBaseUrl:', requestBaseUrl);
+    
+    // DIRECT CHECK: If base_url is production, use it immediately
+    let baseUrl = 'https://www.peacefulinvestment.com'; // Default to production
+    
+    if (requestBaseUrl || base_url) {
+      const urlToCheck = (requestBaseUrl || base_url).trim();
+      console.log('[EDGE-FUNCTION] Checking URL:', urlToCheck);
+      
+      try {
+        const urlObj = new URL(urlToCheck);
+        const hostname = urlObj.hostname;
+        console.log('[EDGE-FUNCTION] Hostname extracted:', hostname);
+        
+        // Direct production check
+        if (hostname === 'www.peacefulinvestment.com' || 
+            hostname === 'peacefulinvestment.com' ||
+            (hostname.endsWith('.peacefulinvestment.com') && !hostname.includes('ccw8gc8c4w480c8g4so44k4k'))) {
+          baseUrl = 'https://www.peacefulinvestment.com';
+          console.log('[EDGE-FUNCTION] ✅ DIRECT PRODUCTION CHECK PASSED - Using production URL');
+        } else if (hostname.includes('ccw8gc8c4w480c8g4so44k4k')) {
+          baseUrl = 'https://ccw8gc8c4w480c8g4so44k4k.peacefulinvestment.com';
+          console.log('[EDGE-FUNCTION] Dev URL detected');
+        } else {
+          baseUrl = urlObj.origin;
+          console.log('[EDGE-FUNCTION] Using origin:', baseUrl);
+        }
+      } catch (error) {
+        console.error('[EDGE-FUNCTION] Error parsing URL, using default production:', error);
+      }
+    } else {
+      console.warn('[EDGE-FUNCTION] ⚠️ No base_url provided, using default production');
+    }
+    
+    baseUrl = baseUrl.replace(/\/$/, ''); // Remove trailing slash if present
+    console.log('[EDGE-FUNCTION] Final baseUrl:', baseUrl);
+    
     const referralLink = `${baseUrl}/auth?mode=signup&ref=${referralCode}`;
+    console.log('[EDGE-FUNCTION] Generated referral link:', referralLink);
 
     console.log('[EDGE-FUNCTION] Creating new referral with:', {
       user_id,
       referral_code: referralCode,
       referral_link: referralLink,
-      baseUrl
+      baseUrl,
+      base_url_from_request: base_url
     });
 
     // Create new referral
