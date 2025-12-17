@@ -88,6 +88,7 @@ interface User {
   role?: string;
   is_verified?: boolean;
   avatar_url?: string | null;
+  is_active?: boolean | null;
 }
 
 interface AdminAction {
@@ -170,6 +171,7 @@ export default function AdminUsers() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
+      console.log('[FETCH] Starting to fetch users...');
       
       // Fetch profiles and user_roles separately since there's no direct relationship
       const [profilesResponse, userRolesResponse] = await Promise.all([
@@ -177,14 +179,53 @@ export default function AdminUsers() {
         supabase.from('user_roles').select('*')
       ]);
 
+      console.log('[FETCH] Profiles response:', { 
+        dataCount: profilesResponse.data?.length || 0, 
+        error: profilesResponse.error 
+      });
+      console.log('[FETCH] User roles response:', { 
+        dataCount: userRolesResponse.data?.length || 0, 
+        error: userRolesResponse.error 
+      });
+
       if (profilesResponse.error) throw profilesResponse.error;
       if (userRolesResponse.error) throw userRolesResponse.error;
 
       const profiles = profilesResponse.data || [];
       const userRoles = userRolesResponse.data || [];
 
+      console.log(`[FETCH] Total profiles fetched: ${profiles.length}`);
+      // Log detailed is_active information
+      const profilesWithActiveStatus = profiles.map(p => ({
+        user_id: p.user_id,
+        is_active: (p as { is_active?: boolean | null }).is_active,
+        status: p.status,
+        has_is_active_field: 'is_active' in p
+      }));
+      
+      console.log(`[FETCH] Sample profile is_active values:`, profilesWithActiveStatus.slice(0, 5));
+      
+      // Count how many have is_active = false
+      const inactiveCount = profilesWithActiveStatus.filter(p => p.is_active === false).length;
+      const nullCount = profilesWithActiveStatus.filter(p => p.is_active === null || p.is_active === undefined).length;
+      const activeCount = profilesWithActiveStatus.filter(p => p.is_active === true).length;
+      
+      console.log(`[FETCH] is_active breakdown: false=${inactiveCount}, null/undefined=${nullCount}, true=${activeCount}`);
+
+      // Filter out inactive users (if is_active field exists and is false)
+      const activeProfiles = profiles.filter((profile) => {
+        const isActive = (profile as { is_active?: boolean | null }).is_active;
+        const shouldInclude = isActive !== false;
+        if (!shouldInclude) {
+          console.log(`[FETCH] Filtering out inactive user: ${profile.user_id} (is_active: ${isActive}, status: ${profile.status})`);
+        }
+        return shouldInclude;
+      });
+
+      console.log(`[FETCH] Active profiles after filtering: ${activeProfiles.length} (filtered out: ${profiles.length - activeProfiles.length})`);
+
       // Combine the data
-      const usersWithRoles = profiles.map(profile => {
+      const usersWithRoles = activeProfiles.map(profile => {
         const userRole = userRoles.find(ur => ur.user_id === profile.user_id);
         
         return {
@@ -196,6 +237,7 @@ export default function AdminUsers() {
         };
       });
 
+      console.log(`[FETCH] Final users with roles: ${usersWithRoles.length}`);
       setUsers(usersWithRoles);
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -315,7 +357,10 @@ export default function AdminUsers() {
         note: action.note
       });
 
-    if (error) console.error('Error logging admin action:', error);
+    if (error) {
+        console.error('Error logging admin action:', error);
+        throw error;
+    }
   };
 
   const handleEditUser = (user: User) => {
@@ -485,23 +530,37 @@ export default function AdminUsers() {
   };
 
   const handleDeleteUser = async () => {
-    if (!userToDelete) return;
+    if (!userToDelete) {
+      console.log('[DELETE HANDLER] No user to delete');
+      return;
+    }
+
+    console.log('[DELETE HANDLER] Starting delete process for:', {
+      user_id: userToDelete.user_id,
+      full_name: userToDelete.full_name,
+      is_bulk: userToDelete.user_id === 'bulk',
+      reason: deleteReason
+    });
 
     try {
       setProcessing(true);
 
       if (userToDelete.user_id === 'bulk') {
         // Handle bulk deletion
+        console.log('[DELETE HANDLER] Processing bulk deletion for', selectedUsers.length, 'users');
         const deletedCount = await handleBulkDelete();
         
+        console.log('[DELETE HANDLER] Bulk deletion completed. Deleted:', deletedCount);
         toast({
           title: "Success",
           description: `${deletedCount} users deleted successfully`,
         });
       } else {
         // Handle single user deletion
+        console.log('[DELETE HANDLER] Processing single user deletion');
         await deleteSingleUser(userToDelete.user_id);
         
+        console.log('[DELETE HANDLER] Single user deletion completed');
         toast({
           title: "Success",
           description: "User deleted successfully from all accessible tables",
@@ -509,7 +568,9 @@ export default function AdminUsers() {
       }
 
       // Refresh users
+      console.log('[DELETE HANDLER] Refreshing users list...');
       await fetchUsers();
+      console.log('[DELETE HANDLER] Users list refreshed');
       
       // Close dialog
       setDeleteDialogOpen(false);
@@ -517,7 +578,7 @@ export default function AdminUsers() {
       setDeleteReason("");
       
     } catch (error) {
-      console.error('Error deleting user:', error);
+      console.error('[DELETE HANDLER] Error deleting user:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to delete user';
       toast({
         title: "Error",
@@ -526,72 +587,128 @@ export default function AdminUsers() {
       });
     } finally {
       setProcessing(false);
+      console.log('[DELETE HANDLER] Delete process completed');
     }
   };
 
   const deleteSingleUser = async (userId: string) => {
     try {
-      // Try to delete user from auth.users table first
-      const { error: authError } = await supabase.auth.admin.deleteUser(userId);
-
-      if (authError) {
-        // If we can't delete from auth.users (no admin privileges), 
-        // we'll continue with deleting from other tables
-        console.warn('Could not delete from auth.users (this is normal for non-admin users):', authError.message);
-      }
-
-      // Delete from profiles table
-      const { error: profileError } = await supabase
+      // Soft delete: Update profile to inactive and blocked status instead of hard delete
+      console.log(`[DELETE] Starting soft delete for user: ${userId}`);
+      console.log(`[DELETE] Update payload:`, {
+        is_active: false,
+        status: 'blocked',
+        updated_at: new Date().toISOString()
+      });
+      
+      const { data: updateData, error: profileError } = await supabase
         .from('profiles')
-        .delete()
-        .eq('user_id', userId);
+        .update({
+          is_active: false,
+          status: 'blocked',
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', userId)
+        .select();
+
+      console.log(`[DELETE] Update response:`, { 
+        data: updateData, 
+        error: profileError,
+        dataLength: updateData?.length || 0,
+        errorCode: profileError?.code,
+        errorMessage: profileError?.message,
+        errorDetails: profileError?.details,
+        errorHint: profileError?.hint
+      });
 
       if (profileError) {
-        console.error('Error deleting profile:', profileError);
+        console.error('[DELETE] Error updating profile:', profileError);
+        
+        // Check if error is due to missing column
+        if (profileError.message?.includes('column') && profileError.message?.includes('does not exist')) {
+          throw new Error(`Database column missing. Please run migration to add is_active column to profiles table. Error: ${profileError.message}`);
+        }
+        
         throw new Error(`Failed to delete profile: ${profileError.message}`);
       }
 
+      if (!updateData || updateData.length === 0) {
+        console.warn(`[DELETE] No rows updated for user ${userId}. User may not exist or RLS policy may be blocking the update.`);
+        console.warn(`[DELETE] Attempting to verify user exists...`);
+        
+        // Verify user exists
+        const { data: checkData, error: checkError } = await supabase
+          .from('profiles')
+          .select('user_id, status, is_active')
+          .eq('user_id', userId)
+          .maybeSingle();
+          
+        console.log(`[DELETE] User verification:`, { checkData, checkError });
+      } else {
+        console.log(`[DELETE] Successfully updated ${updateData.length} profile record(s) for user ${userId}`);
+        console.log(`[DELETE] Updated record:`, updateData[0]);
+      }
+
       // Delete from user_roles table
-      const { error: roleError } = await supabase
+      console.log(`[DELETE] Deleting user_roles for user ${userId}...`);
+      const { data: deletedRoles, error: roleError } = await supabase
         .from('user_roles')
         .delete()
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .select();
 
       if (roleError) {
-        console.error('Error deleting user role:', roleError);
+        console.error('[DELETE] Error deleting user role:', roleError);
         // Don't throw here as this is not critical
+      } else {
+        console.log(`[DELETE] Deleted ${deletedRoles?.length || 0} user_roles record(s)`);
       }
 
       // Delete from referrals table
-      const { error: referralError } = await supabase
+      console.log(`[DELETE] Deleting referrals for user ${userId}...`);
+      const { data: deletedReferrals, error: referralError } = await supabase
         .from('referrals')
         .delete()
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .select();
 
       if (referralError) {
-        console.error('Error deleting referrals:', referralError);
+        console.error('[DELETE] Error deleting referrals:', referralError);
         // Don't throw here as this is not critical
+      } else {
+        console.log(`[DELETE] Deleted ${deletedReferrals?.length || 0} referrals record(s)`);
       }
 
       // Delete from referral_signups where user is referred
-      const { error: signupError } = await supabase
+      console.log(`[DELETE] Deleting referral_signups for user ${userId}...`);
+      const { data: deletedSignups, error: signupError } = await supabase
         .from('referral_signups')
         .delete()
-        .eq('referred_user_id', userId);
+        .eq('referred_user_id', userId)
+        .select();
 
       if (signupError) {
-        console.error('Error deleting referral signups:', signupError);
+        console.error('[DELETE] Error deleting referral signups:', signupError);
         // Don't throw here as this is not critical
+      } else {
+        console.log(`[DELETE] Deleted ${deletedSignups?.length || 0} referral_signups record(s)`);
       }
 
       // Log admin action
-      await logAdminAction({
-        type: 'suspend', // Using 'suspend' for deletions
-        userId: userId,
-        note: `User deleted from database. Reason: ${deleteReason || 'No reason provided'}`
-      });
+      console.log(`[DELETE] Logging admin action for user ${userId}...`);
+      try {
+        await logAdminAction({
+          type: 'suspend', // Using 'suspend' for deletions
+          userId: userId,
+          note: `User deleted from database. Reason: ${deleteReason || 'No reason provided'}`
+        });
+        console.log(`[DELETE] Admin action logged successfully`);
+      } catch (logError) {
+        console.error('[DELETE] Error logging admin action:', logError);
+        // Don't throw here as this is not critical
+      }
 
-      console.log(`Successfully deleted user ${userId} from all accessible tables`);
+      console.log(`[DELETE] Successfully soft-deleted user ${userId} from all accessible tables`);
     } catch (error) {
       console.error('Error in deleteSingleUser:', error);
       throw error;
