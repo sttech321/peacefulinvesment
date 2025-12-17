@@ -409,7 +409,7 @@ export default function AdminAuditLog() {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleViewDetails(log)}
-                        className="bg-muted/20 hover:bg-muted/30 rounded-[8px] border-0"
+                        className="bg-muted/20 hover:bg-muted/40 rounded-[8px] border-0"
                       >
                         <Eye className="h-4 w-4 text-white " />
                       </Button>

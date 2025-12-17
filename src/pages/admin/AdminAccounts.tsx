@@ -619,15 +619,16 @@ export default function AdminAccounts() {
                     <Button
                       variant="ghost"
                       size="sm"
+                      className="bg-muted/20 hover:bg-muted/40 rounded-[8px]"
                       onClick={() => {
                         setSelectedAccount(account);
                         setAccountDetailsOpen(true);
                       }}
                     >
-                      <Eye className="h-4 w-4" />
+                      <Eye className="h-4 w-4 text-white" />
                     </Button>
-                    <Button variant="ghost" size="sm">
-                      <MoreHorizontal className="h-4 w-4" />
+                    <Button variant="ghost" className="bg-muted/20 hover:bg-muted/40 rounded-[8px] ml-2" size="sm">
+                      <MoreHorizontal className="h-4 w-4 text-white" />
                     </Button>
                   </div>
                 </div>

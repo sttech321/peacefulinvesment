@@ -709,7 +709,7 @@ export default function AdminOverseasCompanies() {
                             setSelectedRequest(request);
                             setRequestDetailsOpen(true);
                           }}
-                          className="bg-gray-800 hover:bg-gray-700 rounded-[8px]"
+                          className="bg-muted/20 hover:bg-muted/40 rounded-[8px]"
                         >
                           <Eye className="h-4 w-4 text-white" />
                         </Button>
