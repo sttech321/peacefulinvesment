@@ -230,7 +230,8 @@ export default function AdminUsers() {
         
         return {
           ...profile,
-          email: profile.user_id, // We'll use user_id as email since we can't access auth.users
+          // Prefer an explicit email column on profiles if it exists, otherwise fall back to user_id
+          email: (profile as any).email || profile.user_id,
           last_sign_in_at: null, // We can't access this without admin privileges
           role: userRole?.role || 'user',
           is_verified: profile.status === 'verified' // Use profile status as verification indicator
@@ -1104,6 +1105,9 @@ export default function AdminUsers() {
                       </div>
                       <p className="text-sm text-muted-foreground mb-1 truncate">
                         ID: {user.user_id}
+                      </p>
+                      <p className="text-sm text-muted-foreground mb-1 truncate">
+                        Email: {user.email}
                       </p>
                       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                         <span>Joined: {formatDate(user.created_at)}</span>

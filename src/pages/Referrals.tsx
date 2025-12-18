@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useReferrals } from "@/hooks/useReferrals";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +18,7 @@ import Footer from "@/components/Footer";
 
 const Referrals = () => {
   const { user } = useAuth();
-  const { referral, payments, signups, loading, generating, generateReferralLink, copyReferralLink, sendInvitation } = useReferrals();
+  const { referral, payments, signups, loading, generateReferralLink, copyReferralLink, sendInvitation } = useReferrals();
   
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteSubject, setInviteSubject] = useState("Join me on this amazing trading platform!");
@@ -96,6 +96,26 @@ const Referrals = () => {
     });
   };
 
+  const displayName =
+    (user.user_metadata as any)?.full_name ||
+    (user.user_metadata as any)?.name ||
+    'Your account';
+
+  const ownerInfoBadge = (
+    <div className="mt-2 text-xs sm:text-sm text-muted-foreground space-y-0.5">
+      <p>
+        <span className="font-semibold text-white mr-1">Name:</span>
+        <span className="text-white">{displayName}</span>
+      </p>
+      {user.email && (
+        <p className="break-all">
+          <span className="font-semibold text-white mr-1">Email:</span>
+          <span>{user.email}</span>
+        </p>
+      )}
+    </div>
+  );
+
   return (
     <div className="min-h-screen pink-yellow-shadow pt-24">
       <div className="max-w-7xl mx-auto p-4 pb-16">
@@ -114,24 +134,27 @@ const Referrals = () => {
                 Get Started with Referrals
               </CardTitle>
               <CardDescription>
-                Generate your unique referral link to start earning commissions
+                Generate your unique referral link to start earning commissions.
+                {ownerInfoBadge}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button 
-                onClick={handleGenerateLink} 
-                className="w-full sm:w-auto"
-                disabled={generating}
-              >
-                {generating ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  "Generate My Referral Link"
-                )}
-              </Button>
+              <div className="space-y-3">
+                <Button 
+                  onClick={handleGenerateLink} 
+                  className="w-full sm:w-auto"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    "Generate My Referral Link"
+                  )}
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}
@@ -203,14 +226,15 @@ const Referrals = () => {
 
               {/* Referral Link Sharing */}
               <div className="bg-gradient-pink-to-yellow hover:glow-primary relative rounded-sm p-[2px]">
-                <div className="glass-card p-6  mt-0 rounded-sm bg-black">
-                  <div className="mb-3">
+                <div className="glass-card p-6 mt-0 rounded-sm bg-black">
+                  <div className="mb-3 flex flex-col gap-2">
                     <h3 className="flex items-center gap-2 font-inter text-white">
                       <Share2 className="h-5 w-5" />
                       Your Referral Link
                     </h3>
+                    {ownerInfoBadge}
                     <div className="text-muted-foreground">
-                      Share this link with friends to earn 5% commission on their deposits
+                      Share this link with friends to earn 5% commission on their deposits.
                     </div>
                   </div>
                   <div className="space-y-4">
