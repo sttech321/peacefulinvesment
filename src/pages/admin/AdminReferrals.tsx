@@ -185,8 +185,7 @@ export default function AdminReferrals() {
       await Promise.all([
         fetchReferrals(),
         fetchPayments(),
-        fetchSignups(),
-        calculateStats()
+        fetchSignups()
       ]);
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -245,9 +244,11 @@ export default function AdminReferrals() {
         });
 
       setReferrals(referralsWithUserInfo);
+      calculateStats(referralsWithUserInfo);
     } catch (error) {
       console.error('Error fetching referrals:', error);
       setReferrals([]);
+      calculateStats([]);
     }
   };
 
@@ -335,30 +336,34 @@ export default function AdminReferrals() {
     }
   };
 
-  const calculateStats = async () => {
+  const calculateStats = (sourceReferrals: Referral[]) => {
     try {
       // Calculate basic stats from referrals data
-      const totalReferrals = referrals.length;
-      const totalEarnings = referrals.reduce((sum, r) => sum + r.total_earnings, 0);
-      const activeReferrals = referrals.filter(r => r.is_active).length;
-      const pendingReferrals = referrals.filter(r => r.status === 'pending').length;
+      const totalReferrals = sourceReferrals.length;
+      const totalEarnings = sourceReferrals.reduce((sum, r) => sum + r.total_earnings, 0);
+      const activeReferrals = sourceReferrals.filter(r => r.is_active).length;
+      const pendingReferrals = sourceReferrals.filter(r => r.status === 'pending').length;
       
-      // Find top earner
-      const topEarner = referrals.reduce((top, current) => 
-        current.total_earnings > (top?.total_earnings || 0) ? current : top, null as Referral | null
-      );
+      // Find top earner (always pick one if there is at least 1 referral)
+      const topEarner: Referral | null = sourceReferrals.length
+        ? sourceReferrals.reduce((top, current) =>
+            current.total_earnings > top.total_earnings ? current : top
+          )
+        : null;
 
       setStats({
         totalReferrals,
         totalEarnings,
         activeReferrals,
         pendingReferrals,
-        topEarner: topEarner ? {
-          user_id: topEarner.user_id,
-          email: topEarner.user?.email || 'Unknown',
-          full_name: topEarner.user?.full_name || 'Unknown',
-          total_earnings: topEarner.total_earnings
-        } : null
+        topEarner: topEarner
+          ? {
+              user_id: topEarner.user_id,
+              email: topEarner.user?.email || 'Unknown',
+              full_name: topEarner.user?.full_name || 'Unknown',
+              total_earnings: topEarner.total_earnings,
+            }
+          : null,
       });
     } catch (error) {
       console.error('Error calculating stats:', error);
@@ -453,7 +458,6 @@ export default function AdminReferrals() {
       // Refresh data
       await fetchPayments();
       await fetchReferrals();
-      await calculateStats();
 
     } catch (error) {
       console.error('Error creating payment:', error);
@@ -482,7 +486,6 @@ export default function AdminReferrals() {
       });
 
       await fetchReferrals();
-      await calculateStats();
 
     } catch (error) {
       console.error('Error updating referral status:', error);
@@ -579,7 +582,7 @@ export default function AdminReferrals() {
             <Users className="h-5 w-5 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">{stats.totalReferrals}</div>
+            <div className="text-2xl font-bold text-white">{filteredReferrals.length}</div>
             <p className="text-xs text-muted-foreground">
               All referral programs
             </p>
@@ -934,7 +937,7 @@ export default function AdminReferrals() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex flex-wrap items-center gap-2 mb-1">
-                            <p className="font-medium truncate">
+                            <p className="font-medium truncate text-white">
                               {signup.referred_user?.full_name || 'Unknown User'}
                             </p>
                             <Badge variant="outline" className="bg-blue-100 text-blue-800">
