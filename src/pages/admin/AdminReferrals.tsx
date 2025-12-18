@@ -202,43 +202,47 @@ export default function AdminReferrals() {
 
   const fetchReferrals = async () => {
     try {
-      const { data: referralsData, error } = await supabase
-        .from('referrals')
-        .select(`
-          *,
-          user:profiles!referrals_user_id_fkey(user_id, full_name)
-        `)
-        .order('created_at', { ascending: false });
+      // Fetch referrals and profiles separately and join on user_id in the client
+      const [{ data: referralsData, error: referralsError }, { data: profilesData, error: profilesError }] =
+        await Promise.all([
+          supabase
+            .from('referrals')
+            .select('*')
+            .order('created_at', { ascending: false }),
+          supabase
+            .from('profiles')
+            .select('*')
+        ]);
 
-      if (error) {
-        console.error('Error fetching referrals:', error);
-        // Fallback to simple select if join fails
-        const { data: simpleData, error: simpleError } = await supabase
-          .from('referrals')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (simpleError) throw simpleError;
-        
-        const referralsWithUserInfo = simpleData?.map(referral => ({
-          ...referral,
-          user: {
-            email: 'Unknown',
-            full_name: 'Unknown'
-          }
-        })) || [];
-        
-        setReferrals(referralsWithUserInfo);
-        return;
+      if (referralsError) {
+        throw referralsError;
+      }
+      if (profilesError) {
+        console.error('Error fetching profiles for referrals:', profilesError);
       }
 
-      const referralsWithUserInfo = referralsData?.map(referral => ({
-        ...referral,
-        user: {
-          email: referral.user?.email || 'Unknown',
-          full_name: referral.user?.full_name || 'Unknown'
-        }
-      })) || [];
+      const profileMap = new Map(
+        (profilesData || []).map((profile: any) => [
+          profile.user_id,
+          {
+            full_name: profile.full_name || 'Unknown',
+            // Use email column if present, otherwise fall back to user_id
+            email: profile.email || profile.user_id,
+          },
+        ])
+      );
+
+      const referralsWithUserInfo: Referral[] =
+        (referralsData || []).map((referral: any) => {
+          const userInfo = profileMap.get(referral.user_id);
+          return {
+            ...referral,
+            user: userInfo || {
+              email: referral.user_id,
+              full_name: 'Unknown',
+            },
+          } as Referral;
+        });
 
       setReferrals(referralsWithUserInfo);
     } catch (error) {
@@ -283,43 +287,46 @@ export default function AdminReferrals() {
 
   const fetchSignups = async () => {
     try {
-      const { data: signupsData, error } = await supabase
-        .from('referral_signups')
-        .select(`
-          *,
-          referred_user:profiles!referral_signups_referred_user_id_fkey(user_id, full_name)
-        `)
-        .order('signup_date', { ascending: false });
+      // Fetch signups and profiles separately and join on referred_user_id in the client
+      const [{ data: signupsData, error: signupsError }, { data: profilesData, error: profilesError }] =
+        await Promise.all([
+          supabase
+            .from('referral_signups')
+            .select('*')
+            .order('signup_date', { ascending: false }),
+          supabase
+            .from('profiles')
+            .select('*')
+        ]);
 
-      if (error) {
-        console.error('Error fetching signups:', error);
-        // Fallback to simple select
-        const { data: simpleData, error: simpleError } = await supabase
-          .from('referral_signups')
-          .select('*')
-          .order('signup_date', { ascending: false });
-
-        if (simpleError) throw simpleError;
-        
-        const signupsWithUserInfo = simpleData?.map(signup => ({
-          ...signup,
-          referred_user: {
-            email: 'Unknown',
-            full_name: 'Unknown'
-          }
-        })) || [];
-        
-        setSignups(signupsWithUserInfo);
-        return;
+      if (signupsError) {
+        throw signupsError;
+      }
+      if (profilesError) {
+        console.error('Error fetching profiles for signups:', profilesError);
       }
 
-      const signupsWithUserInfo = signupsData?.map(signup => ({
-        ...signup,
-        referred_user: {
-          email: signup.referred_user?.email || 'Unknown',
-          full_name: signup.referred_user?.full_name || 'Unknown'
-        }
-      })) || [];
+      const profileMap = new Map(
+        (profilesData || []).map((profile: any) => [
+          profile.user_id,
+          {
+            full_name: profile.full_name || 'Unknown',
+            email: profile.email || profile.user_id,
+          },
+        ])
+      );
+
+      const signupsWithUserInfo: ReferralSignup[] =
+        (signupsData || []).map((signup: any) => {
+          const userInfo = profileMap.get(signup.referred_user_id);
+          return {
+            ...signup,
+            referred_user: userInfo || {
+              email: signup.referred_user_id,
+              full_name: 'Unknown',
+            },
+          } as ReferralSignup;
+        });
 
       setSignups(signupsWithUserInfo);
     } catch (error) {
@@ -634,7 +641,7 @@ export default function AdminReferrals() {
           <CardContent>
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium">{stats.topEarner.full_name}</p>
+                <p className="font-medium text-white">{stats.topEarner.full_name}</p>
                 <p className="text-sm text-muted-foreground">{stats.topEarner.email}</p>
               </div>
               <div className="text-right">
@@ -730,7 +737,7 @@ export default function AdminReferrals() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex flex-wrap items-center gap-2 mb-1">
-                            <p className="font-medium truncate">
+                            <p className="font-medium truncate text-white">
                               {referral.user?.full_name || 'Unknown User'}
                             </p>
                             {getStatusBadge(referral.status)}
