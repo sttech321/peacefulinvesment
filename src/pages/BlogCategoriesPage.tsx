@@ -235,31 +235,33 @@ export default function AdminBlogCategories() {
       rows.push(
         <div
           key={node.id}
-          className={`flex items-center justify-between gap-2 px-3 py-2 border rounded mb-1 ${isSelected ? "bg-slate-100 dark:bg-slate-800" : ""
-            }`}
+          onClick={() => !isDisabled && selectParent(node.id)}
+          className={`flex items-center justify-between gap-2 px-3 py-2 border rounded mb-1 transition-colors ${
+            isDisabled 
+              ? "opacity-50 cursor-not-allowed" 
+              : "cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700"
+          } ${isSelected ? "bg-slate-100 dark:bg-slate-800" : ""}`}
           style={{ marginLeft: depth * 14 }}
+          title={isDisabled ? "Cannot select this item" : `Select "${node.name}" as parent`}
         >
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
             {hasChildren ? (
               <button
                 type="button"
-                onClick={() => toggleExpand(node.id)}
-                className="text-sm select-none"
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent row click when clicking expand button
+                  toggleExpand(node.id);
+                }}
+                className="text-sm select-none flex-shrink-0 hover:bg-slate-200 dark:hover:bg-slate-600 rounded px-1"
                 aria-label={isExpanded ? "collapse" : "expand"}
               >
                 {isExpanded ? "▾" : "▸"}
               </button>
             ) : (
-              <span style={{ width: 16, display: "inline-block" }} />
+              <span style={{ width: 16, display: "inline-block" }} className="flex-shrink-0" />
             )}
 
-            <button
-              type="button"
-              onClick={() => !isDisabled && selectParent(node.id)}
-              className={`text-left truncate ${isDisabled ? "text-muted-foreground cursor-not-allowed" : "cursor-pointer"
-                }`}
-              title={isDisabled ? "Cannot select this item" : node.name}
-            >
+            <div className="text-left truncate flex-1 min-w-0">
               <span className="mr-2">
                 {depth > 0 ? "—" : ""}
               </span>
@@ -267,12 +269,12 @@ export default function AdminBlogCategories() {
               {node.children.length > 0 && (
                 <small className="ml-2 text-xs text-muted-foreground">({node.children.length})</small>
               )}
-            </button>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
             <span className="text-xs text-muted-foreground">{node.slug}</span>
-            <div  >
+            <div>
               <Badge className="text-xs text-muted-foreground" style={{ backgroundColor: node.color, color: "white" }}>
                 {node.color}
               </Badge>
@@ -466,17 +468,14 @@ export default function AdminBlogCategories() {
               <div className="border border-muted-foreground/60 rounded p-2 max-h-64 overflow-auto bg-white">
                 {/* "No parent" row */}
                 <div
-                  className={`flex items-center justify-between px-3 py-2 mb-1 rounded ${form.parent_id === null ? "bg-slate-100" : ""
-                    }`}
+                  onClick={() => selectParent(null)}
+                  className={`flex items-center justify-between px-3 py-2 mb-1 rounded cursor-pointer transition-colors hover:bg-slate-50 dark:hover:bg-slate-700 ${
+                    form.parent_id === null ? "bg-slate-100 dark:bg-slate-800 font-semibold" : ""
+                  }`}
+                  title="Select no parent (top-level category)"
                 >
-                  <div>
-                    <button
-                      type="button"
-                      onClick={() => selectParent(null)}
-                      className={`text-left ${form.parent_id === null ? "font-semibold" : ""}`}
-                    >
-                      — No parent —
-                    </button>
+                  <div className="text-left">
+                    — No parent —
                   </div>
                 </div>
 
