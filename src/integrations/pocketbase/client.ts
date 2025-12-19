@@ -102,6 +102,7 @@ export interface PocketBaseAccount {
   margin: number;
   total_pnl: number;
   status: string;
+  is_active?: boolean;
   user: string;
   created: string;
   updated: string;

@@ -279,7 +279,7 @@ const Contact = () => {
                         id='fullName'
                         {...register('fullName')}
                         placeholder='Enter your full name'
-                        className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent capitalize'
+                        className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent'
                         onChange={(e) => {
                           let value = e.target.value;
                           // Remove special characters - only allow letters, spaces, hyphens, and apostrophes

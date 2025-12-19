@@ -70,26 +70,71 @@ export default function AdminDashboard() {
       try {
         setLoading(true);
 
-        // Authenticate as admin
-        await authenticateAsAdmin();
-
         // Fetch Supabase data
-        const usersResponse = await supabase.from('profiles').select('*');
+        const [usersResponse, contactRequestsResponse] = await Promise.all([
+          supabase.from('profiles').select('*'),
+          supabase
+            .from('contact_requests')
+            .select('*')
+            .eq('status', 'pending')
+            .order('created_at', { ascending: false })
+        ]);
 
-        // Fetch PocketBase data
-        const accountsResponse = await pocketbase.collection('accounts').getList(1, 1000);
-        const allAccounts = accountsResponse.items;
+        // Try to fetch PocketBase data (optional - handle CORS gracefully)
+        let allAccounts: any[] = [];
+        let activeAccounts = 0;
+        let totalPortfolioValue = 0;
+        
+        try {
+          await authenticateAsAdmin();
+          const accountsResponse = await pocketbase.collection('accounts').getList(1, 1000);
+          allAccounts = accountsResponse.items || [];
+          // Count active accounts: status is not 'blocked' AND is_active = true
+          activeAccounts = allAccounts.filter(acc => {
+            const status = (acc.status || '').toLowerCase();
+            const isBlocked = status === 'blocked';
+            const isActive = acc.is_active === true || acc.is_active === undefined; // Default to true if field doesn't exist
+            return !isBlocked && isActive;
+          }).length;
+          // Calculate total portfolio value for active accounts only
+          const activeAccountsList = allAccounts.filter(acc => {
+            const status = (acc.status || '').toLowerCase();
+            const isBlocked = status === 'blocked';
+            const isActive = acc.is_active === true || acc.is_active === undefined;
+            return !isBlocked && isActive;
+          });
+          totalPortfolioValue = activeAccountsList.reduce((sum, acc) => sum + (acc.balance || 0), 0);
+        } catch (pocketbaseError) {
+          // PocketBase unavailable (CORS or other issues) - continue with Supabase data only
+          console.warn('PocketBase unavailable, using Supabase data only:', pocketbaseError);
+          // Set defaults for PocketBase-dependent stats
+          activeAccounts = 0;
+          totalPortfolioValue = 0;
+        }
 
-        // Calculate stats
-        const totalUsers = usersResponse.data?.length || 0;
-        const activeAccounts = allAccounts.filter(acc => acc.status === 'ACTIVE').length || 0;
-        const totalPortfolioValue = allAccounts.reduce((sum, acc) => sum + (acc.balance || 0), 0) || 0;
-        const recentRegistrations = usersResponse.data?.filter(u => {
+        // Calculate stats from Supabase
+        // Filter out inactive and blocked users (same logic as AdminUsers)
+        const activeUsers = (usersResponse.data || []).filter((profile) => {
+          const isActive = (profile as { is_active?: boolean | null }).is_active;
+          const status = (profile.status || '').toLowerCase();
+          const isBlocked = status === 'blocked';
+          // Include user if: is_active is not false AND status is not 'blocked'
+          return isActive !== false && !isBlocked;
+        });
+        
+        const totalUsers = activeUsers.length;
+        const recentRegistrations = activeUsers.filter(u => {
           const createdDate = new Date(u.created_at);
           const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
           return createdDate > weekAgo;
         }).length || 0;
-        const pendingContactRequests = 0; // TODO: Implement contact requests from PocketBase
+        const pendingContactRequests = contactRequestsResponse.data?.length || 0;
+
+        // Determine system health
+        let systemHealth: 'healthy' | 'warning' | 'error' = 'healthy';
+        if (pendingContactRequests > 10) {
+          systemHealth = 'warning';
+        }
 
         setStats({
           totalUsers,
@@ -97,34 +142,48 @@ export default function AdminDashboard() {
           totalPortfolioValue,
           recentRegistrations,
           pendingContactRequests,
-          systemHealth: 'healthy'
+          systemHealth
         });
 
         // Generate recent activity
         const activity: RecentActivity[] = [];
         
-        // Add recent user registrations
-        const recentUsers = usersResponse.data?.slice(0, 3) || [];
-        recentUsers.forEach(user => {
+        // Add recent user registrations (from active users only)
+        const recentUsers = activeUsers
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+          .slice(0, 3);
+        recentUsers.forEach(profile => {
           activity.push({
-            id: user.id,
+            id: profile.id,
             type: 'user_registration',
             title: 'New User Registration',
-            description: `${user.full_name || 'New user'} joined the platform`,
-            timestamp: user.created_at,
+            description: `${profile.full_name || 'New user'} joined the platform`,
+            timestamp: profile.created_at,
             status: 'completed'
           });
         });
 
-        // Add recent contact requests (placeholder for now)
-        // TODO: Implement contact requests from PocketBase
+        // Add recent contact requests
+        const recentContactRequests = contactRequestsResponse.data?.slice(0, 3) || [];
+        recentContactRequests.forEach(request => {
+          activity.push({
+            id: request.id,
+            type: 'contact_request',
+            title: 'New Contact Request',
+            description: `${request.full_name} - ${request.subject}`,
+            timestamp: request.created_at || request.updated_at || new Date().toISOString(),
+            status: request.status || 'pending'
+          });
+        });
 
         setRecentActivity(activity.sort((a, b) => 
           new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-        ));
+        ).slice(0, 10)); // Limit to 10 most recent
 
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
+        // Set error state but don't crash the dashboard
+        setStats(prev => ({ ...prev, systemHealth: 'error' }));
       } finally {
         setLoading(false);
       }
