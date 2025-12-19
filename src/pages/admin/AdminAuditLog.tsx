@@ -39,22 +39,26 @@ import {
 } from "lucide-react";
 import { exportToExcel, exportToPDF, formatDataForExport } from "@/utils/exportUtils";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface AuditLogEntry {
   id: string;
+  admin_id: string;
   user_id: string;
-  user_email: string;
+  verification_request_id: string | null;
   action: string;
-  resource: string;
-  resource_id: string;
-  details: string;
-  ip_address: string;
-  user_agent: string;
-  severity: 'low' | 'medium' | 'high' | 'critical';
+  note: string | null;
   created_at: string;
+  // Joined data
+  user_email?: string;
+  user_name?: string;
+  admin_email?: string;
+  admin_name?: string;
 }
 
 export default function AdminAuditLog() {
+  const { user } = useAuth();
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -66,88 +70,129 @@ export default function AdminAuditLog() {
 
   useEffect(() => {
     fetchAuditLogs();
+
+    // Set up real-time subscription for admin_actions table
+    const channel = supabase
+      .channel('admin-actions-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen to INSERT, UPDATE, DELETE
+          schema: 'public',
+          table: 'admin_actions',
+        },
+        (payload) => {
+          console.log('Admin action change received:', payload);
+          // Refresh the list when any change occurs
+          fetchAuditLogs();
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscription on unmount
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchAuditLogs = async () => {
     setLoading(true);
     try {
-      // Generate mock audit log data for demonstration
-      const mockAuditLogs: AuditLogEntry[] = [
-        {
-          id: "1",
-          user_id: "ce8d28ea-22a3-4299-9aab-a7e6920cbcef",
-          user_email: "dr.yousuf.mesalm@gmail.com",
-          action: "LOGIN",
-          resource: "auth",
-          resource_id: "auth",
-          details: "User logged in successfully",
-          ip_address: "192.168.1.100",
-          user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-          severity: "low",
-          created_at: new Date().toISOString(),
-        },
-        {
-          id: "2",
-          user_id: "ce8d28ea-22a3-4299-9aab-a7e6920cbcef",
-          user_email: "dr.yousuf.mesalm@gmail.com",
-          action: "CREATE",
-          resource: "user_role",
-          resource_id: "admin_role",
-          details: "Admin role assigned to user",
-          ip_address: "192.168.1.100",
-          user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-          severity: "high",
-          created_at: new Date(Date.now() - 3600000).toISOString(),
-        },
-        {
-          id: "3",
-          user_id: "4b468628-ce7a-45f4-b9c7-315bedf7911c",
-          user_email: "dev@autoticks.com",
-          action: "UPDATE",
-          resource: "profile",
-          resource_id: "profile_123",
-          details: "User profile updated",
-          ip_address: "192.168.1.101",
-          user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
-          severity: "medium",
-          created_at: new Date(Date.now() - 7200000).toISOString(),
-        },
-        {
-          id: "4",
-          user_id: "ce8d28ea-22a3-4299-9aab-a7e6920cbcef",
-          user_email: "dr.yousuf.mesalm@gmail.com",
-          action: "DELETE",
-          resource: "contact_request",
-          resource_id: "request_456",
-          details: "Contact request deleted",
-          ip_address: "192.168.1.100",
-          user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-          severity: "medium",
-          created_at: new Date(Date.now() - 10800000).toISOString(),
-        },
-        {
-          id: "5",
-          user_id: "unknown",
-          user_email: "unknown@example.com",
-          action: "FAILED_LOGIN",
-          resource: "auth",
-          resource_id: "auth",
-          details: "Failed login attempt with invalid credentials",
-          ip_address: "192.168.1.102",
-          user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-          severity: "critical",
-          created_at: new Date(Date.now() - 14400000).toISOString(),
-        },
-      ];
+      console.log('[AdminAuditLog] Fetching admin actions...');
+      
+      // Fetch admin_actions with user profile information (only user_id has foreign key)
+      const { data: adminActions, error } = await supabase
+        .from('admin_actions')
+        .select(`
+          *,
+          user_profile:profiles!admin_actions_user_id_fkey(user_id, full_name)
+        `)
+        .order('created_at', { ascending: false });
 
-      setAuditLogs(mockAuditLogs);
-    } catch (error) {
-      console.error('Error fetching audit logs:', error);
+      if (error) {
+        console.error('[AdminAuditLog] Supabase error:', error);
+        // If join fails, try simple select
+        const { data: simpleData, error: simpleError } = await supabase
+          .from('admin_actions')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (simpleError) throw simpleError;
+
+        // Fetch profiles separately
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, full_name');
+
+        const profilesMap = new Map(
+          (profiles || []).map(p => [p.user_id, p])
+        );
+
+        // Map simple data
+        const mappedLogs: AuditLogEntry[] = (simpleData || []).map((action: any) => {
+          const userProfile = profilesMap.get(action.user_id);
+          const adminProfile = profilesMap.get(action.admin_id);
+
+          return {
+            id: action.id,
+            admin_id: action.admin_id,
+            user_id: action.user_id,
+            verification_request_id: action.verification_request_id,
+            action: action.action,
+            note: action.note,
+            created_at: action.created_at,
+            user_email: action.user_id || 'Unknown',
+            user_name: userProfile?.full_name || 'Unknown',
+            admin_email: action.admin_id || 'Unknown',
+            admin_name: adminProfile?.full_name || 'Unknown',
+          };
+        });
+
+        setAuditLogs(mappedLogs);
+        return;
+      }
+
+      console.log('[AdminAuditLog] Raw data received:', adminActions?.length || 0, 'records');
+
+      // Fetch all profiles to get admin names (admin_id doesn't have foreign key, so fetch separately)
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, full_name');
+
+      const profilesMap = new Map(
+        (profiles || []).map(p => [p.user_id, p])
+      );
+
+      // Map admin actions to audit log entries
+      const mappedLogs: AuditLogEntry[] = (adminActions || []).map((action: any) => {
+        const userProfile = profilesMap.get(action.user_id);
+        const adminProfile = profilesMap.get(action.admin_id);
+
+        return {
+          id: action.id,
+          admin_id: action.admin_id,
+          user_id: action.user_id,
+          verification_request_id: action.verification_request_id,
+          action: action.action,
+          note: action.note,
+          created_at: action.created_at,
+          user_email: action.user_id || 'Unknown',
+          user_name: action.user_profile?.full_name || userProfile?.full_name || 'Unknown',
+          admin_email: action.admin_id || 'Unknown',
+          admin_name: adminProfile?.full_name || 'Unknown',
+        };
+      });
+
+      console.log('[AdminAuditLog] Mapped data:', mappedLogs.length, 'records');
+      setAuditLogs(mappedLogs);
+    } catch (error: any) {
+      console.error('[AdminAuditLog] Error fetching audit logs:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch audit logs",
+        description: error?.message || "Failed to fetch audit logs",
         variant: "destructive",
       });
+      setAuditLogs([]);
     } finally {
       setLoading(false);
     }
@@ -155,18 +200,33 @@ export default function AdminAuditLog() {
 
   const filteredLogs = auditLogs.filter(log => {
     const matchesSearch = 
-      log.user_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.resource.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.details.toLowerCase().includes(searchTerm.toLowerCase());
+      (log.user_email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (log.user_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (log.admin_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (log.action || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (log.note || '').toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesSeverity = severityFilter === "all" || log.severity === severityFilter;
+    // Map action to severity for filtering
+    const getSeverity = (action: string): string => {
+      if (['approved', 'rejected'].includes(action)) return 'high';
+      if (['requested_more_info'].includes(action)) return 'medium';
+      return 'low';
+    };
+    
+    const matchesSeverity = severityFilter === "all" || getSeverity(log.action) === severityFilter;
     const matchesAction = actionFilter === "all" || log.action === actionFilter;
     
     return matchesSearch && matchesSeverity && matchesAction;
   });
 
-  const getSeverityColor = (severity: string) => {
+  const getSeverity = (action: string): string => {
+    if (['approved', 'rejected'].includes(action)) return 'high';
+    if (['requested_more_info'].includes(action)) return 'medium';
+    return 'low';
+  };
+
+  const getSeverityColor = (action: string) => {
+    const severity = getSeverity(action);
     switch (severity) {
       case 'low':
         return 'bg-green-100 text-green-800';
@@ -183,31 +243,48 @@ export default function AdminAuditLog() {
 
   const getActionIcon = (action: string) => {
     switch (action) {
-      case 'LOGIN':
+      case 'approved':
         return <CheckCircle className="h-4 w-4 text-green-600" />;
-      case 'CREATE':
-        return <Activity className="h-4 w-4 text-blue-600" />;
-      case 'UPDATE':
+      case 'rejected':
+        return <AlertTriangle className="h-4 w-4 text-red-600" />;
+      case 'requested_more_info':
         return <Clock className="h-4 w-4 text-yellow-600" />;
-      case 'DELETE':
-        return <AlertTriangle className="h-4 w-4 text-red-600" />;
-      case 'FAILED_LOGIN':
-        return <AlertTriangle className="h-4 w-4 text-red-600" />;
       default:
         return <Activity className="h-4 w-4 text-gray-600" />;
     }
+  };
+
+  const getActionDisplayName = (action: string): string => {
+    switch (action) {
+      case 'approved':
+        return 'Approved';
+      case 'rejected':
+        return 'Rejected';
+      case 'requested_more_info':
+        return 'Requested More Info';
+      default:
+        return action.charAt(0).toUpperCase() + action.slice(1);
+    }
+  };
+
+  const getResourceType = (action: AuditLogEntry): string => {
+    if (action.verification_request_id) {
+      return 'Verification Request';
+    }
+    return 'User Action';
   };
 
   const handleExport = async (type: 'excel' | 'pdf') => {
     try {
       const formattedData = filteredLogs.map(log => ({
         'ID': log.id,
-        'User Email': log.user_email,
-        'Action': log.action,
-        'Resource': log.resource,
-        'Details': log.details,
-        'IP Address': log.ip_address,
-        'Severity': log.severity,
+        'Admin': log.admin_name || log.admin_email || 'Unknown',
+        'User': log.user_name || log.user_email || 'Unknown',
+        'Action': getActionDisplayName(log.action),
+        'Resource': getResourceType(log),
+        'Note': log.note || 'N/A',
+        'Verification Request ID': log.verification_request_id || 'N/A',
+        'Severity': getSeverity(log.action),
         'Created At': new Date(log.created_at).toLocaleString(),
       }));
 
@@ -323,11 +400,9 @@ export default function AdminAuditLog() {
               </SelectTrigger>
               <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
                 <SelectItem value="all">All Actions</SelectItem>
-                <SelectItem value="LOGIN">Login</SelectItem>
-                <SelectItem value="CREATE">Create</SelectItem>
-                <SelectItem value="UPDATE">Update</SelectItem>
-                <SelectItem value="DELETE">Delete</SelectItem>
-                <SelectItem value="FAILED_LOGIN">Failed Login</SelectItem>
+                <SelectItem value="approved">Approved</SelectItem>
+                <SelectItem value="rejected">Rejected</SelectItem>
+                <SelectItem value="requested_more_info">Requested More Info</SelectItem>
               </SelectContent>
             </Select>
             <div className="text-sm text-muted-foreground flex items-center">             
@@ -354,68 +429,81 @@ export default function AdminAuditLog() {
               <TableHeader>
                 <TableRow className="border-b border-muted/20 hover:bg-white/15 bg-white/15 text-white">
                   <TableHead className="text-white">Action</TableHead>
+                  <TableHead className="text-white">Admin</TableHead>
                   <TableHead className="text-white">User</TableHead>
                   <TableHead className="text-white">Resource</TableHead>
-                  <TableHead className="text-white">Details</TableHead>
+                  <TableHead className="text-white">Note</TableHead>
                   <TableHead className="text-white">Severity</TableHead>
-                  <TableHead className="text-white">IP Address</TableHead>
                   <TableHead className="text-white">Timestamp</TableHead>
                   <TableHead className="text-white">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredLogs.map((log) => (
-                  <TableRow className="border-b border-muted/20 hover:bg-white/10" key={log.id}>
-                    <TableCell>
-                      <div className="flex items-center space-x-2">
-                        {getActionIcon(log.action)}
-                        <span className="font-medium text-white">{log.action}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <User className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-white">{log.user_email}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{log.resource}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="max-w-xs truncate text-white" title={log.details}>
-                        {log.details}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getSeverityColor(log.severity)}>
-                        {log.severity}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <code className="text-xs bg-muted px-2 py-1 rounded">
-                        {log.ip_address}
-                      </code>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <Calendar className="h-4 w-4 text-primary" />
-                        <span className="text-sm text-white">
-                          {new Date(log.created_at).toLocaleString()}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleViewDetails(log)}
-                        className="bg-muted/20 hover:bg-muted/40 rounded-[8px] border-0"
-                      >
-                        <Eye className="h-4 w-4 text-white " />
-                      </Button>
+                {filteredLogs.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      {loading ? 'Loading...' : 'No audit logs found'}
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  filteredLogs.map((log) => (
+                    <TableRow className="border-b border-muted/20 hover:bg-white/10" key={log.id}>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          {getActionIcon(log.action)}
+                          <span className="font-medium text-white">{getActionDisplayName(log.action)}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <User className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-white" title={log.admin_email}>
+                            {log.admin_name || log.admin_email || 'Unknown'}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <User className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-white" title={log.user_email}>
+                            {log.user_name || log.user_email || 'Unknown'}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{getResourceType(log)}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="max-w-xs truncate text-white" title={log.note || 'No note'}>
+                          {log.note || 'N/A'}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={getSeverityColor(log.action)}>
+                          {getSeverity(log.action)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <Calendar className="h-4 w-4 text-primary" />
+                          <span className="text-sm text-white">
+                            {new Date(log.created_at).toLocaleString()}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleViewDetails(log)}
+                          className="bg-muted/20 hover:bg-muted/40 rounded-[8px] border-0"
+                        >
+                          <Eye className="h-4 w-4 text-white " />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </div>
@@ -436,33 +524,35 @@ export default function AdminAuditLog() {
                   <p className="text-sm">{selectedLog.id}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-black">User Email</label>
-                  <p className="text-sm">{selectedLog.user_email}</p>
-                </div>
-                <div>
                   <label className="text-sm font-medium text-black">Action</label>
                   <div className="flex items-center space-x-2">
                     {getActionIcon(selectedLog.action)}
-                    <span className="text-sm font-medium">{selectedLog.action}</span>
+                    <span className="text-sm font-medium">{getActionDisplayName(selectedLog.action)}</span>
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-white">Resource</label>
-                  <p className="text-sm">{selectedLog.resource}</p>
+                  <label className="text-sm font-medium text-black">Admin</label>
+                  <p className="text-sm">{selectedLog.admin_name || selectedLog.admin_email || 'Unknown'}</p>
+                  <p className="text-xs text-muted-foreground font-mono">{selectedLog.admin_id}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-black">Resource ID</label>
-                  <p className="text-sm">{selectedLog.resource_id}</p>
+                  <label className="text-sm font-medium text-black">User</label>
+                  <p className="text-sm">{selectedLog.user_name || selectedLog.user_email || 'Unknown'}</p>
+                  <p className="text-xs text-muted-foreground font-mono">{selectedLog.user_id}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-black">Resource</label>
+                  <p className="text-sm">{getResourceType(selectedLog)}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-black">Verification Request ID</label>
+                  <p className="text-sm font-mono">{selectedLog.verification_request_id || 'N/A'}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-black">Severity</label>
-                  <Badge className={getSeverityColor(selectedLog.severity)}>
-                    {selectedLog.severity}
+                  <Badge className={getSeverityColor(selectedLog.action)}>
+                    {getSeverity(selectedLog.action)}
                   </Badge>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-black">IP Address</label>
-                  <p className="text-sm font-mono">{selectedLog.ip_address}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-black">Timestamp</label>
@@ -470,14 +560,8 @@ export default function AdminAuditLog() {
                 </div>
               </div>
               <div>
-                <label className="text-sm font-medium text-black">Details</label>
-                <p className="text-sm bg-muted p-3 rounded-md">{selectedLog.details}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-black">User Agent</label>
-                <p className="text-sm bg-muted p-3 rounded-md font-mono">
-                  {selectedLog.user_agent}
-                </p>
+                <label className="text-sm font-medium text-black">Note</label>
+                <p className="text-sm bg-muted p-3 rounded-md">{selectedLog.note || 'No note provided'}</p>
               </div>
             </div>
           )}
@@ -486,3 +570,4 @@ export default function AdminAuditLog() {
     </div>
   );
 }
+

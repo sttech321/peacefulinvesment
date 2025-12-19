@@ -11,7 +11,9 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Plus, Edit2, Trash2 } from "lucide-react";
+import { Loader2, Plus, Edit2, Trash2, AlertCircle } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const emptyForm = {
   name: "",
@@ -29,11 +31,13 @@ type TreeNode = BlogCategory & {
 export default function AdminBlogCategories() {
   const { categories, loading, createCategory, updateCategory, deleteCategory } =
     useCategories();
+  const { toast } = useToast();
 
   const [form, setForm] = useState({ ...emptyForm });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [open, setOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // state for tree UI: which nodes are expanded
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -54,6 +58,7 @@ export default function AdminBlogCategories() {
     setEditingId(null);
     setForm({ ...emptyForm });
     setExpanded({}); // reset expansion
+    setError(null); // clear any previous errors
     setOpen(true);
   };
 
@@ -68,27 +73,84 @@ export default function AdminBlogCategories() {
     });
     // optionally expand the parent chain so the current parent is visible
     setExpanded({});
+    setError(null); // clear any previous errors
     setOpen(true);
   };
 
   const resetForm = () => {
     setEditingId(null);
     setForm({ ...emptyForm });
+    setError(null);
+  };
+
+  const getErrorMessage = (error: any): string => {
+    if (!error) return "An unknown error occurred";
+    
+    // Handle Supabase error codes
+    if (error.code === "23505") {
+      // Unique constraint violation
+      if (error.message?.includes("blog_categories_name_key")) {
+        return "A category with this name already exists. Please choose a different name.";
+      }
+      if (error.message?.includes("blog_categories_slug_key")) {
+        return "A category with this slug already exists. Please choose a different slug.";
+      }
+      return "This category name or slug already exists. Please choose a different one.";
+    }
+    
+    // Return the error message if available
+    return error.message || "Failed to save category. Please try again.";
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name.trim()) return;
+    if (!form.name.trim()) {
+      setError("Category name is required.");
+      return;
+    }
 
     setSaving(true);
+    setError(null); // Clear previous errors
+    
     try {
+      let result;
       if (editingId) {
-        await updateCategory(editingId, form);
+        result = await updateCategory(editingId, form);
       } else {
-        await createCategory(form);
+        result = await createCategory(form);
       }
+
+      // Check for errors in the result
+      if (result.error) {
+        const errorMessage = getErrorMessage(result.error);
+        setError(errorMessage);
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+        // Don't close the modal - keep it open so user can fix the error
+        return;
+      }
+
+      // Success - close modal and show success message
       resetForm();
       setOpen(false);
+      toast({
+        title: "Success",
+        description: editingId 
+          ? "Category updated successfully" 
+          : "Category created successfully",
+      });
+    } catch (err: any) {
+      // Handle unexpected errors
+      const errorMessage = getErrorMessage(err);
+      setError(errorMessage);
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
     } finally {
       setSaving(false);
     }
@@ -341,6 +403,12 @@ export default function AdminBlogCategories() {
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-3 mt-2">
+            {error && (
+              <Alert variant="destructive" className="rounded-[8px]">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
             <div className="flex gap-3">
               <div className="flex-1">
                 <label className="block text-sm font-medium mb-1">Name</label>
