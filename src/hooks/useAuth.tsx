@@ -56,6 +56,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
+    // 1) Pre-check in profiles table by email BEFORE attempting sign-in
+    try {
+      const preCheckResult = await (supabase as any)
+        .from('profiles')
+        .select('status, is_active')
+        .eq('email', email.toLowerCase())
+        .maybeSingle();
+
+      const preProfile = preCheckResult.data as any;
+      const preProfileError = preCheckResult.error;
+
+      if (!preProfileError && preProfile) {
+        const status = (preProfile as any).status as string | null;
+        const isActive = (preProfile as any).is_active as boolean | null | undefined;
+
+        if (status === 'blocked' || isActive === false) {
+          toast({
+            title: 'Account Disabled',
+            description:
+              'Your account is currently blocked or inactive. Please contact support for assistance.',
+            variant: 'destructive',
+          });
+
+          return { error: new Error('ACCOUNT_BLOCKED'), data: null };
+        }
+      }
+    } catch (preCheckError) {
+      console.warn('[Auth] Pre-check for blocked/inactive account failed, proceeding to sign-in:', preCheckError);
+      // We deliberately fall through to sign-in if the pre-check fails (e.g. RLS)
+    }
+
+    // 2) Perform actual sign-in
     const { error, data } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -67,14 +99,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         description: error.message,
         variant: 'destructive',
       });
-    } else {
+      return { error, data };
+    }
+
+    // 3) Post-check by user_id as a safety net (in case email->profile mapping changes)
+    try {
+      const userId = data.user?.id;
+
+      if (userId) {
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('status, is_active')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        if (!profileError && profile) {
+          const status = (profile as any).status as string | null;
+          const isActive = (profile as any).is_active as boolean | null | undefined;
+
+          if (status === 'blocked' || isActive === false) {
+            await supabase.auth.signOut();
+
+            toast({
+              title: 'Account Disabled',
+              description:
+                'Your account is currently blocked or inactive. Please contact support for assistance.',
+              variant: 'destructive',
+            });
+
+            return { error: new Error('ACCOUNT_BLOCKED'), data: null };
+          }
+        }
+      }
+
       toast({
         title: 'Welcome back!',
         description: 'You have successfully signed in.',
       });
-    }
 
-    return { error, data };
+      return { error: null, data };
+    } catch (checkError: any) {
+      console.error('[Auth] Error checking profile status during sign-in:', checkError);
+
+      toast({
+        title: 'Signed in',
+        description: 'You have successfully signed in.',
+      });
+
+      return { error: null, data };
+    }
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {

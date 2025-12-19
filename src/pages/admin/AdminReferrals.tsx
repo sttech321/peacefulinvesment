@@ -185,8 +185,7 @@ export default function AdminReferrals() {
       await Promise.all([
         fetchReferrals(),
         fetchPayments(),
-        fetchSignups(),
-        calculateStats()
+        fetchSignups()
       ]);
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -202,48 +201,54 @@ export default function AdminReferrals() {
 
   const fetchReferrals = async () => {
     try {
-      const { data: referralsData, error } = await supabase
-        .from('referrals')
-        .select(`
-          *,
-          user:profiles!referrals_user_id_fkey(user_id, full_name)
-        `)
-        .order('created_at', { ascending: false });
+      // Fetch referrals and profiles separately and join on user_id in the client
+      const [{ data: referralsData, error: referralsError }, { data: profilesData, error: profilesError }] =
+        await Promise.all([
+          supabase
+            .from('referrals')
+            .select('*')
+            .order('created_at', { ascending: false }),
+          supabase
+            .from('profiles')
+            .select('*')
+        ]);
 
-      if (error) {
-        console.error('Error fetching referrals:', error);
-        // Fallback to simple select if join fails
-        const { data: simpleData, error: simpleError } = await supabase
-          .from('referrals')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (simpleError) throw simpleError;
-        
-        const referralsWithUserInfo = simpleData?.map(referral => ({
-          ...referral,
-          user: {
-            email: 'Unknown',
-            full_name: 'Unknown'
-          }
-        })) || [];
-        
-        setReferrals(referralsWithUserInfo);
-        return;
+      if (referralsError) {
+        throw referralsError;
+      }
+      if (profilesError) {
+        console.error('Error fetching profiles for referrals:', profilesError);
       }
 
-      const referralsWithUserInfo = referralsData?.map(referral => ({
-        ...referral,
-        user: {
-          email: referral.user?.email || 'Unknown',
-          full_name: referral.user?.full_name || 'Unknown'
-        }
-      })) || [];
+      const profileMap = new Map(
+        (profilesData || []).map((profile: any) => [
+          profile.user_id,
+          {
+            full_name: profile.full_name || 'Unknown',
+            // Use email column if present, otherwise fall back to user_id
+            email: profile.email || profile.user_id,
+          },
+        ])
+      );
+
+      const referralsWithUserInfo: Referral[] =
+        (referralsData || []).map((referral: any) => {
+          const userInfo = profileMap.get(referral.user_id);
+          return {
+            ...referral,
+            user: userInfo || {
+              email: referral.user_id,
+              full_name: 'Unknown',
+            },
+          } as Referral;
+        });
 
       setReferrals(referralsWithUserInfo);
+      calculateStats(referralsWithUserInfo);
     } catch (error) {
       console.error('Error fetching referrals:', error);
       setReferrals([]);
+      calculateStats([]);
     }
   };
 
@@ -283,43 +288,46 @@ export default function AdminReferrals() {
 
   const fetchSignups = async () => {
     try {
-      const { data: signupsData, error } = await supabase
-        .from('referral_signups')
-        .select(`
-          *,
-          referred_user:profiles!referral_signups_referred_user_id_fkey(user_id, full_name)
-        `)
-        .order('signup_date', { ascending: false });
+      // Fetch signups and profiles separately and join on referred_user_id in the client
+      const [{ data: signupsData, error: signupsError }, { data: profilesData, error: profilesError }] =
+        await Promise.all([
+          supabase
+            .from('referral_signups')
+            .select('*')
+            .order('signup_date', { ascending: false }),
+          supabase
+            .from('profiles')
+            .select('*')
+        ]);
 
-      if (error) {
-        console.error('Error fetching signups:', error);
-        // Fallback to simple select
-        const { data: simpleData, error: simpleError } = await supabase
-          .from('referral_signups')
-          .select('*')
-          .order('signup_date', { ascending: false });
-
-        if (simpleError) throw simpleError;
-        
-        const signupsWithUserInfo = simpleData?.map(signup => ({
-          ...signup,
-          referred_user: {
-            email: 'Unknown',
-            full_name: 'Unknown'
-          }
-        })) || [];
-        
-        setSignups(signupsWithUserInfo);
-        return;
+      if (signupsError) {
+        throw signupsError;
+      }
+      if (profilesError) {
+        console.error('Error fetching profiles for signups:', profilesError);
       }
 
-      const signupsWithUserInfo = signupsData?.map(signup => ({
-        ...signup,
-        referred_user: {
-          email: signup.referred_user?.email || 'Unknown',
-          full_name: signup.referred_user?.full_name || 'Unknown'
-        }
-      })) || [];
+      const profileMap = new Map(
+        (profilesData || []).map((profile: any) => [
+          profile.user_id,
+          {
+            full_name: profile.full_name || 'Unknown',
+            email: profile.email || profile.user_id,
+          },
+        ])
+      );
+
+      const signupsWithUserInfo: ReferralSignup[] =
+        (signupsData || []).map((signup: any) => {
+          const userInfo = profileMap.get(signup.referred_user_id);
+          return {
+            ...signup,
+            referred_user: userInfo || {
+              email: signup.referred_user_id,
+              full_name: 'Unknown',
+            },
+          } as ReferralSignup;
+        });
 
       setSignups(signupsWithUserInfo);
     } catch (error) {
@@ -328,30 +336,34 @@ export default function AdminReferrals() {
     }
   };
 
-  const calculateStats = async () => {
+  const calculateStats = (sourceReferrals: Referral[]) => {
     try {
       // Calculate basic stats from referrals data
-      const totalReferrals = referrals.length;
-      const totalEarnings = referrals.reduce((sum, r) => sum + r.total_earnings, 0);
-      const activeReferrals = referrals.filter(r => r.is_active).length;
-      const pendingReferrals = referrals.filter(r => r.status === 'pending').length;
+      const totalReferrals = sourceReferrals.length;
+      const totalEarnings = sourceReferrals.reduce((sum, r) => sum + r.total_earnings, 0);
+      const activeReferrals = sourceReferrals.filter(r => r.is_active).length;
+      const pendingReferrals = sourceReferrals.filter(r => r.status === 'pending').length;
       
-      // Find top earner
-      const topEarner = referrals.reduce((top, current) => 
-        current.total_earnings > (top?.total_earnings || 0) ? current : top, null as Referral | null
-      );
+      // Find top earner (always pick one if there is at least 1 referral)
+      const topEarner: Referral | null = sourceReferrals.length
+        ? sourceReferrals.reduce((top, current) =>
+            current.total_earnings > top.total_earnings ? current : top
+          )
+        : null;
 
       setStats({
         totalReferrals,
         totalEarnings,
         activeReferrals,
         pendingReferrals,
-        topEarner: topEarner ? {
-          user_id: topEarner.user_id,
-          email: topEarner.user?.email || 'Unknown',
-          full_name: topEarner.user?.full_name || 'Unknown',
-          total_earnings: topEarner.total_earnings
-        } : null
+        topEarner: topEarner
+          ? {
+              user_id: topEarner.user_id,
+              email: topEarner.user?.email || 'Unknown',
+              full_name: topEarner.user?.full_name || 'Unknown',
+              total_earnings: topEarner.total_earnings,
+            }
+          : null,
       });
     } catch (error) {
       console.error('Error calculating stats:', error);
@@ -446,7 +458,6 @@ export default function AdminReferrals() {
       // Refresh data
       await fetchPayments();
       await fetchReferrals();
-      await calculateStats();
 
     } catch (error) {
       console.error('Error creating payment:', error);
@@ -475,7 +486,6 @@ export default function AdminReferrals() {
       });
 
       await fetchReferrals();
-      await calculateStats();
 
     } catch (error) {
       console.error('Error updating referral status:', error);
@@ -572,7 +582,7 @@ export default function AdminReferrals() {
             <Users className="h-5 w-5 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">{stats.totalReferrals}</div>
+            <div className="text-2xl font-bold text-white">{filteredReferrals.length}</div>
             <p className="text-xs text-muted-foreground">
               All referral programs
             </p>
@@ -634,7 +644,7 @@ export default function AdminReferrals() {
           <CardContent>
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium">{stats.topEarner.full_name}</p>
+                <p className="font-medium text-white">{stats.topEarner.full_name}</p>
                 <p className="text-sm text-muted-foreground">{stats.topEarner.email}</p>
               </div>
               <div className="text-right">
@@ -933,7 +943,7 @@ export default function AdminReferrals() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex flex-wrap items-center gap-2 mb-1">
-                            <p className="font-medium truncate">
+                            <p className="font-medium truncate text-white">
                               {signup.referred_user?.full_name || 'Unknown User'}
                             </p>
                             <Badge variant="outline" className="bg-blue-100 text-blue-800">
