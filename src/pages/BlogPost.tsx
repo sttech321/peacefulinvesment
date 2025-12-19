@@ -11,6 +11,7 @@ import {
 } from "@/hooks/useBlog";
 import ReactMarkdown from "react-markdown";
 import Footer from "@/components/Footer";
+import { boxShadow } from "html2canvas/dist/types/css/property-descriptors/box-shadow";
 
 const BlogPost = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -122,7 +123,7 @@ const BlogPost = () => {
           <div className="grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8 flex-wrap lg:flex-nowrap flex items-center">
           <div className="flex flex-wrap items-center gap-0 mb-0 max-w-3xl pr-0 lg:pr-5">
          
-            <div className="flex flex-wrap items-center gap-2 md:gap-4 text-sm text-muted-foreground pb-5 md:pb-7">
+            <div className="flex flex-wrap items-center gap-2 md:gap-4 text-sm text-muted-foreground pb-5 md:pb-7 w-full">
                  <Badge className="bg-gradient-yellow-to-pink block rounded-[20px] border-0 py-1 px-2 font-inter text-xs font-semibold uppercase text-white">
               {categoryData.name}
             </Badge>
@@ -145,17 +146,17 @@ const BlogPost = () => {
               </div>
             </div>
            
-          <h1 className="pb-5 md:pb-7 font-inter text-2xl font-bold text-white md:text-3xl">
+          <h1 className="pb-5 md:pb-7 font-inter text-2xl font-bold text-white md:text-3xl w-full">
             {post.title}
           </h1>
 
           {post.excerpt && (
-            <p className="mx-auto max-w-3xl font-open-sans text-lg text-white pb-7">
+            <p className="mx-auto max-w-3xl font-open-sans text-lg text-white pb-7 w-full">
               {post.excerpt}
             </p>
           )}
 
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between w-full">
             <div className="flex flex-wrap gap-2">
               {post.tags.map((tag) => (
                 <Badge key={tag} variant="outline" className="text-xs font-normal font-open-sans text-white p-1 px-3">
@@ -170,7 +171,8 @@ const BlogPost = () => {
               onClick={sharePost} 
               variant="outline" 
               size="sm"
-              className="flex items-center gap-2 ml-0 p-1 px-4 border-0 h-26 bg-primary text-black hover:bg-primary/70 focus:ring-2 focus:ring-offset-2 focus:ring-primary hover:text-white"
+              className="flex items-center gap-2 ml-0 p-1 px-4 border-0 h-26 bg-primary text-black hover:bg-primary/70 focus:ring-2 focus:ring-offset-2 focus:ring-primary hover:text-white shadow-none"
+              style={{ boxShadow: 'none' }}
             >
               <Share2 className="w-4 h-4" />
               Share
@@ -195,7 +197,7 @@ const BlogPost = () => {
 
         {/* Content */}
         <div className="px-6">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-7xl mx-auto pt-10">
           <ReactMarkdown
             components={{
               h1: ({ children }) => (
