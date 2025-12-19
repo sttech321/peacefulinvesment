@@ -9,6 +9,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -40,6 +41,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { exportToExcel, exportToPDF, formatDataForExport } from "@/utils/exportUtils";
 
 interface ContactRequest {
   id: string;
@@ -71,9 +73,35 @@ export default function AdminContactRequests() {
   const [requestDetailsOpen, setRequestDetailsOpen] = useState(false);
   const [replyDialogOpen, setReplyDialogOpen] = useState(false);
   const [replyMessage, setReplyMessage] = useState("");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [requestToDelete, setRequestToDelete] = useState<ContactRequest | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetchRequests();
+
+    // Set up real-time subscription for contact_requests table
+    const channel = supabase
+      .channel('contact-requests-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen to INSERT, UPDATE, DELETE
+          schema: 'public',
+          table: 'contact_requests',
+        },
+        (payload) => {
+          console.log('Contact request change received:', payload);
+          // Refresh the list when any change occurs
+          fetchRequests();
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscription on unmount
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   useEffect(() => {
@@ -84,21 +112,53 @@ export default function AdminContactRequests() {
     try {
       setLoading(true);
       
+      console.log('[AdminContactRequests] Fetching contact requests...');
+      
       const { data, error } = await supabase
         .from('contact_requests')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('[AdminContactRequests] Supabase error:', error);
+        throw error;
+      }
 
-      setRequests(data || []);
-    } catch (error) {
-      console.error('Error fetching contact requests:', error);
+      console.log('[AdminContactRequests] Raw data received:', data?.length || 0, 'records');
+
+      // Map and validate the data to match the ContactRequest interface
+      const mappedData: ContactRequest[] = (data || []).map((item: any) => ({
+        id: item.id,
+        full_name: item.full_name || '',
+        email: item.email || '',
+        phone: item.phone || undefined,
+        subject: item.subject || '',
+        priority: (['low', 'medium', 'high'].includes(item.priority?.toLowerCase()) 
+          ? item.priority.toLowerCase() 
+          : 'medium') as 'low' | 'medium' | 'high',
+        message: item.message || '',
+        contact_method: (item.contact_method === 'phone' ? 'phone' : 'email') as 'email' | 'phone',
+        status: (['pending', 'in_progress', 'resolved', 'closed'].includes(item.status?.toLowerCase())
+          ? item.status.toLowerCase()
+          : 'pending') as 'pending' | 'in_progress' | 'resolved' | 'closed',
+        created_at: item.created_at || new Date().toISOString(),
+        updated_at: item.updated_at || item.created_at || new Date().toISOString(),
+        resolved_at: item.resolved_at || undefined,
+        admin_notes: item.admin_notes || undefined,
+      }));
+
+      console.log('[AdminContactRequests] Mapped data:', mappedData.length, 'records');
+      setRequests(mappedData);
+    } catch (error: any) {
+      console.error('[AdminContactRequests] Error fetching contact requests:', error);
+      const errorMessage = error?.message || 'Failed to fetch contact requests';
       toast({
         title: "Error",
-        description: "Failed to fetch contact requests",
+        description: errorMessage,
         variant: "destructive",
       });
+      // Set empty array on error to prevent stale data
+      setRequests([]);
     } finally {
       setLoading(false);
     }
@@ -144,12 +204,8 @@ export default function AdminContactRequests() {
 
       if (error) throw error;
 
-      // Update local state
-      setRequests(prev => prev.map(request => 
-        request.id === requestId 
-          ? { ...request, status: newStatus as any, resolved_at: updateData.resolved_at }
-          : request
-      ));
+      // Refresh the list to get the latest data (real-time subscription will also trigger)
+      await fetchRequests();
 
       toast({
         title: "Success",
@@ -165,13 +221,91 @@ export default function AdminContactRequests() {
     }
   };
 
+  const handleDeleteRequest = async () => {
+    if (!requestToDelete) {
+      console.error('[DELETE] No request to delete');
+      return;
+    }
+
+    console.log('[DELETE] Starting delete for request:', requestToDelete.id);
+
+    try {
+      setDeleting(true);
+      
+      console.log('[DELETE] Attempting to delete from database...');
+      const { data, error, count } = await supabase
+        .from('contact_requests')
+        .delete()
+        .eq('id', requestToDelete.id)
+        .select(); // Select to get confirmation
+
+      console.log('[DELETE] Delete response:', { data, error, count });
+
+      if (error) {
+        console.error('[DELETE] Supabase error:', error);
+        throw error;
+      }
+
+      // Check if deletion was successful
+      if (data && data.length === 0) {
+        console.warn('[DELETE] No rows deleted - record may not exist or RLS policy blocked deletion');
+        toast({
+          title: "Warning",
+          description: "No record was deleted. You may not have permission or the record doesn't exist.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('[DELETE] Successfully deleted, refreshing list...');
+      
+      // Refresh the list to get the latest data
+      await fetchRequests();
+
+      setDeleteDialogOpen(false);
+      setRequestToDelete(null);
+      setRequestDetailsOpen(false);
+      
+      toast({
+        title: "Success",
+        description: "Contact request deleted successfully",
+      });
+    } catch (error: any) {
+      console.error('[DELETE] Error deleting contact request:', error);
+      const errorMessage = error?.message || error?.details || "Failed to delete contact request";
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const sendReply = async () => {
     if (!selectedRequest || !replyMessage.trim()) return;
 
     try {
-      // Here you would integrate with your email service
-      // For now, just update the status and add admin notes
-      const { error } = await supabase
+      // Send email reply using Edge Function
+      const { data: emailData, error: emailError } = await supabase.functions.invoke('send-contact-reply', {
+        body: {
+          to_email: selectedRequest.email,
+          to_name: selectedRequest.full_name,
+          subject: `Re: ${selectedRequest.subject}`,
+          original_message: selectedRequest.message,
+          reply_message: replyMessage,
+          original_subject: selectedRequest.subject,
+        }
+      });
+
+      if (emailError) {
+        console.error('Email sending error:', emailError);
+        // Continue to update database even if email fails (non-critical)
+      }
+
+      // Update the contact request status and admin notes
+      const { error: updateError } = await supabase
         .from('contact_requests')
         .update({ 
           status: 'in_progress',
@@ -180,21 +314,20 @@ export default function AdminContactRequests() {
         })
         .eq('id', selectedRequest.id);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
 
-      // Update local state
-      setRequests(prev => prev.map(request => 
-        request.id === selectedRequest.id 
-          ? { ...request, status: 'in_progress', admin_notes: replyMessage }
-          : request
-      ));
+      // Refresh the list to get the latest data (real-time subscription will also trigger)
+      await fetchRequests();
 
       setReplyMessage("");
       setReplyDialogOpen(false);
       
       toast({
         title: "Success",
-        description: "Reply sent successfully",
+        description: emailError 
+          ? "Reply saved successfully, but email sending failed. Please try again." 
+          : "Reply sent successfully!",
+        variant: emailError ? "default" : "default",
       });
     } catch (error) {
       console.error('Error sending reply:', error);
@@ -256,6 +389,63 @@ export default function AdminContactRequests() {
     return requests.filter(request => request.priority === 'high').length;
   };
 
+  const handleExport = async (type: 'excel' | 'pdf') => {
+    try {
+      // Use filtered requests if filters are applied, otherwise use all requests
+      const dataToExport = filteredRequests.length > 0 && (statusFilter !== 'all' || priorityFilter !== 'all' || searchTerm)
+        ? filteredRequests
+        : requests;
+
+      if (dataToExport.length === 0) {
+        toast({
+          title: "No Data",
+          description: "No contact requests to export",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const formattedData = formatDataForExport(dataToExport, 'requests');
+      
+      if (type === 'excel') {
+        const result = exportToExcel(formattedData, 'contact_requests_report', 'Contact Requests');
+        if (result.success) {
+          toast({
+            title: "Success",
+            description: `Exported ${dataToExport.length} contact request(s) to Excel successfully`,
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: result.message || "Failed to export to Excel",
+            variant: "destructive",
+          });
+        }
+      } else {
+        const result = await exportToPDF(formattedData, 'contact_requests_report', 'Contact Requests Report');
+        if (result.success) {
+          toast({
+            title: "Success",
+            description: `Exported ${dataToExport.length} contact request(s) to PDF successfully`,
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: result.message || "Failed to export to PDF",
+            variant: "destructive",
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error exporting contact requests:', error);
+      toast({
+        title: "Error",
+        description: "Failed to export contact requests",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -279,9 +469,25 @@ export default function AdminContactRequests() {
           </p>
         </div>
         <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" className="gap-0 rounded-[8px] hover:bg-white/80 border-0">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="gap-0 rounded-[8px] hover:bg-white/80 border-0"
+            onClick={() => handleExport('excel')}
+            disabled={loading || requests.length === 0}
+          >
             <Download className="h-4 w-4 mr-2" />
-            Export
+            Export Excel
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="gap-0 rounded-[8px] hover:bg-white/80 border-0"
+            onClick={() => handleExport('pdf')}
+            disabled={loading || requests.length === 0}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Export PDF
           </Button>
         </div>
       </div>
@@ -561,7 +767,15 @@ export default function AdminContactRequests() {
                   <Reply className="h-4 w-4 mr-1" />
                   Reply
                 </Button>
-                <Button variant="destructive" size="sm" className="rounded-[8px] border-0">
+                <Button 
+                  variant="destructive" 
+                  size="sm" 
+                  className="rounded-[8px] border-0"
+                  onClick={() => {
+                    setRequestToDelete(selectedRequest);
+                    setDeleteDialogOpen(true);
+                  }}
+                >
                   <Trash2 className="h-4 w-4 mr-1" />
                   Delete
                 </Button>
@@ -599,6 +813,59 @@ export default function AdminContactRequests() {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="max-w-[350px] sm:max-w-md rounded-md">
+          <DialogHeader>
+            <DialogTitle>Delete Contact Request</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this contact request? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          {requestToDelete && (
+            <div className="space-y-4">
+              <div className="bg-muted/20 p-3 rounded-lg">
+                <p className="text-sm font-medium">{requestToDelete.subject}</p>
+                <p className="text-sm text-muted-foreground">
+                  From: {requestToDelete.full_name} ({requestToDelete.email})
+                </p>
+              </div>
+              <div className="flex items-center justify-between">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setDeleteDialogOpen(false);
+                    setRequestToDelete(null);
+                  }}
+                  className="rounded-[8px] border-0"
+                  disabled={deleting}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  variant="destructive" 
+                  onClick={handleDeleteRequest}
+                  disabled={deleting}
+                  className="rounded-[8px] border-0"
+                >
+                  {deleting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Delete
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

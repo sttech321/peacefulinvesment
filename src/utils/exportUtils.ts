@@ -154,13 +154,18 @@ export const formatDataForExport = (data: any[], type: 'users' | 'accounts' | 'r
     case 'requests':
       return data.map(request => ({
         'Request ID': request.id,
-        'Name': request.name,
-        'Email': request.email,
-        'Subject': request.subject,
-        'Message': request.message,
-        'Priority': request.priority,
-        'Status': request.status,
-        'Created At': new Date(request.created_at).toLocaleDateString(),
+        'Full Name': request.full_name || request.name || 'N/A',
+        'Email': request.email || 'N/A',
+        'Phone': request.phone || 'N/A',
+        'Contact Method': request.contact_method || 'N/A',
+        'Subject': request.subject || 'N/A',
+        'Message': request.message || 'N/A',
+        'Priority': request.priority || 'N/A',
+        'Status': request.status || 'N/A',
+        'Admin Notes': request.admin_notes || 'N/A',
+        'Resolved At': request.resolved_at ? new Date(request.resolved_at).toLocaleString() : 'N/A',
+        'Created At': request.created_at ? new Date(request.created_at).toLocaleString() : 'N/A',
+        'Updated At': request.updated_at ? new Date(request.updated_at).toLocaleString() : 'N/A',
       }));
     
     default:

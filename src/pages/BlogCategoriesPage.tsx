@@ -11,7 +11,9 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Plus, Edit2, Trash2 } from "lucide-react";
+import { Loader2, Plus, Edit2, Trash2, AlertCircle } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const emptyForm = {
   name: "",
@@ -29,11 +31,13 @@ type TreeNode = BlogCategory & {
 export default function AdminBlogCategories() {
   const { categories, loading, createCategory, updateCategory, deleteCategory } =
     useCategories();
+  const { toast } = useToast();
 
   const [form, setForm] = useState({ ...emptyForm });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [open, setOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // state for tree UI: which nodes are expanded
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -54,6 +58,7 @@ export default function AdminBlogCategories() {
     setEditingId(null);
     setForm({ ...emptyForm });
     setExpanded({}); // reset expansion
+    setError(null); // clear any previous errors
     setOpen(true);
   };
 
@@ -68,27 +73,84 @@ export default function AdminBlogCategories() {
     });
     // optionally expand the parent chain so the current parent is visible
     setExpanded({});
+    setError(null); // clear any previous errors
     setOpen(true);
   };
 
   const resetForm = () => {
     setEditingId(null);
     setForm({ ...emptyForm });
+    setError(null);
+  };
+
+  const getErrorMessage = (error: any): string => {
+    if (!error) return "An unknown error occurred";
+    
+    // Handle Supabase error codes
+    if (error.code === "23505") {
+      // Unique constraint violation
+      if (error.message?.includes("blog_categories_name_key")) {
+        return "A category with this name already exists. Please choose a different name.";
+      }
+      if (error.message?.includes("blog_categories_slug_key")) {
+        return "A category with this slug already exists. Please choose a different slug.";
+      }
+      return "This category name or slug already exists. Please choose a different one.";
+    }
+    
+    // Return the error message if available
+    return error.message || "Failed to save category. Please try again.";
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name.trim()) return;
+    if (!form.name.trim()) {
+      setError("Category name is required.");
+      return;
+    }
 
     setSaving(true);
+    setError(null); // Clear previous errors
+    
     try {
+      let result;
       if (editingId) {
-        await updateCategory(editingId, form);
+        result = await updateCategory(editingId, form);
       } else {
-        await createCategory(form);
+        result = await createCategory(form);
       }
+
+      // Check for errors in the result
+      if (result.error) {
+        const errorMessage = getErrorMessage(result.error);
+        setError(errorMessage);
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+        // Don't close the modal - keep it open so user can fix the error
+        return;
+      }
+
+      // Success - close modal and show success message
       resetForm();
       setOpen(false);
+      toast({
+        title: "Success",
+        description: editingId 
+          ? "Category updated successfully" 
+          : "Category created successfully",
+      });
+    } catch (err: any) {
+      // Handle unexpected errors
+      const errorMessage = getErrorMessage(err);
+      setError(errorMessage);
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
     } finally {
       setSaving(false);
     }
@@ -173,31 +235,33 @@ export default function AdminBlogCategories() {
       rows.push(
         <div
           key={node.id}
-          className={`flex items-center justify-between gap-2 px-3 py-2 border rounded mb-1 ${isSelected ? "bg-slate-100 dark:bg-slate-800" : ""
-            }`}
+          onClick={() => !isDisabled && selectParent(node.id)}
+          className={`flex items-center justify-between gap-2 px-3 py-2 border rounded mb-1 transition-colors ${
+            isDisabled 
+              ? "opacity-50 cursor-not-allowed" 
+              : "cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700"
+          } ${isSelected ? "bg-slate-100 dark:bg-slate-800" : ""}`}
           style={{ marginLeft: depth * 14 }}
+          title={isDisabled ? "Cannot select this item" : `Select "${node.name}" as parent`}
         >
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
             {hasChildren ? (
               <button
                 type="button"
-                onClick={() => toggleExpand(node.id)}
-                className="text-sm select-none"
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent row click when clicking expand button
+                  toggleExpand(node.id);
+                }}
+                className="text-sm select-none flex-shrink-0 hover:bg-slate-200 dark:hover:bg-slate-600 rounded px-1"
                 aria-label={isExpanded ? "collapse" : "expand"}
               >
                 {isExpanded ? "▾" : "▸"}
               </button>
             ) : (
-              <span style={{ width: 16, display: "inline-block" }} />
+              <span style={{ width: 16, display: "inline-block" }} className="flex-shrink-0" />
             )}
 
-            <button
-              type="button"
-              onClick={() => !isDisabled && selectParent(node.id)}
-              className={`text-left truncate ${isDisabled ? "text-muted-foreground cursor-not-allowed" : "cursor-pointer"
-                }`}
-              title={isDisabled ? "Cannot select this item" : node.name}
-            >
+            <div className="text-left truncate flex-1 min-w-0">
               <span className="mr-2">
                 {depth > 0 ? "—" : ""}
               </span>
@@ -205,12 +269,12 @@ export default function AdminBlogCategories() {
               {node.children.length > 0 && (
                 <small className="ml-2 text-xs text-muted-foreground">({node.children.length})</small>
               )}
-            </button>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
             <span className="text-xs text-muted-foreground">{node.slug}</span>
-            <div  >
+            <div>
               <Badge className="text-xs text-muted-foreground" style={{ backgroundColor: node.color, color: "white" }}>
                 {node.color}
               </Badge>
@@ -341,6 +405,12 @@ export default function AdminBlogCategories() {
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-3 mt-2">
+            {error && (
+              <Alert variant="destructive" className="rounded-[8px]">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
             <div className="flex gap-3">
               <div className="flex-1">
                 <label className="block text-sm font-medium mb-1">Name</label>
@@ -398,17 +468,14 @@ export default function AdminBlogCategories() {
               <div className="border border-muted-foreground/60 rounded p-2 max-h-64 overflow-auto bg-white">
                 {/* "No parent" row */}
                 <div
-                  className={`flex items-center justify-between px-3 py-2 mb-1 rounded ${form.parent_id === null ? "bg-slate-100" : ""
-                    }`}
+                  onClick={() => selectParent(null)}
+                  className={`flex items-center justify-between px-3 py-2 mb-1 rounded cursor-pointer transition-colors hover:bg-slate-50 dark:hover:bg-slate-700 ${
+                    form.parent_id === null ? "bg-slate-100 dark:bg-slate-800 font-semibold" : ""
+                  }`}
+                  title="Select no parent (top-level category)"
                 >
-                  <div>
-                    <button
-                      type="button"
-                      onClick={() => selectParent(null)}
-                      className={`text-left ${form.parent_id === null ? "font-semibold" : ""}`}
-                    >
-                      — No parent —
-                    </button>
+                  <div className="text-left">
+                    — No parent —
                   </div>
                 </div>
 
