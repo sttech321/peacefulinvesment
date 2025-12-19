@@ -235,6 +235,7 @@ export const useReferrals = () => {
       const { data, error } = await supabase.functions.invoke('send-referral-invitation', {
         body: {
           referral_code: referral.referral_code,
+          referral_link: referral.referral_link,
           to_email: email,
           subject,
           message,

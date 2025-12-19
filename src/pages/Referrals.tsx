@@ -21,9 +21,12 @@ const Referrals = () => {
   const { referral, payments, signups, loading, generateReferralLink, copyReferralLink, sendInvitation } = useReferrals();
   
   const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteSubject, setInviteSubject] = useState("Join me on this amazing trading platform!");
-  const [inviteMessage, setInviteMessage] = useState("I've been using this trading platform and thought you might be interested. Use my referral link to get started!");
+  const [inviteSubject, setInviteSubject] = useState("Invitation to Peaceful Investment");
+  const [inviteMessage, setInviteMessage] = useState("Hi! I wanted to share an investment platform I've been using. I thought you might find it interesting. Check it out when you have a moment!");
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
+  const [emailError, setEmailError] = useState("");
+  const [subjectError, setSubjectError] = useState("");
+  const [messageError, setMessageError] = useState("");
 
 
 
@@ -54,21 +57,167 @@ const Referrals = () => {
     await generateReferralLink();
   };
 
+  // Enhanced email validation function with domain validation
+  const isValidEmail = (email: string): boolean => {
+    const trimmedEmail = email.trim().toLowerCase();
+    
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      return false;
+    }
+    
+    // Check for valid domain structure (at least one dot after @)
+    const parts = trimmedEmail.split('@');
+    if (parts.length !== 2) {
+      return false;
+    }
+    
+    const domain = parts[1];
+    
+    // Reject obviously invalid/test domains (based on bounce patterns)
+    const invalidDomains = [
+      'sd.sd',
+      'gsg.dfgdf',
+      'sd.com',
+      'test.com',
+      'example.com',
+      'invalid.com',
+      'test.test',
+      'com.com',
+    ];
+    
+    if (invalidDomains.includes(domain)) {
+      return false;
+    }
+    
+    // Reject very short domains (likely invalid)
+    if (domain.length < 5) {
+      return false; // Too short (e.g., "a.b" or "sd.sd")
+    }
+    
+    // Check domain structure - must have valid TLD
+    const domainParts = domain.split('.');
+    if (domainParts.length < 2) {
+      return false; // No TLD
+    }
+    
+    const tld = domainParts[domainParts.length - 1].toLowerCase();
+    // Only allow the specific TLDs mentioned in QA requirements
+    const validTLDs = [
+      "com", "org", "net", "edu", "gov", "in", "co", "io", "info", "ai", "xyz"
+    ];
+    if (!validTLDs.includes(tld)) {
+      return false; // TLD not in allowed list
+    }
+    
+    // Reject suspicious patterns (very short subdomains)
+    if (domainParts[0].length < 2 && domainParts.length === 2) {
+      return false; // Domain part too short (e.g., "a.com")
+    }
+    
+    // Valid domain structure check
+    const domainRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/;
+    return domainRegex.test(domain);
+  };
+
+  const handleEmailChange = (value: string) => {
+    setInviteEmail(value);
+    // Clear error when user starts typing
+    if (emailError) {
+      setEmailError("");
+    }
+  };
+
+  const handleSubjectChange = (value: string) => {
+    setInviteSubject(value);
+    // Clear error when user starts typing
+    if (subjectError) {
+      setSubjectError("");
+    }
+  };
+
+  const handleMessageChange = (value: string) => {
+    setInviteMessage(value);
+    // Clear error when user starts typing
+    if (messageError) {
+      setMessageError("");
+    }
+  };
+
   const handleSendInvite = async () => {
-    if (!inviteEmail.trim()) {
+    const trimmedEmail = inviteEmail.trim();
+    const trimmedSubject = inviteSubject.trim();
+    const trimmedMessage = inviteMessage.trim();
+    
+    let hasErrors = false;
+    const errorMessages: string[] = [];
+
+    // Validate email - required and must be valid format
+    if (!trimmedEmail) {
+      setEmailError("Please enter an email address");
+      errorMessages.push("Email address is required");
+      hasErrors = true;
+    } else if (!isValidEmail(trimmedEmail)) {
+      setEmailError("Please enter a valid email address with a real domain (e.g., user@gmail.com). Invalid or test domains are not allowed.");
+      errorMessages.push("Email address format is invalid or domain is not valid");
+      hasErrors = true;
+    } else {
+      setEmailError("");
+    }
+
+    // Validate subject - required (check even if it has default value)
+    if (!trimmedSubject || trimmedSubject.length === 0) {
+      setSubjectError("Please enter a subject");
+      errorMessages.push("Subject is required");
+      hasErrors = true;
+    } else if (trimmedSubject.length < 3) {
+      setSubjectError("Subject must be at least 3 characters long");
+      errorMessages.push("Subject is too short");
+      hasErrors = true;
+    } else {
+      setSubjectError("");
+    }
+
+    // Validate message - required (check even if it has default value)
+    if (!trimmedMessage || trimmedMessage.length === 0) {
+      setMessageError("Please enter a message");
+      errorMessages.push("Message is required");
+      hasErrors = true;
+    } else if (trimmedMessage.length < 10) {
+      setMessageError("Message must be at least 10 characters long");
+      errorMessages.push("Message is too short");
+      hasErrors = true;
+    } else {
+      setMessageError("");
+    }
+
+    // If there are validation errors, show toast and return
+    if (hasErrors) {
       toast({
-        title: "Error",
-        description: "Please enter an email address",
+        title: "Validation Error",
+        description: errorMessages.length > 0 
+          ? errorMessages.join(". ") 
+          : "Please fill in all required fields correctly",
         variant: "destructive",
       });
       return;
     }
 
-    await sendInvitation(inviteEmail, inviteSubject, inviteMessage);
-    setIsInviteDialogOpen(false);
-    setInviteEmail("");
-    setInviteSubject("Join me on this amazing trading platform!");
-    setInviteMessage("I've been using this trading platform and thought you might be interested. Use my referral link to get started!");
+    // All validations passed, send invitation
+    try {
+      await sendInvitation(trimmedEmail, trimmedSubject, trimmedMessage);
+      setIsInviteDialogOpen(false);
+      setInviteEmail("");
+      setInviteSubject("Invitation to Peaceful Investment");
+      setInviteMessage("Hi! I wanted to share an investment platform I've been using. I thought you might find it interesting. Check it out when you have a moment!");
+      // Clear all errors
+      setEmailError("");
+      setSubjectError("");
+      setMessageError("");
+    } catch (error) {
+      // Error handling is done in sendInvitation function
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -251,7 +400,21 @@ const Referrals = () => {
                     </div>
                     
                     <div className="flex gap-2">
-                      <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
+                      <Dialog 
+                        open={isInviteDialogOpen} 
+                        onOpenChange={(open) => {
+                          setIsInviteDialogOpen(open);
+                          if (!open) {
+                            // Reset form and errors when dialog closes
+                            setInviteEmail("");
+                            setEmailError("");
+                            setSubjectError("");
+                            setMessageError("");
+                            setInviteSubject("Invitation to Peaceful Investment");
+                            setInviteMessage("Hi! I wanted to share an investment platform I've been using. I thought you might find it interesting. Check it out when you have a moment!");
+                          }
+                        }}
+                      >
                         <DialogTrigger asChild>
                           <Button className="flex items-center gap-2 rounded-[8px]">
                             <Mail className="h-4 w-4" />
@@ -267,38 +430,62 @@ const Referrals = () => {
                           </DialogHeader>
                           <div className="space-y-4">
                             <div>
-                              <Label htmlFor="email">Email Address</Label>
+                              <Label htmlFor="email">
+                                Email Address <span className="text-red-500">*</span>
+                              </Label>
                               <Input
                                 id="email"
                                 type="email"
                                 placeholder="Enter email address"
-                                className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none"
-                    style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
+                                required
+                                className={`rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none ${
+                                  emailError ? "border-red-500 focus-visible:border-red-500" : ""
+                                }`}
+                                style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
                                 value={inviteEmail}
-                                onChange={(e) => setInviteEmail(e.target.value)}
+                                onChange={(e) => handleEmailChange(e.target.value)}
                               />
+                              {emailError && (
+                                <p className="text-sm text-red-500 mt-1">{emailError}</p>
+                              )}
                             </div>
                             <div>
-                              <Label htmlFor="subject">Subject</Label>
+                              <Label htmlFor="subject">
+                                Subject <span className="text-red-500">*</span>
+                              </Label>
                               <Input
                                 id="subject"
                                 value={inviteSubject}
-                                className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none"
-                    style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
-                                onChange={(e) => setInviteSubject(e.target.value)}
+                                required
+                                className={`rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none ${
+                                  subjectError ? "border-red-500 focus-visible:border-red-500" : ""
+                                }`}
+                                style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
+                                onChange={(e) => handleSubjectChange(e.target.value)}
                               />
+                              {subjectError && (
+                                <p className="text-sm text-red-500 mt-1">{subjectError}</p>
+                              )}
                             </div>
                             <div>
-                              <Label htmlFor="message">Message</Label>
+                              <Label htmlFor="message">
+                                Message <span className="text-red-500">*</span>
+                              </Label>
                               <Textarea
                                 id="message"
                                 placeholder="Enter your message"
                                 value={inviteMessage}
-                                className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none resize-none"
-                    style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
-                                onChange={(e) => setInviteMessage(e.target.value)}
+                                required
+                                className={`rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none resize-none ${
+                                  messageError ? "border-red-500 focus-visible:border-red-500" : ""
+                                }`}
+                                style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
+                                onChange={(e) => handleMessageChange(e.target.value)}
                                 rows={4}
                               />
+                              {messageError && (
+                                <p className="text-sm text-red-500 mt-1">{messageError}</p>
+                              )}
                             </div>
                             {/* <Button onClick={handleSendInvite} className="w-full ">
                               <Send className="h-4 w-4 mr-2" />

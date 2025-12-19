@@ -112,4 +112,11 @@ Thumbs.db
 *.tgz
 *.tar.gz
 
+# Documentation files (reference only, not needed in repo)
+FIX_CORS_ERROR.md
+FIX_SPAM_ISSUE.md
+RESEND_DOMAIN_SETUP.md
+SUPABASE_SMTP_GUIDE.md
+VALIDATION_TEST_CASES.md
+
 /supabase/.temp/

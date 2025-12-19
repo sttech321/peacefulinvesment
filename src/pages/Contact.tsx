@@ -28,9 +28,64 @@ import { useToast } from '@/hooks/use-toast';
 import Footer from '@/components/Footer';
 
 const contactFormSchema = z.object({
-  fullName: z.string().min(2, 'Full name must be at least 2 characters'),
-  email: z.string().email('Please enter a valid email address'),
-  phone: z.string().optional(),
+  fullName: z
+    .string()
+    .min(1, "Full name is required")
+    .refine((val) => {
+      // Check if value contains only spaces
+      return val.trim().length > 0;
+    }, "Full name cannot be only spaces")
+    .refine((val) => {
+      // Check minimum length after trimming spaces
+      return val.trim().length >= 2;
+    }, "Full name must be at least 2 characters")
+    .refine(
+      (val) => {
+        // Check for special characters (only allow letters, spaces, hyphens, apostrophes)
+        const trimmed = val.trim();
+        return /^[a-zA-Z\s'-]+$/.test(trimmed);
+      },
+      "Full name can only contain letters, spaces, hyphens, and apostrophes"
+    )
+    .transform((val) => {
+      // Capitalize first letter of each word
+      return val
+        .trim()
+        .split(/\s+/)
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(" ");
+    }),
+  email: z
+    .string()
+    .min(1, "Email is required")
+    .email("Please enter a valid email address")
+    .refine(
+      (val) => {
+        const domain = val.split("@")[1];
+        if (!domain) return false;
+        // Only allow the specific TLDs mentioned in QA requirements
+        const validTLDs = [
+          "com", "org", "net", "edu", "gov", "in", "co", "io", "info", "ai", "xyz"
+        ];
+        const tld = domain.split(".").pop()?.toLowerCase();
+        return tld && validTLDs.includes(tld);
+      },
+      "Email must have a valid top-level domain (.com, .org, .net, .edu, .gov, .in, .co, .io, .info, .ai, .xyz)"
+    ),
+  phone: z
+    .string()
+    .optional()
+    .refine(
+      (val) => {
+        if (!val || val.trim() === "") return true; // Optional field
+        // Only allow numeric characters with optional + at the start (country code)
+        const phoneRegex = /^\+?[1-9]\d{1,14}$/;
+        // Remove any non-numeric characters except + for validation
+        const cleaned = val.replace(/[^\d+]/g, "");
+        return phoneRegex.test(cleaned);
+      },
+      "Phone number must be numeric with a valid country code (e.g., +1234567890)"
+    ),
   subject: z.string().min(1, 'Please select a subject'),
   priority: z.enum(['low', 'medium', 'high']),
   message: z.string().min(10, 'Message must be at least 10 characters'),
@@ -224,7 +279,45 @@ const Contact = () => {
                         id='fullName'
                         {...register('fullName')}
                         placeholder='Enter your full name'
-                        className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent'
+                        className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent capitalize'
+                        onChange={(e) => {
+                          let value = e.target.value;
+                          // Remove special characters - only allow letters, spaces, hyphens, and apostrophes
+                          const cleaned = value.replace(/[^a-zA-Z\s'-]/g, "");
+                          
+                          if (cleaned !== value) {
+                            e.target.value = cleaned;
+                            value = cleaned;
+                          }
+                          
+                          // Capitalize first letter of each word as user types
+                          if (value.length > 0) {
+                            // Split by spaces and capitalize first letter of each word
+                            const words = value.split(' ');
+                            const capitalized = words
+                              .map((word) => {
+                                if (word.length === 0) return word;
+                                // Capitalize first letter, keep rest as typed
+                                return word.charAt(0).toUpperCase() + word.slice(1);
+                              })
+                              .join(' ');
+                            
+                            setValue("fullName", capitalized, { shouldValidate: false });
+                          } else {
+                            setValue("fullName", cleaned, { shouldValidate: false });
+                          }
+                        }}
+                        onBlur={(e) => {
+                          // Auto-capitalize first letter of each word on blur and ensure consistent casing
+                          const value = e.target.value.trim();
+                          if (value) {
+                            const capitalized = value
+                              .split(/\s+/)
+                              .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                              .join(" ");
+                            setValue("fullName", capitalized, { shouldValidate: true });
+                          }
+                        }}
                       />
                       {errors.fullName && (
                         <p className='text-sm text-destructive'>
@@ -261,8 +354,35 @@ const Contact = () => {
                       id='phone'
                       type='tel'
                       {...register('phone')}
-                      placeholder='Enter your phone number'
+                      placeholder='Enter your phone number (e.g., +1234567890)'
                       className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent'
+                      onChange={(e) => {
+                        // Only allow numeric characters and + (for country code)
+                        let value = e.target.value;
+                        
+                        // Remove all non-numeric characters except + at the start
+                        let cleaned = value.replace(/[^\d+]/g, "");
+                        
+                        // Ensure + can only appear at the start
+                        if (cleaned.includes('+')) {
+                          const plusIndex = cleaned.indexOf('+');
+                          if (plusIndex > 0) {
+                            // Remove + if it's not at the start
+                            cleaned = cleaned.replace(/\+/g, '');
+                          } else if (plusIndex === 0 && cleaned.length > 1 && cleaned[1] === '+') {
+                            // Remove duplicate + at the start
+                            cleaned = '+' + cleaned.slice(1).replace(/\+/g, '');
+                          }
+                        }
+                        
+                        // Update the input value and form state
+                        if (cleaned !== value) {
+                          e.target.value = cleaned;
+                          setValue("phone", cleaned, { shouldValidate: true });
+                        } else {
+                          setValue("phone", cleaned, { shouldValidate: true });
+                        }
+                      }}
                     />
                     {errors.phone && (
                       <p className='text-sm text-destructive'>
@@ -346,7 +466,7 @@ const Contact = () => {
                       className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none'
                     />
                     {errors.message && (
-                      <p className='text-sm text-destructive'>
+                      <p className='text-sm text-destructive capitalize'>
                         {errors.message.message}
                       </p>
                     )}
