@@ -12,11 +12,67 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Mail, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import { useEmail, EmailType } from "@/services/email";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const contactFormSchema = z.object({
-  fullName: z.string().min(2, "Full name must be at least 2 characters"),
-  email: z.string().email("Please enter a valid email address"),
-  phone: z.string().optional(),
+  fullName: z
+    .string()
+    .min(1, "Full name is required")
+    .refine((val) => {
+      // Check if value contains only spaces
+      return val.trim().length > 0;
+    }, "Full name cannot be only spaces")
+    .refine((val) => {
+      // Check minimum length after trimming spaces
+      return val.trim().length >= 2;
+    }, "Full name must be at least 2 characters")
+    .refine(
+      (val) => {
+        // Check for special characters (only allow letters, spaces, hyphens, apostrophes)
+        const trimmed = val.trim();
+        return /^[a-zA-Z\s'-]+$/.test(trimmed);
+      },
+      "Full name can only contain letters, spaces, hyphens, and apostrophes"
+    )
+    .transform((val) => {
+      // Capitalize first letter of each word
+      return val
+        .trim()
+        .split(/\s+/)
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(" ");
+    }),
+  email: z
+    .string()
+    .min(1, "Email is required")
+    .email("Please enter a valid email address")
+    .refine(
+      (val) => {
+        const domain = val.split("@")[1];
+        if (!domain) return false;
+        // Only allow the specific TLDs mentioned in QA requirements
+        const validTLDs = [
+          "com", "org", "net", "edu", "gov", "in", "co", "io", "info", "ai", "xyz"
+        ];
+        const tld = domain.split(".").pop()?.toLowerCase();
+        return tld && validTLDs.includes(tld);
+      },
+      "Email must have a valid top-level domain (.com, .org, .net, .edu, .gov, .in, .co, .io, .info, .ai, .xyz, etc.)"
+    ),
+  phone: z
+    .string()
+    .optional()
+    .refine(
+      (val) => {
+        if (!val || val.trim() === "") return true; // Optional field
+        // Only allow numeric characters with optional + at the start (country code)
+        const phoneRegex = /^\+?[1-9]\d{1,14}$/;
+        // Remove any non-numeric characters except + for validation
+        const cleaned = val.replace(/[^\d+]/g, "");
+        return phoneRegex.test(cleaned);
+      },
+      "Phone number must be numeric with a valid country code (e.g., +1234567890)"
+    ),
   subject: z.string().min(1, "Please select a subject"),
   priority: z.enum(["low", "medium", "high"]),
   message: z.string().min(10, "Message must be at least 10 characters"),
@@ -55,54 +111,67 @@ export default function ContactFormEnhanced({ onSuccess }: ContactFormEnhancedPr
     setSubmitSuccess(false);
 
     try {
-      // Send confirmation email to user
-      const userEmailResult = await sendEmail({
-        type: EmailType.CONTACT_FORM,
-        recipient: {
-          email: data.email,
-          name: data.fullName,
-        },
-        variables: {
-          name: data.fullName,
-          message: data.message,
-        },
-      });
+      // First, save to database (this must succeed)
+      const { error: dbError } = await supabase
+        .from('contact_requests')
+        .insert([
+          {
+            full_name: data.fullName,
+            email: data.email,
+            phone: data.phone || null,
+            subject: data.subject,
+            priority: data.priority,
+            message: data.message,
+            contact_method: data.contactMethod,
+            status: 'pending',
+          },
+        ]);
 
-      // Send notification email to admin
-      const adminEmailResult = await sendEmail({
-        type: EmailType.SUPPORT_REQUEST,
-        recipient: {
-          email: 'admin@peacefulinvestment.com',
-          name: 'Admin Team',
-        },
-        variables: {
-          userName: data.fullName,
-          ticketId: `CONTACT-${Date.now()}`,
-          subject: data.subject,
-          message: `New contact form submission:\n\nName: ${data.fullName}\nEmail: ${data.email}\nPhone: ${data.phone || 'Not provided'}\nSubject: ${data.subject}\nPriority: ${data.priority}\nContact Method: ${data.contactMethod}\n\nMessage:\n${data.message}`,
-          priority: data.priority.toUpperCase(),
-        },
-      });
-
-      if (userEmailResult.success && adminEmailResult.success) {
-        setSubmitSuccess(true);
-        reset();
-        
+      if (dbError) {
+        console.error('Database error:', dbError);
         toast({
-          title: "Success!",
-          description: "Your message has been sent successfully. We'll get back to you soon!",
+          title: 'Error',
+          description: dbError.message || 'Failed to submit contact request. Please try again.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Then send email notification via Edge Function (non-critical)
+      try {
+        const { error: functionError } = await supabase.functions.invoke('send-contact-notification', {
+          body: {
+            contactData: {
+              full_name: data.fullName,
+              email: data.email,
+              phone: data.phone || null,
+              subject: data.subject,
+              priority: data.priority,
+              message: data.message,
+              contact_method: data.contactMethod,
+            },
+          },
         });
 
-        if (onSuccess) {
-          onSuccess();
+        if (functionError) {
+          console.warn('Email notification failed (non-critical):', functionError);
         }
-      } else {
-        const errorMessage = userEmailResult.error || adminEmailResult.error || 'Failed to send email';
-        toast({
-          title: "Error",
-          description: `Failed to send email: ${errorMessage}`,
-          variant: "destructive",
-        });
+      } catch (emailError) {
+        // Email errors are non-critical - request is already saved
+        console.warn('Email notification error (non-critical):', emailError);
+      }
+
+      // Success - form submitted and saved
+      setSubmitSuccess(true);
+      reset();
+      
+      toast({
+        title: "Success!",
+        description: "Your message has been sent successfully. We'll get back to you soon!",
+      });
+
+      if (onSuccess) {
+        onSuccess();
       }
     } catch (err) {
       console.error("Contact form error:", err);
@@ -167,6 +236,44 @@ export default function ContactFormEnhanced({ onSuccess }: ContactFormEnhancedPr
               id="fullName"
               {...register("fullName")}
               placeholder="Enter your full name"
+              onChange={(e) => {
+                let value = e.target.value;
+                // Remove special characters - only allow letters, spaces, hyphens, and apostrophes
+                const cleaned = value.replace(/[^a-zA-Z\s'-]/g, "");
+                
+                if (cleaned !== value) {
+                  e.target.value = cleaned;
+                  value = cleaned;
+                }
+                
+                // Capitalize first letter of each word as user types
+                if (value.length > 0) {
+                  // Split by spaces and capitalize first letter of each word
+                  const words = value.split(' ');
+                  const capitalized = words
+                    .map((word) => {
+                      if (word.length === 0) return word;
+                      // Capitalize first letter, keep rest as typed
+                      return word.charAt(0).toUpperCase() + word.slice(1);
+                    })
+                    .join(' ');
+                  
+                  setValue("fullName", capitalized, { shouldValidate: false });
+                } else {
+                  setValue("fullName", cleaned, { shouldValidate: false });
+                }
+              }}
+              onBlur={(e) => {
+                // Final capitalization on blur to ensure proper formatting
+                const value = e.target.value.trim();
+                if (value) {
+                  const capitalized = value
+                    .split(/\s+/)
+                    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                    .join(" ");
+                  setValue("fullName", capitalized, { shouldValidate: true });
+                }
+              }}
             />
             {errors.fullName && (
               <p className="text-sm text-red-600">{errors.fullName.message}</p>
@@ -192,12 +299,43 @@ export default function ContactFormEnhanced({ onSuccess }: ContactFormEnhancedPr
             <Label htmlFor="phone">Phone Number (Optional)</Label>
             <Input
               id="phone"
+              type="tel"
               {...register("phone")}
-              placeholder="Enter your phone number"
+              placeholder="Enter your phone number (e.g., +1234567890)"
+              onChange={(e) => {
+                // Only allow numeric characters and + (for country code)
+                let value = e.target.value;
+                
+                // Remove all non-numeric characters except + at the start
+                let cleaned = value.replace(/[^\d+]/g, "");
+                
+                // Ensure + can only appear at the start
+                if (cleaned.includes('+')) {
+                  const plusIndex = cleaned.indexOf('+');
+                  if (plusIndex > 0) {
+                    // Remove + if it's not at the start
+                    cleaned = cleaned.replace(/\+/g, '');
+                  } else if (plusIndex === 0 && cleaned.length > 1 && cleaned[1] === '+') {
+                    // Remove duplicate + at the start
+                    cleaned = '+' + cleaned.slice(1).replace(/\+/g, '');
+                  }
+                }
+                
+                // Update the input value and form state
+                if (cleaned !== value) {
+                  e.target.value = cleaned;
+                  setValue("phone", cleaned, { shouldValidate: true });
+                } else {
+                  setValue("phone", cleaned, { shouldValidate: true });
+                }
+              }}
             />
             {errors.phone && (
               <p className="text-sm text-red-600">{errors.phone.message}</p>
             )}
+            <p className="text-xs text-muted-foreground">
+              Format: Country code + number (e.g., +1 234 567 8900)
+            </p>
           </div>
 
           {/* Subject */}
