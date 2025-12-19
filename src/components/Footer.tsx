@@ -14,11 +14,11 @@ const Footer = () => {
 
   // 🔥 Dynamic link data
   const footerLinks = [
-    { label: 'Contact is email', to: '/#' },
-    { label: 'Quick link', to: '/#' },
+    // { label: 'Contact us', to: '/contact' },
+    { label: 'Quick Links', to: '/#' },
     { label: 'Home', to: '/' },
     { label: 'About us', to: '/about' },
-    { label: 'Download app', to: '/download' },
+    { label: 'Download app', to: '/downloads' },
   ];
 
   return (
@@ -149,12 +149,12 @@ const Footer = () => {
                   </Link>
                 </li>
                 <li>
-                  <Link
-                    to='#'
+                  <a
+                    href='mailto:support@peacefulinvestment.com'
                     className='text-[15px] font-normal text-white transition-colors hover:text-primary'
                   >
                     Help Center
-                  </Link>
+                  </a>
                 </li>
               </ul>
             </div>
@@ -179,7 +179,7 @@ const Footer = () => {
       <div className='mx-auto w-full max-w-7xl pt-6 lg:pt-0'>
         <div className='border-t border-secondary-foreground pt-6'>
           <div className='text-center text-sm text-white'>
-            &copy; 2025 Peaceful Investment. All rights reserved.
+            &copy; {new Date().getFullYear()} Peaceful Investment. All rights reserved.
           </div>
         </div>
       </div>

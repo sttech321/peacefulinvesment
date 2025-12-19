@@ -1,8 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Shield, TrendingUp, Users } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useAuth } from '@/hooks/useAuth';
+
 
 const LandingCTA = () => {
+  const { user } = useAuth();
+
   return (
     <section className="py-24 px-6 bg-background">
       <div className="max-w-6xl mx-auto">
@@ -25,12 +29,14 @@ const LandingCTA = () => {
             
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+              {!user && (
               <Link to="/auth">
                 <Button className="download-btn-primary group">
                   Start Free Trial
                   <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
+               )}
               
               <Link to="/downloads">
                 <Button variant="outline" className="px-8 py-4 text-lg rounded-2xl">

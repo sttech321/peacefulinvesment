@@ -9,12 +9,21 @@ export const exportToExcel = (data: any[], filename: string, sheetName: string =
   try {
     // Create a new workbook
     const workbook = XLSX.utils.book_new();
+
+    const safeSheetName = sheetName
+      .replace(/[\\/?*\[\]]/g, '') // remove invalid chars
+      .substring(0, 31);           // max length
+
     
     // Convert data to worksheet
     const worksheet = XLSX.utils.json_to_sheet(data);
     
     // Add worksheet to workbook
-    XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+    XLSX.utils.book_append_sheet(
+      workbook,
+      worksheet,
+      safeSheetName || 'Sheet1'
+    );
     
     // Generate Excel file
     XLSX.writeFile(workbook, `${filename}.xlsx`);
@@ -224,9 +233,9 @@ export const formatDataForExport = (data: any[], type: 'users' | 'accounts' | 'r
         'Contact Email': request.contact_email,
         'Status': request.status,
         'Submitted At': new Date(request.submitted_at).toLocaleString(),
-        'Estimated Completion': request.estimated_completion ? new Date(request.estimated_completion).toLocaleString() : 'N/A',
-        'Admin Notes': request.admin_notes || 'N/A',
-        'Documents Requested': Array.isArray(request.documents_requested) ? request.documents_requested.join('; ') : request.documents_requested || 'N/A',
+       // 'Estimated Completion': request.estimated_completion ? new Date(request.estimated_completion).toLocaleString() : 'N/A',
+       // 'Admin Notes': request.admin_notes || 'N/A',
+       // 'Documents Requested': Array.isArray(request.documents_requested) ? request.documents_requested.join('; ') : request.documents_requested || 'N/A',
         'Created At': new Date(request.created_at).toLocaleString(),
         'Updated At': new Date(request.updated_at).toLocaleString(),
       }));

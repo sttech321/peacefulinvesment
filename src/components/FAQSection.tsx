@@ -164,7 +164,7 @@ const FAQSection = () => {
 <div className='flex gap-4'>
             <span className='bg-gradient-pink-to-yellow inline-block rounded-sm p-[2px] w-full'>
               <a
-                href='#'
+                href='mailto:support@peacefulinvestment.com'
                 className='hover:text-accent-cyan hover:bg-gradient-pink-to-yellow inline-flex items-center justify-center rounded-sm bg-black px-4 md:px-6 py-3 font-inter text-xs font-semibold uppercase text-white transition-colors w-full'
               >
                 📧 Email Support
