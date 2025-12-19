@@ -65,6 +65,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { exportToExcel, exportToPDF, formatDataForExport } from "@/utils/exportUtils";
 
 interface Referral {
   id: string;
@@ -535,6 +536,93 @@ export default function AdminReferrals() {
       <Badge variant="secondary" className="bg-gray-100 text-gray-800">Inactive</Badge>;
   };
 
+  const handleExport = async (type: 'excel' | 'pdf') => {
+    try {
+      let dataToExport: any[] = [];
+      let exportType: 'referrals' | 'payments' | 'signups' = 'referrals';
+      let filename = 'referrals_report';
+      let title = 'Referrals Report';
+
+      // Determine which data to export based on active tab
+      if (activeTab === 'referrals') {
+        dataToExport = filteredReferrals.length > 0 && (statusFilter !== 'all' || searchTerm)
+          ? filteredReferrals
+          : referrals;
+        exportType = 'referrals';
+        filename = 'referrals_report';
+        title = 'Referrals Report';
+      } else if (activeTab === 'payments') {
+        dataToExport = filteredPayments.length > 0 && searchTerm
+          ? filteredPayments
+          : payments;
+        exportType = 'payments';
+        filename = 'referral_payments_report';
+        title = 'Referral Payments Report';
+      } else if (activeTab === 'signups') {
+        dataToExport = filteredSignups.length > 0 && searchTerm
+          ? filteredSignups
+          : signups;
+        exportType = 'signups';
+        filename = 'referral_signups_report';
+        title = 'Referral Signups Report';
+      } else {
+        // Analytics tab - export referrals data
+        dataToExport = referrals;
+        exportType = 'referrals';
+        filename = 'referrals_report';
+        title = 'Referrals Report';
+      }
+
+      if (dataToExport.length === 0) {
+        toast({
+          title: "No Data",
+          description: `No ${activeTab} data to export`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const formattedData = formatDataForExport(dataToExport, exportType);
+      
+      if (type === 'excel') {
+        const result = exportToExcel(formattedData, filename, title);
+        if (result.success) {
+          toast({
+            title: "Success",
+            description: "Excel file exported successfully",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: result.message,
+            variant: "destructive",
+          });
+        }
+      } else if (type === 'pdf') {
+        const result = await exportToPDF(formattedData, filename, title);
+        if (result.success) {
+          toast({
+            title: "Success",
+            description: "PDF file exported successfully",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: result.message,
+            variant: "destructive",
+          });
+        }
+      }
+    } catch (error: any) {
+      console.error('Error exporting data:', error);
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to export data",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -558,9 +646,25 @@ export default function AdminReferrals() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" className="gap-0 rounded-[8px] hover:bg-white/80 border-0">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="gap-0 rounded-[8px] hover:bg-white/80 border-0"
+            onClick={() => handleExport('excel')}
+            disabled={loading}
+          >
             <Download className="h-4 w-4 mr-2" />
-            <span className="hidden sm:inline">Export</span>
+            <span className="hidden sm:inline">Export Excel</span>
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="gap-0 rounded-[8px] hover:bg-white/80 border-0"
+            onClick={() => handleExport('pdf')}
+            disabled={loading}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            <span className="hidden sm:inline">Export PDF</span>
           </Button>
           <Button
             variant="outline"

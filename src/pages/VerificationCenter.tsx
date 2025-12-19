@@ -184,7 +184,7 @@ const VerificationCenter: React.FC = () => {
 
         {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-2 bg-white/20">
             <TabsTrigger value="status" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
               {canUpload ? 'Upload Documents' : 'Status'}

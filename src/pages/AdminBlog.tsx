@@ -28,7 +28,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 const AdminBlog = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { posts, categories, fetchPosts, createPost, updatePost, deletePost } = useBlog();
+  const { posts, categories, fetchPosts, createPost, updatePost, deletePost, loading: postsLoading } = useBlog();
   const { isAdmin, loading: roleLoading } = useUserRole();
 
   // -------------------------
@@ -404,58 +404,70 @@ const AdminBlog = () => {
         </div>
 
         {/* Posts Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-10">
-          {posts.map((post) => (
-            <Card key={post.id} className="border border-muted/20 p-0 rounded-lg bg-white/5">
-              {post.featured_image && <img src={post.featured_image} alt={post.title} className="w-full h-40 object-cover rounded-t-lg mb-2" />}
-
-              <CardHeader>
-                <div className="flex items-center justify-between mb-2">
-                  <Badge variant={post.status === "published" ? "default" : "outline"} className={post.status === "published" ? "bg-green-500" : ""}>
-                    {post.status}
-                  </Badge>
-
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Eye className="w-4 h-4 text-primary" />
-                    {post.view_count}
-                  </div>
-                </div>
-
-                <CardTitle className="line-clamp-2">{post.title}</CardTitle>
-
-                {post.excerpt && <p className="text-sm text-muted-foreground line-clamp-3">{post.excerpt}</p>}
-              </CardHeader>
-
-              <CardContent>
-                <div className="flex items-center gap-4 text-xs text-muted-foreground mb-4">
-                  <div className="flex items-center gap-1">
-                    <Calendar className="w-3 h-3 text-primary" />
-                    {new Date(post.created_at).toLocaleDateString()}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Tag className="w-3 h-3 text-primary" />
-                    {post.tags.length} tags
-                  </div>
-                </div>
-
-                <div className="flex justify-end gap-2">
-                  <Button size="sm" className="rounded-[8px] border-0" variant="outline" onClick={() => handleEdit(post)}>
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                  <Button size="sm" className="rounded-[8px] border-0 text-destructive hover:text-destructive" variant="outline" onClick={() => handleDelete(post.id)}>
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {posts.length === 0 && (
-          <div className="text-center py-16">
-            <h3 className="text-2xl font-semibold text-muted-foreground mb-4">No blog posts yet</h3>
-            <p className="text-muted-foreground mb-6">Create your first blog post to get started.</p>
+        {postsLoading ? (
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto mb-4"></div>
+              <h2 className="text-xl font-semibold mb-2 text-white pt-5">Loading Blog Posts</h2>
+              <p className="text-muted-foreground">Fetching blog post data...</p>
+            </div>
           </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-10">
+              {posts.map((post) => (
+                <Card key={post.id} className="border border-muted/20 p-0 rounded-lg bg-white/5">
+                  {post.featured_image && <img src={post.featured_image} alt={post.title} className="w-full h-40 object-cover rounded-t-lg mb-2" />}
+
+                  <CardHeader>
+                    <div className="flex items-center justify-between mb-2">
+                      <Badge variant={post.status === "published" ? "default" : "outline"} className={post.status === "published" ? "bg-green-500" : ""}>
+                        {post.status}
+                      </Badge>
+
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Eye className="w-4 h-4 text-primary" />
+                        {post.view_count}
+                      </div>
+                    </div>
+
+                    <CardTitle className="line-clamp-2">{post.title}</CardTitle>
+
+                    {post.excerpt && <p className="text-sm text-muted-foreground line-clamp-3">{post.excerpt}</p>}
+                  </CardHeader>
+
+                  <CardContent>
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground mb-4">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="w-3 h-3 text-primary" />
+                        {new Date(post.created_at).toLocaleDateString()}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Tag className="w-3 h-3 text-primary" />
+                        {post.tags.length} tags
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-2">
+                      <Button size="sm" className="rounded-[8px] border-0" variant="outline" onClick={() => handleEdit(post)}>
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button size="sm" className="rounded-[8px] border-0 text-destructive hover:text-destructive" variant="outline" onClick={() => handleDelete(post.id)}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {posts.length === 0 && (
+              <div className="text-center py-16">
+                <h3 className="text-2xl font-semibold text-muted-foreground mb-4">No blog posts yet</h3>
+                <p className="text-muted-foreground mb-6">Create your first blog post to get started.</p>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

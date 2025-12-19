@@ -48,6 +48,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { exportToExcel, exportToPDF, formatDataForExport } from "@/utils/exportUtils";
 
 interface OverseasCompanyRequest {
   id: string;
@@ -490,6 +491,80 @@ export default function AdminOverseasCompanies() {
     }
   };
 
+  const handleExport = async (type: 'excel' | 'pdf') => {
+    try {
+      let dataToExport: any[] = [];
+      let exportType: 'overseas_requests' | 'overseas_companies' = 'overseas_requests';
+      let filename = 'overseas_company_requests_report';
+      let title = 'Overseas Company Requests Report';
+
+      // Determine which data to export based on active tab
+      if (activeTab === 'requests') {
+        dataToExport = filteredRequests.length > 0 && (statusFilter !== 'all' || searchTerm)
+          ? filteredRequests
+          : requests;
+        exportType = 'overseas_requests';
+        filename = 'overseas_company_requests_report';
+        title = 'Overseas Company Requests Report';
+      } else if (activeTab === 'companies') {
+        dataToExport = filteredCompanies.length > 0 && (statusFilter !== 'all' || searchTerm)
+          ? filteredCompanies
+          : companies;
+        exportType = 'overseas_companies';
+        filename = 'overseas_companies_report';
+        title = 'Overseas Companies Report';
+      }
+
+      if (dataToExport.length === 0) {
+        toast({
+          title: "No Data",
+          description: `No ${activeTab} data to export`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const formattedData = formatDataForExport(dataToExport, exportType);
+      
+      if (type === 'excel') {
+        const result = exportToExcel(formattedData, filename, title);
+        if (result.success) {
+          toast({
+            title: "Success",
+            description: "Excel file exported successfully",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: result.message,
+            variant: "destructive",
+          });
+        }
+      } else if (type === 'pdf') {
+        const result = await exportToPDF(formattedData, filename, title);
+        if (result.success) {
+          toast({
+            title: "Success",
+            description: "PDF file exported successfully",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: result.message,
+            variant: "destructive",
+          });
+        }
+      }
+    } catch (error: any) {
+      console.error('Error exporting data:', error);
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to export data",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -513,9 +588,25 @@ export default function AdminOverseasCompanies() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button className="gap-0 rounded-[8px] hover:bg-white/80 border-0" variant="outline" size="sm">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="gap-0 rounded-[8px] hover:bg-white/80 border-0"
+            onClick={() => handleExport('excel')}
+            disabled={loading}
+          >
             <Download className="h-4 w-4 mr-2" />
-            <span className="hidden sm:inline">Export</span>
+            <span className="hidden sm:inline">Export Excel</span>
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="gap-0 rounded-[8px] hover:bg-white/80 border-0"
+            onClick={() => handleExport('pdf')}
+            disabled={loading}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            <span className="hidden sm:inline">Export PDF</span>
           </Button>
           <Button
             variant="outline"

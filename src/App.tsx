@@ -42,6 +42,7 @@ import AdminReferrals from "./pages/admin/AdminReferrals";
 import AdminContactRequests from "./pages/admin/AdminContactRequests";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminAuditLog from "./pages/admin/AdminAuditLog";
+import AdminSettings from "./pages/admin/AdminSettings";
 import CreateAdminUser from "./pages/CreateAdminUser";
 import LoadingScreen from "@/components/ui/loading-screen";
 import ScrollToTop from './ScrollToTop';
@@ -160,6 +161,13 @@ function AppContent() {
                         </AdminRouteGuard>
                       }
                     />
+                    <Route path="/admin/settings" element={
+                      <AdminRouteGuard>
+                        <AdminLayout>
+                          <AdminSettings />
+                        </AdminLayout>
+                      </AdminRouteGuard>
+                    } />
 
 
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

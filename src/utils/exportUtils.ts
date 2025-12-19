@@ -127,7 +127,7 @@ export const exportElementToPDF = async (elementId: string, filename: string) =>
 /**
  * Format data for export
  */
-export const formatDataForExport = (data: any[], type: 'users' | 'accounts' | 'requests') => {
+export const formatDataForExport = (data: any[], type: 'users' | 'accounts' | 'requests' | 'referrals' | 'payments' | 'signups' | 'overseas_requests' | 'overseas_companies') => {
   switch (type) {
     case 'users':
       return data.map(user => ({
@@ -166,6 +166,86 @@ export const formatDataForExport = (data: any[], type: 'users' | 'accounts' | 'r
         'Resolved At': request.resolved_at ? new Date(request.resolved_at).toLocaleString() : 'N/A',
         'Created At': request.created_at ? new Date(request.created_at).toLocaleString() : 'N/A',
         'Updated At': request.updated_at ? new Date(request.updated_at).toLocaleString() : 'N/A',
+      }));
+    
+    case 'referrals':
+      return data.map(referral => ({
+        'Referral ID': referral.id,
+        'User ID': referral.user_id,
+        'User Name': referral.user?.full_name || 'Unknown',
+        'User Email': referral.user?.email || 'Unknown',
+        'Referral Code': referral.referral_code,
+        'Referral Link': referral.referral_link,
+        'Status': referral.status,
+        'Is Active': referral.is_active ? 'Yes' : 'No',
+        'Total Referrals': referral.total_referrals,
+        'Total Earnings': referral.total_earnings,
+        'Year to Date Earnings': referral.year_to_date_earnings,
+        'Initial Deposit': referral.initial_deposit || 'N/A',
+        'Deposit Date': referral.deposit_date ? new Date(referral.deposit_date).toLocaleString() : 'N/A',
+        'Created At': new Date(referral.created_at).toLocaleString(),
+        'Updated At': new Date(referral.updated_at).toLocaleString(),
+      }));
+    
+    case 'payments':
+      return data.map(payment => ({
+        'Payment ID': payment.id,
+        'Referral ID': payment.referral_id,
+        'Amount': payment.amount,
+        'Payment Date': new Date(payment.payment_date).toLocaleString(),
+        'Notes': payment.notes || 'N/A',
+        'Created At': new Date(payment.created_at).toLocaleString(),
+      }));
+    
+    case 'signups':
+      return data.map(signup => ({
+        'Signup ID': signup.id,
+        'Referral ID': signup.referral_id,
+        'Referred User ID': signup.referred_user_id,
+        'Referred User Name': signup.referred_user?.full_name || 'Unknown',
+        'Referred User Email': signup.referred_user?.email || 'Unknown',
+        'Signup Date': new Date(signup.signup_date).toLocaleString(),
+        'Deposit Amount': signup.deposit_amount || 'N/A',
+        'Deposit Date': signup.deposit_date ? new Date(signup.deposit_date).toLocaleString() : 'N/A',
+        'Created At': new Date(signup.created_at).toLocaleString(),
+      }));
+    
+    case 'overseas_requests':
+      return data.map(request => ({
+        'Request ID': request.id,
+        'User ID': request.user_id,
+        'User Name': request.user?.full_name || 'Unknown',
+        'User Email': request.user?.email || request.contact_email || 'Unknown',
+        'Company Names': Array.isArray(request.company_names) ? request.company_names.join('; ') : request.company_names || 'N/A',
+        'Selected Company Name': request.selected_company_name || 'N/A',
+        'Jurisdiction': request.jurisdiction,
+        'Business Type': request.business_type,
+        'Business Description': request.business_description || 'N/A',
+        'Contact Email': request.contact_email,
+        'Status': request.status,
+        'Submitted At': new Date(request.submitted_at).toLocaleString(),
+        'Estimated Completion': request.estimated_completion ? new Date(request.estimated_completion).toLocaleString() : 'N/A',
+        'Admin Notes': request.admin_notes || 'N/A',
+        'Documents Requested': Array.isArray(request.documents_requested) ? request.documents_requested.join('; ') : request.documents_requested || 'N/A',
+        'Created At': new Date(request.created_at).toLocaleString(),
+        'Updated At': new Date(request.updated_at).toLocaleString(),
+      }));
+    
+    case 'overseas_companies':
+      return data.map(company => ({
+        'Company ID': company.id,
+        'User ID': company.user_id,
+        'User Name': company.user?.full_name || 'Unknown',
+        'User Email': company.user?.email || company.contact_email || 'Unknown',
+        'Company Name': company.company_name,
+        'Registration Number': company.registration_number,
+        'Incorporation Date': new Date(company.incorporation_date).toLocaleDateString(),
+        'Jurisdiction': company.jurisdiction,
+        'Status': company.status,
+        'Contact Email': company.contact_email,
+        'Contact Phone': company.contact_phone || 'N/A',
+        'Created At': new Date(company.created_at).toLocaleString(),
+        'Updated At': new Date(company.updated_at).toLocaleString(),
       }));
     
     default:
