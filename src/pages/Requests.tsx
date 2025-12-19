@@ -78,13 +78,13 @@ const Requests = () => {
 
           <Tabs defaultValue="requests" className="space-y-6">
             <div className="flex items-center flex-wrap sm:flex-nowrap justify-between">
-              <TabsList className="sm:mb-0 mb-4 bg-white/20">
+              <TabsList className="mb-0 bg-white/20  grid-cols-2">
                 <TabsTrigger value="requests">My Requests</TabsTrigger>
                 <TabsTrigger value="new">New Request</TabsTrigger>
               </TabsList>
               
               {!showForm && (
-                <Button onClick={() => setShowForm(true)} className="flex items-center gap-2 ml-3">
+                <Button onClick={() => setShowForm(true)} className="flex items-center gap-2 ml-3 hidden">
                   <Plus className="h-4 w-4" />
                   New Request
                 </Button>
@@ -108,7 +108,7 @@ const Requests = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="absolute -top-12 right-0 z-10"
+                  className="absolute -top-12 right-0 z-10 rounded-[8px] border-0 shadow-none"
                   onClick={() => setShowForm(false)}
                 >
                   Close

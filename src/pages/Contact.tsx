@@ -222,8 +222,8 @@ const Contact = () => {
                 hours.
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <Button onClick={() => setSubmitSuccess(false)} className='mt-4'>
+            <CardContent className='pt-0 sm:pt-0'>
+              <Button onClick={() => setSubmitSuccess(false)} className='mt-0 rounded-[8px] border-0 bg-primary hover:bg-primary/70 focus:ring-2 focus:ring-offset-2 focus:ring-primary text-black hover:text-black shadow-none'>
                 Send Another Message
               </Button>
             </CardContent>
