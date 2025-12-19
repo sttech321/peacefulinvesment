@@ -44,7 +44,7 @@ import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminAuditLog from "./pages/admin/AdminAuditLog";
 import CreateAdminUser from "./pages/CreateAdminUser";
 import LoadingScreen from "@/components/ui/loading-screen";
-
+import ScrollToTop from './ScrollToTop';
 
 const queryClient = new QueryClient();
 
@@ -53,6 +53,7 @@ function AppContent() {
 
   return (
     <RouteGuard>
+       <ScrollToTop />
       <div className="min-h-screen w-full">
         <Navbar />
         <Routes>

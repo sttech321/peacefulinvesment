@@ -124,9 +124,9 @@ const AuditTrail = ({ requestId }: AuditTrailProps) => {
 
   if (loading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+      <Card className="p-0 border-0">
+        <CardHeader className="pb-0 sm:pb-0 hidden">
+          <CardTitle className="flex items-center gap-2 text-lg ">
             <Activity className="h-5 w-5" />
             Audit Trail
           </CardTitle>
@@ -141,9 +141,9 @@ const AuditTrail = ({ requestId }: AuditTrailProps) => {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+    <Card className="p-0 border-0">
+      <CardHeader className="pb-0 sm:pb-0">
+        <CardTitle className="flex items-center gap-2 text-lg">
           <Activity className="h-5 w-5" />
           Audit Trail ({auditLog.length})
         </CardTitle>
@@ -151,7 +151,7 @@ const AuditTrail = ({ requestId }: AuditTrailProps) => {
       <CardContent>
         {auditLog.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
-            <Activity className="mx-auto h-12 w-12 mb-4 opacity-50" />
+            <Activity className="mx-auto h-12 w-12 mb-4 text-primary" />
             <p>No audit log entries found for this request.</p>
           </div>
         ) : (
@@ -161,7 +161,7 @@ const AuditTrail = ({ requestId }: AuditTrailProps) => {
               const changes = getChangedFields(entry.old_values, entry.new_values);
               
               return (
-                <div key={entry.id} className="border rounded-lg">
+                <div key={entry.id} className="border border-muted-foreground/20 rounded-[8px]">
                   <Collapsible
                     open={isExpanded}
                     onOpenChange={() => toggleExpanded(entry.id)}
@@ -169,7 +169,7 @@ const AuditTrail = ({ requestId }: AuditTrailProps) => {
                     <CollapsibleTrigger asChild>
                       <Button
                         variant="ghost"
-                        className="w-full justify-between p-4 h-auto"
+                        className="w-full justify-between p-4 h-auto hover:bg-white/10 rounded-[8px] text-white/50 hover:text-white"
                       >
                         <div className="flex items-center gap-3">
                           {getActionIcon(entry.action)}
@@ -196,7 +196,7 @@ const AuditTrail = ({ requestId }: AuditTrailProps) => {
                     </CollapsibleTrigger>
                     
                     <CollapsibleContent className="px-4 pb-4">
-                      <div className="space-y-3 pt-2 border-t">
+                      <div className="space-y-3 pt-2 border-t border-muted-foreground/20">
                         {entry.action === 'INSERT' && entry.new_values && (
                           <div>
                             <h4 className="font-medium text-green-800 mb-2">Request Created</h4>
@@ -239,7 +239,7 @@ const AuditTrail = ({ requestId }: AuditTrailProps) => {
                           </div>
                         )}
                         
-                        <div className="text-xs text-muted-foreground pt-2 border-t">
+                        <div className="text-xs text-muted-foreground pt-2 border-t border-muted-foreground/20">
                           <p>Entry ID: {entry.id}</p>
                           {entry.ip_address && <p>IP Address: {entry.ip_address}</p>}
                         </div>
