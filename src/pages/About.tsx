@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from '@/hooks/useAuth';
 import { 
   Users, 
   Target, 
@@ -18,7 +19,10 @@ import {
 import { Link } from "react-router-dom";
 import Footer from "@/components/Footer";
 
+
 export default function About() {
+  const { user } = useAuth();
+
   const values = [
     {
       icon: Shield,
@@ -117,12 +121,15 @@ export default function About() {
               opportunities for financial growth across the globe.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/auth" className="bg-gradient-pink-to-yellow rounded-[12px] p-[2px]">
+              {!user && (
+              <Link to="/auth?mode=signup" className="bg-gradient-pink-to-yellow rounded-[12px] p-[2px]">
                 <Button className="hover:bg-gradient-pink-to-yellow flex  rounded-[10px] border-0 bg-black p-0 px-5 font-inter text-xs font-semibold uppercase text-white hover:text-white w-full">
                   Start Trading Today
                   <ArrowRight className="w-5 h-5 ml-0 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
+              )}
+
               <Link to="/downloads" className="bg-gradient-pink-to-yellow rounded-[12px] p-[2px]">
                 <Button variant="outline" className="bg-gradient-yellow-to-pink hover:bg-gradient-pink-to-yellow block rounded-[10px] border-0 p-0 px-5 font-inter text-xs font-semibold uppercase text-white w-full">
                   View Our Platform
@@ -391,11 +398,14 @@ export default function About() {
             Join thousands of successful traders who trust Peaceful Investment for their financial growth.
           </p>
           <div className="flex sm:flex-row gap-4 justify-center pt-8 md:pt-10 max-w-sm mx-auto">
-            <Link to="/auth" className="bg-gradient-pink-to-yellow rounded-[12px] p-[2px] w-full">
+             {!user && (
+            <Link to="/auth?mode=signup" className="bg-gradient-pink-to-yellow rounded-[12px] p-[2px] w-full">
               <Button size="lg" variant="secondary" className="hover:bg-gradient-pink-to-yellow flex rounded-[10px] border-0 bg-black p-0 px-5 font-inter text-sm font-semibold uppercase text-white hover:text-white w-full">
                 Create Account
               </Button>
             </Link>
+             )}
+             
             <Link to="/downloads" className="bg-gradient-pink-to-yellow rounded-[12px] p-[2px] w-full">
               <Button size="lg" variant="outline" className="bg-gradient-yellow-to-pink hover:bg-gradient-pink-to-yellow block rounded-[10px] border-0 p-0 px-5 font-inter text-sm font-semibold uppercase text-white w-full">
                 Learn More
