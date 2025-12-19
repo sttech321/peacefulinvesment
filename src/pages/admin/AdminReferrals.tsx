@@ -746,7 +746,7 @@ export default function AdminReferrals() {
                             {getStatusBadge(referral.status)}
                             {getActiveStatusBadge(referral.is_active)}
                           </div>
-                          <p className="text-sm text-muted-foreground mb-1 truncate">
+                          <p className="text-sm text-white mb-1 truncate">
                             {referral.user?.email || 'Unknown email'}
                           </p>
                           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -767,6 +767,7 @@ export default function AdminReferrals() {
                         <Button
                           variant="ghost"
                           size="sm"
+                          className="rounded-[8px] bg-muted/20 hover:bg-muted/40 text-white hover:text-white"
                           onClick={() => {
                             setSelectedReferral(referral);
                             setReferralDetailsOpen(true);
@@ -774,16 +775,21 @@ export default function AdminReferrals() {
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button
+                       <Button
                           variant="ghost"
                           size="sm"
+                          className={`rounded-[8px] ${
+                            referral.is_active ? "bg-red-600 hover:bg-red-700" : "bg-green-600 hover:bg-green-700"
+                          }`}
                           onClick={() => handleToggleReferralStatus(referral)}
                         >
-                          {referral.is_active ? 
-                            <XCircle className="h-4 w-4 text-red-500" /> :
-                            <CheckCircle className="h-4 w-4 text-green-500" />
-                          }
+                          {referral.is_active ? (
+                            <XCircle className="h-4 w-4 text-white" />
+                          ) : (
+                            <CheckCircle className="h-4 w-4 text-white" />
+                          )}
                         </Button>
+
                       </div>
                     </div>
                   ))

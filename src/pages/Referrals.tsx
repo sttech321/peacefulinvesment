@@ -655,7 +655,7 @@ const Referrals = () => {
                       {signups.map((signup) => (
                         <div key={signup.id} className="flex items-center justify-between p-4 border rounded-lg">
                           <div className="space-y-1">
-                            <p className="text-sm font-medium">User Signup</p>
+                            <p className="text-sm font-medium text-white">User Signup</p>
                             <p className="text-xs text-muted-foreground">
                               Joined: {formatDate(signup.signup_date)}
                             </p>

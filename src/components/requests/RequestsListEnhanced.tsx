@@ -150,13 +150,14 @@ const RequestsListEnhanced = () => {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-4">
-          <Button variant="outline" onClick={() => setSelectedRequest(null)}>
+          <Button variant="outline" className="rounded-[8px] border-0 hover:bg-white/80" onClick={() => setSelectedRequest(null)}>
             ← Back to Requests
           </Button>
-          <h2 className="text-2xl font-bold">Request Details</h2>
+          <h2 className="text-2xl font-semibold text-white">Request Details</h2>
           <Button 
             variant="outline" 
             size="sm"
+            className="ml-auto rounded-[8px] border-0 hover:bg-white/80"
             onClick={() => sendTestNotification(selectedRequest)}
           >
             Test Notification
@@ -167,13 +168,13 @@ const RequestsListEnhanced = () => {
           {/* Request Information */}
           <Card className="lg:col-span-2">{/* Request details content remains the same */}
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-lg">
                 {selectedRequest.type === 'deposit' ? (
-                  <DollarSign className="h-5 w-5 text-green-600" />
+                  <span className="bg-green-100 rounded-[100px] p-2"><DollarSign className="h-5 w-5 text-green-600" /></span>
                 ) : (
-                  <CreditCard className="h-5 w-5 text-blue-600" />
+                  <span className="bg-primary/10 rounded-[100px] p-2"><CreditCard className="h-5 w-5 text-primary" /></span>
                 )}
-                {selectedRequest.type === 'deposit' ? 'Deposit' : 'Withdrawal'} Request
+                {selectedRequest.type === 'deposit' ? 'Deposit' : 'Withdrawal'} Request 
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -187,7 +188,7 @@ const RequestsListEnhanced = () => {
 
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Amount</span>
-                <span className="font-semibold text-lg">
+                <span className="font-semibold text-sm text-muted text-right">
                   {selectedRequest.amount.toLocaleString()} {selectedRequest.currency}
                   {(selectedRequest as any).calculated_fee !== undefined && (selectedRequest as any).calculated_fee > 0 && (
                     <span className="text-sm text-muted-foreground block">
@@ -204,39 +205,41 @@ const RequestsListEnhanced = () => {
 
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Payment Method</span>
-                <span className="font-medium">{selectedRequest.payment_method}</span>
+                <span className="font-medium text-sm text-muted">{selectedRequest.payment_method}</span>
               </div>
 
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Request ID</span>
-                <span className="font-mono text-sm">{selectedRequest.id}</span>
+                <span className="font-mono text-sm text-muted">{selectedRequest.id}</span>
               </div>
 
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Created</span>
-                <span className="font-medium">
+                <span className="font-medium text-sm text-muted">
                   {format(new Date(selectedRequest.created_at), 'PPP at pp')}
                 </span>
               </div>
 
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Last Updated</span>
-                <span className="font-medium">
+                <span className="font-medium text-sm text-muted">
                   {format(new Date(selectedRequest.updated_at), 'PPP at pp')}
                 </span>
               </div>
 
+ 
+
               {selectedRequest.description && (
-                <div className="pt-4 border-t">
+                <div className="pt-4 border-t border-muted-foreground/20">
                   <span className="text-muted-foreground block mb-2">Description</span>
-                  <p className="text-sm bg-muted p-3 rounded-md">{selectedRequest.description}</p>
+                  <p className="text-sm p-0 rounded-md text-muted">{selectedRequest.description}</p>
                 </div>
               )}
 
               {selectedRequest.admin_notes && (
-                <div className="pt-4 border-t">
+                <div className="pt-4 border-t border-muted-foreground/20">
                   <span className="text-muted-foreground block mb-2">Admin Notes</span>
-                  <p className="text-sm bg-yellow-50 border border-yellow-200 p-3 rounded-md">
+                  <p className="text-sm bg-yellow-50 border-0 p-3 rounded-[8px]">
                     {selectedRequest.admin_notes}
                   </p>
                 </div>
@@ -247,14 +250,14 @@ const RequestsListEnhanced = () => {
           {/* Documents Section */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-lg">
                 <FileText className="h-5 w-5" />
                 Documents ({requestDocuments.length})
               </CardTitle>
             </CardHeader>
             <CardContent>
               {loadingDocuments ? (
-                <div className="flex items-center justify-center h-32">
+                <div className="flex items-center justify-center h-32 ">
                   <Loader2 className="h-6 w-6 animate-spin" />
                 </div>
               ) : (
@@ -288,14 +291,14 @@ const RequestsListEnhanced = () => {
           </Card>
 
           {/* Audit Trail */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+          <Card className="p-0">
+            <CardHeader className="pb-0 sm:pb-0">
+              <CardTitle className="flex items-center gap-2 text-lg">
                 <Calendar className="h-5 w-5" />
                 Activity Log
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0 sm:p-0">
               <AuditTrail requestId={selectedRequest.id} />
             </CardContent>
           </Card>
@@ -321,10 +324,10 @@ const RequestsListEnhanced = () => {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-lg ${
+                <div className={`p-2 rounded-[100px] ${
                   request.type === 'deposit' 
                     ? 'bg-green-100 text-green-600' 
-                    : 'bg-blue-100 text-blue-600'
+                    : 'bg-primary/10 text-primary'
                 }`}>
                   {request.type === 'deposit' ? (
                     <DollarSign className="h-5 w-5" />
@@ -333,7 +336,7 @@ const RequestsListEnhanced = () => {
                   )}
                 </div>
                 <div>
-                  <h3 className="font-semibold capitalize">
+                  <h3 className="font-semibold capitalize text-white">
                     {request.type} Request
                   </h3>
                   <p className="text-sm text-muted-foreground">
@@ -350,21 +353,21 @@ const RequestsListEnhanced = () => {
             <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
               <div>
                 <p className="text-sm text-muted-foreground">Amount</p>
-                <p className="font-medium">
+                <p className="font-medium text-muted pt-1">
                   {request.amount.toLocaleString()} {request.currency}
                 </p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Payment Method</p>
-                <p className="font-medium">{request.payment_method}</p>
+                <p className="font-medium text-muted pt-1">{request.payment_method}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Request ID</p>
-                <p className="font-mono text-sm">{request.id.slice(0, 8)}...</p>
+                <p className="font-mono text-sm text-muted pt-1">{request.id.slice(0, 8)}...</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Last Updated</p>
-                <p className="font-medium">
+                <p className="font-medium text-muted pt-1">
                   {format(new Date(request.updated_at), 'MMM dd, yyyy')}
                 </p>
               </div>

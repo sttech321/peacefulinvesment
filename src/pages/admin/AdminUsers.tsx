@@ -1150,7 +1150,7 @@ export default function AdminUsers() {
                         setSelectedUser(user);
                         setUserDetailsOpen(true);
                       }}
-                       className="text-white bg-gray-800 hover:text-white hover:bg-gray-700 rounded-[8px]"
+                       className="text-white bg-muted/20 hover:text-white hover:bg-muted/40 rounded-[8px]"
                     >
                       <Eye className="h-4 w-4 text-white" />
                     </Button>

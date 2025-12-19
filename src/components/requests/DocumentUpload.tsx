@@ -47,9 +47,9 @@ const DocumentUpload = ({ requestId, onDocumentsChange, existingDocuments = [] }
   ];
 
   const getFileIcon = (fileType: string) => {
-    if (fileType.startsWith('image/')) return <Image className="h-4 w-4" />;
-    if (fileType.includes('pdf')) return <FileText className="h-4 w-4" />;
-    return <File className="h-4 w-4" />;
+    if (fileType.startsWith('image/')) return <Image className="h-4 w-4 min-w-[18px] min-h-[18px] text-muted-foreground mr-[4px]" />;
+    if (fileType.includes('pdf')) return <FileText className="h-4 w-4 min-w-[18px] min-h-[18px] text-muted-foreground mr-[4px]" />;
+    return <File className="h-4 w-4 min-w-[18px] min-h-[18px] text-muted-foreground mr-[4px]" />;
   };
 
   const formatFileSize = (bytes: number) => {
@@ -200,7 +200,7 @@ const DocumentUpload = ({ requestId, onDocumentsChange, existingDocuments = [] }
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 text-lg">
           <Upload className="h-5 w-5" />
           Document Upload
         </CardTitle>
@@ -216,12 +216,12 @@ const DocumentUpload = ({ requestId, onDocumentsChange, existingDocuments = [] }
           }`}
         >
           <input {...getInputProps()} />
-          <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+          <Upload className="h-10 w-10 mx-auto mb-4 text-muted-foreground" />
           {isDragActive ? (
             <p className="text-primary">Drop the files here...</p>
           ) : (
             <div>
-              <p className="text-lg font-medium mb-2">Click or drag files to upload</p>
+              <p className="text-lg font-medium mb-2 text-muted-foreground">Click or drag files to upload</p>
               <p className="text-sm text-muted-foreground">
                 Supports: PDF, DOC, DOCX, PNG, JPG, JPEG (max 10MB each)
               </p>
@@ -232,27 +232,27 @@ const DocumentUpload = ({ requestId, onDocumentsChange, existingDocuments = [] }
         {/* Pending Uploads */}
         {pendingUploads.length > 0 && (
           <div className="space-y-4">
-            <h4 className="font-medium">Ready to Upload:</h4>
+            <h4 className="font-medium text-muted">Ready to Upload:</h4>
             {pendingUploads.map((upload, index) => (
               <div key={index} className="border rounded-lg p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    {getFileIcon(upload.file.type)}
-                    <span className="font-medium">{upload.file.name}</span>
-                    <span className="text-sm text-muted-foreground">
+                <div className="flex items-baseline justify-between">
+                  <div className="  flex-wrap">
+                    <span className="font-medium text-sm text-muted-foreground flex gap-0 items-start">{getFileIcon(upload.file.type)}{upload.file.name}</span>
+                    <span className="text-sm text-muted pl-5">
                       ({formatFileSize(upload.file.size)})
                     </span>
                   </div>
                   <Button
                     variant="ghost"
                     size="sm"
+                    className="rounded-[8px] hover:bg-white/20"
                     onClick={() => removePendingUpload(index)}
                   >
-                    <X className="h-4 w-4" />
+                    <X className="h-4 w-4 text-white " />
                   </Button>
                 </div>
                 
-                <div className="grid gap-3 md:grid-cols-2">
+                <div className="grid gap-3 md:grid-cols-1">
                   <Select 
                     value={upload.document_type}
                     onValueChange={(value) => updatePendingUpload(index, 'document_type', value)}
@@ -273,7 +273,7 @@ const DocumentUpload = ({ requestId, onDocumentsChange, existingDocuments = [] }
                     placeholder="Description (optional)"
                     value={upload.description}
                     onChange={(e) => updatePendingUpload(index, 'description', e.target.value)}
-                    className="min-h-[80px]"
+                    className="min-h-[80px] rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
                   />
                 </div>
               </div>
