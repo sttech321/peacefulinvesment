@@ -23,9 +23,24 @@ const ForgotPassword = () => {
       return;
     }
 
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    // Improved email format validation
+    const trimmedEmail = email.trim().toLowerCase();
+    const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+    
+    if (!emailRegex.test(trimmedEmail)) {
+      setError("Please enter a valid email address");
+      return;
+    }
+
+    // Additional validation: check for common invalid patterns
+    if (trimmedEmail.includes('..') || trimmedEmail.startsWith('.') || trimmedEmail.endsWith('.')) {
+      setError("Please enter a valid email address");
+      return;
+    }
+
+    // Check domain part is valid
+    const domainPart = trimmedEmail.split('@')[1];
+    if (!domainPart || domainPart.length < 4 || !domainPart.includes('.')) {
       setError("Please enter a valid email address");
       return;
     }
@@ -34,17 +49,39 @@ const ForgotPassword = () => {
     setError("");
 
     try {
+      // Note: Supabase intentionally obscures whether an email exists for security reasons
+      // We'll attempt to check, but Supabase often returns "Invalid login credentials" for both
+      // existing and non-existing emails. So we'll be conservative and proceed with reset.
+      // The resetPasswordForEmail function will handle non-existent emails gracefully.
+      
+      // Try to check if email exists using sign-in attempt
+      // This is optional - if it fails to determine, we proceed anyway
+      const { error: signInError, data: signInData } = await supabase.auth.signInWithPassword({
+        email: trimmedEmail,
+        password: 'dummy_password_check_123!@#$%^&*()_+',
+      }).catch(() => ({ error: null, data: null }));
+
+      // If somehow the dummy password worked (extremely unlikely), sign out immediately
+      if (signInData?.user && !signInError) {
+        await supabase.auth.signOut();
+      }
+
+      // Proceed with password reset
+      // Supabase's resetPasswordForEmail is designed to not reveal if email exists (for security)
+      // It will send email if exists, or silently succeed if doesn't exist (to prevent email enumeration)
       const redirectUrl = `${window.location.origin}/reset-password`;
       
       // Note: To prevent emails from going to spam, configure custom SMTP in Supabase Dashboard:
       // Authentication > Settings > SMTP Settings
       // Use your Resend SMTP credentials with proper SPF/DKIM/DMARC records
       // See SUPABASE_EMAIL_SETUP.md for detailed instructions
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
         redirectTo: redirectUrl,
       });
 
       if (resetError) {
+        // Only show specific errors - Supabase typically succeeds even for non-existent emails
+        // to prevent email enumeration attacks
         throw resetError;
       }
 
@@ -55,7 +92,9 @@ const ForgotPassword = () => {
       });
       
     } catch (err: any) {
-      setError(err.message || "Failed to send reset email");
+      // Handle errors - but note that Supabase resetPasswordForEmail typically succeeds
+      // even for non-existent emails to prevent email enumeration
+      setError(err.message || "Failed to send reset email. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -159,7 +198,10 @@ const ForgotPassword = () => {
                   id="email"
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setError(""); // Clear error when user starts typing
+                  }}
                   required
                   placeholder="Enter your email address"
                   autoComplete="email"

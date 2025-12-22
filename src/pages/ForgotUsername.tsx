@@ -24,10 +24,25 @@ const ForgotUsername = () => {
       return;
     }
 
-    // Basic validation
+    // Improved validation
     if (searchMethod === 'email') {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(searchValue)) {
+      const trimmedEmail = searchValue.trim().toLowerCase();
+      const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+      
+      if (!emailRegex.test(trimmedEmail)) {
+        setError("Please enter a valid email address");
+        return;
+      }
+
+      // Additional validation: check for common invalid patterns
+      if (trimmedEmail.includes('..') || trimmedEmail.startsWith('.') || trimmedEmail.endsWith('.')) {
+        setError("Please enter a valid email address");
+        return;
+      }
+
+      // Check domain part is valid
+      const domainPart = trimmedEmail.split('@')[1];
+      if (!domainPart || domainPart.length < 4 || !domainPart.includes('.')) {
         setError("Please enter a valid email address");
         return;
       }
@@ -44,41 +59,65 @@ const ForgotUsername = () => {
     setError("");
 
     try {
-      // Check if user exists in profiles table
-      let query = supabase
-        .from('profiles')
-        .select('user_id, full_name')
-        .limit(1);
-
       if (searchMethod === 'email') {
-        // We need to check auth.users table for email, but we can't query it directly
-        // So we'll try a different approach - attempt to sign in with a dummy password
-        // This will fail but tell us if the email exists
+        // Validate email format
+        const trimmedEmail = searchValue.trim().toLowerCase();
+        const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+        
+        if (!emailRegex.test(trimmedEmail)) {
+          setError("Please enter a valid email address");
+          setLoading(false);
+          return;
+        }
+
+        // Check if email exists by attempting sign in with dummy password
+        // Supabase obscures this for security, but we can get some indication
         const { error: signInError } = await supabase.auth.signInWithPassword({
-          email: searchValue,
-          password: 'dummy_password_that_will_fail_123!@#'
+          email: trimmedEmail,
+          password: 'dummy_password_check_123!@#$%^&*()_+',
+        }).catch(() => ({ error: null }));
+
+        // Check if we got an error that suggests email doesn't exist
+        // Note: Supabase intentionally obscures this, so we'll proceed if we get "Invalid credentials"
+        // which typically means email exists but password is wrong
+        if (signInError) {
+          const errorMessage = signInError.message?.toLowerCase() || '';
+          // If we get specific errors that clearly indicate email doesn't exist
+          if (errorMessage.includes('user not found') || 
+              errorMessage.includes('email not registered') ||
+              errorMessage.includes('no user found')) {
+            setError("No account found with this email address");
+            setLoading(false);
+            return;
+          }
+          // If we get "Invalid login credentials" or similar, email likely exists, proceed
+        }
+
+        // Call Edge Function to send username recovery email
+        const { data, error: functionError } = await supabase.functions.invoke('send-username-recovery', {
+          body: { email: trimmedEmail },
         });
 
-        // If we get "Invalid login credentials", the email exists
-        // If we get "Email not confirmed" or similar, the email exists
-        // If we get "Email not registered" or similar, the email doesn't exist
-        if (signInError) {
-          if (signInError.message.includes('Invalid login credentials') || 
-              signInError.message.includes('Email not confirmed') ||
-              signInError.message.includes('not confirmed')) {
-            // Email exists, send username recovery email
-            setResultSent(true);
-            toast({
-              title: "Username recovery sent",
-              description: "Check your email for your username information",
-            });
-          } else {
-            setError("No account found with this email address");
-          }
+        if (functionError) {
+          throw new Error(functionError.message || "Failed to send username recovery email");
         }
+
+        if (data && !data.success) {
+          throw new Error(data.error || "Failed to send username recovery email");
+        }
+
+        setResultSent(true);
+        toast({
+          title: "Username recovery email sent",
+          description: "Check your email for your username information",
+        });
       } else {
         // For phone number, check profiles table
-        query = query.eq('phone', searchValue);
+        const query = supabase
+          .from('profiles')
+          .select('user_id, full_name')
+          .eq('phone', searchValue)
+          .limit(1);
         
         const { data, error: queryError } = await query;
 
@@ -87,19 +126,22 @@ const ForgotUsername = () => {
         }
 
         if (data && data.length > 0) {
+          // Note: For phone-based recovery, we still need the email to send the recovery
+          // For now, we'll show success but you'd need to store email in profiles or use a different method
           setResultSent(true);
           toast({
             title: "Username recovery sent",
             description: "Check your phone for username information",
           });
-          // In a real app, you'd send SMS here
+          // TODO: Implement SMS sending or email lookup for phone-based recovery
         } else {
           setError("No account found with this phone number");
         }
       }
 
     } catch (err: any) {
-      setError(err.message || "Failed to process username recovery request");
+      console.error("Username recovery error:", err);
+      setError(err.message || "Failed to process username recovery request. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -235,7 +277,10 @@ const ForgotUsername = () => {
                   id="searchValue"
                   type={searchMethod === 'email' ? 'email' : 'tel'}
                   value={searchValue}
-                  onChange={(e) => setSearchValue(e.target.value)}
+                  onChange={(e) => {
+                    setSearchValue(e.target.value);
+                    setError(""); // Clear error when user starts typing
+                  }}
                   required
                   className="rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
                   placeholder={

@@ -131,7 +131,7 @@ function AppContent() {
                       </AdminLayout>
                     </AdminRouteGuard>
                   } />
-                  <Route path="/admin/requests" element={
+                  <Route path="/admin/deposit-withdrawal-request" element={
                     <AdminRouteGuard>
                       <AdminLayout>
                         <AdminRequests />

@@ -62,9 +62,12 @@ const Blog = () => {
   // detect whether posts store slug or id
   const postCategoryType = useMemo(() => {
     const sample = posts.find(Boolean);
-    if (!sample) return "slug";
+    if (!sample || !sample.category) return "slug";
     const val = sample.category;
-    if (typeof val === "string" && val.includes("-") && val.length > 10) return "id";
+    // Check if it looks like a UUID (typical format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
+    if (typeof val === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val)) {
+      return "id";
+    }
     return "slug";
   }, [posts]);
 
@@ -79,7 +82,11 @@ const Blog = () => {
       if (ids.has(id)) continue;
       ids.add(id);
       const cat = idMap.get(id);
-      if (cat) slugs.add(cat.slug);
+      if (cat) {
+        slugs.add(cat.slug);
+        // Also add slug variations (lowercase, trimmed)
+        slugs.add(cat.slug.toLowerCase().trim());
+      }
 
       const children = childrenMap.get(id) ?? [];
       children.forEach((c) => stack.push(c.id));
@@ -94,27 +101,98 @@ const Blog = () => {
 
     // resolve selected to id (selectedCategory could be slug or id)
     let selectedId: string | null = null;
-    if (idMap.has(selectedCategory)) selectedId = selectedCategory;
-    else {
+    let selectedSlug: string | null = null;
+    
+    if (idMap.has(selectedCategory)) {
+      selectedId = selectedCategory;
+      const cat = idMap.get(selectedCategory);
+      if (cat) selectedSlug = cat.slug;
+    } else {
       const bySlug = slugMap.get(selectedCategory);
-      if (bySlug) selectedId = bySlug.id;
-    }
-
-    if (!selectedId) {
-      // fallback: maybe posts store slug and selectedCategory is slug
-      if (postCategoryType === "slug") {
-        return posts.filter((p) => p.category === selectedCategory);
+      if (bySlug) {
+        selectedId = bySlug.id;
+        selectedSlug = bySlug.slug;
       }
-      return [];
     }
 
+    // If we couldn't resolve, try direct slug matching (case-insensitive)
+    if (!selectedId && !selectedSlug) {
+      const normalizedSelected = selectedCategory.toLowerCase().trim();
+      for (const cat of slugMap.values()) {
+        if (cat.slug.toLowerCase().trim() === normalizedSelected) {
+          selectedId = cat.id;
+          selectedSlug = cat.slug;
+          break;
+        }
+      }
+    }
+
+    // If still not found, try direct match on posts (fallback)
+    if (!selectedId) {
+      const normalizedSelected = selectedCategory.toLowerCase().trim();
+      return posts.filter((p) => {
+        if (!p.category) return false;
+        const postCategory = typeof p.category === 'string' ? p.category.toLowerCase().trim() : '';
+        return postCategory === normalizedSelected;
+      });
+    }
+
+    // Collect all descendant IDs and slugs (includes the selected category itself)
     const { ids, slugs } = collectDescendants(selectedId);
     ids.add(selectedId);
+    
+    // Ensure the selected category's slug is in the set
+    if (selectedSlug) {
+      slugs.add(selectedSlug);
+      slugs.add(selectedSlug.toLowerCase().trim());
+    }
+    
+    // Also add from idMap in case it wasn't in collectDescendants
     const rootCat = idMap.get(selectedId);
-    if (rootCat) slugs.add(rootCat.slug);
+    if (rootCat && rootCat.slug) {
+      slugs.add(rootCat.slug);
+      slugs.add(rootCat.slug.toLowerCase().trim());
+    }
 
-    if (postCategoryType === "id") return posts.filter((p) => ids.has(p.category));
-    return posts.filter((p) => slugs.has(p.category));
+    // Filter posts based on whether they store ID or slug
+    if (postCategoryType === "id") {
+      return posts.filter((p) => {
+        if (!p.category) return false;
+        return ids.has(p.category);
+      });
+    }
+    
+    // Posts store slugs - match against collected slugs (case-insensitive)
+    // Convert slugs set to array for easier comparison
+    const slugArray = Array.from(slugs).map(s => s.toLowerCase().trim());
+    
+    // Debug logging (remove in production if needed)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[Blog Filter] Selected category:', selectedCategory);
+      console.log('[Blog Filter] Selected ID:', selectedId);
+      console.log('[Blog Filter] Selected Slug:', selectedSlug);
+      console.log('[Blog Filter] Matching slugs:', slugArray);
+      console.log('[Blog Filter] Post categories:', posts.map(p => p.category));
+      console.log('[Blog Filter] Post category type:', postCategoryType);
+    }
+    
+    const filtered = posts.filter((p) => {
+      if (!p.category) return false;
+      const postCategory = typeof p.category === 'string' ? p.category.toLowerCase().trim() : '';
+      const matches = slugArray.includes(postCategory);
+      
+      if (process.env.NODE_ENV === 'development' && selectedCategory !== 'all') {
+        console.log(`[Blog Filter] Post "${p.title}": category="${p.category}" (normalized: "${postCategory}") matches=${matches}`);
+      }
+      
+      return matches;
+    });
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[Blog Filter] Filtered posts count:', filtered.length);
+    }
+    
+    return filtered;
   }, [posts, selectedCategory, idMap, slugMap, childrenMap, postCategoryType]);
 
   // Toggle single open parent (only one open at a time)

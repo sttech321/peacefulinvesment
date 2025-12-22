@@ -39,7 +39,7 @@ const navigation = [
   { name: 'Referrals', href: '/admin/referrals', icon: Share2 },
   {
     name: 'Deposit/Withdrawal Requests',
-    href: '/admin/requests',
+    href: '/admin/deposit-withdrawal-request',
     icon: DollarSign,
   },
   {
