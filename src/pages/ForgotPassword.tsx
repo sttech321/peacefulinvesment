@@ -36,6 +36,10 @@ const ForgotPassword = () => {
     try {
       const redirectUrl = `${window.location.origin}/reset-password`;
       
+      // Note: To prevent emails from going to spam, configure custom SMTP in Supabase Dashboard:
+      // Authentication > Settings > SMTP Settings
+      // Use your Resend SMTP credentials with proper SPF/DKIM/DMARC records
+      // See SUPABASE_EMAIL_SETUP.md for detailed instructions
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: redirectUrl,
       });
@@ -47,7 +51,7 @@ const ForgotPassword = () => {
       setEmailSent(true);
       toast({
         title: "Reset email sent",
-        description: "Check your email for password reset instructions",
+        description: "Check your email (including spam folder) for password reset instructions",
       });
       
     } catch (err: any) {
@@ -108,10 +112,12 @@ const ForgotPassword = () => {
 
               <div className="text-center text-sm text-muted-foreground">
                 <p className="text-white">Didn't receive the email?</p>
-                <ul className="mt-2 space-y-1">
-                  <li>• Check your spam/junk folder</li>
+                <ul className="mt-2 space-y-1 text-left">
+                  <li>• Check your <strong>spam/junk folder</strong> - our emails sometimes end up there</li>
+                  <li>• If found in spam, mark it as <strong>"Not Spam"</strong> to help future emails</li>
                   <li>• Make sure the email address is correct</li>
                   <li>• Wait a few minutes and try again</li>
+                  <li>• Add <strong>info@peacefulinvestment.com</strong> to your contacts</li>
                 </ul>
               </div>
             </CardContent>

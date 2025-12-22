@@ -97,11 +97,29 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Use verified domain email - ensure peacefulinvestment.com is verified in Resend
     // If domain is not verified, emails will only work in test mode to your verified email
+    // Generate plain text version for better deliverability
+    const plainTextContent = generatePlainTextContent(user_name, request_type, amount, currency, status, admin_notes, request_id, baseUrl || 'https://peacefulinvestment.com');
+    
     const emailResponse = await resendClient.emails.send({
       from: "Peaceful Investment <support@peacefulinvestment.com>",
       to: [user_email],
+      reply_to: "support@peacefulinvestment.com",
       subject: subject,
       html: htmlContent,
+      text: plainTextContent,
+      headers: {
+        'List-Unsubscribe': '<https://www.peacefulinvestment.com/unsubscribe>',
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+        'X-Mailer': 'Peaceful Investment',
+        'X-Priority': '3', // Normal priority
+        'Message-ID': `<${request_id}-${Date.now()}@peacefulinvestment.com>`,
+        'Precedence': 'bulk',
+      },
+      tags: [
+        { name: 'category', value: 'transactional' },
+        { name: 'type', value: request_type },
+        { name: 'status', value: status },
+      ],
     });
 
     console.log("Resend email response:", emailResponse);
@@ -285,6 +303,46 @@ function getStatusMessage(requestType: string, status: string): string {
     default:
       return `Your ${requestType} request status has been updated. Please check your dashboard for more details.`;
   }
+}
+
+function generatePlainTextContent(
+  userName: string,
+  requestType: string,
+  amount: number,
+  currency: string,
+  status: string,
+  adminNotes?: string,
+  requestId?: string,
+  baseUrl?: string
+): string {
+  const type = requestType.charAt(0).toUpperCase() + requestType.slice(1);
+  const statusMessage = getStatusMessage(requestType, status);
+  
+  return `
+Peaceful Investment
+Financial Services Platform
+
+${type} Request Update
+
+Hello ${userName},
+
+${statusMessage}
+
+Request Details:
+- Request ID: ${requestId?.slice(0, 8)}...
+- Type: ${type}
+- Amount: ${amount.toLocaleString()} ${currency}
+- Status: ${status.charAt(0).toUpperCase() + status.slice(1)}
+
+${adminNotes ? `Admin Notes: ${adminNotes}\n\n` : ''}
+View your request: ${baseUrl || 'https://peacefulinvestment.com'}/requests
+
+---
+This is an automated notification from Peaceful Investment.
+If you have any questions, please contact our support team at support@peacefulinvestment.com
+
+© ${new Date().getFullYear()} Peaceful Investment. All rights reserved.
+  `.trim();
 }
 
 Deno.serve(handler);

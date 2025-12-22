@@ -247,7 +247,14 @@ Peaceful Investment Support Team
         html: adminEmailHtml,
         headers: {
           'X-Priority': priority === 'high' ? '1' : priority === 'medium' ? '3' : '5',
+          'X-Mailer': 'Peaceful Investment',
+          'Message-ID': `<contact-${Date.now()}@peacefulinvestment.com>`,
         },
+        tags: [
+          { name: 'category', value: 'contact' },
+          { name: 'type', value: 'form_submission' },
+          { name: 'priority', value: priority },
+        ],
       })
     );
 
@@ -260,6 +267,17 @@ Peaceful Investment Support Team
         subject: "Thank You for Contacting Peaceful Investment",
         text: userEmailText,
         html: userEmailHtml,
+        headers: {
+          'List-Unsubscribe': '<https://www.peacefulinvestment.com/unsubscribe>',
+          'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+          'X-Mailer': 'Peaceful Investment',
+          'X-Priority': '3',
+          'Message-ID': `<contact-confirmation-${Date.now()}@peacefulinvestment.com>`,
+        },
+        tags: [
+          { name: 'category', value: 'contact' },
+          { name: 'type', value: 'confirmation' },
+        ],
       })
     );
 
