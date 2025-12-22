@@ -36,7 +36,7 @@ export interface CompanyInfo {
 
 export interface RequestFormData {
   company_names: string[];
-  jurisdiction: string;
+  jurisdiction?: string;
   business_type: string;
   business_description?: string;
   contact_email: string;
@@ -99,7 +99,7 @@ export const useOverseasCompany = () => {
         .insert({
           user_id: user.id,
           company_names: formData.company_names,
-          jurisdiction: formData.jurisdiction,
+          jurisdiction: formData.jurisdiction || '',
           business_type: formData.business_type,
           business_description: formData.business_description,
           contact_email: formData.contact_email,

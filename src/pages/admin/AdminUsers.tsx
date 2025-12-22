@@ -559,6 +559,35 @@ export default function AdminUsers() {
       } else {
         // Handle single user deletion
         console.log('[DELETE HANDLER] Processing single user deletion');
+        
+        // Send deletion email before deleting the user
+        // Validate email format (basic check)
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (userToDelete.email && emailRegex.test(userToDelete.email)) {
+          try {
+            console.log('[DELETE HANDLER] Sending account deletion email to:', userToDelete.email);
+            const { data: emailData, error: emailError } = await supabase.functions.invoke('send-account-deletion', {
+              body: {
+                user_email: userToDelete.email,
+                user_name: userToDelete.full_name || undefined,
+                deletion_reason: deleteReason || undefined,
+              },
+            });
+
+            if (emailError) {
+              console.warn('[DELETE HANDLER] Failed to send deletion email:', emailError);
+              // Don't block deletion if email fails
+            } else {
+              console.log('[DELETE HANDLER] Account deletion email sent successfully');
+            }
+          } catch (emailErr: any) {
+            console.warn('[DELETE HANDLER] Error sending deletion email:', emailErr);
+            // Don't block deletion if email fails
+          }
+        } else {
+          console.warn('[DELETE HANDLER] No valid email address available for user, skipping email notification. Email:', userToDelete.email);
+        }
+        
         await deleteSingleUser(userToDelete.user_id);
         
         console.log('[DELETE HANDLER] Single user deletion completed');

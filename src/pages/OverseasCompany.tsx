@@ -26,19 +26,6 @@ import { useOverseasCompany } from "@/hooks/useOverseasCompany";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 
-const JURISDICTIONS = [
-  "British Virgin Islands",
-  "Cayman Islands", 
-  "Delaware (USA)",
-  "Hong Kong",
-  "Singapore",
-  "Seychelles",
-  "Marshall Islands",
-  "Belize",
-  "Cook Islands",
-  "Mauritius"
-];
-
 const BUSINESS_TYPES = [
   "Trading Company",
   "Investment Company", 
@@ -71,7 +58,6 @@ const OverseasCompany = () => {
     companyName1: "",
     companyName2: "", 
     companyName3: "",
-    jurisdiction: "",
     businessType: "",
     businessDescription: "",
     contactEmail: user?.email || "",
@@ -121,7 +107,7 @@ const OverseasCompany = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
       
-    if (!formData.companyName1 || !formData.jurisdiction || !formData.businessType) {
+    if (!formData.companyName1 || !formData.businessType) {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields.",
@@ -139,7 +125,6 @@ const OverseasCompany = () => {
     try {
       await submitRequest({
         company_names: companyNames,
-        jurisdiction: formData.jurisdiction,
         business_type: formData.businessType,
         business_description: formData.businessDescription,
         contact_email: formData.contactEmail
@@ -155,7 +140,6 @@ const OverseasCompany = () => {
         companyName1: "",
         companyName2: "",
         companyName3: "",
-        jurisdiction: "",
         businessType: "",
         businessDescription: "",
         contactEmail: user?.email || ""
@@ -358,26 +342,6 @@ const OverseasCompany = () => {
                         placeholder="Enter third choice company name"
                         disabled={hasActiveRequest}
                       />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="jurisdiction" className="text-sm font-medium leading-none text-muted-foreground pb-2">Jurisdiction *</Label>
-                      <Select 
-                        value={formData.jurisdiction} 
-                        onValueChange={(value) => setFormData({ ...formData, jurisdiction: value })}
-                        disabled={hasActiveRequest}
-                      >
-                        <SelectTrigger className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
-                          <SelectValue placeholder="Select jurisdiction" />
-                        </SelectTrigger>
-                        <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
-                          {JURISDICTIONS.map((jurisdiction) => (
-                            <SelectItem key={jurisdiction} value={jurisdiction}>
-                              {jurisdiction}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
                     </div>
 
                     <div>
