@@ -18,7 +18,7 @@ const requestSchema = z.object({
   type: z.enum(['deposit', 'withdrawal'], { required_error: "Please select a request type" }),
   amount: z.number().min(1, "Amount must be greater than 0"),
   currency: z.string().min(1, "Currency is required"),
-  payment_method: z.string().min(1, "Payment method is required"),
+  payment_method: z.string().optional(),
   description: z.string().optional(),
 });
 
@@ -90,15 +90,7 @@ const RequestForm = ({ onSuccess }: RequestFormProps) => {
     } as any;
     setIsSubmitting(true);
     try {
-      const result = await createRequest(submitData as {
-        type: 'deposit' | 'withdrawal';
-        amount: number;
-        currency: string;
-        payment_method: string;
-        description?: string;
-        calculated_fee?: number;
-        net_amount?: number;
-      });
+      const result = await createRequest(submitData);
       
       if (result.error) {
         toast({

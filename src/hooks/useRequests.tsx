@@ -56,8 +56,10 @@ function useRequests() {
     type: 'deposit' | 'withdrawal';
     amount: number;
     currency: string;
-    payment_method: string;
+    payment_method?: string;
     description?: string;
+    calculated_fee?: number;
+    net_amount?: number;
   }) => {
     if (!user) return { error: new Error('Not authenticated') };
 
@@ -66,6 +68,7 @@ function useRequests() {
         .from('requests')
         .insert({
           ...requestData,
+          payment_method: requestData.payment_method || 'Not specified',
           user_id: user.id,
         })
         .select()

@@ -61,6 +61,11 @@ import {
   ChevronDown,
   ChevronUp
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { supabase } from "@/integrations/supabase/client";
@@ -165,6 +170,11 @@ export default function AdminReferrals() {
     notes: ""
   });
   const [creatingPayment, setCreatingPayment] = useState(false);
+
+  // Delete referral state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [referralToDelete, setReferralToDelete] = useState<Referral | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetchAllData();
@@ -495,6 +505,66 @@ export default function AdminReferrals() {
         description: "Failed to update referral status",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleDeleteReferral = async () => {
+    if (!referralToDelete) return;
+
+    try {
+      setDeleting(true);
+
+      // Delete related records first (payments and signups)
+      // Delete referral payments
+      const { error: paymentsError } = await supabase
+        .from('referral_payments')
+        .delete()
+        .eq('referral_id', referralToDelete.id);
+
+      if (paymentsError) {
+        console.warn('Error deleting referral payments:', paymentsError);
+        // Continue even if payments deletion fails
+      }
+
+      // Delete referral signups
+      const { error: signupsError } = await supabase
+        .from('referral_signups')
+        .delete()
+        .eq('referral_id', referralToDelete.id);
+
+      if (signupsError) {
+        console.warn('Error deleting referral signups:', signupsError);
+        // Continue even if signups deletion fails
+      }
+
+      // Delete the referral
+      const { error: deleteError } = await supabase
+        .from('referrals')
+        .delete()
+        .eq('id', referralToDelete.id);
+
+      if (deleteError) throw deleteError;
+
+      toast({
+        title: "Success",
+        description: "Referral deleted successfully",
+      });
+
+      setDeleteDialogOpen(false);
+      setReferralToDelete(null);
+      
+      // Refresh data
+      await fetchAllData();
+
+    } catch (error: any) {
+      console.error('Error deleting referral:', error);
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to delete referral",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -868,32 +938,63 @@ export default function AdminReferrals() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="rounded-[8px] bg-muted/20 hover:bg-muted/40 text-white hover:text-white"
-                          onClick={() => {
-                            setSelectedReferral(referral);
-                            setReferralDetailsOpen(true);
-                          }}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                       <Button
-                          variant="ghost"
-                          size="sm"
-                          className={`rounded-[8px] ${
-                            referral.is_active ? "bg-red-600 hover:bg-red-700" : "bg-green-600 hover:bg-green-700"
-                          }`}
-                          onClick={() => handleToggleReferralStatus(referral)}
-                        >
-                          {referral.is_active ? (
-                            <XCircle className="h-4 w-4 text-white" />
-                          ) : (
-                            <CheckCircle className="h-4 w-4 text-white" />
-                          )}
-                        </Button>
-
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="rounded-[8px] bg-muted/20 hover:bg-muted/40 text-white hover:text-white"
+                              onClick={() => {
+                                setSelectedReferral(referral);
+                                setReferralDetailsOpen(true);
+                              }}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="text-white">View Details</p>
+                          </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className={`rounded-[8px] ${
+                                referral.is_active ? "bg-red-600 hover:bg-red-700 text-white" : "bg-green-600 hover:bg-green-700 text-white"
+                              }`}
+                              onClick={() => handleToggleReferralStatus(referral)}
+                            >
+                              {referral.is_active ? (
+                                <XCircle className="h-4 w-4" />
+                              ) : (
+                                <CheckCircle className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="text-white">{referral.is_active ? 'Deactivate' : 'Activate'}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="rounded-[8px] bg-red-600 hover:bg-red-700 text-white"
+                              onClick={() => {
+                                setReferralToDelete(referral);
+                                setDeleteDialogOpen(true);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="text-white">Delete Referral</p>
+                          </TooltipContent>
+                        </Tooltip>
                       </div>
                     </div>
                   ))
@@ -1335,6 +1436,63 @@ export default function AdminReferrals() {
               Record Payment
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Referral Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Referral</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this referral? This action cannot be undone. 
+              All related payments and signups will also be deleted.
+            </DialogDescription>
+          </DialogHeader>
+          {referralToDelete && (
+            <div className="space-y-4">
+              <div className="bg-muted/50 p-4 rounded-lg">
+                <p className="text-sm font-medium">Referral Code: {referralToDelete.referral_code}</p>
+                {referralToDelete.user?.email && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    User: {referralToDelete.user.email}
+                  </p>
+                )}
+                <p className="text-sm text-muted-foreground mt-1">
+                  Total Earnings: {formatCurrency(referralToDelete.total_earnings)}
+                </p>
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setDeleteDialogOpen(false);
+                    setReferralToDelete(null);
+                  }}
+                  disabled={deleting}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleDeleteReferral}
+                  disabled={deleting}
+                >
+                  {deleting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete Referral
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

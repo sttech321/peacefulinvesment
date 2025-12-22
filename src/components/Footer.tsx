@@ -1,24 +1,66 @@
 import { Link, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import footerLogo from '@/assets/footerLogo.svg';
 import logoAnimation from '@/assets/new-logo.gif';
 import FiArrowUpRight from '@/assets/linkArrow.svg';
+import { supabase } from '@/integrations/supabase/client';
 
 // Side images
 
 import Left03 from '@/assets/left-03.jpg';
 import Right03 from '@/assets/right-03.jpg';
 
+interface LinkItem {
+  label: string;
+  to: string;
+  order?: number;
+}
+
 const Footer = () => {
   const location = useLocation();
   const isBlogPage = location.pathname === '/blog';
+  const [footerLinks, setFooterLinks] = useState<LinkItem[]>([]);
 
-  // 🔥 Dynamic link data
-  const footerLinks = [
-    // { label: 'Contact us', to: '/contact' },
-    { label: 'Quick Links', to: '/#' },
-    { label: 'Home', to: '/' },
-    { label: 'About us', to: '/about' },
-    { label: 'Download app', to: '/downloads' },
+  useEffect(() => {
+    fetchFooterLinks();
+  }, []);
+
+  const fetchFooterLinks = async () => {
+    try {
+      const { data } = await supabase
+        .from('app_settings' as any)
+        .select('value')
+        .eq('key', 'footer_links')
+        .maybeSingle();
+
+      if ((data as any)?.value) {
+        try {
+          const links = JSON.parse((data as any).value);
+          // Sort links by order if order exists
+          const sortedLinks = [...links].sort((a: LinkItem, b: LinkItem) => {
+            const orderA = a.order !== undefined ? a.order : 999;
+            const orderB = b.order !== undefined ? b.order : 999;
+            return orderA - orderB;
+          });
+          setFooterLinks(sortedLinks);
+        } catch (e) {
+          console.warn('Failed to parse footer links, using defaults:', e);
+          setFooterLinks(getDefaultFooterLinks());
+        }
+      } else {
+        setFooterLinks(getDefaultFooterLinks());
+      }
+    } catch (error) {
+      console.error('Error fetching footer links:', error);
+      setFooterLinks(getDefaultFooterLinks());
+    }
+  };
+
+  const getDefaultFooterLinks = (): LinkItem[] => [
+    { label: 'Quick Links', to: '/#', order: 1 },
+    { label: 'Home', to: '/', order: 2 },
+    { label: 'About us', to: '/about', order: 3 },
+    { label: 'Download app', to: '/downloads', order: 4 },
   ];
 
   return (
@@ -68,21 +110,23 @@ const Footer = () => {
             </div>
 
             {/* 🔥 Dynamic Link List with Arrow Icons */}
-            <div className='min-w-40 pt-5 lg:pt-9'>
-              <ul className='space-y-3'>
-                {footerLinks.map((item, index) => (
-                  <li key={index} className='flex items-center gap-3'>
-                    <img src={FiArrowUpRight} alt='Arrow' />
-                    <Link
-                      to={item.to}
-                      className='text-[15px] font-normal text-white transition-colors hover:text-primary'
-                    >
-                      {item.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            {footerLinks.length > 0 && (
+              <div className='min-w-40 pt-5 lg:pt-9'>
+                <ul className='space-y-3'>
+                  {footerLinks.map((item, index) => (
+                    <li key={index} className='flex items-center gap-3'>
+                      <img src={FiArrowUpRight} alt='Arrow' />
+                      <Link
+                        to={item.to}
+                        className='text-[15px] font-normal text-white transition-colors hover:text-primary'
+                      >
+                        {item.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {/* Empty Columns (optional) */}
             <div className='min-w-32 pt-5 lg:pt-9'>
