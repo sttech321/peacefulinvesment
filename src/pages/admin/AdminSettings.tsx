@@ -296,8 +296,8 @@ export default function AdminSettings() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading settings...</p>
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold mb-2 text-white pt-5">Loading settings</h2> 
         </div>
       </div>
     );
@@ -305,12 +305,11 @@ export default function AdminSettings() {
 
   if (!isAdmin()) {
     return (
-      <div className="container mx-auto py-8">
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-center text-muted-foreground">You don't have permission to access this page.</p>
-          </CardContent>
-        </Card>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold mb-2 text-white pt-5">You don't have permission to access this page.</h2>
+        </div>
       </div>
     );
   }
@@ -321,7 +320,7 @@ export default function AdminSettings() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-white">App Settings</h1>
-          <p className="text-muted-foreground mt-2">
+          <p className="text-muted-foreground mt-2 mb-2">
             Manage application-wide settings and configurations
           </p>
         </div>
@@ -365,21 +364,21 @@ export default function AdminSettings() {
         <Card className="bg-black rounded-sm">
           <CardHeader>
             <div className="flex items-center gap-2">
-              <Link2 className="h-5 w-5" />
+              <Link2 className="h-5 w-5 text-primary" />
               <CardTitle>Header Navigation Links</CardTitle>
             </div>
             <CardDescription>
               Manage the navigation links displayed in the header/navbar (for logged-in users)
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0 sm:pt-0">
             <div className="space-y-4">
               {headerLinks
                 .sort((a, b) => (a.order || 0) - (b.order || 0))
                 .map((link, sortedIndex) => {
                   const originalIndex = headerLinks.findIndex(l => l === link);
                   return (
-                    <div key={`${link.order}-${sortedIndex}`} className="flex gap-2 items-end">
+                    <div key={`${link.order}-${sortedIndex}`} className="flex gap-3 items-center">
                       <div className="flex flex-col gap-1">
                         <Button
                           type="button"
@@ -387,7 +386,7 @@ export default function AdminSettings() {
                           size="sm"
                           onClick={() => moveHeaderLink(sortedIndex, 'up')}
                           disabled={sortedIndex === 0}
-                          className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                          className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground rounded-[8px] border-0"
                         >
                           <ChevronUp className="h-4 w-4" />
                         </Button>
@@ -397,46 +396,57 @@ export default function AdminSettings() {
                           size="sm"
                           onClick={() => moveHeaderLink(sortedIndex, 'down')}
                           disabled={sortedIndex === headerLinks.length - 1}
-                          className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                          className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground rounded-[8px] border-0"
                         >
                           <ChevronDown className="h-4 w-4" />
                         </Button>
                       </div>
-                      <div className="flex-1 grid grid-cols-2 gap-2">
+                      <div className="flex-1 grid grid-cols-2 gap-3">
                         <Input
                           placeholder="Link Label"
                           value={link.label}
                           onChange={(e) => updateHeaderLink(originalIndex, 'label', e.target.value)}
-                          className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0'
+                          className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties} 
                         />
                         <Input
                           placeholder="Link URL (e.g., /dashboard)"
                           value={link.to}
                           onChange={(e) => updateHeaderLink(originalIndex, 'to', e.target.value)}
-                          className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0'
+                          className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties} 
                         />
                       </div>
+
+                      
+                         
+                     
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
                         onClick={() => removeHeaderLink(originalIndex)}
-                        className="text-red-500 hover:text-red-700 hover:bg-red-500/10"
+                       className="text-white bg-red-600 hover:text-white hover:bg-red-700 rounded-[8px] h-10"
                       >
                         <Trash2 className="h-4 w-4" />
-                      </Button>
+                      </Button>  
+
+                    
+
                     </div>
                   );
                 })}
+
+
+                <div className="px-11 pt-0">
               <Button
                 type="button"
                 variant="outline"
                 onClick={addHeaderLink}
-                className="w-full rounded-[8px] border-0 hover:bg-white/80"
+                className="w-full rounded-[8px] border-0 bg-primary hover:bg-primary/80"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Header Link
               </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -447,21 +457,21 @@ export default function AdminSettings() {
         <Card className="bg-black rounded-sm">
           <CardHeader>
             <div className="flex items-center gap-2">
-              <Link2 className="h-5 w-5" />
+              <Link2 className="h-5 w-5 text-primary" />
               <CardTitle>Footer Navigation Links</CardTitle>
             </div>
             <CardDescription>
               Manage the navigation links displayed in the footer
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0 sm:pt-0">
             <div className="space-y-4">
               {footerLinks
                 .sort((a, b) => (a.order || 0) - (b.order || 0))
                 .map((link, sortedIndex) => {
                   const originalIndex = footerLinks.findIndex(l => l === link);
                   return (
-                    <div key={`${link.order}-${sortedIndex}`} className="flex gap-2 items-end">
+                    <div key={`${link.order}-${sortedIndex}`} className="flex gap-3 items-center">
                       <div className="flex flex-col gap-1">
                         <Button
                           type="button"
@@ -469,7 +479,7 @@ export default function AdminSettings() {
                           size="sm"
                           onClick={() => moveFooterLink(sortedIndex, 'up')}
                           disabled={sortedIndex === 0}
-                          className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                          className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground rounded-[8px] border-0"
                         >
                           <ChevronUp className="h-4 w-4" />
                         </Button>
@@ -479,23 +489,23 @@ export default function AdminSettings() {
                           size="sm"
                           onClick={() => moveFooterLink(sortedIndex, 'down')}
                           disabled={sortedIndex === footerLinks.length - 1}
-                          className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                          className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground rounded-[8px] border-0"
                         >
                           <ChevronDown className="h-4 w-4" />
                         </Button>
                       </div>
-                      <div className="flex-1 grid grid-cols-2 gap-2">
+                      <div className="flex-1 grid grid-cols-2 gap-3">
                         <Input
                           placeholder="Link Label"
                           value={link.label}
                           onChange={(e) => updateFooterLink(originalIndex, 'label', e.target.value)}
-                          className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0'
+                          className='rounded-[8px] border-0 shadow-none mt-0 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
                         />
                         <Input
                           placeholder="Link URL (e.g., /about)"
                           value={link.to}
                           onChange={(e) => updateFooterLink(originalIndex, 'to', e.target.value)}
-                          className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0'
+                          className='rounded-[8px] border-0 shadow-none mt-0 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
                         />
                       </div>
                       <Button
@@ -503,22 +513,24 @@ export default function AdminSettings() {
                         variant="ghost"
                         size="sm"
                         onClick={() => removeFooterLink(originalIndex)}
-                        className="text-red-500 hover:text-red-700 hover:bg-red-500/10"
+                        className="text-white bg-red-600 hover:text-white hover:bg-red-700 rounded-[8px] h-10"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   );
                 })}
+
+<div className="px-11 pt-0">
               <Button
                 type="button"
                 variant="outline"
                 onClick={addFooterLink}
-                className="w-full rounded-[8px] border-0 hover:bg-white/80"
+                className="w-full rounded-[8px] border-0 bg-primary hover:bg-primary/80"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Footer Link
-              </Button>
+              </Button></div>
             </div>
           </CardContent>
         </Card>

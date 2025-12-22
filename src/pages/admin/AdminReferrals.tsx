@@ -1220,10 +1220,10 @@ export default function AdminReferrals() {
                       <div key={referral.id} className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
                           <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center">
-                            <span className="text-sm font-medium">{index + 1}</span>
+                            <span className="text-sm font-medium text-muted">{index + 1}</span>
                           </div>
                           <div>
-                            <p className="font-medium text-sm">
+                            <p className="font-medium text-sm text-white">
                               {referral.user?.full_name || 'Unknown'}
                             </p>
                             <p className="text-xs text-muted-foreground">
@@ -1232,7 +1232,7 @@ export default function AdminReferrals() {
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="font-medium text-sm">
+                          <p className="font-medium text-sm text-white">
                             {formatCurrency(referral.total_earnings)}
                           </p>
                         </div>
