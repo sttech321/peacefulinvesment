@@ -214,26 +214,47 @@ export default function MetaTraderAccounts() {
       );
     }
 
-    // Default error handling for other errors
+    // Default error handling - show friendly "No Accounts Found" message instead of error
     return (
-      <div className="min-h-screen flex items-center justify-center pink-yellow-shadow">
-        <div className="bg-gradient-pink-to-yellow hover:glow-primary relative rounded-lg p-[2px] w-full max-w-sm">
-        <Card className="w-full max-w-md p-0 bg-black rounded-lg">
-          <CardContent className="pt-6">
-            <div className="text-center pt-2 pb-3">
-              <AlertCircle className="mx-auto h-12 w-12 text-destructive mb-4" />
-              <h2 className="text-xl font-semibold mb-2 text-white">Error Loading Accounts</h2>
-              <p className="text-muted-foreground mb-4">{error}</p>
-
-              <span className="bg-gradient-pink-to-yellow rounded-[12px] p-[2px] inline-block">
-              <Button onClick={handleRefresh} variant="outline" className="bg-gradient-yellow-to-pink hover:bg-gradient-pink-to-yellow flex rounded-[10px] border-0 p-0 px-5 font-inter text-sm font-semibold uppercase text-white">
-                <RefreshCw className="h-4 w-4 mr-1" />
-                Try Again
-              </Button>
-              </span>
+      <div className="min-h-screen pink-yellow-shadow pt-24">
+        <div className="max-w-7xl mx-auto p-4 pb-16">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground mb-2 text-white">MetaTrader Accounts</h1>
+              <p className="text-muted-foreground">
+                Monitor and manage your trading accounts in real-time
+              </p>
             </div>
-          </CardContent>
-        </Card>
+
+            <span className="bg-gradient-pink-to-yellow rounded-[12px] p-[2px] inline-block">
+            <Button 
+              onClick={handleRefresh} 
+              disabled={refreshing}
+              variant="outline"
+              className="bg-gradient-yellow-to-pink hover:bg-gradient-pink-to-yellow flex rounded-[10px] border-0 p-0 px-5 font-inter text-sm font-semibold uppercase text-white"
+            >
+              <RefreshCw className={`h-4 w-4 mr-0 hover:border-0 ${refreshing ? 'animate-spin' : ''}`} />
+              Refresh Data
+            </Button>
+            </span>
+          </div>
+
+          {/* No Accounts Found Message */}
+          <div className="text-center py-12">
+            <Card className="max-w-md mx-auto border border-muted/20 p-4 bg-black">
+              <CardContent className="pt-6">
+                <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center bg-primary/10 mx-auto mb-6">
+                  <TrendingUp className="h-8 w-8 text-primary" />
+                </div>
+                
+                <h3 className="text-xl font-semibold mb-2 text-white">No Accounts Found</h3>
+                <p className="text-muted-foreground text-sm">
+                  You don't have any MetaTrader accounts set up yet. Connect your accounts to start trading.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     );
