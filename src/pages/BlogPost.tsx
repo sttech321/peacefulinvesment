@@ -159,7 +159,7 @@ const BlogPost = () => {
           <div className="flex items-center justify-between w-full">
             <div className="flex flex-wrap gap-2">
               {post.tags.map((tag) => (
-                <Badge key={tag} variant="outline" className="text-xs font-normal font-open-sans text-white p-1 px-3">
+                <Badge key={tag} variant="outline" className="text-xs font-normal font-open-sans text-white p-1 px-3 bg-transparent">
                   <Tag className="w-3 h-3 mr-1" />
                   {tag}
                 </Badge>

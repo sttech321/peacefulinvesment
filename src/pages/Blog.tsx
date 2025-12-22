@@ -215,7 +215,7 @@ const Blog = () => {
               <div className="flex flex-wrap gap-3 justify-center">
                 <Badge
                   variant={selectedCategory === "all" ? "default" : "outline"}
-                  className="cursor-pointer hover:scale-105 transition-transform px-4 py-2 text-white"
+                  className="cursor-pointer hover:scale-105 transition-transform px-4 py-2 text-white bg-transparent hover:bg-transparent border-white"
                   onClick={showAll}
                 >
                   All Posts
@@ -339,7 +339,7 @@ const BlogPostCard = ({ post, categories }: { post: BlogPost; categories: BlogCa
 
           <CardHeader className="p-4 pb-0 space-y-0">
             <div className="flex items-center gap-2 mb-3">
-              <Badge style={{ backgroundColor: categoryData.color, color: "white" }} className="text-xs">
+              <Badge style={{ backgroundColor: categoryData.color, color: "white" }} className="text-xs border-0">
                 {categoryData.name}
               </Badge>
               <div className="flex items-center gap-1 text-xs text-white">
@@ -370,7 +370,7 @@ const BlogPostCard = ({ post, categories }: { post: BlogPost; categories: BlogCa
             {post.tags.length > 0 && (
               <div className="flex flex-wrap gap-1 mt-4">
                 {post.tags.slice(0, 3).map((tag) => (
-                  <Badge key={tag} variant="outline" className="text-xs text-white">
+                  <Badge key={tag} variant="outline" className="text-xs text-white bg-transparent">
                     {tag}
                   </Badge>
                 ))}

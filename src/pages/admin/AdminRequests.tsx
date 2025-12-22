@@ -488,12 +488,12 @@ export default function AdminRequests() {
 
   if (!isAdmin()) {
     return (
-      <div className="container mx-auto py-8">
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-center text-muted-foreground">You don't have permission to access this page.</p>
-          </CardContent>
-        </Card>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold mb-2 text-white pt-5">Loading Requests</h2>
+          <p className="text-muted-foreground">Fetching deposit and withdrawal requests...</p>
+        </div>
       </div>
     );
   }
@@ -651,7 +651,7 @@ export default function AdminRequests() {
         <CardContent>
           {loading ? (
             <div className="text-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+               <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto mb-4"></div>
               <p className="text-muted-foreground">Loading requests...</p>
             </div>
           ) : filteredRequests.length > 0 ? (
@@ -747,7 +747,7 @@ export default function AdminRequests() {
             </div>
           ) : (
             <div className="text-center py-8">
-              <DollarSign className="h-12 w-12 text-primary text-white mx-auto mb-4" />
+              <DollarSign className="h-12 w-12 text-primary mx-auto mb-4" />
               <p className="text-muted-foreground">No requests found</p>
             </div>
           )}
