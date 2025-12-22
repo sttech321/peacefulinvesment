@@ -170,7 +170,7 @@ const RequestFilters = ({ requests, onFilteredRequestsChange }: RequestFiltersPr
             </Badge>
           </div>
           {hasActiveFilters && (
-            <Button variant="ghost" size="sm" onClick={clearAllFilters}>
+            <Button variant="ghost" size="sm" className="text-white gap-0 rounded-[8px] hover:text-primary hover:bg-white/15" onClick={clearAllFilters}>
               <X className="h-4 w-4 mr-1" />
               Clear All
             </Button>

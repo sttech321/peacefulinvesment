@@ -39,7 +39,7 @@ const Navbar = () => {
   const mainNavLinks = user
     ? [
         { name: 'Dashboard', href: '/dashboard' },
-        { name: 'Trading', href: '/trading' },
+        //{ name: 'Trading', href: '/trading' },
         { name: 'Accounts', href: '/meta-trader-accounts' },
         { name: 'Referrals', href: '/referrals' },
         { name: 'Catholic', href: '/blog' },
