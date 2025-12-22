@@ -380,7 +380,7 @@ const RequestsListEnhanced = () => {
               </div>
             )}
 
-            <div className="mt-4 pt-4 border-t text-sm text-muted-foreground">
+            <div className="mt-4 pt-4 border-t border-secondary-foreground text-sm text-muted-foreground">
               Click to view details and manage documents
             </div>
           </CardContent>
