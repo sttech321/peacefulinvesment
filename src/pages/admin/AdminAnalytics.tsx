@@ -224,8 +224,9 @@ export default function AdminAnalytics() {
     return (
       <div className="flex items-center justify-center h-64 min-h-[400px]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="mt-2 text-muted-foreground">Loading analytics...</p>
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto mb-4"></div> 
+          <h2 className="text-xl font-semibold mb-2 text-white pt-5">Loading analytics</h2>
+          <p className="text-muted-foreground">Fetching analytics data...</p>
         </div>
       </div>
     );
