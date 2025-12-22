@@ -651,7 +651,7 @@ export default function AdminRequests() {
         <CardContent>
           {loading ? (
             <div className="text-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+               <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto mb-4"></div>
               <p className="text-muted-foreground">Loading requests...</p>
             </div>
           ) : filteredRequests.length > 0 ? (
@@ -747,7 +747,7 @@ export default function AdminRequests() {
             </div>
           ) : (
             <div className="text-center py-8">
-              <DollarSign className="h-12 w-12 text-primary text-white mx-auto mb-4" />
+              <DollarSign className="h-12 w-12 text-primary mx-auto mb-4" />
               <p className="text-muted-foreground">No requests found</p>
             </div>
           )}
