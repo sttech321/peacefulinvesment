@@ -279,16 +279,16 @@ export default function AdminRequests() {
 
   const getTypeIcon = (type: string) => {
     return type === 'deposit' ? (
-      <DollarSign className="h-5 w-5 text-green-600 text-white" />
+      <DollarSign className="h-5 w-5 text-primary" />
     ) : (
-      <CreditCard className="h-5 w-5 text-blue-600 text-white" />
+      <CreditCard className="h-5 w-5 text-primary" />
     );
   };
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+    const variants: Record<string, "default" | "secondary" | "destructive" | "inprogress" | "outline"> = {
       pending: "secondary",
-      processing: "default",
+      processing: "inprogress",
       completed: "default",
       rejected: "destructive",
     };
@@ -702,9 +702,7 @@ export default function AdminRequests() {
                               <CheckCircle className="h-4 w-4" />
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Approve</p>
-                          </TooltipContent>
+                          
                         </Tooltip>
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -720,9 +718,7 @@ export default function AdminRequests() {
                               <XCircle className="h-4 w-4" />
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Decline</p>
-                          </TooltipContent>
+                          
                         </Tooltip>
                       </>
                     )}
@@ -740,9 +736,7 @@ export default function AdminRequests() {
                           <Eye className="h-4 w-4 text-white" />
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent>
-                        <p>View Details</p>
-                      </TooltipContent>
+                      
                     </Tooltip>
                   </div>
                 </div>
@@ -832,7 +826,7 @@ export default function AdminRequests() {
                       setRequestDetailsOpen(false);
                       setApproveDialogOpen(true);
                     }}
-                    className="flex-1 bg-green-600 hover:bg-green-700"
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white gap-0 rounded-[8px]"
                   >
                     <CheckCircle className="h-4 w-4 mr-2" />
                     Approve
@@ -843,7 +837,7 @@ export default function AdminRequests() {
                       setRejectDialogOpen(true);
                     }}
                     variant="destructive"
-                    className="flex-1"
+                    className="flex-1  gap-0 rounded-[8px]"
                   >
                     <XCircle className="h-4 w-4 mr-2" />
                     Decline
@@ -873,6 +867,7 @@ export default function AdminRequests() {
                   value={adminNotes}
                   onChange={(e) => setAdminNotes(e.target.value)}
                   rows={3}
+                  className='mt-1 rounded-[8px]   shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400 resize-none' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
                 />
               </div>
               <div className="flex gap-2 justify-end">
@@ -882,13 +877,14 @@ export default function AdminRequests() {
                     setApproveDialogOpen(false);
                     setAdminNotes("");
                   }}
+                  className="bg-muted/20 hover:bg-muted/40 rounded-[8px] border-0"
                 >
                   Cancel
                 </Button>
                 <Button
                   onClick={handleApprove}
                   disabled={processing}
-                  className="bg-green-600 hover:bg-green-700"
+                  className="bg-green-600 hover:bg-green-700 rounded-[8px] text-white gap-0"
                 >
                   {processing ? (
                     <>
@@ -926,6 +922,7 @@ export default function AdminRequests() {
                   value={adminNotes}
                   onChange={(e) => setAdminNotes(e.target.value)}
                   rows={3}
+                  className='mt-1 rounded-[8px]   shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400 resize-none' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
                 />
               </div>
               <div className="flex gap-2 justify-end">
@@ -935,6 +932,7 @@ export default function AdminRequests() {
                     setRejectDialogOpen(false);
                     setAdminNotes("");
                   }}
+                  className="bg-muted/20 hover:bg-muted/40 rounded-[8px] border-0"
                 >
                   Cancel
                 </Button>
@@ -942,6 +940,7 @@ export default function AdminRequests() {
                   onClick={handleDecline}
                   disabled={processing}
                   variant="destructive"
+                  className="rounded-[8px] border-0 gap-0"
                 >
                   {processing ? (
                     <>
