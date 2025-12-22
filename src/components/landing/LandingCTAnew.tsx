@@ -11,14 +11,12 @@ const LandingCTAnew = () => {
         <div className="text-center">
           <h2 className="mx-auto mb-6 text-2xl font-bold uppercase text-white md:text-3xl">
             Ready to Start Your
-            <span className="text-[var(--yellowcolor)]">
-              {' '}Investment Journey
-            </span>
+            <span className="text-[var(--yellowcolor)]"> Investment Journey</span>
             ?
           </h2>
 
           <p className="mx-auto max-w-4xl font-open-sans text-lg text-white lg:text-xl">
-            Join thousands of successful investors who trust our platform for
+            Join successful investors who trust our platform for
             their trading needs.
           </p>
 
@@ -42,7 +40,7 @@ const LandingCTAnew = () => {
                 className="bg-gradient-pink-to-yellow inline-block rounded-[12px] p-[2px]"
               >
                 <Button className="block h-[45px] rounded-[10px] bg-gradient-yellow-to-pink px-6 text-xs font-semibold uppercase text-white hover:bg-gradient-pink-to-yellow">
-                  Download App
+                  App is coming soon
                 </Button>
               </Link>
             </div>
