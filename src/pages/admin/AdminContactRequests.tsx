@@ -367,7 +367,7 @@ export default function AdminContactRequests() {
       case 'pending':
         return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200">Pending</Badge>;
       case 'in_progress':
-        return <Badge variant="default" className="bg-blue-100 text-blue-800 hover:bg-blue-200">In Progress</Badge>;
+        return <Badge variant="default" className="bg-blue-100 border-blue-200 text-blue-800 hover:bg-blue-200">In Progress</Badge>;
       case 'resolved':
         return <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-200">Resolved</Badge>;
       case 'closed':
