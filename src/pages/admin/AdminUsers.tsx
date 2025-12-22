@@ -956,44 +956,114 @@ export default function AdminUsers() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="space-y-4">
             <div className="relative">
               <Search className="absolute left-3 top-4 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search users..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 rounded-[8px] border-0 shadow-none mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
+                className="pl-9 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
               />
             </div>
-            <Select value={roleFilter} onValueChange={setRoleFilter}>
-              <SelectTrigger className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
-                <SelectValue placeholder="Filter by role" />
-              </SelectTrigger>
-              <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
-                <SelectItem value="all">All Roles</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="moderator">Moderator</SelectItem>
-                <SelectItem value="user">User</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="verified">Verified</SelectItem>
-                <SelectItem value="pending_verification">Pending</SelectItem>
-                <SelectItem value="rejected">Rejected</SelectItem>
-                <SelectItem value="blocked">Blocked</SelectItem>
-                <SelectItem value="unverified">Unverified</SelectItem>
-              </SelectContent>
-            </Select>
-            <div className="flex items-center justify-center sm:justify-start">
-              <Badge variant="outline" className="p-2 px-4 text-white h-10 mt-1 rounded-[8px] shadow-none">
-                {filteredUsers.length} users
-              </Badge>
+            
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+              {/* Role Filter Buttons */}
+              <div className="flex flex-wrap gap-2 items-center">
+                <span className="text-sm text-muted-foreground font-medium">Role:</span>
+                <Button
+                  variant={roleFilter === "all" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setRoleFilter("all")}
+                  className="rounded-[8px] border-0 h-9 px-3 text-xs"
+                >
+                  All
+                </Button>
+                <Button
+                  variant={roleFilter === "admin" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setRoleFilter("admin")}
+                  className="rounded-[8px] border-0 h-9 px-3 text-xs"
+                >
+                  Admin
+                </Button>
+                <Button
+                  variant={roleFilter === "moderator" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setRoleFilter("moderator")}
+                  className="rounded-[8px] border-0 h-9 px-3 text-xs"
+                >
+                  Moderator
+                </Button>
+                <Button
+                  variant={roleFilter === "user" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setRoleFilter("user")}
+                  className="rounded-[8px] border-0 h-9 px-3 text-xs"
+                >
+                  User
+                </Button>
+              </div>
+
+              {/* Status Filter Buttons */}
+              <div className="flex flex-wrap gap-2 items-center">
+                <span className="text-sm text-muted-foreground font-medium">Status:</span>
+                <Button
+                  variant={statusFilter === "all" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setStatusFilter("all")}
+                  className="rounded-[8px] border-0 h-9 px-3 text-xs"
+                >
+                  All
+                </Button>
+                <Button
+                  variant={statusFilter === "verified" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setStatusFilter("verified")}
+                  className="rounded-[8px] border-0 h-9 px-3 text-xs"
+                >
+                  Verified
+                </Button>
+                <Button
+                  variant={statusFilter === "pending_verification" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setStatusFilter("pending_verification")}
+                  className="rounded-[8px] border-0 h-9 px-3 text-xs"
+                >
+                  Pending
+                </Button>
+                <Button
+                  variant={statusFilter === "unverified" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setStatusFilter("unverified")}
+                  className="rounded-[8px] border-0 h-9 px-3 text-xs"
+                >
+                  Unverified
+                </Button>
+                <Button
+                  variant={statusFilter === "rejected" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setStatusFilter("rejected")}
+                  className="rounded-[8px] border-0 h-9 px-3 text-xs"
+                >
+                  Rejected
+                </Button>
+                <Button
+                  variant={statusFilter === "blocked" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setStatusFilter("blocked")}
+                  className="rounded-[8px] border-0 h-9 px-3 text-xs"
+                >
+                  Blocked
+                </Button>
+              </div>
+
+              {/* User Count Badge */}
+              <div className="flex items-center">
+                <Badge variant="outline" className="p-2 px-4 text-white h-9 rounded-[8px] shadow-none">
+                  {filteredUsers.length} users
+                </Badge>
+              </div>
             </div>
           </div>
         </CardContent>
@@ -1152,53 +1222,26 @@ export default function AdminUsers() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <div className="flex gap-1 items-center">
-                      <Button
-                        variant={user.role === "user" || !user.role ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => {
-                          setCurrentAction({
-                            type: 'change_role',
-                            userId: user.user_id,
-                            data: { role: 'user' }
-                          });
-                          setActionDialogOpen(true);
-                        }}
-                        className="rounded-[8px] border-0 h-[36px] px-2 text-xs"
-                      >
-                        User
-                      </Button>
-                      <Button
-                        variant={user.role === "moderator" ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => {
-                          setCurrentAction({
-                            type: 'change_role',
-                            userId: user.user_id,
-                            data: { role: 'moderator' }
-                          });
-                          setActionDialogOpen(true);
-                        }}
-                        className="rounded-[8px] border-0 h-[36px] px-2 text-xs"
-                      >
-                        Moderator
-                      </Button>
-                      <Button
-                        variant={user.role === "admin" ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => {
-                          setCurrentAction({
-                            type: 'change_role',
-                            userId: user.user_id,
-                            data: { role: 'admin' }
-                          });
-                          setActionDialogOpen(true);
-                        }}
-                        className="rounded-[8px] border-0 h-[36px] px-2 text-xs"
-                      >
-                        Admin
-                      </Button>
-                    </div>
+                    <Select
+                      value={user.role || 'user'}
+                      onValueChange={(value) => {
+                        setCurrentAction({
+                          type: 'change_role',
+                          userId: user.user_id,
+                          data: { role: value }
+                        });
+                        setActionDialogOpen(true);
+                      }}
+                    >
+                      <SelectTrigger className='w-24 sm:w-32 mt-0 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400 h-[36px]' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
+                        <SelectItem value="user">User</SelectItem>
+                        <SelectItem value="moderator">Moderator</SelectItem>
+                        <SelectItem value="admin">Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <Button
                       variant="ghost"
                       size="sm" 
