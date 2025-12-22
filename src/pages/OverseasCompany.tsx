@@ -231,10 +231,10 @@ const OverseasCompany = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-500/10 text-yellow-700 border-yellow-500/20';
-      case 'processing': return 'bg-blue-500/10 text-blue-700 border-blue-500/20';
-      case 'completed': return 'bg-green-500/10 text-green-700 border-green-500/20';
-      case 'rejected': return 'bg-red-500/10 text-red-700 border-red-500/20';
+      case 'pending': return 'bg-yellow-500/10 text-yellow-700 border-yellow-500/20 hover:bg-yellow-500/20';
+      case 'processing': return 'bg-blue-500/10 text-blue-700 border-blue-500/20 hover:bg-blue-500/20';
+      case 'completed': return 'bg-green-500/10 text-green-700 border-green-500/20 hover:bg-green-500/20';
+      case 'rejected': return 'bg-red-500/10 text-red-700 border-red-500/20 hover:bg-red-500/20';
       default: return 'bg-gray-500/10 text-gray-700 border-gray-500/20';
     }
   };
@@ -563,35 +563,35 @@ const OverseasCompany = () => {
                 {companyInfo && companyInfo.length > 0 ? (
                   <div className="space-y-4">
                     {companyInfo.map((company) => (
-                      <Card key={company.id} className="border-l-4 border-l-primary">
+                      <Card key={company.id} className="border-secondary-foreground border p-0">
                         <CardContent className="pt-6">
                           <div className="flex justify-between items-start">
                             <div>
-                               <h3 className="font-semibold text-lg mb-1">
+                               <h3 className="font-semibold text-lg mb-1 text-white">
                                 {company.company_name}
                                </h3>
-                               <p className="text-sm text-muted-foreground mb-2">
+                               <p className="text-sm text-muted-foreground mb-3">
                                 Registration: {company.registration_number}
                                </p>
                                <div className="grid grid-cols-2 gap-4 text-sm">
                                  <div>
-                                   <Label className="font-medium">Incorporation Date</Label>
+                                   <Label className="font-medium  text-white">Incorporation Date</Label>
                                    <p className="text-muted-foreground">
                                      {new Date(company.incorporation_date).toLocaleDateString()}
                                    </p>
                                  </div>
                                 <div>
-                                  <Label className="font-medium">Jurisdiction</Label>
+                                  <Label className="font-medium text-white">Jurisdiction</Label>
                                   <p className="text-muted-foreground">{company.jurisdiction}</p>
                                 </div>
                                 <div>
-                                  <Label className="font-medium">Status</Label>
-                                  <Badge className="bg-green-500/10 text-green-700 border-green-500/20">
+                                  <Label className="font-medium text-white">Status</Label>
+                                  <Badge className="bg-green-500/10 text-green-700 border-green-500/20 ml-2">
                                     {company.status}
                                   </Badge>
                                 </div>
                                  <div>
-                                   <Label className="font-medium">Contact</Label>
+                                   <Label className="font-medium text-white">Contact</Label>
                                    <p className="text-muted-foreground">{company.contact_email}</p>
                                  </div>
                               </div>

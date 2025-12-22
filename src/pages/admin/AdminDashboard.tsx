@@ -239,7 +239,7 @@ export default function AdminDashboard() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
           <h2 className="text-xl font-semibold mb-2 text-white pt-5">Loading Dashboard</h2>
           <p className="text-muted-foreground">Fetching system data...</p>
         </div>

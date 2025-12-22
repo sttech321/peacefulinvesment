@@ -488,13 +488,13 @@ export default function AdminRequests() {
 
   if (!isAdmin()) {
     return (
-      <div className="container mx-auto py-8">
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-center text-muted-foreground">You don't have permission to access this page.</p>
-          </CardContent>
-        </Card>
-      </div>
+         <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold mb-2 text-white pt-5">Deposit/Withdrawal Requests</h2>
+          <p className="text-muted-foreground">Fetching Deposit/Withdrawal data...</p>
+        </div>
+      </div> 
     );
   }
 
