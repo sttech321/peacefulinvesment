@@ -16,7 +16,9 @@ import {
   LogOut,
   User,
   Building2,
-  Share2, Table2
+  Share2, 
+  Table2,
+  DollarSign
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -31,6 +33,7 @@ const navigation = [
   { name: "Trading Accounts", href: "/admin/accounts", icon: CreditCard },
   { name: "Overseas Companies", href: "/admin/overseas-companies", icon: Building2 },
   { name: "Referrals", href: "/admin/referrals", icon: Share2 },
+  { name: "Deposit/Withdrawal Requests", href: "/admin/requests", icon: DollarSign },
   { name: "Contact Requests", href: "/admin/contact-requests", icon: MessageSquare },
   { name: "Analytics", href: "/admin/analytics", icon: BarChart3 },
   { name: "Audit Log", href: "/admin/audit-log", icon: Activity },
@@ -72,6 +75,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           </Button>
           
           <div className="flex items-center space-x-4">
+            <Link to="/">
+              <Button variant="ghost" size="sm">
+                Home
+              </Button>
+            </Link>
             <div className="hidden sm:block">
               <h1 className="text-lg font-semibold">
                 {navigation.find(item => item.href === location.pathname)?.name || 'Admin'}

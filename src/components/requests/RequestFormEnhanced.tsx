@@ -267,7 +267,7 @@ const RequestForm = ({ onSuccess }: RequestFormProps) => {
               />
             </div>
 
-            <FormField
+            {/* <FormField
               control={form.control}
               name="payment_method"
               render={({ field }) => (
@@ -290,7 +290,7 @@ const RequestForm = ({ onSuccess }: RequestFormProps) => {
                   <FormMessage />
                 </FormItem>
               )}
-            />
+            /> */}
 
             <FormField
               control={form.control}

@@ -31,7 +31,7 @@ const LandingHeroNew = () => {
 
             <p className="mb-8 max-w-2xl font-inter text-lg md:text-[20px] text-white">
               Complete investment platform with automated trading, portfolio
-              management, and expert insights.
+              management, and expert insights. Start your financial journey with confidence. 
             </p>
 
             {/* CTA Buttons */}
