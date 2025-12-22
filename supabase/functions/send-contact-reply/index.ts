@@ -161,6 +161,17 @@ Peaceful Investment Support Team
       subject: safeSubject,
       text: emailText,
       html: emailHtml,
+      headers: {
+        'List-Unsubscribe': '<https://www.peacefulinvestment.com/unsubscribe>',
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+        'X-Mailer': 'Peaceful Investment',
+        'X-Priority': '3',
+        'Message-ID': `<reply-${Date.now()}@peacefulinvestment.com>`,
+      },
+      tags: [
+        { name: 'category', value: 'contact' },
+        { name: 'type', value: 'reply' },
+      ],
     });
 
     console.log("Reply email sent successfully:", emailResponse);

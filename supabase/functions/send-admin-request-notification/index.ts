@@ -50,13 +50,26 @@ const handler = async (req: Request): Promise<Response> => {
 
     const subject = `Admin Alert: ${request_type.charAt(0).toUpperCase() + request_type.slice(1)} Request ${status === 'processing' ? 'Approved' : 'Declined'}`;
     const htmlContent = getEmailContent(request_type, amount, currency, status, admin_notes, request_id);
+    const plainTextContent = generatePlainTextContent(request_type, amount, currency, status, admin_notes, request_id);
 
     // Use verified domain email - ensure peacefulinvestment.com is verified in Resend
     const emailResponse = await resend.emails.send({
       from: "Peaceful Investment <support@peacefulinvestment.com>",
       to: [to_email],
+      reply_to: "admin@peacefulinvestment.com",
       subject: subject,
       html: htmlContent,
+      text: plainTextContent,
+      headers: {
+        'X-Mailer': 'Peaceful Investment',
+        'X-Priority': '1', // High priority for admin notifications
+        'Message-ID': `<admin-${request_id}-${Date.now()}@peacefulinvestment.com>`,
+      },
+      tags: [
+        { name: 'category', value: 'admin' },
+        { name: 'type', value: request_type },
+        { name: 'status', value: status },
+      ],
     });
 
     console.log("Admin notification email sent successfully:", emailResponse);
@@ -153,6 +166,36 @@ function getEmailContent(
       </div>
     </div>
   `;
+}
+
+function generatePlainTextContent(
+  requestType: string,
+  amount: number,
+  currency: string,
+  status: string,
+  adminNotes?: string,
+  requestId?: string
+): string {
+  const statusText = status === 'processing' ? 'Approved' : 'Declined';
+  const type = requestType.charAt(0).toUpperCase() + requestType.slice(1);
+  
+  return `
+Peaceful Investment
+Admin Notification
+
+${type} Request ${statusText}
+
+Request Details:
+- Request ID: ${requestId?.slice(0, 8)}...
+- Type: ${type}
+- Amount: ${amount.toLocaleString()} ${currency}
+- Status: ${statusText}
+
+${adminNotes ? `Admin Notes: ${adminNotes}\n\n` : ''}
+---
+This is an automated notification from Peaceful Investment Admin System.
+© ${new Date().getFullYear()} Peaceful Investment. All rights reserved.
+  `.trim();
 }
 
 Deno.serve(handler);
