@@ -862,7 +862,7 @@ export default function AdminUsers() {
     setSelectedUsers([]);
   };
 
-  if (!loading) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
@@ -1123,26 +1123,53 @@ export default function AdminUsers() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <Select
-                      value={user.role || 'user'}
-                      onValueChange={(value) => {
-                        setCurrentAction({
-                          type: 'change_role',
-                          userId: user.user_id,
-                          data: { role: value }
-                        });
-                        setActionDialogOpen(true);
-                      }}
-                    >
-                      <SelectTrigger className='w-24 sm:w-32 mt-0 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400 h-[36px]' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
-                        <SelectItem value="user">User</SelectItem>
-                        <SelectItem value="moderator">Moderator</SelectItem>
-                        <SelectItem value="admin">Admin</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <div className="flex gap-1 items-center">
+                      <Button
+                        variant={user.role === "user" || !user.role ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => {
+                          setCurrentAction({
+                            type: 'change_role',
+                            userId: user.user_id,
+                            data: { role: 'user' }
+                          });
+                          setActionDialogOpen(true);
+                        }}
+                        className="rounded-[8px] border-0 h-[36px] px-2 text-xs"
+                      >
+                        User
+                      </Button>
+                      <Button
+                        variant={user.role === "moderator" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => {
+                          setCurrentAction({
+                            type: 'change_role',
+                            userId: user.user_id,
+                            data: { role: 'moderator' }
+                          });
+                          setActionDialogOpen(true);
+                        }}
+                        className="rounded-[8px] border-0 h-[36px] px-2 text-xs"
+                      >
+                        Moderator
+                      </Button>
+                      <Button
+                        variant={user.role === "admin" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => {
+                          setCurrentAction({
+                            type: 'change_role',
+                            userId: user.user_id,
+                            data: { role: 'admin' }
+                          });
+                          setActionDialogOpen(true);
+                        }}
+                        className="rounded-[8px] border-0 h-[36px] px-2 text-xs"
+                      >
+                        Admin
+                      </Button>
+                    </div>
                     <Button
                       variant="ghost"
                       size="sm" 
@@ -1369,24 +1396,15 @@ export default function AdminUsers() {
                 {currentAction?.type === 'reject' && 'This will reject the user and prevent them from accessing the platform.'}
                 {currentAction?.type === 'suspend' && 'This will suspend the user temporarily.'}
                 {currentAction?.type === 'activate' && 'This will reactivate the user account.'}
-                {currentAction?.type === 'change_role' && 'This will change the user role and permissions.'}
+                {currentAction?.type === 'change_role' && 'This will change the user\'s role and permissions. Are you sure you want to proceed?'}
                 {currentAction?.type === 'verify' && 'This will verify the user account.'}
               </p>
             </div>
             
-            {currentAction?.type === 'change_role' && (
-              <div>
-                <label className="text-sm font-medium">New Role</label>
-                <Select value={newRole} onValueChange={setNewRole}>
-                  <SelectTrigger className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400'  style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }>
-                    <SelectValue placeholder="Select role" />
-                  </SelectTrigger>
-                  <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
-                    <SelectItem value="user">User</SelectItem>
-                    <SelectItem value="moderator">Moderator</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                  </SelectContent>
-                </Select>
+            {currentAction?.type === 'change_role' && currentAction.data?.role && typeof currentAction.data.role === 'string' && (
+              <div className="p-4 bg-muted/20 rounded-lg border border-muted/40">
+                <p className="text-sm text-muted-foreground mb-2">Changing role to:</p>
+                <p className="text-xl font-semibold text-white capitalize">{currentAction.data.role}</p>
               </div>
             )}
 
@@ -1422,7 +1440,7 @@ export default function AdminUsers() {
                   handleAdminAction(actionWithNote);
                 }
               }}
-              disabled={processing || (currentAction?.type === 'change_role' && !newRole)}
+              disabled={processing}
             >
               {processing ? (
                 <Loader2 className="h-4 w-4 mr-1 animate-spin" />
