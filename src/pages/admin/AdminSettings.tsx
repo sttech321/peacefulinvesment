@@ -1,126 +1,316 @@
 import React, { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Lock, Loader2 } from "lucide-react";
-import { Link } from "react-router-dom";
-import { useProfile } from "@/hooks/useProfile";
+import { Label } from "@/components/ui/label";
+import { Loader2, Plus, Trash2, Settings, Link2, Mail, ChevronUp, ChevronDown } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 import { useToast } from "@/hooks/use-toast";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { supabase } from "@/integrations/supabase/client";
 
-const profileSchema = z.object({
-  full_name: z.string().min(1, "Full name is required"),
-  phone: z.string().optional(),
-  address: z.string().optional(),
-  city: z.string().optional(),
-  state: z.string().optional(),
-  zip_code: z.string().optional(),
-  employment_status: z.string().optional(),
-  employer: z.string().optional(),
-  annual_income: z.number().optional(),
-  investment_experience: z.string().optional(),
-  risk_tolerance: z.string().optional(),
-});
-
-type ProfileFormValues = z.infer<typeof profileSchema>;
-
-const extractErrorMessage = (err: any): string => {
-  if (!err) return "Failed to save progress. Please try again.";
-  if (typeof err === "string") return err;
-  if (err instanceof Error) return err.message;
-  if (err.message && typeof err.message === "string") return err.message;
-  if (err.detail && typeof err.detail === "string") return err.detail;
-  if (err.data && typeof err.data.message === "string") return err.data.message;
-  if (err.errors && typeof err.errors === "object") {
-    try {
-      const first = Object.keys(err.errors)[0];
-      const msg = Array.isArray(err.errors[first]) ? err.errors[first][0] : err.errors[first];
-      if (msg) return msg;
-    } catch (e) {
-      // ignore
-    }
-  }
-  try {
-    return JSON.stringify(err);
-  } catch (e) {
-    return String(err);
-  }
-};
+interface LinkItem {
+  label: string;
+  to: string;
+  order?: number;
+}
 
 export default function AdminSettings() {
-  const { profile, loading, updateProfile } = useProfile();
+  const { user } = useAuth();
+  const { isAdmin, loading: roleLoading } = useUserRole();
   const { toast } = useToast();
-  const [isEditing, setIsEditing] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
+  
+  // App settings state
+  const [loadingSettings, setLoadingSettings] = useState(true);
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [headerLinks, setHeaderLinks] = useState<LinkItem[]>([]);
+  const [footerLinks, setFooterLinks] = useState<LinkItem[]>([]);
+  const [depositWithdrawalEmail, setDepositWithdrawalEmail] = useState("");
 
-  const form = useForm<ProfileFormValues>({
-    resolver: zodResolver(profileSchema),
-    defaultValues: {
-      full_name: profile?.full_name || "",
-      phone: profile?.phone || "",
-      address: profile?.address || "",
-      city: profile?.city || "",
-      state: profile?.state || "",
-      zip_code: profile?.zip_code || "",
-      employment_status: profile?.employment_status || "",
-      employer: profile?.employer || "",
-      annual_income: profile?.annual_income || undefined,
-      investment_experience: profile?.investment_experience || "",
-      risk_tolerance: profile?.risk_tolerance || "",
-    },
-  });
-
-  // Update form when profile changes
+  // Fetch app settings
   useEffect(() => {
-    if (!loading && profile) {
-      form.reset({
-        full_name: profile.full_name || "",
-        phone: profile.phone || "",
-        address: profile.address || "",
-        city: profile.city || "",
-        state: profile.state || "",
-        zip_code: profile.zip_code || "",
-        employment_status: profile.employment_status || "",
-        employer: profile.employer || "",
-        annual_income: profile.annual_income || undefined,
-        investment_experience: profile.investment_experience || "",
-        risk_tolerance: profile.risk_tolerance || "",
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile, loading]);
-
-  const onSubmit = async (data: ProfileFormValues) => {
-    setIsUpdating(true);
-    try {
-      const result = await updateProfile(data);
-      if (result?.error) {
-        const msg = extractErrorMessage(result.error);
-        toast({ title: "Error", description: msg || "Failed to update profile", variant: "destructive" });
+    const checkAndFetch = async () => {
+      // Wait for role to load
+      if (roleLoading) {
+        return;
+      }
+      
+      if (isAdmin()) {
+        await fetchAppSettings();
       } else {
-        toast({ title: "Success", description: "Profile updated successfully" });
-        setIsEditing(false);
+        // If not admin, stop loading
+        setLoadingSettings(false);
+      }
+    };
+    checkAndFetch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roleLoading]);
+
+  const fetchAppSettings = async () => {
+    try {
+      setLoadingSettings(true);
+      
+      // Fetch deposit/withdrawal notification email
+      let email = import.meta.env.VITE_DEPOSIT_WITHDRAWAL_EMAIL || '';
+      
+      if (!email) {
+        try {
+          const { data } = await supabase
+            .from('app_settings' as any)
+            .select('value')
+            .eq('key', 'deposit_withdrawal_notification_email')
+            .maybeSingle();
+          
+          if ((data as any)?.value) {
+            email = (data as any).value || '';
+          }
+        } catch (e) {
+          console.warn('Error fetching notification email:', e);
+        }
+      }
+      
+      setDepositWithdrawalEmail(email);
+      
+      // Fetch header links
+      const { data: headerData } = await supabase
+        .from('app_settings' as any)
+        .select('value')
+        .eq('key', 'header_links')
+        .maybeSingle();
+      
+      if ((headerData as any)?.value) {
+        try {
+          const links = JSON.parse((headerData as any).value);
+          // Ensure all links have order values, assign if missing
+          const linksWithOrder = links.map((link: LinkItem, index: number) => ({
+            ...link,
+            order: link.order !== undefined ? link.order : index
+          }));
+          // Sort by order
+          linksWithOrder.sort((a: LinkItem, b: LinkItem) => (a.order || 0) - (b.order || 0));
+          setHeaderLinks(linksWithOrder);
+        } catch (e) {
+          console.warn('Failed to parse header links:', e);
+        }
+      } else {
+        // Default header links from Navbar.tsx with order
+        setHeaderLinks([
+          { label: 'Dashboard', to: '/dashboard', order: 1 },
+          { label: 'Accounts', to: '/meta-trader-accounts', order: 2 },
+          { label: 'Referrals', to: '/referrals', order: 3 },
+          { label: 'Catholic', to: '/blog', order: 4 },
+          { label: 'Contact', to: '/contact', order: 5 },
+        ]);
+      }
+
+      // Fetch footer links
+      const { data: footerData } = await supabase
+        .from('app_settings' as any)
+        .select('value')
+        .eq('key', 'footer_links')
+        .maybeSingle();
+      
+      if ((footerData as any)?.value) {
+        try {
+          const links = JSON.parse((footerData as any).value);
+          // Ensure all links have order values, assign if missing
+          const linksWithOrder = links.map((link: LinkItem, index: number) => ({
+            ...link,
+            order: link.order !== undefined ? link.order : index
+          }));
+          // Sort by order
+          linksWithOrder.sort((a: LinkItem, b: LinkItem) => (a.order || 0) - (b.order || 0));
+          setFooterLinks(linksWithOrder);
+        } catch (e) {
+          console.warn('Failed to parse footer links:', e);
+        }
+      } else {
+        // Default footer links from Footer.tsx with order
+        setFooterLinks([
+          { label: 'Quick Links', to: '/#', order: 1 },
+          { label: 'Home', to: '/', order: 2 },
+          { label: 'About us', to: '/about', order: 3 },
+          { label: 'Download app', to: '/downloads', order: 4 },
+        ]);
       }
     } catch (error) {
-      const msg = extractErrorMessage(error);
-      toast({ title: "Error", description: msg || "An unexpected error occurred", variant: "destructive" });
+      console.error('Error fetching app settings:', error);
     } finally {
-      setIsUpdating(false);
+      setLoadingSettings(false);
     }
   };
 
-  if (loading) {
+  const handleSaveAppSettings = async () => {
+    try {
+      setSavingSettings(true);
+
+      // Save deposit/withdrawal notification email
+      await supabase
+        .from('app_settings' as any)
+        .upsert({
+          key: 'deposit_withdrawal_notification_email',
+          value: depositWithdrawalEmail,
+          description: 'Email address to receive notifications when deposit/withdrawal requests are approved or declined',
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'key'
+        });
+
+      // Ensure header links have order and sort them
+      const sortedHeaderLinks = [...headerLinks]
+        .map((link, index) => ({ ...link, order: link.order !== undefined ? link.order : index }))
+        .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+      // Save header links
+      await supabase
+        .from('app_settings' as any)
+        .upsert({
+          key: 'header_links',
+          value: JSON.stringify(sortedHeaderLinks),
+          description: 'Navigation links for the header/navbar',
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'key'
+        });
+
+      // Ensure footer links have order and sort them
+      const sortedFooterLinks = [...footerLinks]
+        .map((link, index) => ({ ...link, order: link.order !== undefined ? link.order : index }))
+        .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+      // Save footer links
+      await supabase
+        .from('app_settings' as any)
+        .upsert({
+          key: 'footer_links',
+          value: JSON.stringify(sortedFooterLinks),
+          description: 'Navigation links for the footer',
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'key'
+        });
+
+      toast({
+        title: "Success",
+        description: "App settings saved successfully",
+      });
+    } catch (error: any) {
+      console.error('Error saving app settings:', error);
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to save app settings",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
+  const addHeaderLink = () => {
+    const maxOrder = headerLinks.length > 0 
+      ? Math.max(...headerLinks.map(link => link.order || 0))
+      : 0;
+    setHeaderLinks([...headerLinks, { label: '', to: '', order: maxOrder + 1 }]);
+  };
+
+  const removeHeaderLink = (index: number) => {
+    setHeaderLinks(headerLinks.filter((_, i) => i !== index));
+  };
+
+  const updateHeaderLink = (index: number, field: 'label' | 'to', value: string) => {
+    const updated = [...headerLinks];
+    updated[index] = { ...updated[index], [field]: value };
+    setHeaderLinks(updated);
+  };
+
+  const moveHeaderLink = (sortedIndex: number, direction: 'up' | 'down') => {
+    const sorted = [...headerLinks]
+      .map((link, idx) => ({ ...link, order: link.order !== undefined ? link.order : idx }))
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
+    
+    const newIndex = direction === 'up' ? sortedIndex - 1 : sortedIndex + 1;
+    if (newIndex < 0 || newIndex >= sorted.length) return;
+
+    const updated = [...headerLinks];
+    const currentLink = sorted[sortedIndex];
+    const targetLink = sorted[newIndex];
+    
+    // Find indices in original array
+    const currentIndex = updated.findIndex(l => l.label === currentLink.label && l.to === currentLink.to);
+    const targetIndex = updated.findIndex(l => l.label === targetLink.label && l.to === targetLink.to);
+    
+    if (currentIndex === -1 || targetIndex === -1) return;
+    
+    // Swap orders
+    const tempOrder = currentLink.order!;
+    updated[currentIndex].order = targetLink.order!;
+    updated[targetIndex].order = tempOrder;
+    
+    setHeaderLinks(updated);
+  };
+
+  const addFooterLink = () => {
+    const maxOrder = footerLinks.length > 0 
+      ? Math.max(...footerLinks.map(link => link.order || 0))
+      : 0;
+    setFooterLinks([...footerLinks, { label: '', to: '', order: maxOrder + 1 }]);
+  };
+
+  const removeFooterLink = (index: number) => {
+    setFooterLinks(footerLinks.filter((_, i) => i !== index));
+  };
+
+  const updateFooterLink = (index: number, field: 'label' | 'to', value: string) => {
+    const updated = [...footerLinks];
+    updated[index] = { ...updated[index], [field]: value };
+    setFooterLinks(updated);
+  };
+
+  const moveFooterLink = (sortedIndex: number, direction: 'up' | 'down') => {
+    const sorted = [...footerLinks]
+      .map((link, idx) => ({ ...link, order: link.order !== undefined ? link.order : idx }))
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
+    
+    const newIndex = direction === 'up' ? sortedIndex - 1 : sortedIndex + 1;
+    if (newIndex < 0 || newIndex >= sorted.length) return;
+
+    const updated = [...footerLinks];
+    const currentLink = sorted[sortedIndex];
+    const targetLink = sorted[newIndex];
+    
+    // Find indices in original array
+    const currentIndex = updated.findIndex(l => l.label === currentLink.label && l.to === currentLink.to);
+    const targetIndex = updated.findIndex(l => l.label === targetLink.label && l.to === targetLink.to);
+    
+    if (currentIndex === -1 || targetIndex === -1) return;
+    
+    // Swap orders
+    const tempOrder = currentLink.order!;
+    updated[currentIndex].order = targetLink.order!;
+    updated[targetIndex].order = tempOrder;
+    
+    setFooterLinks(updated);
+  };
+
+  if (loadingSettings) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto mb-4"></div>
-          <h2 className="text-xl font-semibold mb-2 text-white pt-5">Loading Settings</h2>
-          <p className="text-muted-foreground">Fetching profile data...</p>
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading settings...</p>
         </div>
+      </div>
+    );
+  }
+
+  if (!isAdmin()) {
+    return (
+      <div className="container mx-auto py-8">
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-center text-muted-foreground">You don't have permission to access this page.</p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -130,295 +320,222 @@ export default function AdminSettings() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white">Settings</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white">App Settings</h1>
           <p className="text-muted-foreground mt-2">
-            Manage your profile and account settings
+            Manage application-wide settings and configurations
           </p>
         </div>
       </div>
 
-      {/* Profile Form */}
-      <div className="bg-gradient-pink-to-yellow hover:glow-primary w-full rounded-sm border-0 p-[2px] shadow-none">
+      {/* Email Notification Settings */}
+      {/* <div className="bg-gradient-pink-to-yellow hover:glow-primary w-full rounded-sm border-0 p-[2px] shadow-none">
         <Card className="bg-black rounded-sm">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Personal Information</CardTitle>
-            {!isEditing && (
-              <div className="flex gap-2">
-                <Link to="/change-password">
-                  <Button variant="outline" size="sm" className="rounded-[8px] border-0 hover:bg-white/80 h-10">
-                    <Lock className="h-4 w-4 mr-1" />
-                    Change Password
-                  </Button>
-                </Link>
-                <Button variant="outline" className="rounded-[8px] border-0 hover:bg-white/80 h-10" onClick={() => setIsEditing(true)}>
-                  Edit Profile
-                </Button>
-              </div>
-            )}
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Mail className="h-5 w-5" />
+              <CardTitle>Email Notifications</CardTitle>
+            </div>
+            <CardDescription>
+              Configure email addresses for system notifications
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Form {...form} key={profile?.id || "profile-form"}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <FormField
-                    control={form.control}
-                    name="full_name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm font-medium leading-none text-muted-foreground">Full Name</FormLabel>
-                        <FormControl>
-                          <Input
-                            className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400'
-                            style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
-                            {...field}
-                            disabled={!isEditing}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="phone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm font-medium leading-none text-muted-foreground">Phone Number</FormLabel>
-                        <FormControl>
-                          <Input
-                            className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400'
-                            style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
-                            {...field}
-                            disabled={!isEditing}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
-                  control={form.control}
-                  name="address"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium leading-none text-muted-foreground">Address</FormLabel>
-                      <FormControl>
-                        <Input
-                          className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400'
-                          style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
-                          {...field}
-                          disabled={!isEditing}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="grid gap-4 md:grid-cols-3">
-                  <FormField
-                    control={form.control}
-                    name="city"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm font-medium leading-none text-muted-foreground">City</FormLabel>
-                        <FormControl>
-                          <Input
-                            className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400'
-                            style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
-                            {...field}
-                            disabled={!isEditing}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="state"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm font-medium leading-none text-muted-foreground">State</FormLabel>
-                        <FormControl>
-                          <Input
-                            className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400'
-                            style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
-                            {...field}
-                            disabled={!isEditing}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="zip_code"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm font-medium leading-none text-muted-foreground">ZIP Code</FormLabel>
-                        <FormControl>
-                          <Input
-                            className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400'
-                            style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
-                            {...field}
-                            disabled={!isEditing}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-2">
-                  <FormField
-                    control={form.control}
-                    name="employment_status"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm font-medium leading-none text-muted-foreground">Employment Status</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value} disabled={!isEditing}>
-                          <FormControl>
-                            <SelectTrigger className="rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400" style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
-                              <SelectValue placeholder="Select employment status" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent className="border-secondary-foreground bg-black/90 text-white">
-                            <SelectItem value="employed">Employed</SelectItem>
-                            <SelectItem value="self-employed">Self-employed</SelectItem>
-                            <SelectItem value="unemployed">Unemployed</SelectItem>
-                            <SelectItem value="retired">Retired</SelectItem>
-                            <SelectItem value="student">Student</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="employer"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm font-medium leading-none text-muted-foreground">Employer</FormLabel>
-                        <FormControl>
-                          <Input
-                            className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400'
-                            style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
-                            {...field}
-                            disabled={!isEditing}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
-                  control={form.control}
-                  name="annual_income"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium leading-none text-muted-foreground">Annual Income</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400'
-                          style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
-                          {...field}
-                          value={field.value || ""}
-                          onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
-                          disabled={!isEditing}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="grid gap-4 md:grid-cols-2">
-                  <FormField
-                    control={form.control}
-                    name="investment_experience"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm font-medium leading-none text-muted-foreground">Investment Experience</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value} disabled={!isEditing}>
-                          <FormControl>
-                            <SelectTrigger className="rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400" style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
-                              <SelectValue placeholder="Select experience level" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent className="border-secondary-foreground bg-black/90 text-white">
-                            <SelectItem value="beginner">Beginner</SelectItem>
-                            <SelectItem value="intermediate">Intermediate</SelectItem>
-                            <SelectItem value="advanced">Advanced</SelectItem>
-                            <SelectItem value="expert">Expert</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="risk_tolerance"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm font-medium leading-none text-muted-foreground">Risk Tolerance</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value} disabled={!isEditing}>
-                          <FormControl>
-                            <SelectTrigger className="rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400" style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
-                              <SelectValue placeholder="Select risk tolerance" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent className="border-secondary-foreground bg-black/90 text-white">
-                            <SelectItem value="low">Low</SelectItem>
-                            <SelectItem value="medium">Medium</SelectItem>
-                            <SelectItem value="high">High</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                {isEditing && (
-                  <div className="flex gap-4 pt-4">
-                    <Button type="submit" className="rounded-[8px] border-0 hover:bg-primary/80" disabled={isUpdating}>
-                      {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Save Changes
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="rounded-[8px] border-0 hover:bg-white/80"
-                      onClick={() => {
-                        setIsEditing(false);
-                        form.reset();
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                )}
-              </form>
-            </Form>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="deposit-withdrawal-email">
+                Deposit/Withdrawal Notification Email
+              </Label>
+              <Input
+                id="deposit-withdrawal-email"
+                type="email"
+                placeholder="admin@example.com"
+                value={depositWithdrawalEmail}
+                onChange={(e) => setDepositWithdrawalEmail(e.target.value)}
+                className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0'
+              />
+              <p className="text-sm text-muted-foreground">
+                Email address that will receive notifications when deposit or withdrawal requests are approved or declined
+              </p>
+            </div>
           </CardContent>
         </Card>
+      </div> */}
+
+      {/* Header Links Settings */}
+      <div className="bg-gradient-pink-to-yellow hover:glow-primary w-full rounded-sm border-0 p-[2px] shadow-none">
+        <Card className="bg-black rounded-sm">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Link2 className="h-5 w-5" />
+              <CardTitle>Header Navigation Links</CardTitle>
+            </div>
+            <CardDescription>
+              Manage the navigation links displayed in the header/navbar (for logged-in users)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {headerLinks
+                .sort((a, b) => (a.order || 0) - (b.order || 0))
+                .map((link, sortedIndex) => {
+                  const originalIndex = headerLinks.findIndex(l => l === link);
+                  return (
+                    <div key={`${link.order}-${sortedIndex}`} className="flex gap-2 items-end">
+                      <div className="flex flex-col gap-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => moveHeaderLink(sortedIndex, 'up')}
+                          disabled={sortedIndex === 0}
+                          className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                        >
+                          <ChevronUp className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => moveHeaderLink(sortedIndex, 'down')}
+                          disabled={sortedIndex === headerLinks.length - 1}
+                          className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                        >
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="flex-1 grid grid-cols-2 gap-2">
+                        <Input
+                          placeholder="Link Label"
+                          value={link.label}
+                          onChange={(e) => updateHeaderLink(originalIndex, 'label', e.target.value)}
+                          className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0'
+                        />
+                        <Input
+                          placeholder="Link URL (e.g., /dashboard)"
+                          value={link.to}
+                          onChange={(e) => updateHeaderLink(originalIndex, 'to', e.target.value)}
+                          className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0'
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeHeaderLink(originalIndex)}
+                        className="text-red-500 hover:text-red-700 hover:bg-red-500/10"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  );
+                })}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={addHeaderLink}
+                className="w-full rounded-[8px] border-0 hover:bg-white/80"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Header Link
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Footer Links Settings */}
+      <div className="bg-gradient-pink-to-yellow hover:glow-primary w-full rounded-sm border-0 p-[2px] shadow-none">
+        <Card className="bg-black rounded-sm">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Link2 className="h-5 w-5" />
+              <CardTitle>Footer Navigation Links</CardTitle>
+            </div>
+            <CardDescription>
+              Manage the navigation links displayed in the footer
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {footerLinks
+                .sort((a, b) => (a.order || 0) - (b.order || 0))
+                .map((link, sortedIndex) => {
+                  const originalIndex = footerLinks.findIndex(l => l === link);
+                  return (
+                    <div key={`${link.order}-${sortedIndex}`} className="flex gap-2 items-end">
+                      <div className="flex flex-col gap-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => moveFooterLink(sortedIndex, 'up')}
+                          disabled={sortedIndex === 0}
+                          className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                        >
+                          <ChevronUp className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => moveFooterLink(sortedIndex, 'down')}
+                          disabled={sortedIndex === footerLinks.length - 1}
+                          className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                        >
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="flex-1 grid grid-cols-2 gap-2">
+                        <Input
+                          placeholder="Link Label"
+                          value={link.label}
+                          onChange={(e) => updateFooterLink(originalIndex, 'label', e.target.value)}
+                          className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0'
+                        />
+                        <Input
+                          placeholder="Link URL (e.g., /about)"
+                          value={link.to}
+                          onChange={(e) => updateFooterLink(originalIndex, 'to', e.target.value)}
+                          className='rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0'
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeFooterLink(originalIndex)}
+                        className="text-red-500 hover:text-red-700 hover:bg-red-500/10"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  );
+                })}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={addFooterLink}
+                className="w-full rounded-[8px] border-0 hover:bg-white/80"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Footer Link
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Save Button */}
+      <div className="flex justify-end">
+        <Button
+          onClick={handleSaveAppSettings}
+          disabled={savingSettings || loadingSettings}
+          className="rounded-[8px] border-0 hover:bg-primary/80"
+        >
+          {savingSettings && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          <Settings className="mr-2 h-4 w-4" />
+          Save All Settings
+        </Button>
       </div>
     </div>
   );
 }
-

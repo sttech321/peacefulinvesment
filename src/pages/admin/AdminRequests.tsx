@@ -69,10 +69,8 @@ export default function AdminRequests() {
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [adminNotes, setAdminNotes] = useState("");
   const [processing, setProcessing] = useState(false);
-  const [notificationEmail, setNotificationEmail] = useState("");
 
   useEffect(() => {
-    fetchNotificationEmail();
     fetchRequests();
 
     // Set up real-time subscription
@@ -100,29 +98,6 @@ export default function AdminRequests() {
   useEffect(() => {
     filterRequests();
   }, [requests, searchTerm, statusFilter, typeFilter]);
-
-  const fetchNotificationEmail = async () => {
-    try {
-      let email = import.meta.env.VITE_DEPOSIT_WITHDRAWAL_EMAIL || '';
-       
-      if (!email) {
-        try {
-          const { data } = await supabase
-            .from('app_settings' as any)
-            .select('value')
-            .eq('key', 'deposit_withdrawal_notification_email')
-            .maybeSingle();
-          email = (data as any)?.value || '';
-        } catch (e) {
-          // Settings table might not exist, that's okay
-        }
-      }
-       
-      setNotificationEmail(email);
-    } catch (error) {
-      console.error('Error fetching notification email:', error);
-    }
-  };
 
   const fetchRequests = async () => {
     try {
@@ -328,29 +303,15 @@ export default function AdminRequests() {
 
       if (updateError) throw updateError;
 
-      // Send notification email to admin
-      if (notificationEmail) {
-        try {
-          await supabase.functions.invoke('send-admin-request-notification', {
-            body: {
-              to_email: notificationEmail,
-              request_id: selectedRequest.id,
-              request_type: selectedRequest.type,
-              amount: selectedRequest.amount,
-              currency: selectedRequest.currency,
-              status: 'processing',
-              admin_notes: adminNotes || undefined,
-            }
-          });
-        } catch (emailErr) {
-          console.warn('Failed to send admin notification email:', emailErr);
-        }
-      }
-
-      // Send notification to user
+      // Send notification email to user who submitted the request
+      let emailSent = false;
+      let emailErrorMsg = '';
+      
       if (selectedRequest.user_email) {
         try {
-          await supabase.functions.invoke('send-request-notification', {
+          console.log('Attempting to send approval notification email to:', selectedRequest.user_email);
+          
+          const { data: emailData, error: emailError } = await supabase.functions.invoke('send-request-notification', {
             body: {
               user_email: selectedRequest.user_email,
               user_name: selectedRequest.user_name || 'User',
@@ -362,15 +323,43 @@ export default function AdminRequests() {
               admin_notes: adminNotes || undefined,
             }
           });
-        } catch (emailErr) {
-          console.warn('Failed to send user notification email:', emailErr);
+
+          console.log('Email function response:', { emailData, emailError });
+
+          if (emailError) {
+            console.error('Email notification error:', emailError);
+            emailErrorMsg = emailError.message || 'Unknown error';
+          } else if (emailData?.success === true) {
+            emailSent = true;
+            console.log('Email sent successfully');
+          } else {
+            console.warn('Email notification returned unsuccessful:', emailData);
+            emailErrorMsg = emailData?.error || 'Email service returned unsuccessful';
+          }
+        } catch (emailErr: any) {
+          console.error('Error sending user notification email:', emailErr);
+          emailErrorMsg = emailErr?.message || 'Failed to invoke email function';
         }
       }
 
-      toast({
-        title: "Success",
-        description: "Request approved successfully",
-      });
+      // Show final toast message
+      if (emailSent) {
+        toast({
+          title: "Success",
+          description: `Request approved successfully. Notification email sent to ${selectedRequest.user_email}`,
+        });
+      } else if (!selectedRequest.user_email) {
+        toast({
+          title: "Success",
+          description: "Request approved successfully. No email sent (user email not available).",
+        });
+      } else {
+        toast({
+          title: "Request Approved",
+          description: `Request approved successfully. ${emailErrorMsg ? `Email notification failed: ${emailErrorMsg}` : 'Failed to send notification email to user.'}`,
+          variant: emailErrorMsg ? "destructive" : "default",
+        });
+      }
 
       setApproveDialogOpen(false);
       setAdminNotes("");
@@ -405,29 +394,15 @@ export default function AdminRequests() {
 
       if (updateError) throw updateError;
 
-      // Send notification email to admin
-      if (notificationEmail) {
-        try {
-          await supabase.functions.invoke('send-admin-request-notification', {
-            body: {
-              to_email: notificationEmail,
-              request_id: selectedRequest.id,
-              request_type: selectedRequest.type,
-              amount: selectedRequest.amount,
-              currency: selectedRequest.currency,
-              status: 'rejected',
-              admin_notes: adminNotes || undefined,
-            }
-          });
-        } catch (emailErr) {
-          console.warn('Failed to send admin notification email:', emailErr);
-        }
-      }
-
-      // Send notification to user
+      // Send notification email to user who submitted the request
+      let emailSent = false;
+      let emailErrorMsg = '';
+      
       if (selectedRequest.user_email) {
         try {
-          await supabase.functions.invoke('send-request-notification', {
+          console.log('Attempting to send decline notification email to:', selectedRequest.user_email);
+          
+          const { data: emailData, error: emailError } = await supabase.functions.invoke('send-request-notification', {
             body: {
               user_email: selectedRequest.user_email,
               user_name: selectedRequest.user_name || 'User',
@@ -439,15 +414,43 @@ export default function AdminRequests() {
               admin_notes: adminNotes || undefined,
             }
           });
-        } catch (emailErr) {
-          console.warn('Failed to send user notification email:', emailErr);
+
+          console.log('Email function response:', { emailData, emailError });
+
+          if (emailError) {
+            console.error('Email notification error:', emailError);
+            emailErrorMsg = emailError.message || 'Unknown error';
+          } else if (emailData?.success === true) {
+            emailSent = true;
+            console.log('Email sent successfully');
+          } else {
+            console.warn('Email notification returned unsuccessful:', emailData);
+            emailErrorMsg = emailData?.error || 'Email service returned unsuccessful';
+          }
+        } catch (emailErr: any) {
+          console.error('Error sending user notification email:', emailErr);
+          emailErrorMsg = emailErr?.message || 'Failed to invoke email function';
         }
       }
 
-      toast({
-        title: "Success",
-        description: "Request declined successfully",
-      });
+      // Show final toast message
+      if (emailSent) {
+        toast({
+          title: "Success",
+          description: `Request declined successfully. Notification email sent to ${selectedRequest.user_email}`,
+        });
+      } else if (!selectedRequest.user_email) {
+        toast({
+          title: "Success",
+          description: "Request declined successfully. No email sent (user email not available).",
+        });
+      } else {
+        toast({
+          title: "Request Declined",
+          description: `Request declined successfully. ${emailErrorMsg ? `Email notification failed: ${emailErrorMsg}` : 'Failed to send notification email to user.'}`,
+          variant: emailErrorMsg ? "destructive" : "default",
+        });
+      }
 
       setRejectDialogOpen(false);
       setAdminNotes("");

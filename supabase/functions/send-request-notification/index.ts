@@ -1,12 +1,10 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { Resend } from "npm:resend@2.0.0";
-
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { Resend } from "npm:resend@3.2.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
 interface RequestNotificationRequest {
@@ -23,10 +21,32 @@ interface RequestNotificationRequest {
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, {
+      status: 200,
+      headers: {
+        ...corsHeaders,
+        "Access-Control-Max-Age": "86400", // Cache preflight for 24 hours
+      },
+    });
   }
 
   try {
+    // Validate Resend API key
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    if (!resendApiKey) {
+      console.error("RESEND_API_KEY environment variable is not set");
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: "Email service configuration error" 
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
     const { 
       user_email, 
       user_name, 
@@ -38,19 +58,67 @@ const handler = async (req: Request): Promise<Response> => {
       admin_notes 
     }: RequestNotificationRequest = await req.json();
 
-    console.log("Sending request notification:", { user_email, request_id, status });
+    // Validate required fields
+    if (!user_email || !request_id || !request_type || !amount || !currency || !status) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: "Missing required fields" 
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    console.log("Sending request notification:", { user_email, request_id, status, request_type });
 
     const subject = getEmailSubject(request_type, status);
-    const htmlContent = getEmailContent(user_name, request_type, amount, currency, status, admin_notes, request_id);
+    // Get base URL from request origin or use default
+    let baseUrl = req.headers.get("origin") || "https://peacefulinvestment.com";
+    // If origin is not available, try to extract from referer
+    if (baseUrl === "https://peacefulinvestment.com") {
+      const referer = req.headers.get("referer");
+      if (referer) {
+        try {
+          const url = new URL(referer);
+          baseUrl = `${url.protocol}//${url.host}`;
+        } catch (e) {
+          // Keep default if parsing fails
+        }
+      }
+    }
+    baseUrl = baseUrl.replace(/\/$/, ""); // Remove trailing slash
+    const htmlContent = getEmailContent(user_name, request_type, amount, currency, status, admin_notes, request_id, baseUrl);
 
-    const emailResponse = await resend.emails.send({
-      from: "Peaceful Investment <onboarding@resend.dev>",
+    // Initialize Resend client with API key
+    const resendClient = new Resend(resendApiKey);
+
+    // Use verified domain email - ensure peacefulinvestment.com is verified in Resend
+    // If domain is not verified, emails will only work in test mode to your verified email
+    const emailResponse = await resendClient.emails.send({
+      from: "Peaceful Investment <support@peacefulinvestment.com>",
       to: [user_email],
       subject: subject,
       html: htmlContent,
     });
 
-    console.log("Email sent successfully:", emailResponse);
+    console.log("Resend email response:", emailResponse);
+
+    if (emailResponse.error) {
+      console.error("Resend email error:", emailResponse.error);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: emailResponse.error.message || "Failed to send email via Resend" 
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
 
     return new Response(JSON.stringify({ 
       success: true, 
@@ -102,7 +170,8 @@ function getEmailContent(
   currency: string, 
   status: string, 
   adminNotes?: string,
-  requestId?: string
+  requestId?: string,
+  baseUrl?: string
 ): string {
   const statusColor = getStatusColor(status);
   const statusIcon = getStatusIcon(status);
@@ -162,7 +231,7 @@ function getEmailContent(
         ` : ''}
         
         <div style="text-align: center; margin-top: 30px;">
-          <a href="${req.headers.get("origin")}/requests" 
+          <a href="${baseUrl || 'https://peacefulinvestment.com'}/requests" 
              style="background: #007bff; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">
             View Request Details
           </a>
@@ -218,4 +287,4 @@ function getStatusMessage(requestType: string, status: string): string {
   }
 }
 
-serve(handler);
+Deno.serve(handler);

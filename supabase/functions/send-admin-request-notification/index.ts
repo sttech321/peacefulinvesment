@@ -1,5 +1,5 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { Resend } from "npm:resend@2.0.0";
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { Resend } from "npm:resend@3.2.0";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -51,8 +51,9 @@ const handler = async (req: Request): Promise<Response> => {
     const subject = `Admin Alert: ${request_type.charAt(0).toUpperCase() + request_type.slice(1)} Request ${status === 'processing' ? 'Approved' : 'Declined'}`;
     const htmlContent = getEmailContent(request_type, amount, currency, status, admin_notes, request_id);
 
+    // Use verified domain email - ensure peacefulinvestment.com is verified in Resend
     const emailResponse = await resend.emails.send({
-      from: "Peaceful Investment <onboarding@resend.dev>",
+      from: "Peaceful Investment <support@peacefulinvestment.com>",
       to: [to_email],
       subject: subject,
       html: htmlContent,
@@ -154,5 +155,5 @@ function getEmailContent(
   `;
 }
 
-serve(handler);
+Deno.serve(handler);
 

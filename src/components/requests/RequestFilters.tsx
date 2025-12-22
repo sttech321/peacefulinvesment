@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -127,7 +127,7 @@ const RequestFilters = ({ requests, onFilteredRequestsChange }: RequestFiltersPr
   ]);
 
   // Update parent component when filtered requests change
-  useMemo(() => {
+  useEffect(() => {
     onFilteredRequestsChange(filteredRequests);
   }, [filteredRequests, onFilteredRequestsChange]);
 

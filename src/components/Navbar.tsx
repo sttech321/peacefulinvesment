@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,13 +22,52 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useUserRole } from '@/hooks/useUserRole';
+import { supabase } from '@/integrations/supabase/client';
 import logoAnimation from '@/assets/new-logo.gif';
+
+interface LinkItem {
+  label: string;
+  to: string;
+  order?: number;
+}
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { user, signOut } = useAuth();
   const { isAdmin } = useUserRole();
   const navigate = useNavigate();
+  const [headerLinks, setHeaderLinks] = useState<LinkItem[]>([]);
+
+  useEffect(() => {
+    fetchHeaderLinks();
+  }, []);
+
+  const fetchHeaderLinks = async () => {
+    try {
+      const { data } = await supabase
+        .from('app_settings' as any)
+        .select('value')
+        .eq('key', 'header_links')
+        .maybeSingle();
+
+      if ((data as any)?.value) {
+        try {
+          const links = JSON.parse((data as any).value);
+          // Sort links by order if order exists
+          const sortedLinks = [...links].sort((a: LinkItem, b: LinkItem) => {
+            const orderA = a.order !== undefined ? a.order : 999;
+            const orderB = b.order !== undefined ? b.order : 999;
+            return orderA - orderB;
+          });
+          setHeaderLinks(sortedLinks);
+        } catch (e) {
+          console.warn('Failed to parse header links, using defaults:', e);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching header links:', error);
+    }
+  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -36,10 +75,10 @@ const Navbar = () => {
   };
 
   // Simplified main navigation for logged-in users
-  const mainNavLinks = user
+  // Use configured links if available, otherwise use defaults
+  const defaultNavLinks = user
     ? [
         { name: 'Dashboard', href: '/dashboard' },
-        //{ name: 'Trading', href: '/trading' },
         { name: 'Accounts', href: '/meta-trader-accounts' },
         { name: 'Referrals', href: '/referrals' },
         { name: 'Catholic', href: '/blog' },
@@ -53,6 +92,11 @@ const Navbar = () => {
         { name: 'About', href: '/about' },
         { name: 'Features', href: '/#features' },
       ];
+
+  // Convert headerLinks to nav format, or use defaults
+  const mainNavLinks = (headerLinks.length > 0 && user
+    ? headerLinks.map(link => ({ name: link.label, href: link.to }))
+    : defaultNavLinks);
 
   // Services dropdown for logged-in users
   const servicesLinks = [

@@ -1,5 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { Resend } from "npm:resend@2.0.0";
+import { Resend } from "npm:resend@3.2.0";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
