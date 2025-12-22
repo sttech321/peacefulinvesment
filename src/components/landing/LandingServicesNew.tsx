@@ -1,6 +1,6 @@
 import React, { PureComponent } from 'react';
 import bridgegapimage1 from '@/assets/bridge-gap-image-1.png';
-import bridgegapimage2 from '@/assets/bridge-gap-image-3.png';
+import bridgegapimage2 from '@/assets/bridge-gap-image-2.png';
 import bridgegapimage3 from '@/assets/bridge-gap-image-3.png';
 import bridgegapimage4 from '@/assets/bridge-gap-image-4.png';
 
