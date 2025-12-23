@@ -44,6 +44,7 @@ import AdminRequests from "./pages/admin/AdminRequests";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminAuditLog from "./pages/admin/AdminAuditLog";
 import AdminSettings from "./pages/admin/AdminSettings";
+import AdminEmailTest from "./pages/admin/AdminEmailTest";
 import CreateAdminUser from "./pages/CreateAdminUser";
 import LoadingScreen from "@/components/ui/loading-screen";
 import ScrollToTop from './ScrollToTop';
@@ -173,6 +174,13 @@ function AppContent() {
                       <AdminRouteGuard>
                         <AdminLayout>
                           <AdminSettings />
+                        </AdminLayout>
+                      </AdminRouteGuard>
+                    } />
+                    <Route path="/admin/email-test" element={
+                      <AdminRouteGuard>
+                        <AdminLayout>
+                          <AdminEmailTest />
                         </AdminLayout>
                       </AdminRouteGuard>
                     } />

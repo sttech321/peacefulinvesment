@@ -49,39 +49,19 @@ const ForgotPassword = () => {
     setError("");
 
     try {
-      // Note: Supabase intentionally obscures whether an email exists for security reasons
-      // We'll attempt to check, but Supabase often returns "Invalid login credentials" for both
-      // existing and non-existing emails. So we'll be conservative and proceed with reset.
-      // The resetPasswordForEmail function will handle non-existent emails gracefully.
-      
-      // Try to check if email exists using sign-in attempt
-      // This is optional - if it fails to determine, we proceed anyway
-      const { error: signInError, data: signInData } = await supabase.auth.signInWithPassword({
-        email: trimmedEmail,
-        password: 'dummy_password_check_123!@#$%^&*()_+',
-      }).catch(() => ({ error: null, data: null }));
-
-      // If somehow the dummy password worked (extremely unlikely), sign out immediately
-      if (signInData?.user && !signInError) {
-        await supabase.auth.signOut();
-      }
-
-      // Proceed with password reset
       // Supabase's resetPasswordForEmail is designed to not reveal if email exists (for security)
       // It will send email if exists, or silently succeed if doesn't exist (to prevent email enumeration)
+      // No need to check if email exists first - just proceed with reset request
       const redirectUrl = `${window.location.origin}/reset-password`;
       
-      // Note: To prevent emails from going to spam, configure custom SMTP in Supabase Dashboard:
-      // Authentication > Settings > SMTP Settings
-      // Use your Resend SMTP credentials with proper SPF/DKIM/DMARC records
-      // See SUPABASE_EMAIL_SETUP.md for detailed instructions
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
         redirectTo: redirectUrl,
       });
 
       if (resetError) {
-        // Only show specific errors - Supabase typically succeeds even for non-existent emails
-        // to prevent email enumeration attacks
+        // Supabase typically succeeds even for non-existent emails to prevent email enumeration attacks
+        // Only throw if there's a real configuration error
+        console.error('Password reset error:', resetError);
         throw resetError;
       }
 

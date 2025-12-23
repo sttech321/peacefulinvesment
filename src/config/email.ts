@@ -1,8 +1,8 @@
 // Email Configuration
 export const emailConfig = {
-  // Mailjet API Configuration
-  apiKey: import.meta.env.VITE_MAILJET_API_KEY || '05c841c5a340e927a0a464d63a975e5b:f77d3f48c1cebee086d0bfd101516773',
-  apiRegion: import.meta.env.VITE_MAILJET_API_REGION || 'us',
+  // Resend API Configuration
+  // Note: In Vite, only variables prefixed with VITE_ are exposed to client code
+  apiKey: import.meta.env.VITE_RESEND_API_KEY || '',
   
   // Email Addresses
   testEmail: import.meta.env.VITE_TEST_EMAIL || 'test@example.com',
@@ -33,11 +33,7 @@ export function validateEmailConfig() {
   const errors: string[] = [];
   
   if (!emailConfig.apiKey) {
-    errors.push('MAILJET_API_KEY is required');
-  }
-  
-  if (!emailConfig.apiKey.includes(':')) {
-    errors.push('MAILJET_API_KEY must be in format "api_key:secret_key"');
+    errors.push('VITE_RESEND_API_KEY is required in .env file (e.g., VITE_RESEND_API_KEY=re_your_key_here)');
   }
   
   if (errors.length > 0) {
@@ -48,8 +44,7 @@ export function validateEmailConfig() {
   return true;
 }
 
-// Get API credentials
-export function getMailjetCredentials() {
-  const [apiKey, secretKey] = emailConfig.apiKey.split(':');
-  return { apiKey, secretKey };
+// Get Resend API key
+export function getResendApiKey() {
+  return emailConfig.apiKey;
 }
