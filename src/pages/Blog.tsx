@@ -429,7 +429,7 @@ const BlogPostCard = ({ post, categories }: { post: BlogPost; categories: BlogCa
             <h3 className="text-lg font-inter font-semibold text-white line-clamp-2 pb-2">{post.title}</h3>
 
             {post.excerpt && (
-              <p className="text-white font-open-sans font-normal text-sm line-clamp-3 mt-2">{post.excerpt}</p>
+              <p className="text-white font-open-sans font-normal text-sm line-clamp-3 mt-2" dangerouslySetInnerHTML={{ __html: post.excerpt }}></p>
             )}
           </CardHeader>
 

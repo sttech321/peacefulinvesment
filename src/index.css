@@ -483,3 +483,38 @@
 [data-radix-select-content] [data-radix-select-item]:hover {
   background-color: hsl(var(--accent)) !important;
 }
+
+/* Enhanced prose link styling for blog excerpts */
+.prose a {
+  color: hsl(var(--primary)) !important;
+  text-decoration: underline;
+  transition: opacity 0.2s ease;
+}
+
+.prose a:hover {
+  opacity: 0.8;
+}
+
+.prose-invert a {
+  color: hsl(var(--primary)) !important;
+}
+
+.blog-content h1 {
+  @apply mb-6 text-3xl font-bold text-white;
+}
+
+.blog-content h2 {
+  @apply mb-4 mt-8 text-2xl font-semibold text-white;
+}
+
+.blog-content p {
+  @apply mb-4 text-base leading-relaxed text-white;
+}
+
+.blog-content ul {
+  @apply mb-4 list-inside list-disc text-white;
+}
+
+.blog-content blockquote {
+  @apply my-6 border-l-4 border-primary pl-6 italic text-white;
+}

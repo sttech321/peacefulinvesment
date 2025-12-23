@@ -43,12 +43,19 @@ const BlogPost = () => {
     fetchPost();
   }, [fetchPost]);
 
+  // Strip HTML tags from excerpt for sharing (plain text only)
+  const stripHtmlTags = (html: string): string => {
+    const tmp = document.createElement('DIV');
+    tmp.innerHTML = html;
+    return tmp.textContent || tmp.innerText || '';
+  };
+
   const sharePost = async () => {
     if (navigator.share && post) {
       try {
         await navigator.share({
           title: post.title,
-          text: post.excerpt || '',
+          text: post.excerpt ? stripHtmlTags(post.excerpt) : '',
           url: window.location.href,
         });
       } catch (error) {
@@ -151,9 +158,10 @@ const BlogPost = () => {
           </h1>
 
           {post.excerpt && (
-            <p className="mx-auto max-w-3xl font-open-sans text-lg text-white pb-7 w-full">
-              {post.excerpt}
-            </p>
+            <div 
+              className="mx-auto max-w-3xl font-open-sans text-lg text-white pb-7 w-full prose prose-invert prose-headings:text-white prose-p:text-white prose-strong:text-white prose-a:text-primary hover:prose-a:text-primary/80 prose-a:underline"
+              dangerouslySetInnerHTML={{ __html: post.excerpt }}
+            />
           )}
 
           <div className="flex items-center justify-between w-full">
@@ -198,38 +206,10 @@ const BlogPost = () => {
         {/* Content */}
         <div className="px-6">
         <div className="max-w-7xl mx-auto pt-10">
-          <ReactMarkdown
-            components={{
-              h1: ({ children }) => (
-                <h1 className="text-3xl font-bold text-foreground mb-6 pt-8 text-white">{children}</h1>
-              ),
-              h2: ({ children }) => (
-                <h2 className="text-[22px] font-semibold text-foreground mb-4 mt-8 text-white">{children}</h2>
-              ),
-              h3: ({ children }) => (
-                <h3 className="text-xl font-semibold text-foreground mb-3 mt-6 text-white">{children}</h3>
-              ),
-              p: ({ children }) => (
-                <p className="font-open-sans text-[16px] text-foreground mb-4 leading-relaxed text-white">{children}</p>
-              ),
-              strong: ({ children }) => (
-                <strong className="font-bold text-primary">{children}</strong>
-              ),
-              blockquote: ({ children }) => (
-                <blockquote className="border-l-4 border-primary pl-6 italic text-white my-6">
-                  {children}
-                </blockquote>
-              ),
-              ul: ({ children }) => (
-                <ul className="list-disc list-inside space-y-2 mb-4 text-white">{children}</ul>
-              ),
-              li: ({ children }) => (
-                <li className="text-white">{children}</li>
-              ),
-            }}
-          >
-            {post.content}
-          </ReactMarkdown>
+        <div 
+            className="max-w-7xl mx-auto pt-10 font-open-sans text-[16px] text-white pb-7 w-full"
+            dangerouslySetInnerHTML={{ __html: post.content }}
+          />
         </div>
 </div>
 
@@ -305,5 +285,6 @@ const BlogPost = () => {
     </>
   );
 };
+
 
 export default BlogPost;
