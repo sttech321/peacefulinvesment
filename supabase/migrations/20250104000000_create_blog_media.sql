@@ -30,7 +30,6 @@ ALTER TABLE public.blog_media ENABLE ROW LEVEL SECURITY;
 -- This avoids the function call overhead and ensures auth.uid() is cached per query
 
 -- Optimized RLS Policies for blog_media
--- Using (select auth.uid()) to cache auth.uid() result and avoid re-evaluation per row
 -- Combined SELECT policy (more efficient than separate policies)
 CREATE POLICY "view_published_media" 
 ON public.blog_media 
