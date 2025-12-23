@@ -757,8 +757,8 @@ const AdminBlog = () => {
                     <CardTitle className="line-clamp-2">{post.title}</CardTitle>
 
                     {post.excerpt && (
-                      <p 
-                        className="text-sm text-muted-foreground line-clamp-3"
+                      <div 
+                        className="text-sm text-muted-foreground line-clamp-3 prose prose-sm prose-invert prose-a:text-primary prose-a:underline"
                         dangerouslySetInnerHTML={{ __html: post.excerpt }}
                       />
                     )}

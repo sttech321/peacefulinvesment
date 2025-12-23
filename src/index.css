@@ -499,22 +499,43 @@
   color: hsl(var(--primary)) !important;
 }
 
-.blog-content h1 {
-  @apply mb-6 text-3xl font-bold text-white;
+/* Override for excerpt sections where links should be white - maximum specificity */
+.blog-excerpt,
+div.blog-excerpt.prose.prose-invert,
+div.blog-excerpt.prose {
+  color: white !important;
 }
 
-.blog-content h2 {
-  @apply mb-4 mt-8 text-2xl font-semibold text-white;
+.blog-excerpt *,
+div.blog-excerpt.prose.prose-invert *,
+div.blog-excerpt.prose * {
+  color: inherit;
 }
 
-.blog-content p {
-  @apply mb-4 text-base leading-relaxed text-white;
+div.blog-excerpt.prose.prose-invert a,
+div.blog-excerpt.prose a,
+.blog-excerpt.prose.prose-invert a,
+.blog-excerpt.prose a,
+.blog-excerpt a,
+div.blog-excerpt a,
+div.blog-excerpt.prose.prose-invert p a,
+div.blog-excerpt.prose p a {
+  color: hsl(var(--primary)) !important;
+  text-decoration: underline !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: inline !important;
+  font-weight: normal !important;
 }
 
-.blog-content ul {
-  @apply mb-4 list-inside list-disc text-white;
-}
-
-.blog-content blockquote {
-  @apply my-6 border-l-4 border-primary pl-6 italic text-white;
+div.blog-excerpt.prose.prose-invert a:hover,
+div.blog-excerpt.prose a:hover,
+.blog-excerpt.prose.prose-invert a:hover,
+.blog-excerpt.prose a:hover,
+.blog-excerpt a:hover,
+div.blog-excerpt a:hover,
+div.blog-excerpt.prose.prose-invert p a:hover,
+div.blog-excerpt.prose p a:hover {
+  color: hsl(var(--primary)) !important;
+  opacity: 1 !important;
 }
