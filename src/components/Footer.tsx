@@ -60,7 +60,7 @@ const Footer = () => {
     { label: 'Quick Links', to: '/#', order: 1 },
     { label: 'Home', to: '/', order: 2 },
     { label: 'About us', to: '/about', order: 3 },
-    { label: 'Download app', to: '/downloads', order: 4 },
+    { label: 'App is coming soon', to: '/downloads', order: 4 },
   ];
 
   return (

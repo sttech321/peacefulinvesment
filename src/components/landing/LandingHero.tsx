@@ -57,7 +57,7 @@ const LandingHero = () => {
               
               <Link to="/downloads">
                 <Button variant="outline" className="glass text-white border-white/20 hover:bg-white/10 px-8 py-4 text-lg rounded-2xl">
-                  Download App
+                   App is coming soon
                 </Button>
               </Link>
             </div>

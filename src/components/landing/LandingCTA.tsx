@@ -40,7 +40,7 @@ const LandingCTA = () => {
               
               <Link to="/downloads">
                 <Button variant="outline" className="px-8 py-4 text-lg rounded-2xl">
-                  Download App
+                  App is coming soon
                 </Button>
               </Link>
             </div>

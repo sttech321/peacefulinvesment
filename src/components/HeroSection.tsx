@@ -136,7 +136,7 @@ const HeroSection = () => {
                   onClick={() => handleDownload('Windows')}
                 >
                   <Monitor className='mr-3 h-6 w-6 transition-transform group-hover:scale-110' />
-                  Download for Windows
+                  App is coming soon
                 </Button>
               </span>
 
@@ -148,7 +148,7 @@ const HeroSection = () => {
                   onClick={() => handleDownload('macOS')}
                 >
                   <Apple className='mr-3 h-6 w-6 transition-transform group-hover:scale-110' />
-                  Download for macOS
+                  App is coming soon
                 </Button>
               </span>
 
@@ -160,7 +160,7 @@ const HeroSection = () => {
                   onClick={() => handleDownload('Linux')}
                 >
                   <Smartphone className='mr-3 h-6 w-6 transition-transform group-hover:scale-110' />
-                  Download for Linux
+                  App is coming soon
                 </Button>
               </span>
             </div>
