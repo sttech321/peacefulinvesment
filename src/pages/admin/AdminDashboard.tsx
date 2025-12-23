@@ -129,18 +129,21 @@ export default function AdminDashboard() {
         }).length || 0;
         
         // Filter for pending contact requests
-        // Use same normalization logic as AdminContactRequests to ensure consistency
-        // In AdminContactRequests, status is normalized: invalid statuses default to 'pending'
-        const pendingContactRequests = (contactRequestsResponse.data || []).filter(request => {
-          const rawStatus = (request.status || '').toLowerCase().trim();
-          // Normalize status same way as AdminContactRequests does (line 141-143)
-          // Valid statuses: 'pending', 'in_progress', 'resolved', 'closed'
-          // If status is invalid or empty, AdminContactRequests defaults it to 'pending'
-          const normalizedStatus = ['pending', 'in_progress', 'resolved', 'closed'].includes(rawStatus)
-            ? rawStatus
-            : 'pending'; // Default to 'pending' for invalid statuses (same as AdminContactRequests)
-          return normalizedStatus === 'pending';
-        }).length;
+        // Use EXACT same normalization logic as AdminContactRequests (lines 141-143)
+        // Normalize the data first, then filter - matching AdminContactRequests exactly
+        const normalizedContactRequests = (contactRequestsResponse.data || []).map((item: any) => {
+          // Exact same normalization as AdminContactRequests line 141-143
+          // Uses optional chaining: item.status?.toLowerCase() returns undefined if status is null/undefined
+          const normalizedStatus = (['pending', 'in_progress', 'resolved', 'closed'].includes(item.status?.toLowerCase())
+            ? item.status.toLowerCase()
+            : 'pending') as 'pending' | 'in_progress' | 'resolved' | 'closed';
+          return { ...item, status: normalizedStatus };
+        });
+        
+        // Now filter for pending (same as AdminContactRequests.getPendingRequestsCount line 385)
+        const pendingContactRequests = normalizedContactRequests.filter(
+          request => request.status === 'pending'
+        ).length;
 
         // Determine system health
         let systemHealth: 'healthy' | 'warning' | 'error' = 'healthy';
@@ -176,14 +179,10 @@ export default function AdminDashboard() {
         });
 
         // Add recent contact requests (only pending ones)
-        // Use same normalization logic as above
-        const pendingRequests = (contactRequestsResponse.data || []).filter(request => {
-          const rawStatus = (request.status || '').toLowerCase().trim();
-          const normalizedStatus = ['pending', 'in_progress', 'resolved', 'closed'].includes(rawStatus)
-            ? rawStatus
-            : 'pending';
-          return normalizedStatus === 'pending';
-        });
+        // Use the already normalized data
+        const pendingRequests = normalizedContactRequests.filter(
+          request => request.status === 'pending'
+        );
         const recentContactRequests = pendingRequests.slice(0, 3);
         recentContactRequests.forEach(request => {
           activity.push({
