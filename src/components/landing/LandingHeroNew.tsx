@@ -53,7 +53,7 @@ const LandingHeroNew = () => {
                 className="bg-gradient-pink-to-yellow rounded-[12px] p-[2px]"
               >
                 <Button className="block h-[45px] rounded-[10px] bg-gradient-yellow-to-pink px-6 text-xs font-semibold uppercase text-white">
-                  Download App
+                App is coming soon
                 </Button>
               </Link>
             </div>
