@@ -104,11 +104,19 @@ export class ResendService {
         // Add headers for better deliverability
         headers: {
           'X-Entity-Ref-ID': `${emailData.type}-${Date.now()}`,
-          'List-Unsubscribe': `<https://peacefulinvestment.com/unsubscribe?email=${encodeURIComponent(recipient.email)}>`,
-          'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-          ...(isTransactional && {
-            'X-Priority': '1', // Mark transactional emails as high priority
+          // For transactional emails (password reset, verification), don't include unsubscribe
+          // as they are required communications
+          ...(!isTransactional && {
+            'List-Unsubscribe': `<https://peacefulinvestment.com/unsubscribe?email=${encodeURIComponent(recipient.email)}>`,
+            'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
           }),
+          // Add Precedence header for transactional emails to reduce spam filtering
+          ...(isTransactional && {
+            'Precedence': 'bulk',
+            'Auto-Submitted': 'auto-generated',
+          }),
+          // Add Message-ID for better tracking and deliverability
+          'Message-ID': `<${emailData.type}-${Date.now()}-${Math.random().toString(36).substring(7)}@peacefulinvestment.com>`,
         },
         // Add metadata for tracking and categorization
         tags: [
@@ -134,13 +142,12 @@ export class ResendService {
         }));
       }
 
-      // Add email priority based on type or user-specified priority (helps with deliverability)
-      if (emailData.priority || isTransactional) {
+      // Note: X-Priority header is already set above for transactional emails
+      // Only override if explicitly specified by user
+      if (emailData.priority && !isTransactional) {
         emailPayload.headers = {
           ...emailPayload.headers,
-          'X-Priority': emailData.priority 
-            ? (emailData.priority === 'high' ? '1' : emailData.priority === 'low' ? '5' : '3')
-            : (isTransactional ? '1' : '3'),
+          'X-Priority': emailData.priority === 'high' ? '1' : emailData.priority === 'low' ? '5' : '3',
         };
       }
 

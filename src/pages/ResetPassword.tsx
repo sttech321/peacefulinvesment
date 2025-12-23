@@ -41,21 +41,127 @@ const ResetPassword = () => {
   const passwordStrength = validatePassword(password);
 
   useEffect(() => {
-    // Check if we have valid reset parameters
-    const accessToken = searchParams.get('access_token');
-    const refreshToken = searchParams.get('refresh_token');
-    const type = searchParams.get('type');
+    const checkResetToken = async () => {
+      console.log('[ResetPassword] Checking reset token...');
+      console.log('[ResetPassword] Current URL:', window.location.href);
+      console.log('[ResetPassword] Hash:', window.location.hash);
+      console.log('[ResetPassword] Search params:', window.location.search);
 
-    if (!accessToken || !refreshToken || type !== 'recovery') {
-      setIsValidToken(false);
-      setError("Invalid or expired reset link. Please request a new password reset.");
-    } else {
-      // Set the session with the tokens from the URL
-      supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken,
+      // First, check if Supabase already has a valid session (might be set automatically)
+      const { data: sessionData, error: sessionCheckError } = await supabase.auth.getSession();
+      console.log('[ResetPassword] Existing session:', sessionData.session);
+      
+      if (sessionData.session) {
+        // We have a valid session, which means tokens were processed successfully
+        console.log('[ResetPassword] Valid session found');
+        setIsValidToken(true);
+        // Clean up URL hash/query params
+        window.history.replaceState({}, document.title, window.location.pathname);
+        return;
+      }
+
+      // If no session, check for tokens in URL (hash or query params)
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const queryParams = searchParams;
+      
+      const accessToken = hashParams.get('access_token') || queryParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token') || queryParams.get('refresh_token');
+      const type = hashParams.get('type') || queryParams.get('type');
+      const error = hashParams.get('error') || queryParams.get('error');
+      const errorDescription = hashParams.get('error_description') || queryParams.get('error_description');
+
+      console.log('[ResetPassword] Token check:', { 
+        hasAccessToken: !!accessToken, 
+        hasRefreshToken: !!refreshToken, 
+        type,
+        error 
       });
-    }
+
+      // Check for errors in URL first
+      if (error) {
+        console.error('[ResetPassword] Error in URL:', error, errorDescription);
+        setIsValidToken(false);
+        setError(errorDescription || "Invalid or expired reset link. Please request a new password reset.");
+        window.history.replaceState({}, document.title, window.location.pathname);
+        return;
+      }
+
+      // If we have tokens, try to set the session
+      if (accessToken && refreshToken && type === 'recovery') {
+        console.log('[ResetPassword] Attempting to set session with tokens...');
+        try {
+          const { data, error: sessionError } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+
+          if (sessionError) {
+            console.error('[ResetPassword] Session error:', sessionError);
+            setIsValidToken(false);
+            setError(sessionError.message || "Invalid or expired reset link. Please request a new password reset.");
+            window.history.replaceState({}, document.title, window.location.pathname);
+          } else if (data.session) {
+            console.log('[ResetPassword] Session set successfully');
+            setIsValidToken(true);
+            window.history.replaceState({}, document.title, window.location.pathname);
+          } else {
+            console.error('[ResetPassword] No session returned from setSession');
+            setIsValidToken(false);
+            setError("Failed to create session. Please request a new password reset.");
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+        } catch (err: any) {
+          console.error('[ResetPassword] Error setting session:', err);
+          setIsValidToken(false);
+          setError(err.message || "Invalid or expired reset link. Please request a new password reset.");
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+      } else {
+        // No tokens found - check if hash exists (might be processing)
+        const hasHash = window.location.hash.length > 1;
+        
+        if (hasHash) {
+          console.log('[ResetPassword] Hash exists but no tokens parsed, waiting for Supabase to process...');
+          // Give Supabase a moment to process the hash automatically
+          setTimeout(async () => {
+            const { data: checkSession } = await supabase.auth.getSession();
+            if (checkSession.session) {
+              console.log('[ResetPassword] Session found after delay');
+              setIsValidToken(true);
+              window.history.replaceState({}, document.title, window.location.pathname);
+            } else {
+              console.error('[ResetPassword] No session after delay, showing error');
+              setIsValidToken(false);
+              setError("Invalid or expired reset link. Please request a new password reset.");
+              window.history.replaceState({}, document.title, window.location.pathname);
+            }
+          }, 1000);
+        } else {
+          // No hash and no tokens - invalid link
+          console.error('[ResetPassword] No tokens and no hash found');
+          setIsValidToken(false);
+          setError("Invalid reset link. The link may be missing required parameters. Please request a new password reset.");
+        }
+      }
+    };
+
+    checkResetToken();
+
+    // Also listen for auth state changes (Supabase processes hash automatically)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('[ResetPassword] Auth state change:', event, session);
+      if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
+        if (session) {
+          console.log('[ResetPassword] Valid session from auth state change');
+          setIsValidToken(true);
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -12,8 +12,9 @@ import {
 } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Shield, Eye, EyeOff, User, Lock } from 'lucide-react';
+import { Shield, Eye, EyeOff, User, Lock, Mail, CheckCircle } from 'lucide-react';
 import Footer from '@/components/Footer';
+import { useToast } from '@/hooks/use-toast';
 
 const Auth = () => {
   const [searchParams] = useSearchParams();
@@ -32,29 +33,50 @@ const Auth = () => {
 
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [emailConfirmationSent, setEmailConfirmationSent] = useState(false);
 
   const handleResendConfirmation = async () => {
     if (!email) {
       setErrors({ general: 'Please enter your email address first.' });
+      toast({
+        title: "Email Required",
+        description: "Please enter your email address first.",
+        variant: "destructive",
+      });
       return;
     }
 
     setIsLoading(true);
+    setErrors({});
     try {
       const { error } = await supabase.auth.resend({
         type: 'signup',
-        email: email,
+        email: email.trim().toLowerCase(),
       });
 
       if (error) {
         setErrors({ general: error.message });
+        toast({
+          title: "Error",
+          description: error.message || "Failed to send confirmation email. Please try again.",
+          variant: "destructive",
+        });
       } else {
         setErrors({});
-        alert('Confirmation email sent! Please check your inbox.');
+        setEmailConfirmationSent(true);
+        toast({
+          title: "Confirmation Email Sent",
+          description: "Please check your inbox (and spam folder) for the verification email.",
+        });
       }
     } catch (error) {
-      setErrors({
-        general: 'Failed to send confirmation email. Please try again.',
+      const errorMessage = 'Failed to send confirmation email. Please try again.';
+      setErrors({ general: errorMessage });
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -72,6 +94,7 @@ const Auth = () => {
     setPassword('');
     setConfirmPassword('');
     setFullName('');
+    setEmailConfirmationSent(false);
   }, [searchParams]);
 
   // Capture referral code from URL and handle auth errors
@@ -180,7 +203,14 @@ const Auth = () => {
             );
           }
 
-          setEmail('');
+          // Show success message and confirmation email notice
+          setEmailConfirmationSent(true);
+          toast({
+            title: "Account Created Successfully!",
+            description: "Please check your email to verify your account before signing in.",
+          });
+
+          // Don't clear email so user can resend if needed
           setPassword('');
           setConfirmPassword('');
           setFullName('');
@@ -376,16 +406,52 @@ const Auth = () => {
                   </Button>
                 </div>
 
-                {errors.general && errors.general.includes('expired') && (
-                  <Button
-                    type='button'
-                    variant='outline'
-                    onClick={handleResendConfirmation}
-                    disabled={isLoading || !email}
-                    className='w-full'
-                  >
-                    {isLoading ? 'Sending...' : 'Resend Confirmation Email'}
-                  </Button>
+                {/* Show confirmation email notice after signup or when expired */}
+                {(emailConfirmationSent || (errors.general && errors.general.includes('expired'))) && (
+                  <div className='rounded-lg border border-blue-200 bg-blue-50 p-4 space-y-3'>
+                    <div className='flex items-start space-x-2'>
+                      <Mail className='h-5 w-5 text-blue-600 mt-0.5' />
+                      <div className='flex-1'>
+                        <p className='text-sm font-medium text-blue-900'>
+                          {emailConfirmationSent ? 'Confirmation Email Sent!' : 'Email Verification Required'}
+                        </p>
+                        <p className='text-sm text-blue-700 mt-1'>
+                          {emailConfirmationSent 
+                            ? 'We\'ve sent a verification email to your inbox. Please check your email (including spam folder) and click the verification link to activate your account.'
+                            : errors.general.includes('expired')
+                            ? 'Your verification link has expired. Please request a new confirmation email.'
+                            : 'Please verify your email address to complete your registration.'}
+                        </p>
+                        <div className='mt-3'>
+                          <Button
+                            type='button'
+                            variant='outline'
+                            size='sm'
+                            onClick={handleResendConfirmation}
+                            disabled={isLoading || !email}
+                            className='w-full bg-white hover:bg-blue-50'
+                          >
+                            {isLoading ? (
+                              <>
+                                <div className='animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2'></div>
+                                Sending...
+                              </>
+                            ) : (
+                              <>
+                                <Mail className='h-4 w-4 mr-2' />
+                                Resend Confirmation Email
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                        <div className='mt-2 text-xs text-blue-600 space-y-1'>
+                          <p>• Check your spam/junk folder if you don't see the email</p>
+                          <p>• The verification link expires in 24 hours</p>
+                          <p>• Add info@peacefulinvestment.com to your contacts to avoid spam</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 )}
 
                 {!isSignUp && (
