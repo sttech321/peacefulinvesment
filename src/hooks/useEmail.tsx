@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { EmailData, EmailSendResult, EmailType, EmailRecipient } from '../services/email/EmailTypes';
-import { mailjetService } from '../services/email/MailjetService';
+import { resendService } from '../services/email/ResendService';
 import { EMAIL_TEMPLATES } from '../templates/email/EmailTemplates';
 
 export interface UseEmailReturn {
@@ -46,7 +46,7 @@ export function useEmail(): UseEmailReturn {
         },
       };
 
-      const result = await mailjetService.sendEmail(emailData);
+      const result = await resendService.sendEmail(emailData);
       
       if (!result.success) {
         setError(result.error || 'Failed to send email');
@@ -91,7 +91,7 @@ export function useEmail(): UseEmailReturn {
         };
       });
 
-      const results = await mailjetService.sendBulkEmails(emailDataList);
+      const results = await resendService.sendBulkEmails(emailDataList);
       
       const hasErrors = results.some(result => !result.success);
       if (hasErrors) {
@@ -110,7 +110,7 @@ export function useEmail(): UseEmailReturn {
 
   const testConnection = useCallback(async (): Promise<boolean> => {
     try {
-      return await mailjetService.testConnection();
+      return await resendService.testConnection();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Connection test failed');
       return false;

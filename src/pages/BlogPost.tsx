@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, Clock, Eye, Tag, Share2 } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, Eye, Tag, Share2, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -232,6 +232,52 @@ const BlogPost = () => {
           </ReactMarkdown>
         </div>
 </div>
+
+        {/* Media Gallery */}
+        {post.media && post.media.length > 0 && (
+          <div className="px-6">
+            <div className="max-w-7xl mx-auto pt-10">
+              <h2 className="text-2xl font-bold text-white mb-6">Media Gallery</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {post.media.map((media) => (
+                  <div key={media.id} className="relative group">
+                    {media.media_type === "image" ? (
+                      <img
+                        src={media.file_url}
+                        alt={media.caption || media.filename}
+                        className="w-full h-64 object-cover rounded-lg"
+                      />
+                    ) : media.media_type === "video" ? (
+                      <video
+                        src={media.file_url}
+                        controls
+                        className="w-full h-64 object-cover rounded-lg"
+                      >
+                        Your browser does not support the video tag.
+                      </video>
+                    ) : (
+                      <a
+                        href={media.file_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block p-8 border border-muted-foreground/20 rounded-lg bg-white/5 hover:bg-white/10 transition-colors text-center"
+                      >
+                        <FileText className="w-12 h-12 mx-auto mb-2 text-primary" />
+                        <p className="text-sm text-white font-medium truncate">{media.filename}</p>
+                        {media.caption && (
+                          <p className="text-xs text-muted-foreground mt-1">{media.caption}</p>
+                        )}
+                      </a>
+                    )}
+                    {media.caption && media.media_type !== "document" && (
+                      <p className="text-sm text-muted-foreground mt-2">{media.caption}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Footer */}
         <footer className="border-0 border-muted-foreground/10 px-5 py-10 md:py-12 xl:py-14">

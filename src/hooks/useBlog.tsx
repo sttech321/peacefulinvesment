@@ -2,6 +2,22 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
+export interface BlogMedia {
+  id: string;
+  blog_post_id: string;
+  media_type: "image" | "video" | "document";
+  file_path: string;
+  file_url: string;
+  filename: string;
+  mime_type: string;
+  file_size: number;
+  display_order: number;
+  caption?: string;
+  uploaded_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface BlogPost {
   id: string;
   title: string;
@@ -19,6 +35,7 @@ export interface BlogPost {
   view_count: number;
   meta_title?: string;
   meta_description?: string;
+  media?: BlogMedia[]; // Optional: media items for the post
 }
 
 export interface BlogCategory {
@@ -107,8 +124,24 @@ export const useBlog = () => {
     }
   }, []);
 
+  const fetchPostMedia = useCallback(async (postId: string): Promise<BlogMedia[]> => {
+    try {
+      const { data, error } = await supabase
+        .from("blog_media")
+        .select("*")
+        .eq("blog_post_id", postId)
+        .order("display_order", { ascending: true });
+
+      if (error) throw error;
+      return (data || []) as BlogMedia[];
+    } catch (error) {
+      console.error("Error fetching blog media:", error);
+      return [];
+    }
+  }, []);
+
   const getPostBySlug = useCallback(
-    async (slug: string): Promise<BlogPost | null> => {
+    async (slug: string, includeMedia: boolean = true): Promise<BlogPost | null> => {
       try {
         const { data, error } = await supabase
           .from("blog_posts")
@@ -118,13 +151,19 @@ export const useBlog = () => {
           .maybeSingle();
 
         if (error) throw error;
-        return (data as BlogPost) || null;
+        if (!data) return null;
+
+        const post = data as BlogPost;
+        if (includeMedia) {
+          post.media = await fetchPostMedia(post.id);
+        }
+        return post;
       } catch (error) {
         console.error("Error fetching blog post:", error);
         return null;
       }
     },
-    []
+    [fetchPostMedia]
   );
 
   const createPost = async (post: Partial<BlogPost>) => {
@@ -211,6 +250,116 @@ export const useBlog = () => {
     }
   }, []);
 
+  // Media management functions
+  const uploadMedia = useCallback(async (
+    postId: string,
+    file: File,
+    mediaType: "image" | "video" | "document",
+    caption?: string,
+    displayOrder?: number
+  ): Promise<{ data: BlogMedia | null; error: any }> => {
+    try {
+      const user = await supabase.auth.getUser();
+      const userId = user.data.user?.id;
+      if (!userId) throw new Error("User not authenticated");
+
+      // Generate unique filename
+      const fileExt = file.name.split(".").pop();
+      const uniqueFilename = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `${userId}/${postId}/${uniqueFilename}`;
+
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from("blog-media")
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from("blog-media")
+        .getPublicUrl(filePath);
+
+      // Get current max display_order for this post
+      const { data: existingMedia } = await supabase
+        .from("blog_media")
+        .select("display_order")
+        .eq("blog_post_id", postId)
+        .order("display_order", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const order = displayOrder ?? ((existingMedia?.display_order ?? -1) + 1);
+
+      // Insert media record
+      const { data, error: insertError } = await supabase
+        .from("blog_media")
+        .insert({
+          blog_post_id: postId,
+          media_type: mediaType,
+          file_path: filePath,
+          file_url: urlData.publicUrl,
+          filename: file.name,
+          mime_type: file.type,
+          file_size: file.size,
+          display_order: order,
+          caption: caption || null,
+          uploaded_by: userId,
+        })
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+      return { data: data as BlogMedia, error: null };
+    } catch (error) {
+      console.error("Error uploading media:", error);
+      return { data: null, error };
+    }
+  }, []);
+
+  const deleteMedia = useCallback(async (mediaId: string, filePath: string): Promise<{ error: any }> => {
+    try {
+      // Delete from storage
+      const { error: storageError } = await supabase.storage
+        .from("blog-media")
+        .remove([filePath]);
+
+      if (storageError) throw storageError;
+
+      // Delete from database
+      const { error: deleteError } = await supabase
+        .from("blog_media")
+        .delete()
+        .eq("id", mediaId);
+
+      if (deleteError) throw deleteError;
+      return { error: null };
+    } catch (error) {
+      console.error("Error deleting media:", error);
+      return { error };
+    }
+  }, []);
+
+  const updateMedia = useCallback(async (
+    mediaId: string,
+    updates: { caption?: string; display_order?: number }
+  ): Promise<{ data: BlogMedia | null; error: any }> => {
+    try {
+      const { data, error } = await supabase
+        .from("blog_media")
+        .update(updates)
+        .eq("id", mediaId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return { data: data as BlogMedia, error: null };
+    } catch (error) {
+      console.error("Error updating media:", error);
+      return { data: null, error };
+    }
+  }, []);
+
   useEffect(() => {
     const loadInitialData = async () => {
       setLoading(true);
@@ -235,5 +384,10 @@ export const useBlog = () => {
     updatePost,
     deletePost,
     incrementViewCount,
+    // Media management
+    fetchPostMedia,
+    uploadMedia,
+    deleteMedia,
+    updateMedia,
   };
 };

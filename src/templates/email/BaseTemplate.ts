@@ -144,8 +144,16 @@ export const BASE_EMAIL_TEMPLATE = `
                 If you have any questions, please contact us at 
                 <a href="mailto:support@peacefulinvestment.com">support@peacefulinvestment.com</a>
             </p>
-            <p style="margin-top: 15px; font-size: 12px;">
-                © 2024 Peaceful Investment. All rights reserved.
+            <p style="margin-top: 15px; font-size: 12px; color: #9ca3af;">
+                © 2024 Peaceful Investment. All rights reserved.<br>
+                <a href="https://peacefulinvestment.com" style="color: #9ca3af; text-decoration: none;">peacefulinvestment.com</a> | 
+                <a href="https://peacefulinvestment.com/privacy" style="color: #9ca3af; text-decoration: none;">Privacy Policy</a> | 
+                <a href="https://peacefulinvestment.com/contact" style="color: #9ca3af; text-decoration: none;">Contact Us</a>
+            </p>
+            <p style="margin-top: 10px; font-size: 11px; color: #9ca3af; line-height: 1.6;">
+                You are receiving this email because you have an account with Peaceful Investment or requested this information.<br>
+                <a href="https://peacefulinvestment.com/unsubscribe" style="color: #9ca3af; text-decoration: underline;">Manage email preferences</a> or 
+                <a href="https://peacefulinvestment.com/unsubscribe" style="color: #9ca3af; text-decoration: underline;">unsubscribe</a> from marketing emails
             </p>
         </div>
     </div>

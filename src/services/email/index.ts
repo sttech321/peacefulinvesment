@@ -1,7 +1,9 @@
 // Email Service Exports
 
-// Core service
-export { MailjetService, mailjetService } from './MailjetService';
+// Core service (using Resend)
+export { ResendService, resendService } from './ResendService';
+// Legacy Mailjet service (kept for reference, but not exported by default)
+// export { MailjetService, mailjetService } from './MailjetService';
 
 // Types
 export { EmailType, SenderEmail } from './EmailTypes';

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Edit, Trash2, Eye, Calendar, Tag } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, Calendar, Tag, X, Image as ImageIcon, Video, FileText, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -22,13 +22,25 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { useBlog, BlogPost, BlogCategory } from "@/hooks/useBlog";
+import { useBlog, BlogPost, BlogCategory, BlogMedia } from "@/hooks/useBlog";
 import { useUserRole } from "@/hooks/useUserRole";
 
 const AdminBlog = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { posts, categories, fetchPosts, createPost, updatePost, deletePost, loading: postsLoading } = useBlog();
+  const { 
+    posts, 
+    categories, 
+    fetchPosts, 
+    createPost, 
+    updatePost, 
+    deletePost, 
+    loading: postsLoading,
+    uploadMedia,
+    deleteMedia,
+    updateMedia,
+    fetchPostMedia,
+  } = useBlog();
   const { isAdmin, loading: roleLoading } = useUserRole();
 
   // -------------------------
@@ -50,6 +62,10 @@ const AdminBlog = () => {
     featured_image: "",
     previewUrl: "",
   });
+  const [postMedia, setPostMedia] = useState<BlogMedia[]>([]);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
+  const [pendingMediaFiles, setPendingMediaFiles] = useState<File[]>([]);
+  const [featuredImageError, setFeaturedImageError] = useState<string>("");
 
   // build hierarchical options from flat categories (parent_id)
   const categoryOptions = useMemo(() => {
@@ -136,6 +152,9 @@ const AdminBlog = () => {
       previewUrl: "",
     });
     setEditingPost(null);
+    setPostMedia([]);
+    setPendingMediaFiles([]);
+    setFeaturedImageError("");
   };
 
   const fileToBase64 = (file: File): Promise<string> =>
@@ -177,18 +196,58 @@ const AdminBlog = () => {
       : { ...basePostData, featured_image: base64Image };
 
     try {
+      let postId: string;
+      let updatedPost: BlogPost;
+      
       if (editingPost) {
-        const { error } = await updatePost(editingPost.id, payload);
+        const { data, error } = await updatePost(editingPost.id, payload);
         if (error) throw error;
+        postId = editingPost.id;
+        updatedPost = data!;
         toast({ title: "Post Updated", description: "Blog post has been updated successfully." });
       } else {
-        const { error } = await createPost(payload);
+        const { data, error } = await createPost(payload);
         if (error) throw error;
+        postId = data!.id;
+        updatedPost = data!;
         toast({ title: "Post Created", description: "Blog post has been created successfully." });
       }
 
-      setDialogOpen(false);
-      resetForm();
+      // Upload pending media files if any (for new posts)
+      if (pendingMediaFiles.length > 0) {
+        setUploadingMedia(true);
+        try {
+          for (const file of pendingMediaFiles) {
+            let mediaType: "image" | "video" | "document" = "document";
+            if (file.type.startsWith("image/")) {
+              mediaType = "image";
+            } else if (file.type.startsWith("video/")) {
+              mediaType = "video";
+            }
+
+            const { error: uploadError } = await uploadMedia(postId, file, mediaType);
+            if (uploadError) {
+              console.error("Error uploading media:", uploadError);
+              // Continue with other files even if one fails
+            }
+          }
+          setPendingMediaFiles([]);
+          toast({ title: "Media Uploaded", description: "Media files uploaded successfully." });
+        } catch (err) {
+          console.error("Error uploading pending media:", err);
+          toast({ title: "Warning", description: "Post created but some media failed to upload. You can add them later.", variant: "destructive" });
+        } finally {
+          setUploadingMedia(false);
+        }
+      }
+
+      // Refresh media list for the post
+      const media = await fetchPostMedia(postId);
+      setPostMedia(media);
+      
+      // Set as editing post so media section remains available
+      setEditingPost(updatedPost);
+
       fetchPosts("all");
     } catch (err) {
       console.error(err);
@@ -196,7 +255,7 @@ const AdminBlog = () => {
     }
   };
 
-  const handleEdit = (post: BlogPost) => {
+  const handleEdit = async (post: BlogPost) => {
     setEditingPost(post);
     setFormData({
       title: post.title,
@@ -211,7 +270,76 @@ const AdminBlog = () => {
       featured_image: "",
       previewUrl: post.featured_image || "",
     });
+    
+    // Fetch media for this post
+    const media = await fetchPostMedia(post.id);
+    setPostMedia(media);
+    
     setDialogOpen(true);
+  };
+
+  const handleMediaUpload = async (files: FileList, postId: string) => {
+    if (!files || files.length === 0) return;
+
+    setUploadingMedia(true);
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        
+        // Determine media type based on MIME type
+        let mediaType: "image" | "video" | "document" = "document";
+        if (file.type.startsWith("image/")) {
+          mediaType = "image";
+        } else if (file.type.startsWith("video/")) {
+          mediaType = "video";
+        }
+
+        const { data, error } = await uploadMedia(postId, file, mediaType);
+        if (error) throw error;
+        if (data) {
+          setPostMedia((prev) => [...prev, data].sort((a, b) => a.display_order - b.display_order));
+        }
+      }
+      toast({ title: "Media Uploaded", description: "Media files uploaded successfully." });
+    } catch (err) {
+      console.error(err);
+      toast({ title: "Error", description: "Failed to upload media. Please try again.", variant: "destructive" });
+    } finally {
+      setUploadingMedia(false);
+    }
+  };
+
+  const handleDeleteMedia = async (media: BlogMedia) => {
+    if (!confirm("Are you sure you want to delete this media?")) return;
+
+    try {
+      const { error } = await deleteMedia(media.id, media.file_path);
+      if (error) throw error;
+      setPostMedia((prev) => prev.filter((m) => m.id !== media.id));
+      toast({ title: "Media Deleted", description: "Media file deleted successfully." });
+    } catch (err) {
+      console.error(err);
+      toast({ title: "Error", description: "Failed to delete media. Please try again.", variant: "destructive" });
+    }
+  };
+
+  const getMediaIcon = (mediaType: string) => {
+    switch (mediaType) {
+      case "image":
+        return <ImageIcon className="w-4 h-4" />;
+      case "video":
+        return <Video className="w-4 h-4" />;
+      default:
+        return <FileText className="w-4 h-4" />;
+    }
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
   const handleDelete = async (postId: string) => {
@@ -277,14 +405,44 @@ const AdminBlog = () => {
                     accept="image/*"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
-                      if (!file) return;
+                      if (!file) {
+                        setFeaturedImageError("");
+                        return;
+                      }
+                      
+                      // Validate file type
+                      if (!file.type.startsWith('image/')) {
+                        setFeaturedImageError("Please select an image file (jpg, png, gif, webp, etc.)");
+                        e.target.value = ""; // Reset input
+                        setFormData((prev: any) => ({ ...prev, featured_image: "", previewUrl: prev.previewUrl }));
+                        return;
+                      }
+
+                      // Validate file size (optional: limit to 10MB)
+                      const maxSize = 10 * 1024 * 1024; // 10MB
+                      if (file.size > maxSize) {
+                        setFeaturedImageError("Image file size must be less than 10MB");
+                        e.target.value = ""; // Reset input
+                        setFormData((prev: any) => ({ ...prev, featured_image: "", previewUrl: prev.previewUrl }));
+                        return;
+                      }
+
+                      // Clear any previous errors
+                      setFeaturedImageError("");
+                      
+                      // Set the file and create preview
                       setFormData((prev: any) => ({ ...prev, featured_image: file }));
                       const reader = new FileReader();
                       reader.onload = () => setFormData((prev: any) => ({ ...prev, previewUrl: reader.result as string }));
                       reader.readAsDataURL(file);
                     }}
                   />
-                  {formData.previewUrl && <img src={formData.previewUrl} alt="Preview" className="mt-2 max-h-48 rounded-lg object-cover" />}
+                  {featuredImageError && (
+                    <p className="text-sm text-red-500 mt-1">{featuredImageError}</p>
+                  )}
+                  {formData.previewUrl && !featuredImageError && (
+                    <img src={formData.previewUrl} alt="Preview" className="mt-2 max-h-48 rounded-lg object-cover" />
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -316,6 +474,151 @@ const AdminBlog = () => {
                   <Label htmlFor="content">Content (Markdown)</Label>
                   <Textarea id="content" className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none resize-none h-20"
                     style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties } value={formData.content} onChange={(e) => setFormData({ ...formData, content: e.target.value })} rows={15} required />
+                </div>
+
+                {/* Media Management Section */}
+                <div>
+                  <Label>Media (Images, Videos, Documents)</Label>
+                  <div className="mt-2 space-y-4">
+                    <div>
+                      <Input
+                        type="file"
+                        multiple
+                        accept="image/*,video/*,.pdf,.doc,.docx,.txt"
+                        className="rounded-[8px] shadow-none border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none"
+                        style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
+                        onChange={(e) => {
+                          const files = e.target.files;
+                          if (!files || files.length === 0) return;
+
+                          if (editingPost) {
+                            // Upload immediately if editing existing post
+                            handleMediaUpload(files, editingPost.id);
+                          } else {
+                            // Store files for upload after post creation
+                            setPendingMediaFiles((prev) => [...prev, ...Array.from(files)]);
+                          }
+                          e.target.value = ""; // Reset input
+                        }}
+                        disabled={uploadingMedia}
+                      />
+                      {uploadingMedia && (
+                        <p className="text-sm text-muted-foreground mt-1">Uploading media...</p>
+                      )}
+                      {!editingPost && pendingMediaFiles.length > 0 && (
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {pendingMediaFiles.length} file(s) ready to upload after post creation
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Show pending files for new posts */}
+                    {!editingPost && pendingMediaFiles.length > 0 && (
+                      <div className="space-y-2">
+                        {pendingMediaFiles.map((file, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center gap-3 p-3 border border-muted-foreground/20 rounded-lg bg-white/5"
+                          >
+                            <div className="flex-shrink-0">
+                              {file.type.startsWith("image/") ? (
+                                <img
+                                  src={URL.createObjectURL(file)}
+                                  alt={file.name}
+                                  className="w-16 h-16 object-cover rounded"
+                                />
+                              ) : (
+                                <div className="w-16 h-16 flex items-center justify-center bg-muted/20 rounded">
+                                  {file.type.startsWith("video/") ? (
+                                    <Video className="w-4 h-4" />
+                                  ) : (
+                                    <FileText className="w-4 h-4" />
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-white truncate">{file.name}</p>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <span className="flex items-center gap-1">
+                                  {file.type.startsWith("image/") ? (
+                                    <ImageIcon className="w-4 h-4" />
+                                  ) : file.type.startsWith("video/") ? (
+                                    <Video className="w-4 h-4" />
+                                  ) : (
+                                    <FileText className="w-4 h-4" />
+                                  )}
+                                  {file.type.startsWith("image/") ? "image" : file.type.startsWith("video/") ? "video" : "document"}
+                                </span>
+                                <span>•</span>
+                                <span>{formatFileSize(file.size)}</span>
+                              </div>
+                            </div>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => {
+                                setPendingMediaFiles((prev) => prev.filter((_, i) => i !== index));
+                              }}
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Show uploaded media for existing posts */}
+                    {editingPost && postMedia.length > 0 && (
+                      <div className="space-y-2">
+                        {postMedia.map((media) => (
+                          <div
+                            key={media.id}
+                            className="flex items-center gap-3 p-3 border border-muted-foreground/20 rounded-lg bg-white/5"
+                          >
+                            <div className="flex-shrink-0">
+                              {media.media_type === "image" ? (
+                                <img
+                                  src={media.file_url}
+                                  alt={media.caption || media.filename}
+                                  className="w-16 h-16 object-cover rounded"
+                                />
+                              ) : (
+                                <div className="w-16 h-16 flex items-center justify-center bg-muted/20 rounded">
+                                  {getMediaIcon(media.media_type)}
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-white truncate">{media.filename}</p>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <span className="flex items-center gap-1">
+                                  {getMediaIcon(media.media_type)}
+                                  {media.media_type}
+                                </span>
+                                <span>•</span>
+                                <span>{formatFileSize(media.file_size)}</span>
+                              </div>
+                              {media.caption && (
+                                <p className="text-xs text-muted-foreground mt-1">{media.caption}</p>
+                              )}
+                            </div>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => handleDeleteMedia(media)}
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-3 gap-4">
@@ -421,7 +724,7 @@ const AdminBlog = () => {
 
                   <CardHeader>
                     <div className="flex items-center justify-between mb-2">
-                      <Badge variant={post.status === "published" ? "default" : "outline"} className={post.status === "published" ? "bg-green-500" : ""}>
+                      <Badge variant={post.status === "published" ? "default" : "outline"} className={post.status === "published" ? "bg-green-500" : "text-white"}>
                         {post.status}
                       </Badge>
 

@@ -76,7 +76,6 @@ export default function AdminDashboard() {
           supabase
             .from('contact_requests')
             .select('*')
-            .eq('status', 'pending')
             .order('created_at', { ascending: false })
         ]);
 
@@ -128,7 +127,20 @@ export default function AdminDashboard() {
           const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
           return createdDate > weekAgo;
         }).length || 0;
-        const pendingContactRequests = contactRequestsResponse.data?.length || 0;
+        
+        // Filter for pending contact requests
+        // Use same normalization logic as AdminContactRequests to ensure consistency
+        // In AdminContactRequests, status is normalized: invalid statuses default to 'pending'
+        const pendingContactRequests = (contactRequestsResponse.data || []).filter(request => {
+          const rawStatus = (request.status || '').toLowerCase().trim();
+          // Normalize status same way as AdminContactRequests does (line 141-143)
+          // Valid statuses: 'pending', 'in_progress', 'resolved', 'closed'
+          // If status is invalid or empty, AdminContactRequests defaults it to 'pending'
+          const normalizedStatus = ['pending', 'in_progress', 'resolved', 'closed'].includes(rawStatus)
+            ? rawStatus
+            : 'pending'; // Default to 'pending' for invalid statuses (same as AdminContactRequests)
+          return normalizedStatus === 'pending';
+        }).length;
 
         // Determine system health
         let systemHealth: 'healthy' | 'warning' | 'error' = 'healthy';
@@ -163,8 +175,16 @@ export default function AdminDashboard() {
           });
         });
 
-        // Add recent contact requests
-        const recentContactRequests = contactRequestsResponse.data?.slice(0, 3) || [];
+        // Add recent contact requests (only pending ones)
+        // Use same normalization logic as above
+        const pendingRequests = (contactRequestsResponse.data || []).filter(request => {
+          const rawStatus = (request.status || '').toLowerCase().trim();
+          const normalizedStatus = ['pending', 'in_progress', 'resolved', 'closed'].includes(rawStatus)
+            ? rawStatus
+            : 'pending';
+          return normalizedStatus === 'pending';
+        });
+        const recentContactRequests = pendingRequests.slice(0, 3);
         recentContactRequests.forEach(request => {
           activity.push({
             id: request.id,
