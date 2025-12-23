@@ -887,7 +887,7 @@ export default function AdminReferrals() {
                   </SelectContent>
                 </Select>
                 <div className="flex items-center justify-center sm:justify-start">
-                  <Badge variant="outline" className="rounded-[8px] h-10 mt-1">
+                  <Badge variant="outline" className="rounded-[8px] h-10 mt-1 text-white">
                     {filteredReferrals.length} referrals
                   </Badge>
                 </div>

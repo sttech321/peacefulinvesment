@@ -742,7 +742,7 @@ export default function AdminOverseasCompanies() {
                   </SelectContent>
                 </Select>
                 <div className="flex items-center justify-center sm:justify-start">
-                  <Badge variant="outline" className="py-2 px-4 rounded-[8px] h-[40px] mt-1">
+                  <Badge variant="outline" className="py-2 px-4 rounded-[8px] h-[40px] mt-1 text-white">
                     {filteredRequests.length} requests
                   </Badge>
                 </div>
@@ -963,8 +963,8 @@ export default function AdminOverseasCompanies() {
                   <h3 className="font-semibold border-b pb-2">Request Information</h3>
                   
                   <div className="space-y-3">
-                    <div>
-                      <span className="text-sm text-muted-foreground">Status:</span>
+                    <div className="flex items-center">
+                      <span className="text-sm text-muted-foreground pr-1">Status: </span>
                       <div className="mt-1">{getRequestStatusBadge(selectedRequest.status)}</div>
                     </div>
                     <div>
@@ -1000,7 +1000,7 @@ export default function AdminOverseasCompanies() {
                         }`} />
                         <span className="text-sm">{name}</span>
                         {selectedRequest.selected_company_name === name && (
-                          <Badge variant="outline" className="text-xs">Selected</Badge>
+                          <Badge variant="outline" className="text-xs text-black">Selected</Badge>
                         )}
                       </div>
                     ))}
