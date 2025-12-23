@@ -570,7 +570,7 @@ export default function AdminAccounts() {
               </SelectContent>
             </Select>
             <div className="flex items-center space-x-2">
-              <Badge variant="outline" className="py-2 px-4 rounded-[8px] h-[36px]">
+              <Badge variant="outline" className="py-2 px-4 rounded-[8px] h-[36px] text-white">
                 {filteredAccounts.length} accounts
               </Badge>
             </div>

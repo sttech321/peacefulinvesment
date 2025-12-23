@@ -356,9 +356,9 @@ export default function AdminContactRequests() {
       case 'medium':
         return <Badge variant="secondary">Medium Priority</Badge>;
       case 'low':
-        return <Badge variant="outline" className="bg-white">Low Priority</Badge>;
+        return <Badge variant="outline" className="bg-white text-black">Low Priority</Badge>;
       default:
-        return <Badge variant="outline" className="bg-white">Unknown</Badge>;
+        return <Badge variant="outline" className="bg-white text-black">Unknown</Badge>;
     }
   };
 
@@ -371,9 +371,9 @@ export default function AdminContactRequests() {
       case 'resolved':
         return <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-200">Resolved</Badge>;
       case 'closed':
-        return <Badge variant="outline" className="bg-white">Closed</Badge>;
+        return <Badge variant="outline" className="bg-white text-black">Closed</Badge>;
       default:
-        return <Badge variant="outline" className="bg-white">Unknown</Badge>;
+        return <Badge variant="outline" className="bg-white text-black">Unknown</Badge>;
     }
   };
 
@@ -592,7 +592,7 @@ export default function AdminContactRequests() {
               </SelectContent>
             </Select>
             <div className="flex items-center space-x-2">
-              <Badge variant="outline" className="py-2 px-4 h-10 rounded-[8px] mt-1">
+              <Badge variant="outline" className="py-2 px-4 h-10 rounded-[8px] mt-1 text-white">
                 {filteredRequests.length} requests
               </Badge>
             </div>
