@@ -356,9 +356,9 @@ export default function AdminContactRequests() {
       case 'medium':
         return <Badge variant="secondary">Medium Priority</Badge>;
       case 'low':
-        return <Badge variant="outline">Low Priority</Badge>;
+        return <Badge variant="outline" className="bg-white">Low Priority</Badge>;
       default:
-        return <Badge variant="outline">Unknown</Badge>;
+        return <Badge variant="outline" className="bg-white">Unknown</Badge>;
     }
   };
 
@@ -371,9 +371,9 @@ export default function AdminContactRequests() {
       case 'resolved':
         return <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-200">Resolved</Badge>;
       case 'closed':
-        return <Badge variant="outline">Closed</Badge>;
+        return <Badge variant="outline" className="bg-white">Closed</Badge>;
       default:
-        return <Badge variant="outline">Unknown</Badge>;
+        return <Badge variant="outline" className="bg-white">Unknown</Badge>;
     }
   };
 

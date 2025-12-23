@@ -248,7 +248,7 @@ export default function AdminAuditLog() {
       case 'rejected':
         return <AlertTriangle className="h-4 w-4 text-red-600" />;
       case 'requested_more_info':
-        return <Clock className="h-4 w-4 text-yellow-600" />;
+        return <Clock className="h-4 w-4 text-primary" />;
       default:
         return <Activity className="h-4 w-4 text-gray-600" />;
     }
@@ -471,7 +471,7 @@ export default function AdminAuditLog() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline">{getResourceType(log)}</Badge>
+                        <Badge variant="outline" className="text-white">{getResourceType(log)}</Badge>
                       </TableCell>
                       <TableCell>
                         <div className="max-w-xs truncate text-white" title={log.note || 'No note'}>
@@ -549,9 +549,9 @@ export default function AdminAuditLog() {
                   <p className="text-sm font-mono">{selectedLog.verification_request_id || 'N/A'}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-black">Severity</label>
-                  <Badge className={getSeverityColor(selectedLog.action)}>
-                    {getSeverity(selectedLog.action)}
+                  <label className="text-sm font-medium text-black">Severity </label> 
+                  <Badge className={getSeverityColor(selectedLog.action)}> 
+                     {getSeverity(selectedLog.action)}
                   </Badge>
                 </div>
                 <div>
