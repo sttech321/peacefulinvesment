@@ -171,9 +171,19 @@ const BlogPost = () => {
                                (match, beforeAttrs, url, afterAttrs) => {
                                  console.log('Found link:', { match, beforeAttrs, url, afterAttrs });
                                  
-                                 // Ensure URLs have protocol (skip mailto, anchors, and relative paths)
+                                 // Fix URLs that incorrectly point to our domain but should be external
+                                 // e.g., https://www.peacefulinvestment.com/admin/www.google.com -> https://www.google.com
                                  let fullUrl = url;
-                                 if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('mailto:') && !url.startsWith('#') && !url.startsWith('/')) {
+                                 const ourDomainPattern = /^https?:\/\/(www\.)?peacefulinvestment\.com\/admin\/(.+)$/i;
+                                 const domainMatch = url.match(ourDomainPattern);
+                                 
+                                 if (domainMatch) {
+                                   // Extract the external domain from the path
+                                   const externalDomain = domainMatch[2];
+                                   fullUrl = 'https://' + externalDomain;
+                                   console.log('Fixed incorrect domain redirect in excerpt:', url, '->', fullUrl);
+                                 } else if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('mailto:') && !url.startsWith('#') && !url.startsWith('/')) {
+                                   // URLs without protocol - add https://
                                    fullUrl = 'https://' + url;
                                    console.log('Added https:// protocol:', fullUrl);
                                  }
@@ -260,9 +270,19 @@ const BlogPost = () => {
                       (match, beforeAttrs, url, afterAttrs) => {
                         console.log('Found link in content:', { match, beforeAttrs, url, afterAttrs });
                         
-                        // Ensure URLs have protocol (skip mailto, anchors, and relative paths)
+                        // Fix URLs that incorrectly point to our domain but should be external
+                        // e.g., https://www.peacefulinvestment.com/admin/www.google.com -> https://www.google.com
                         let fullUrl = url;
-                        if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('mailto:') && !url.startsWith('#') && !url.startsWith('/')) {
+                        const ourDomainPattern = /^https?:\/\/(www\.)?peacefulinvestment\.com\/admin\/(.+)$/i;
+                        const domainMatch = url.match(ourDomainPattern);
+                        
+                        if (domainMatch) {
+                          // Extract the external domain from the path
+                          const externalDomain = domainMatch[2];
+                          fullUrl = 'https://' + externalDomain;
+                          console.log('Fixed incorrect domain redirect in content:', url, '->', fullUrl);
+                        } else if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('mailto:') && !url.startsWith('#') && !url.startsWith('/')) {
+                          // URLs without protocol - add https://
                           fullUrl = 'https://' + url;
                           console.log('Added https:// protocol to content link:', fullUrl);
                         }
