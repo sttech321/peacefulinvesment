@@ -724,6 +724,82 @@ export default function AdminUsers() {
         console.log(`[DELETE] Deleted ${deletedSignups?.length || 0} referral_signups record(s)`);
       }
 
+      // Delete from overseas_company_requests table
+      console.log(`[DELETE] Deleting overseas_company_requests for user ${userId}...`);
+      const { data: deletedOverseasRequests, error: overseasRequestsError } = await supabase
+        .from('overseas_company_requests')
+        .delete()
+        .eq('user_id', userId)
+        .select();
+
+      if (overseasRequestsError) {
+        console.error('[DELETE] Error deleting overseas company requests:', overseasRequestsError);
+        // Don't throw here as this is not critical
+      } else {
+        console.log(`[DELETE] Deleted ${deletedOverseasRequests?.length || 0} overseas_company_requests record(s)`);
+      }
+
+      // Delete from overseas_companies table
+      console.log(`[DELETE] Deleting overseas_companies for user ${userId}...`);
+      const { data: deletedOverseasCompanies, error: overseasCompaniesError } = await supabase
+        .from('overseas_companies')
+        .delete()
+        .eq('user_id', userId)
+        .select();
+
+      if (overseasCompaniesError) {
+        console.error('[DELETE] Error deleting overseas companies:', overseasCompaniesError);
+        // Don't throw here as this is not critical
+      } else {
+        console.log(`[DELETE] Deleted ${deletedOverseasCompanies?.length || 0} overseas_companies record(s)`);
+      }
+
+      // Delete from auth.users using Edge Function
+      console.log(`[DELETE] Deleting auth user for user ${userId}...`);
+      try {
+        const { data: authDeleteData, error: authDeleteError } = await supabase.functions.invoke('delete-auth-user', {
+          body: {
+            user_id: userId,
+          },
+        });
+
+        if (authDeleteError) {
+          console.error('[DELETE] Error deleting auth user:', authDeleteError);
+          console.warn('[DELETE] Auth user deletion failed, but profile and related data have been soft-deleted');
+        } else {
+          console.log('[DELETE] Auth user deleted successfully:', authDeleteData);
+        }
+      } catch (authErr: any) {
+        console.error('[DELETE] Exception deleting auth user:', authErr);
+        console.warn('[DELETE] Auth user deletion failed, but profile and related data have been soft-deleted');
+      }
+
+      // Clean up orphaned auth users (users without profiles)
+      console.log(`[DELETE] Cleaning up orphaned auth users...`);
+      try {
+        const { data: orphanCleanupData, error: orphanCleanupError } = await supabase.functions.invoke('delete-orphan-auth-users', {
+          body: {},
+        });
+
+        if (orphanCleanupError) {
+          console.warn('[DELETE] Error cleaning up orphaned auth users:', orphanCleanupError);
+          // Don't throw here as this is not critical
+        } else {
+          const result = orphanCleanupData as { success?: boolean; deleted?: number; total?: number; errors?: string[] };
+          if (result?.success) {
+            console.log(`[DELETE] Cleaned up ${result.deleted || 0} orphaned auth user(s) out of ${result.total || 0} found`);
+            if (result.errors && result.errors.length > 0) {
+              console.warn('[DELETE] Some orphaned users could not be deleted:', result.errors);
+            }
+          } else {
+            console.warn('[DELETE] Orphan cleanup returned unsuccessful result:', result);
+          }
+        }
+      } catch (orphanErr: any) {
+        console.warn('[DELETE] Exception cleaning up orphaned auth users:', orphanErr);
+        // Don't throw here as this is not critical
+      }
+
       // Log admin action
       console.log(`[DELETE] Logging admin action for user ${userId}...`);
       try {

@@ -163,7 +163,8 @@ const BlogPost = () => {
                            __html: (() => {
                              let html = post.excerpt || '';
                              console.log('Original excerpt HTML:', html);
-                             
+                            
+                             html = html.replace(/<p>\s*<br\s*\/?>\s*<\/p>/gi, '');
                              // Process links: ensure protocol, add target/rel if missing
                              // Match: <a ... href="url" ...> or <a href="url" ...>
                              html = html.replace(
@@ -263,6 +264,10 @@ const BlogPost = () => {
                   __html: (() => {
                     let html = post.content || '';
                     console.log('Original content HTML:', html);
+                    
+                    // Remove empty paragraph tags with just line breaks: <p><br></p>, <p><br/></p>, <p><br /></p>
+                    html = html.replace(/<p>\s*<br\s*\/?>\s*<\/p>/gi, '');
+                    console.log('Removed empty <p><br></p> tags from content');
                     
                     // Process links: ensure protocol, add target/rel if missing
                     html = html.replace(

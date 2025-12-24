@@ -203,10 +203,10 @@ const RequestsListEnhanced = () => {
                 </span>
               </div>
 
-              <div className="flex items-center justify-between">
+              {/* <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Payment Method</span>
                 <span className="font-medium text-sm text-muted">{selectedRequest.payment_method}</span>
-              </div>
+              </div> */}
 
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Request ID</span>
@@ -357,10 +357,10 @@ const RequestsListEnhanced = () => {
                   {request.amount.toLocaleString()} {request.currency}
                 </p>
               </div>
-              <div>
+              {/* <div>
                 <p className="text-sm text-muted-foreground">Payment Method</p>
                 <p className="font-medium text-muted pt-1">{request.payment_method}</p>
-              </div>
+              </div> */}
               <div>
                 <p className="text-sm text-muted-foreground">Request ID</p>
                 <p className="font-mono text-sm text-muted pt-1">{request.id.slice(0, 8)}...</p>
@@ -376,7 +376,7 @@ const RequestsListEnhanced = () => {
             {request.description && (
               <div className="mt-4 pt-4 border-t">
                 <p className="text-sm text-muted-foreground mb-1">Description</p>
-                <p className="text-sm line-clamp-2">{request.description}</p>
+                <p className="text-sm line-clamp-2 text-white">{request.description}</p>
               </div>
             )}
 

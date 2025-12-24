@@ -45,20 +45,7 @@ const contactFormSchema = z.object({
   email: z
     .string()
     .min(1, "Email is required")
-    .email("Please enter a valid email address")
-    .refine(
-      (val) => {
-        const domain = val.split("@")[1];
-        if (!domain) return false;
-        // Only allow the specific TLDs mentioned in QA requirements
-        const validTLDs = [
-          "com", "org", "net", "edu", "gov", "in", "co", "io", "info", "ai", "xyz"
-        ];
-        const tld = domain.split(".").pop()?.toLowerCase();
-        return tld && validTLDs.includes(tld);
-      },
-      "Email must have a valid top-level domain (.com, .org, .net, .edu, .gov, .in, .co, .io, .info, .ai, .xyz, etc.)"
-    ),
+    .email("Please enter a valid email address"),
   phone: z
     .string()
     .optional()
