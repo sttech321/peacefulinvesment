@@ -203,10 +203,10 @@ const RequestsListEnhanced = () => {
                 </span>
               </div>
 
-              <div className="flex items-center justify-between">
+              {/* <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Payment Method</span>
                 <span className="font-medium text-sm text-muted">{selectedRequest.payment_method}</span>
-              </div>
+              </div> */}
 
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Request ID</span>
@@ -357,10 +357,10 @@ const RequestsListEnhanced = () => {
                   {request.amount.toLocaleString()} {request.currency}
                 </p>
               </div>
-              <div>
+              {/* <div>
                 <p className="text-sm text-muted-foreground">Payment Method</p>
                 <p className="font-medium text-muted pt-1">{request.payment_method}</p>
-              </div>
+              </div> */}
               <div>
                 <p className="text-sm text-muted-foreground">Request ID</p>
                 <p className="font-mono text-sm text-muted pt-1">{request.id.slice(0, 8)}...</p>

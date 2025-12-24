@@ -97,18 +97,10 @@ const Referrals = () => {
     }
     
     // Check domain structure - must have valid TLD
+    // Check domain structure - must have valid TLD (any valid TLD, not restricted list)
     const domainParts = domain.split('.');
     if (domainParts.length < 2) {
       return false; // No TLD
-    }
-    
-    const tld = domainParts[domainParts.length - 1].toLowerCase();
-    // Only allow the specific TLDs mentioned in QA requirements
-    const validTLDs = [
-      "com", "org", "net", "edu", "gov", "in", "co", "io", "info", "ai", "xyz"
-    ];
-    if (!validTLDs.includes(tld)) {
-      return false; // TLD not in allowed list
     }
     
     // Reject suspicious patterns (very short subdomains)
@@ -116,7 +108,7 @@ const Referrals = () => {
       return false; // Domain part too short (e.g., "a.com")
     }
     
-    // Valid domain structure check
+    // Valid domain structure check - accepts any valid TLD (2+ letters)
     const domainRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/;
     return domainRegex.test(domain);
   };
