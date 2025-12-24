@@ -264,6 +264,10 @@ const BlogPost = () => {
                     let html = post.content || '';
                     console.log('Original content HTML:', html);
                     
+                    // Remove empty paragraph tags with just line breaks: <p><br></p>, <p><br/></p>, <p><br /></p>
+                    html = html.replace(/<p>\s*<br\s*\/?>\s*<\/p>/gi, '');
+                    console.log('Removed empty <p><br></p> tags from content');
+                    
                     // Process links: ensure protocol, add target/rel if missing
                     html = html.replace(
                       /<a([^>]*)\bhref\s*=\s*["']([^"']+)["']([^>]*)>/gi,
