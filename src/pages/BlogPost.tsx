@@ -163,7 +163,8 @@ const BlogPost = () => {
                            __html: (() => {
                              let html = post.excerpt || '';
                              console.log('Original excerpt HTML:', html);
-                             
+                            
+                             html = html.replace(/<p>\s*<br\s*\/?>\s*<\/p>/gi, '');
                              // Process links: ensure protocol, add target/rel if missing
                              // Match: <a ... href="url" ...> or <a href="url" ...>
                              html = html.replace(
