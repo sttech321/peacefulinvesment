@@ -295,7 +295,7 @@ export default function AdminRequests() {
       const { error: updateError } = await supabase
         .from('requests')
         .update({
-          status: 'processing',
+          status: 'completed',
           admin_notes: adminNotes || null,
           updated_at: new Date().toISOString(),
         })
@@ -319,7 +319,7 @@ export default function AdminRequests() {
               request_type: selectedRequest.type,
               amount: selectedRequest.amount,
               currency: selectedRequest.currency,
-              status: 'processing',
+              status: 'completed',
               admin_notes: adminNotes || undefined,
             }
           });
