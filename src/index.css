@@ -483,3 +483,59 @@
 [data-radix-select-content] [data-radix-select-item]:hover {
   background-color: hsl(var(--accent)) !important;
 }
+
+/* Enhanced prose link styling for blog excerpts */
+.prose a {
+  color: hsl(var(--primary)) !important;
+  text-decoration: underline;
+  transition: opacity 0.2s ease;
+}
+
+.prose a:hover {
+  opacity: 0.8;
+}
+
+.prose-invert a {
+  color: hsl(var(--primary)) !important;
+}
+
+/* Override for excerpt sections where links should be white - maximum specificity */
+.blog-excerpt,
+div.blog-excerpt.prose.prose-invert,
+div.blog-excerpt.prose {
+  color: white !important;
+}
+
+.blog-excerpt *,
+div.blog-excerpt.prose.prose-invert *,
+div.blog-excerpt.prose * {
+  color: inherit;
+}
+
+div.blog-excerpt.prose.prose-invert a,
+div.blog-excerpt.prose a,
+.blog-excerpt.prose.prose-invert a,
+.blog-excerpt.prose a,
+.blog-excerpt a,
+div.blog-excerpt a,
+div.blog-excerpt.prose.prose-invert p a,
+div.blog-excerpt.prose p a {
+  color: hsl(var(--primary)) !important;
+  text-decoration: underline !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: inline !important;
+  font-weight: normal !important;
+}
+
+div.blog-excerpt.prose.prose-invert a:hover,
+div.blog-excerpt.prose a:hover,
+.blog-excerpt.prose.prose-invert a:hover,
+.blog-excerpt.prose a:hover,
+.blog-excerpt a:hover,
+div.blog-excerpt a:hover,
+div.blog-excerpt.prose.prose-invert p a:hover,
+div.blog-excerpt.prose p a:hover {
+  color: hsl(var(--primary)) !important;
+  opacity: 1 !important;
+}

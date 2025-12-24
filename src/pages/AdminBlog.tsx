@@ -14,6 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import {
   Select,
   SelectContent,
@@ -466,14 +467,33 @@ const AdminBlog = () => {
 
                 <div>
                   <Label htmlFor="excerpt">Excerpt</Label>
-                  <Textarea id="excerpt" className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none resize-none h-15"
-                    style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties } value={formData.excerpt} onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })} rows={2} />
+                  <div className="mt-1">
+                    <RichTextEditor
+                      value={formData.excerpt || ''}
+                      onChange={(value) => setFormData({ ...formData, excerpt: value })}
+                      placeholder="Enter a brief excerpt for this blog post. You can format text, add headings, and links..."
+                      className="rounded-[8px]"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    This excerpt will be displayed in blog listings and previews. You can format text with headings, bold, italic, and links.
+                  </p>
                 </div>
 
                 <div>
-                  <Label htmlFor="content">Content (Markdown)</Label>
-                  <Textarea id="content" className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none resize-none h-20"
-                    style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties } value={formData.content} onChange={(e) => setFormData({ ...formData, content: e.target.value })} rows={15} required />
+                  <Label htmlFor="content">Content</Label>
+                  <div className="mt-1">
+                    <RichTextEditor
+                      value={formData.content || ''}
+                      onChange={(value) => setFormData({ ...formData, content: value })}
+                      placeholder="Enter the main content for this blog post. You can format text, add headings, lists, links, and more..."
+                      className="rounded-[8px]"
+                      minHeight={300}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Use the formatting toolbar to style your content with headings, bold, italic, lists, links, and colors.
+                  </p>
                 </div>
 
                 {/* Media Management Section */}
@@ -736,7 +756,12 @@ const AdminBlog = () => {
 
                     <CardTitle className="line-clamp-2">{post.title}</CardTitle>
 
-                    {post.excerpt && <p className="text-sm text-muted-foreground line-clamp-3">{post.excerpt}</p>}
+                    {post.excerpt && (
+                      <div 
+                        className="text-sm text-muted-foreground line-clamp-3 prose prose-sm prose-invert prose-a:text-primary prose-a:underline"
+                        dangerouslySetInnerHTML={{ __html: post.excerpt }}
+                      />
+                    )}
                   </CardHeader>
 
                   <CardContent>

@@ -5,28 +5,41 @@ export const EMAIL_TEMPLATES: Record<EmailType, EmailTemplate> = {
   // Authentication Templates
   [EmailType.EMAIL_VERIFICATION]: {
     subject: 'Verify Your Email Address - Peaceful Investment',
-    senderEmail: 'noreply@peacefulinvestment.com' as any,
+    senderEmail: 'info@peacefulinvestment.com' as any,
     senderName: 'Peaceful Investment',
     htmlContent: renderTemplate(BASE_EMAIL_TEMPLATE, {
       subject: 'Verify Your Email Address',
       content: `
         <h2>Welcome to Peaceful Investment!</h2>
-        <p>Thank you for creating your account. To complete your registration and start your investment journey, please verify your email address by clicking the button below.</p>
+        <p>Thank you for creating your account. We're excited to have you join our community of smart investors.</p>
+        
+        <p>To complete your registration and start your investment journey, please verify your email address by clicking the button below:</p>
         
         <div style="text-align: center; margin: 30px 0;">
           <a href="{{verificationLink}}" class="button">Verify Email Address</a>
         </div>
         
-        <div class="info-box">
-          <p><strong>Important:</strong> This verification link will expire in 24 hours. If you don't verify your email, your account will remain inactive.</p>
+        <div class="info-box" style="background-color: #eff6ff; border-left-color: #2563eb;">
+          <p style="color: #1e40af;"><strong>Important:</strong> This verification link will expire in 24 hours. If you don't verify your email, your account will remain inactive.</p>
         </div>
         
-        <p>If the button doesn't work, you can copy and paste this link into your browser:</p>
-        <p style="word-break: break-all; color: #FFD700;">{{verificationLink}}</p>
+        <p style="color: #6b7280; font-size: 14px; margin-top: 20px;">If the button doesn't work, copy and paste this link into your browser:</p>
+        <p style="word-break: break-all; color: #2563eb; font-size: 14px;">{{verificationLink}}</p>
+        
+        <div style="background-color: #f9fafb; padding: 20px; border-radius: 6px; margin: 30px 0;">
+          <p style="color: #1f2937; font-size: 16px; font-weight: 600; margin: 0 0 12px 0;">What's next after verification?</p>
+          <ul style="color: #4b5563; font-size: 14px; margin: 0; padding-left: 20px; line-height: 1.8;">
+            <li>Complete your profile setup</li>
+            <li>Explore investment opportunities</li>
+            <li>Set up your trading preferences</li>
+            <li>Start your investment journey</li>
+          </ul>
+        </div>
         
         <div class="divider"></div>
         
-        <p>If you didn't create an account with Peaceful Investment, please ignore this email.</p>
+        <p style="color: #6b7280; font-size: 14px;"><strong>Didn't create an account?</strong></p>
+        <p style="color: #6b7280; font-size: 14px;">If you didn't create an account with Peaceful Investment, please ignore this email. No account will be created without email verification.</p>
       `
     })
   },

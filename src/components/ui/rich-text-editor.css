@@ -1,0 +1,65 @@
+/* Rich Text Editor Styling */
+.rich-text-editor-wrapper .ql-container {
+  border-radius: 0 0 8px 8px;
+  font-size: 14px;
+  min-height: 120px;
+  border-color: hsl(var(--border));
+  background-color: hsl(var(--background));
+}
+
+.rich-text-editor-wrapper .ql-toolbar {
+  border-radius: 8px 8px 0 0;
+  border-color: hsl(var(--border));
+  background-color: hsl(var(--background));
+}
+
+.rich-text-editor-wrapper .ql-editor {
+  min-height: 120px;
+  color: hsl(var(--foreground));
+}
+
+.rich-text-editor-wrapper .ql-editor.ql-blank::before {
+  color: hsl(var(--muted-foreground));
+  font-style: normal;
+}
+
+.rich-text-editor-wrapper .ql-snow .ql-stroke {
+  stroke: hsl(var(--foreground));
+}
+
+.rich-text-editor-wrapper .ql-snow .ql-fill {
+  fill: hsl(var(--foreground));
+}
+
+.rich-text-editor-wrapper .ql-snow .ql-picker-label {
+  color: hsl(var(--foreground));
+}
+
+.rich-text-editor-wrapper .ql-snow .ql-picker-options {
+  background-color: hsl(var(--popover));
+  border-color: hsl(var(--border));
+}
+
+.rich-text-editor-wrapper .ql-snow .ql-picker-item {
+  color: hsl(var(--foreground));
+}
+
+.rich-text-editor-wrapper .ql-snow .ql-picker-item:hover {
+  background-color: hsl(var(--accent));
+}
+
+.rich-text-editor-wrapper .ql-snow .ql-tooltip {
+  background-color: hsl(var(--popover));
+  border-color: hsl(var(--border));
+  color: hsl(var(--foreground));
+}
+
+.rich-text-editor-wrapper .ql-snow .ql-tooltip input {
+  background-color: hsl(var(--background));
+  border-color: hsl(var(--border));
+  color: hsl(var(--foreground));
+}
+
+.rich-text-editor-wrapper .ql-snow a {
+  color: hsl(var(--primary));
+}
