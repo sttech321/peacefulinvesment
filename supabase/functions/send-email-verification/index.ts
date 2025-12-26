@@ -131,24 +131,68 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Generate verification link using Supabase Admin API
     const baseUrl = redirectTo || Deno.env.get("APP_BASE_URL") || "https://peacefulinvestment.com";
-    const redirectUrl = `${baseUrl}/auth?mode=signup`;
+    // Redirect to home page after verification - the auth state change will handle navigation
+    const redirectUrl = `${baseUrl}/`;
+
+    // Check if user already exists
+    const { data: existingUser } = await supabaseAdmin.auth.admin.getUserByEmail(trimmedEmail);
+    
+    // Determine the appropriate link type
+    // If user exists but email not confirmed, use 'email' type for verification
+    // If user doesn't exist, use 'signup' type
+    let linkType: 'signup' | 'email' = 'signup';
+    if (existingUser?.user) {
+      if (existingUser.user.email_confirmed_at) {
+        // User exists and is already confirmed - still generate email link for re-verification if needed
+        linkType = 'email';
+      } else {
+        // User exists but not confirmed - use email type
+        linkType = 'email';
+      }
+    }
+
+    console.log(`Generating ${linkType} link for email: ${trimmedEmail}, user exists: ${!!existingUser?.user}, email confirmed: ${existingUser?.user?.email_confirmed_at ? 'yes' : 'no'}`);
 
     // Generate email verification token/link
     // We'll use Supabase's admin API to generate the verification link
-    const { data: userData, error: userError } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'signup',
+    let userData: any = null;
+    let userError: any = null;
+    
+    const linkResult = await supabaseAdmin.auth.admin.generateLink({
+      type: linkType,
       email: trimmedEmail,
       options: {
         redirectTo: redirectUrl,
       },
     });
+    
+    userData = linkResult.data;
+    userError = linkResult.error;
+
+    // If signup type failed and user exists, try email type as fallback
+    if ((userError || !userData) && linkType === 'signup') {
+      console.log('Signup link generation failed, trying email type as fallback...');
+      const emailLinkResult = await supabaseAdmin.auth.admin.generateLink({
+        type: 'email',
+        email: trimmedEmail,
+        options: {
+          redirectTo: redirectUrl,
+        },
+      });
+      
+      if (!emailLinkResult.error && emailLinkResult.data) {
+        userData = emailLinkResult.data;
+        userError = null;
+        console.log('Successfully generated email verification link');
+      }
+    }
 
     if (userError || !userData) {
       console.error("Error generating verification link:", userError);
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: userError?.message || "Failed to generate verification link" 
+          error: userError?.message || "Failed to generate verification link. Please try again or contact support." 
         }),
         {
           status: 500,
@@ -331,7 +375,7 @@ const handler = async (req: Request): Promise<Response> => {
         </div>
         
         <div class="info-box" style="background-color: #eff6ff; border-left-color: #2563eb;">
-          <p style="color: #1e40af;"><strong>Important:</strong> This verification link will expire in 24 hours. If you don't verify your email, your account will remain inactive.</p>
+          <p style="color: #1e40af;"><strong>Important:</strong> If this link expires, you can request a new verification email from the sign-in page.</p>
         </div>
         
         <p style="color: #6b7280; font-size: 14px; margin-top: 20px;">If the button doesn't work, copy and paste this link into your browser:</p>
