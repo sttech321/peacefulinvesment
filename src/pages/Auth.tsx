@@ -222,7 +222,8 @@ const Auth = () => {
           }
 
           // Show success message and confirmation email notice
-          setEmailConfirmationSent(true);
+          //setEmailConfirmationSent(true);
+          await handleResendConfirmation();
           toast({
             title: "Account Created Successfully!",
             description: "Please check your email to verify your account before signing in.",
