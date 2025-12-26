@@ -76,13 +76,19 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    // Validate Authorization header
+    // Password reset is a public endpoint - accept either Authorization or apikey header
+    // This allows unauthenticated users to request password reset
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const apikeyHeader = req.headers.get('apikey');
+    
+    // Accept either Authorization Bearer token or apikey header
+    // This is needed because Supabase validates JWT before our code runs
+    // With verify_jwt = false, we should accept apikey for public access
+    if (!authHeader && !apikeyHeader) {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: "Authorization header is required" 
+          error: "Authorization or apikey header is required" 
         }),
         {
           status: 401,
@@ -90,6 +96,10 @@ const handler = async (req: Request): Promise<Response> => {
         }
       );
     }
+
+    // Note: We accept ANON_KEY for password reset (public endpoint)
+    // No need to verify user JWT since users requesting password reset aren't authenticated
+    // The verify_jwt = false in config.toml should disable JWT validation at platform level
 
     // Check environment variables
     if (!resendApiKey) {

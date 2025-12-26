@@ -15,5 +15,8 @@ verify_jwt = true
 [functions.send-request-notification]
 verify_jwt = true
 
+[functions.send-password-reset]
+verify_jwt = false
+
 [functions.send-email-verification]
 verify_jwt = false
