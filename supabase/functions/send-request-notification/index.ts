@@ -101,7 +101,7 @@ const handler = async (req: Request): Promise<Response> => {
     const plainTextContent = generatePlainTextContent(user_name, request_type, amount, currency, status, admin_notes, request_id, baseUrl || 'https://peacefulinvestment.com');
     
     const emailResponse = await resendClient.emails.send({
-      from: "Peaceful Investment <support@peacefulinvestment.com>",
+      from: "Peaceful Investment Support <support@peacefulinvestment.com>",
       to: [user_email],
       reply_to: "support@peacefulinvestment.com",
       subject: subject,

@@ -46,7 +46,7 @@ export const EMAIL_TEMPLATES: Record<EmailType, EmailTemplate> = {
 
   [EmailType.PASSWORD_RESET]: {
     subject: 'Reset Your Password - Peaceful Investment',
-    senderEmail: 'support@peacefulinvestment.com' as any,
+    senderEmail: 'security@peacefulinvestment.com' as any,
     senderName: 'Peaceful Investment Security',
     htmlContent: renderTemplate(BASE_EMAIL_TEMPLATE, {
       subject: 'Password Reset Request',

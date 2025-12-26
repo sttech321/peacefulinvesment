@@ -54,7 +54,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Use verified domain email - ensure peacefulinvestment.com is verified in Resend
     const emailResponse = await resend.emails.send({
-      from: "Peaceful Investment <support@peacefulinvestment.com>",
+      from: "Peaceful Investment Support <support@peacefulinvestment.com>",
       to: [to_email],
       reply_to: "admin@peacefulinvestment.com",
       subject: subject,

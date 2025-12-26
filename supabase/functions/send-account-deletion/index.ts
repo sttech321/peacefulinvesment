@@ -199,7 +199,7 @@ This is an automated notification. Please do not reply to this email.
 
     // Send email using Resend
     const emailResponse = await resend.emails.send({
-      from: "Peaceful Investment <support@peacefulinvestment.com>",
+      from: "Peaceful Investment Support <support@peacefulinvestment.com>",
       to: [user_email],
       reply_to: "support@peacefulinvestment.com",
       subject: "Account Deletion Notice - Peaceful Investment",

@@ -50,16 +50,34 @@ const Auth = () => {
     setIsLoading(true);
     setErrors({});
     try {
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email: email.trim().toLowerCase(),
-      });
+      // Use our custom Edge Function to send verification email via Resend
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const redirectUrl = `${window.location.origin}/`;
+      
+      const response = await fetch(
+        `${supabaseUrl}/functions/v1/send-email-verification`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            email: email.trim().toLowerCase(),
+            fullName: fullName || undefined,
+            redirectTo: redirectUrl,
+          }),
+        }
+      );
 
-      if (error) {
-        setErrors({ general: error.message });
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        const errorMessage = result.error || "Failed to send confirmation email. Please try again.";
+        setErrors({ general: errorMessage });
         toast({
           title: "Error",
-          description: error.message || "Failed to send confirmation email. Please try again.",
+          description: errorMessage,
           variant: "destructive",
         });
       } else {

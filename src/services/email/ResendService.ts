@@ -94,6 +94,11 @@ export class ResendService {
       ];
       const isTransactional = transactionalEmails.includes(emailData.type);
 
+      // Generate proper Message-ID (RFC 5322 compliant)
+      const timestamp = Date.now();
+      const randomId = Math.random().toString(36).substring(2, 15);
+      const messageId = `<${emailData.type}.${timestamp}.${randomId}@peacefulinvestment.com>`;
+
       const emailPayload: any = {
         from: `${senderNameMap[routing] || 'Peaceful Investment'} <${routing}>`,
         to: [toRecipient],
@@ -103,20 +108,21 @@ export class ResendService {
         reply_to: replyToEmail, // Always set reply-to
         // Add headers for better deliverability
         headers: {
-          'X-Entity-Ref-ID': `${emailData.type}-${Date.now()}`,
-          // For transactional emails (password reset, verification), don't include unsubscribe
-          // as they are required communications
+          'X-Entity-Ref-ID': `${emailData.type}-${timestamp}`,
+          // RFC 5322 compliant Message-ID for better deliverability
+          'Message-ID': messageId,
+          // For transactional emails (password reset, verification), mark as auto-generated
+          // but DO NOT use 'Precedence: bulk' - that's for marketing emails and triggers spam filters
+          ...(isTransactional && {
+            'Auto-Submitted': 'auto-generated',
+            'X-Auto-Response-Suppress': 'All',
+          }),
+          // For marketing/promotional emails, include unsubscribe headers
           ...(!isTransactional && {
             'List-Unsubscribe': `<https://peacefulinvestment.com/unsubscribe?email=${encodeURIComponent(recipient.email)}>`,
             'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+            'Precedence': 'bulk', // Only for marketing emails
           }),
-          // Add Precedence header for transactional emails to reduce spam filtering
-          ...(isTransactional && {
-            'Precedence': 'bulk',
-            'Auto-Submitted': 'auto-generated',
-          }),
-          // Add Message-ID for better tracking and deliverability
-          'Message-ID': `<${emailData.type}-${Date.now()}-${Math.random().toString(36).substring(7)}@peacefulinvestment.com>`,
         },
         // Add metadata for tracking and categorization
         tags: [
@@ -250,9 +256,55 @@ export class ResendService {
 
   /**
    * Strip HTML tags from content for text version
+   * Creates a better plain text version by preserving structure
    */
   private stripHtml(html: string): string {
-    return html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+    // Remove script and style elements
+    let text = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
+    text = text.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+    
+    // Convert common HTML elements to plain text equivalents
+    text = text.replace(/<h[1-6][^>]*>/gi, '\n\n');
+    text = text.replace(/<\/h[1-6]>/gi, '\n');
+    text = text.replace(/<p[^>]*>/gi, '\n\n');
+    text = text.replace(/<\/p>/gi, '');
+    text = text.replace(/<br\s*\/?>/gi, '\n');
+    text = text.replace(/<li[^>]*>/gi, '\n• ');
+    text = text.replace(/<\/li>/gi, '');
+    text = text.replace(/<ul[^>]*>/gi, '\n');
+    text = text.replace(/<\/ul>/gi, '\n');
+    text = text.replace(/<ol[^>]*>/gi, '\n');
+    text = text.replace(/<\/ol>/gi, '\n');
+    text = text.replace(/<div[^>]*>/gi, '\n');
+    text = text.replace(/<\/div>/gi, '');
+    text = text.replace(/<a[^>]*href=["']([^"']+)["'][^>]*>([^<]*)<\/a>/gi, '$2 ($1)');
+    text = text.replace(/<strong[^>]*>/gi, '**');
+    text = text.replace(/<\/strong>/gi, '**');
+    text = text.replace(/<em[^>]*>/gi, '*');
+    text = text.replace(/<\/em>/gi, '*');
+    text = text.replace(/<b[^>]*>/gi, '**');
+    text = text.replace(/<\/b>/gi, '**');
+    text = text.replace(/<i[^>]*>/gi, '*');
+    text = text.replace(/<\/i>/gi, '*');
+    
+    // Remove all remaining HTML tags
+    text = text.replace(/<[^>]*>/g, '');
+    
+    // Decode HTML entities
+    text = text.replace(/&nbsp;/g, ' ');
+    text = text.replace(/&amp;/g, '&');
+    text = text.replace(/&lt;/g, '<');
+    text = text.replace(/&gt;/g, '>');
+    text = text.replace(/&quot;/g, '"');
+    text = text.replace(/&#039;/g, "'");
+    text = text.replace(/&apos;/g, "'");
+    
+    // Clean up whitespace
+    text = text.replace(/\n\s*\n\s*\n+/g, '\n\n'); // Multiple newlines to double
+    text = text.replace(/[ \t]+/g, ' '); // Multiple spaces to single
+    text = text.replace(/^\s+|\s+$/gm, ''); // Trim lines
+    
+    return text.trim();
   }
 
   /**

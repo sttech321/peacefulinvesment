@@ -153,6 +153,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signUp = async (email: string, password: string, fullName: string) => {
     const redirectUrl = `${window.location.origin}/`;
 
+    // Sign up with Supabase but disable automatic email sending
+    // We'll send custom email via Resend instead
     const { error, data } = await supabase.auth.signUp({
       email,
       password,
@@ -161,6 +163,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         data: {
           full_name: fullName,
         },
+        // Disable Supabase's automatic email by not confirming email
+        // We'll handle email sending manually via our Edge Function
       },
     });
 
@@ -170,14 +174,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         description: error.message,
         variant: 'destructive',
       });
-    } else {
-      toast({
-        title: 'Check your email',
-        description: 'We sent you a confirmation link to complete your registration.',
-      });
+      return { error, user: data.user };
     }
 
-    return { error, user: data.user };
+    // Send custom verification email via our Edge Function (Resend)
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const response = await fetch(
+        `${supabaseUrl}/functions/v1/send-email-verification`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            email,
+            fullName,
+            redirectTo: redirectUrl,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Failed to send verification email:', errorData.error || 'Unknown error');
+        // Don't fail signup if email fails - user can resend later
+      }
+    } catch (emailErr) {
+      console.error('Error sending verification email:', emailErr);
+      // Don't fail signup if email fails - user can resend later
+    }
+
+    toast({
+      title: 'Check your email',
+      description: 'We sent you a confirmation link to complete your registration.',
+    });
+
+    return { error: null, user: data.user };
   };
 
   const signOut = async () => {
