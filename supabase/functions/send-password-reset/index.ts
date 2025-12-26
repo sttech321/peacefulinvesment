@@ -143,8 +143,19 @@ const handler = async (req: Request): Promise<Response> => {
     const trimmedEmail = email.trim().toLowerCase();
 
     // Generate password reset link using Supabase Admin API
-    const baseUrl = redirectTo || Deno.env.get("APP_BASE_URL") || "https://peacefulinvestment.com";
-    const resetUrl = `${baseUrl}/reset-password`;
+    // redirectTo should be the full URL including path (e.g., https://peacefulinvestment.com/reset-password)
+    // If not provided, construct it from base URL
+    let resetUrl: string;
+    if (redirectTo) {
+      // Use redirectTo directly - it should already be the full URL with path
+      resetUrl = redirectTo;
+    } else {
+      // Use default base URL and append /reset-password
+      const baseUrl = Deno.env.get("APP_BASE_URL") || "https://peacefulinvestment.com";
+      resetUrl = `${baseUrl}/reset-password`;
+    }
+    
+    console.log(`Password reset URL: ${resetUrl}`);
 
     console.log(`Generating password reset link for email: ${trimmedEmail}`);
 
