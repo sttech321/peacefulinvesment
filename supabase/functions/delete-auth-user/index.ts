@@ -101,21 +101,23 @@ serve(async (req) => {
     }
 
     // Delete the auth user
-    const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(user_id);
+    // const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(user_id);
 
-    if (deleteError) {
-      console.error("Error deleting auth user:", deleteError);
-      return new Response(
-        JSON.stringify({ success: false, error: deleteError.message }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
-    }
+    // if (deleteError) {
+    //   console.error("Error deleting auth user:", deleteError);
+    //   return new Response(
+    //     JSON.stringify({ success: false, error: deleteError.message }),
+    //     {
+    //       status: 500,
+    //       headers: { "Content-Type": "application/json", ...corsHeaders },
+    //     }
+    //   );
+    // }
 
+    console.log(`SKIPPED hard delete for user: ${user_id}`);
+    
     return new Response(
-      JSON.stringify({ success: true, message: "Auth user deleted successfully" }),
+      JSON.stringify({ success: true, message: "User deletion is temporarily disabled to prevent unwanted emails" }),
       {
         status: 200,
         headers: { "Content-Type": "application/json", ...corsHeaders },

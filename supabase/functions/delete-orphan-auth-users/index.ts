@@ -104,13 +104,14 @@ serve(async (req) => {
 
     for (const user of users) {
       try {
-        const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(user.id);
-        if (deleteError) {
-          console.error(`Error deleting user ${user.id}:`, deleteError);
-          errors.push(`User ${user.id}: ${deleteError.message}`);
-        } else {
-          deletedCount++;
-        }
+        // const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(user.id);
+        // if (deleteError) {
+        //   console.error(`Error deleting user ${user.id}:`, deleteError);
+        //   errors.push(`User ${user.id}: ${deleteError.message}`);
+        // } else {
+        //   deletedCount++;
+        // }
+        console.log(`SKIPPED deletion for orphan user: ${user.id}`);
       } catch (err: any) {
         console.error(`Exception deleting user ${user.id}:`, err);
         errors.push(`User ${user.id}: ${err.message || "Unknown error"}`);
