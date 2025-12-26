@@ -73,6 +73,21 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Validate Authorization header (even though JWT verification is disabled, we check for ANON_KEY)
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: "Authorization header is required" 
+        }),
+        {
+          status: 401,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
     // Check environment variables
     if (!resendApiKey) {
       return new Response(
