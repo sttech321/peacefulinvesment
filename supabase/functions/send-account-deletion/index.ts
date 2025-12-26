@@ -138,10 +138,6 @@ Deno.serve(async (req: Request) => {
                       This action is irreversible. All your personal data, account information, and associated records have been permanently removed from our database in accordance with our data retention policies.
                     </p>
                     
-                    <p style="color: #555555; font-size: 16px; line-height: 1.6; margin: 20px 0 0 0;">
-                      If you believe this deletion was made in error, or if you have any questions or concerns, please contact our support team immediately.
-                    </p>
-                    
                     
                     <p style="color: #888888; font-size: 12px; margin-top: 30px; line-height: 1.6;">
                       Best regards,<br>
@@ -176,8 +172,6 @@ We are writing to inform you that your account with Peaceful Investment has been
 ⚠️ Important: You will no longer be able to access your account or any associated services.
 
 ${deletion_reason ? `Reason for Deletion:\n${deletion_reason}\n\n` : ''}This action is irreversible. All your personal data, account information, and associated records have been permanently removed from our database in accordance with our data retention policies.
-
-If you believe this deletion was made in error, or if you have any questions or concerns, please contact our support team.
 
 Best regards,
 Peaceful Investment Support Team
