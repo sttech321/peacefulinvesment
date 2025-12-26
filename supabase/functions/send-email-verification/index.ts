@@ -1,5 +1,6 @@
 // Deno Edge Function - uses Deno-specific imports
 // Linter errors for Deno/Resend imports are expected in TypeScript
+// Version: 2.0 - Fixed getUserByEmail error (removed non-existent method)
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { Resend } from "npm:resend@3.2.0";
 import { createClient } from "jsr:@supabase/supabase-js@2";
@@ -53,6 +54,9 @@ function escapeHtml(text: string): string {
 }
 
 const handler = async (req: Request): Promise<Response> => {
+  // Log function version for debugging
+  console.log("send-email-verification function v2.0 - getUserByEmail removed");
+  
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, {
@@ -134,6 +138,36 @@ const handler = async (req: Request): Promise<Response> => {
     // Redirect to home page after verification - the auth state change will handle navigation
     const redirectUrl = `${baseUrl}/`;
 
+    // Verify admin client is properly initialized
+    if (!supabaseAdmin || !supabaseAdmin.auth || !supabaseAdmin.auth.admin) {
+      console.error("Supabase admin client not properly initialized");
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: "Server configuration error. Please contact support." 
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    // Verify generateLink method exists
+    if (typeof supabaseAdmin.auth.admin.generateLink !== 'function') {
+      console.error("generateLink method not available on admin client");
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: "Server configuration error. Please contact support." 
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
     // Try to generate link - start with 'signup' type for new users
     // If user already exists, we'll catch the error and try 'email' type
     let userData: any = null;
@@ -141,36 +175,46 @@ const handler = async (req: Request): Promise<Response> => {
     
     console.log(`Attempting to generate signup link for email: ${trimmedEmail}`);
     
-    const signupLinkResult = await supabaseAdmin.auth.admin.generateLink({
-      type: 'signup',
-      email: trimmedEmail,
-      options: {
-        redirectTo: redirectUrl,
-      },
-    });
-    
-    userData = signupLinkResult.data;
-    userError = signupLinkResult.error;
-
-    // If signup type failed (likely because user already exists), try email type
-    if (userError || !userData) {
-      console.log('Signup link generation failed, trying email type as fallback...', userError?.message);
-      
-      const emailLinkResult = await supabaseAdmin.auth.admin.generateLink({
-        type: 'email',
+    try {
+      const signupLinkResult = await supabaseAdmin.auth.admin.generateLink({
+        type: 'signup',
         email: trimmedEmail,
         options: {
           redirectTo: redirectUrl,
         },
       });
       
-      if (!emailLinkResult.error && emailLinkResult.data) {
-        userData = emailLinkResult.data;
-        userError = null;
-        console.log('Successfully generated email verification link');
-      } else {
-        // Keep the original error if email type also fails
-        userError = emailLinkResult.error || userError;
+      userData = signupLinkResult.data;
+      userError = signupLinkResult.error;
+    } catch (err: any) {
+      console.error("Error calling generateLink (signup):", err);
+      userError = err;
+    }
+
+    // If signup type failed (likely because user already exists), try email type
+    if (userError || !userData) {
+      console.log('Signup link generation failed, trying email type as fallback...', userError?.message);
+      
+      try {
+        const emailLinkResult = await supabaseAdmin.auth.admin.generateLink({
+          type: 'email',
+          email: trimmedEmail,
+          options: {
+            redirectTo: redirectUrl,
+          },
+        });
+        
+        if (!emailLinkResult.error && emailLinkResult.data) {
+          userData = emailLinkResult.data;
+          userError = null;
+          console.log('Successfully generated email verification link');
+        } else {
+          // Keep the original error if email type also fails
+          userError = emailLinkResult.error || userError;
+        }
+      } catch (err: any) {
+        console.error("Error calling generateLink (email):", err);
+        userError = err || userError;
       }
     }
 
@@ -199,25 +243,36 @@ const handler = async (req: Request): Promise<Response> => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{subject}}</title>
     <style>
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            line-height: 1.6;
-            color: #1f2937;
-            background-color: #f9fafb;
+        * {
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
         }
-        .container {
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+            line-height: 1.6;
+            color: #1f2937;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-color: #f9fafb;
+            margin: 0;
+            padding: 20px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .email-wrapper {
             max-width: 600px;
             margin: 0 auto;
+        }
+        .container {
             background-color: #ffffff;
-            border-radius: 12px;
+            border-radius: 16px;
             overflow: hidden;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
         }
         .header {
-            background: linear-gradient(135deg, #FFD700 0%, #E6C200 100%);
-            padding: 30px 20px;
+            background: linear-gradient(135deg, #FFD700 0%, #E6C200 50%, #FFD700 100%);
+            background-size: 200% 200%;
+            padding: 40px 30px;
             text-align: center;
             position: relative;
             overflow: hidden;
@@ -229,121 +284,300 @@ const handler = async (req: Request): Promise<Response> => {
             left: -50%;
             width: 200%;
             height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-            animation: shimmer 3s ease-in-out infinite;
+            background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);
+            animation: shimmer 4s ease-in-out infinite;
         }
         @keyframes shimmer {
             0%, 100% { transform: translateX(-100%) translateY(-100%) rotate(30deg); }
             50% { transform: translateX(100%) translateY(100%) rotate(30deg); }
         }
+        .header-content {
+            position: relative;
+            z-index: 1;
+        }
+        .header-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            backdrop-filter: blur(10px);
+        }
         .header h1 {
             color: #1f2937;
             margin: 0;
-            font-size: 28px;
+            font-size: 32px;
             font-weight: 700;
+            letter-spacing: -0.5px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
         .content {
-            padding: 40px 30px;
+            padding: 50px 40px;
         }
         .content h2 {
             color: #1f2937;
-            font-size: 24px;
-            margin-bottom: 20px;
-            font-weight: 600;
+            font-size: 28px;
+            margin-bottom: 16px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+        }
+        .content .greeting {
+            color: #4b5563;
+            font-size: 18px;
+            margin-bottom: 24px;
+            font-weight: 500;
         }
         .content p {
             color: #6b7280;
             font-size: 16px;
             margin-bottom: 20px;
+            line-height: 1.7;
+        }
+        .button-container {
+            text-align: center;
+            margin: 40px 0;
         }
         .button {
             display: inline-block;
             background: linear-gradient(135deg, #FFD700 0%, #E6C200 100%);
             color: #1f2937;
-            padding: 16px 32px;
+            padding: 18px 48px;
             text-decoration: none;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 16px;
-            margin: 20px 0;
-            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
-            transition: all 0.3s ease;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 18px;
+            letter-spacing: 0.3px;
+            box-shadow: 0 8px 24px rgba(255, 215, 0, 0.4);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s;
+        }
+        .button:hover::before {
+            left: 100%;
         }
         .button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 32px rgba(255, 215, 0, 0.5);
+        }
+        .button:active {
+            transform: translateY(-1px);
+        }
+        .info-box {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            border-left: 5px solid #3b82f6;
+            padding: 24px;
+            margin: 32px 0;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+        }
+        .info-box p {
+            margin: 0;
+            color: #1e40af;
+            font-size: 15px;
+            font-weight: 500;
+            line-height: 1.6;
+        }
+        .info-box strong {
+            color: #1e3a8a;
+            font-weight: 700;
+        }
+        .link-box {
+            background-color: #f9fafb;
+            border: 2px dashed #e5e7eb;
+            padding: 20px;
+            margin: 24px 0;
+            border-radius: 12px;
+            word-break: break-all;
+        }
+        .link-box p {
+            color: #6b7280;
+            font-size: 13px;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        .link-box a {
+            color: #2563eb;
+            font-size: 13px;
+            text-decoration: none;
+            word-break: break-all;
+        }
+        .link-box a:hover {
+            text-decoration: underline;
+        }
+        .steps-box {
+            background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+            padding: 32px;
+            border-radius: 16px;
+            margin: 40px 0;
+            border: 1px solid #e5e7eb;
+        }
+        .steps-box h3 {
+            color: #1f2937;
+            font-size: 20px;
+            font-weight: 700;
+            margin: 0 0 20px 0;
+            letter-spacing: -0.2px;
+        }
+        .steps-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .steps-list li {
+            color: #4b5563;
+            font-size: 15px;
+            margin-bottom: 16px;
+            padding-left: 32px;
+            position: relative;
+            line-height: 1.6;
+        }
+        .steps-list li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, #FFD700 0%, #E6C200 100%);
+            color: #1f2937;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 12px;
+            box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
+        }
+        .steps-list li:last-child {
+            margin-bottom: 0;
+        }
+        .divider {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #e5e7eb, transparent);
+            margin: 40px 0;
+            border-radius: 2px;
         }
         .footer {
-            background-color: #f9fafb;
-            padding: 30px;
+            background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+            padding: 40px 30px;
             text-align: center;
             border-top: 1px solid #e5e7eb;
         }
         .footer p {
             color: #9ca3af;
-            font-size: 14px;
-            margin: 0;
+            font-size: 13px;
+            margin: 0 0 12px 0;
+            line-height: 1.6;
         }
-        .footer a {
-            color: #FFD700;
+        .footer strong {
+            color: #6b7280;
+        }
+        .footer-links {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+        }
+        .footer-links a {
+            color: #9ca3af;
             text-decoration: none;
+            font-size: 12px;
+            margin: 0 8px;
+            transition: color 0.2s;
         }
-        .divider {
-            height: 1px;
-            background: linear-gradient(90deg, transparent, #e5e7eb, transparent);
-            margin: 30px 0;
+        .footer-links a:hover {
+            color: #FFD700;
         }
-        .info-box {
-            background-color: #f3f4f6;
-            border-left: 4px solid #FFD700;
-            padding: 20px;
-            margin: 20px 0;
-            border-radius: 0 8px 8px 0;
-        }
-        .info-box p {
-            margin: 0;
-            color: #374151;
+        .footer-links span {
+            color: #d1d5db;
+            margin: 0 4px;
         }
         @media (max-width: 600px) {
-            .container {
-                margin: 10px;
-                border-radius: 8px;
+            body {
+                padding: 10px;
             }
-            .header, .content, .footer {
-                padding: 20px;
+            .container {
+                border-radius: 12px;
+            }
+            .header {
+                padding: 30px 20px;
             }
             .header h1 {
-                font-size: 24px;
+                font-size: 26px;
+            }
+            .header-icon {
+                width: 56px;
+                height: 56px;
+                font-size: 28px;
+            }
+            .content {
+                padding: 35px 25px;
             }
             .content h2 {
-                font-size: 20px;
+                font-size: 24px;
+            }
+            .content .greeting {
+                font-size: 16px;
+            }
+            .button {
+                padding: 16px 36px;
+                font-size: 16px;
+                width: 100%;
+                max-width: 280px;
+            }
+            .steps-box {
+                padding: 24px;
+            }
+            .footer {
+                padding: 30px 20px;
             }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>Peaceful Investment</h1>
-        </div>
-        <div class="content">
-            {{content}}
-        </div>
-        <div class="footer">
-            <p>
-                This email was sent by <strong>Peaceful Investment</strong>
-            </p>
-            <p style="margin-top: 15px; font-size: 12px; color: #9ca3af;">
-                © ${new Date().getFullYear()} Peaceful Investment. All rights reserved.<br>
-                <a href="https://peacefulinvestment.com" style="color: #9ca3af; text-decoration: none;">peacefulinvestment.com</a> | 
-                <a href="https://peacefulinvestment.com/privacy" style="color: #9ca3af; text-decoration: none;">Privacy Policy</a> | 
-                <a href="https://peacefulinvestment.com/contact" style="color: #9ca3af; text-decoration: none;">Contact Us</a>
-            </p>
-            <p style="margin-top: 10px; font-size: 11px; color: #9ca3af; line-height: 1.6;">
-                You are receiving this email because you have an account with Peaceful Investment or requested this information.<br>
-                <a href="https://peacefulinvestment.com/unsubscribe" style="color: #9ca3af; text-decoration: underline;">Manage email preferences</a> or 
-                <a href="https://peacefulinvestment.com/unsubscribe" style="color: #9ca3af; text-decoration: underline;">unsubscribe</a> from marketing emails
-            </p>
+    <div class="email-wrapper">
+        <div class="container">
+            <div class="header">
+                <div class="header-content">
+                    <div class="header-icon">🔐</div>
+                    <h1>Peaceful Investment</h1>
+                </div>
+            </div>
+            <div class="content">
+                {{content}}
+            </div>
+            <div class="footer">
+                <p>
+                    This email was sent by <strong>Peaceful Investment</strong>
+                </p>
+                <p style="margin-top: 12px;">
+                    © ${new Date().getFullYear()} Peaceful Investment. All rights reserved.
+                </p>
+                <div class="footer-links">
+                    <a href="https://peacefulinvestment.com">Website</a>
+                    <span>•</span>
+                    <a href="https://peacefulinvestment.com/privacy">Privacy</a>
+                    <span>•</span>
+                    <a href="https://peacefulinvestment.com/contact">Contact</a>
+                </div>
+                <p style="margin-top: 20px; font-size: 11px; color: #d1d5db;">
+                    You are receiving this email because you have an account with Peaceful Investment.<br>
+                    <a href="https://peacefulinvestment.com/unsubscribe" style="color: #9ca3af; text-decoration: underline;">Unsubscribe</a>
+                </p>
+            </div>
         </div>
     </div>
 </body>
@@ -353,24 +587,25 @@ const handler = async (req: Request): Promise<Response> => {
     // Email content matching EMAIL_TEMPLATES[EmailType.EMAIL_VERIFICATION]
     const emailContent = `
         <h2>Welcome to Peaceful Investment!</h2>
-        <p>Thank you for creating your account${fullName ? `, ${escapeHtml(fullName)}` : ''}. We're excited to have you join our community of smart investors.</p>
+        <p class="greeting">Thank you for creating your account${fullName ? `, ${escapeHtml(fullName)}` : ''}!</p>
+        <p>We're excited to have you join our community of smart investors. To complete your registration and start your investment journey, please verify your email address by clicking the button below.</p>
         
-        <p>To complete your registration and start your investment journey, please verify your email address by clicking the button below:</p>
-        
-        <div style="text-align: center; margin: 30px 0;">
+        <div class="button-container">
           <a href="${verificationLink}" class="button">Verify Email Address</a>
         </div>
         
-        <div class="info-box" style="background-color: #eff6ff; border-left-color: #2563eb;">
-          <p style="color: #1e40af;"><strong>Important:</strong> If this link expires, you can request a new verification email from the sign-in page.</p>
+        <div class="info-box">
+          <p><strong>💡 Important:</strong> If this link expires, you can request a new verification email from the sign-in page.</p>
         </div>
         
-        <p style="color: #6b7280; font-size: 14px; margin-top: 20px;">If the button doesn't work, copy and paste this link into your browser:</p>
-        <p style="word-break: break-all; color: #2563eb; font-size: 14px;">${verificationLink}</p>
+        <div class="link-box">
+          <p>If the button doesn't work, copy and paste this link into your browser:</p>
+          <a href="${verificationLink}">${verificationLink}</a>
+        </div>
         
-        <div style="background-color: #f9fafb; padding: 20px; border-radius: 6px; margin: 30px 0;">
-          <p style="color: #1f2937; font-size: 16px; font-weight: 600; margin: 0 0 12px 0;">What's next after verification?</p>
-          <ul style="color: #4b5563; font-size: 14px; margin: 0; padding-left: 20px; line-height: 1.8;">
+        <div class="steps-box">
+          <h3>What's next after verification?</h3>
+          <ul class="steps-list">
             <li>Complete your profile setup</li>
             <li>Explore investment opportunities</li>
             <li>Set up your trading preferences</li>
@@ -380,8 +615,8 @@ const handler = async (req: Request): Promise<Response> => {
         
         <div class="divider"></div>
         
-        <p style="color: #6b7280; font-size: 14px;"><strong>Didn't create an account?</strong></p>
-        <p style="color: #6b7280; font-size: 14px;">If you didn't create an account with Peaceful Investment, please ignore this email. No account will be created without email verification.</p>
+        <p style="color: #6b7280; font-size: 15px; margin-top: 32px;"><strong>Didn't create an account?</strong></p>
+        <p style="color: #6b7280; font-size: 14px; margin-bottom: 0;">If you didn't create an account with Peaceful Investment, please ignore this email. No account will be created without email verification.</p>
     `;
 
     // Render template (matching renderTemplate function from BaseTemplate.ts)

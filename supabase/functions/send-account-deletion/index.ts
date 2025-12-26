@@ -1,3 +1,4 @@
+// Version: 2.0 - Removed all contact information (email, phone, support text)
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { Resend } from "npm:resend@3.2.0";
 
@@ -28,6 +29,9 @@ interface DeletionRequest {
 }
 
 Deno.serve(async (req: Request) => {
+  // Log function version for debugging
+  console.log("send-account-deletion function v2.0 - Contact info removed");
+  
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, {
