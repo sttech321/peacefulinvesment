@@ -191,29 +191,31 @@ const handler = async (req: Request): Promise<Response> => {
       userError = err;
     }
 
-    // If signup type failed (likely because user already exists), try email type
+    // If signup type failed (likely because user already exists), try magiclink type
+    // Valid types for generateLink: 'signup', 'magiclink', 'recovery', 'invite'
+    // 'email' is not a valid type - use 'magiclink' instead for email verification
     if (userError || !userData) {
-      console.log('Signup link generation failed, trying email type as fallback...', userError?.message);
+      console.log('Signup link generation failed, trying magiclink type as fallback...', userError?.message);
       
       try {
-        const emailLinkResult = await supabaseAdmin.auth.admin.generateLink({
-          type: 'email',
+        const magiclinkResult = await supabaseAdmin.auth.admin.generateLink({
+          type: 'magiclink',
           email: trimmedEmail,
           options: {
             redirectTo: redirectUrl,
           },
         });
         
-        if (!emailLinkResult.error && emailLinkResult.data) {
-          userData = emailLinkResult.data;
+        if (!magiclinkResult.error && magiclinkResult.data) {
+          userData = magiclinkResult.data;
           userError = null;
-          console.log('Successfully generated email verification link');
+          console.log('Successfully generated magiclink verification link');
         } else {
-          // Keep the original error if email type also fails
-          userError = emailLinkResult.error || userError;
+          // Keep the original error if magiclink type also fails
+          userError = magiclinkResult.error || userError;
         }
       } catch (err: any) {
-        console.error("Error calling generateLink (email):", err);
+        console.error("Error calling generateLink (magiclink):", err);
         userError = err || userError;
       }
     }

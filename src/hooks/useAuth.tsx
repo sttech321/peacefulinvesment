@@ -153,8 +153,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signUp = async (email: string, password: string, fullName: string) => {
     const redirectUrl = `${window.location.origin}/`;
 
-    // Sign up with Supabase but disable automatic email sending
-    // We'll send custom email via Resend instead
+    // Sign up with Supabase
+    // NOTE: If "Confirm email" is ENABLED in Supabase dashboard, Supabase will automatically
+    // send its own verification email. In that case, we should NOT send our custom email
+    // to avoid duplicate emails. Keep "Confirm email" DISABLED to use our custom Resend emails.
     const { error, data } = await supabase.auth.signUp({
       email,
       password,
@@ -163,8 +165,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         data: {
           full_name: fullName,
         },
-        // Disable Supabase's automatic email by not confirming email
-        // We'll handle email sending manually via our Edge Function
       },
     });
 
@@ -177,8 +177,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error, user: data.user };
     }
 
+    // Check if Supabase sent an email automatically (happens when "Confirm email" is enabled)
+    // If user.session is null and user.email is set, Supabase sent an email
+    // In that case, skip our custom email to avoid duplicates
+    const supabaseSentEmail = !data.session && data.user && data.user.email;
+    
+    if (supabaseSentEmail) {
+      console.log('Supabase sent verification email automatically (Confirm email is enabled). Skipping custom email to avoid duplicates.');
+      console.warn('IMPORTANT: To use custom Resend emails, disable "Confirm email" in Supabase Dashboard > Authentication > Email Auth');
+      return { error: null, user: data.user };
+    }
+
     // Send custom verification email via our Edge Function (Resend)
-    // IMPORTANT: Supabase email confirmation must be DISABLED in Supabase dashboard
+    // This only runs if Supabase email confirmation is DISABLED
     // Settings > Authentication > Email Auth > Disable "Enable email confirmations"
     try {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
