@@ -260,9 +260,6 @@ function getEmailContent(
         <p style="color: #888; font-size: 14px; margin: 0;">
           This is an automated notification from Peaceful Investment.
         </p>
-        <p style="color: #888; font-size: 12px; margin: 10px 0 0 0;">
-          If you have any questions, please contact our support team.
-        </p>
       </div>
     </div>
   `;

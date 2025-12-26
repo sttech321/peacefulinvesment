@@ -96,10 +96,6 @@ export const EMAIL_TEMPLATES: Record<EmailType, EmailTemplate> = {
           <a href="{{dashboardLink}}" class="button">Go to Dashboard</a>
         </div>
         
-        <div class="info-box">
-          <p><strong>Need Help?</strong> Our support team is here to assist you 24/7. Don't hesitate to reach out if you have any questions about your account or our services.</p>
-        </div>
-        
         <p>Thank you for choosing Peaceful Investment for your financial journey!</p>
         <p><strong>The Peaceful Investment Team</strong></p>
       `
