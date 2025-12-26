@@ -4,11 +4,28 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { Resend } from "npm:resend@3.2.0";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+// Validate required environment variables
+const resendApiKey = Deno.env.get("RESEND_API_KEY");
+const supabaseUrl = Deno.env.get("SUPABASE_URL");
+const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+if (!resendApiKey) {
+  console.error("ERROR: RESEND_API_KEY environment variable is not set");
+}
+
+if (!supabaseUrl) {
+  console.error("ERROR: SUPABASE_URL environment variable is not set");
+}
+
+if (!supabaseServiceRoleKey) {
+  console.error("ERROR: SUPABASE_SERVICE_ROLE_KEY environment variable is not set");
+}
+
+const resend = new Resend(resendApiKey);
 
 const supabaseAdmin = createClient(
-  Deno.env.get("SUPABASE_URL") ?? "",
-  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+  supabaseUrl ?? "",
+  supabaseServiceRoleKey ?? ""
 );
 
 const corsHeaders = {
@@ -56,6 +73,33 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Check environment variables
+    if (!resendApiKey) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: "RESEND_API_KEY is not configured. Please add it in Supabase Edge Function secrets." 
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    if (!supabaseUrl || !supabaseServiceRoleKey) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: "Supabase configuration is missing. Please check SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in Edge Function secrets." 
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
     const { email, fullName, redirectTo }: EmailVerificationRequest = await req.json();
 
     if (!email) {

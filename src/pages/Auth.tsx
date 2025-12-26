@@ -52,7 +52,17 @@ const Auth = () => {
     try {
       // Use our custom Edge Function to send verification email via Resend
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      if (!supabaseUrl) {
+        throw new Error('VITE_SUPABASE_URL is not configured');
+      }
+
       const redirectUrl = `${window.location.origin}/`;
+      
+      console.log('Calling Resend Edge Function:', { 
+        email: email.trim().toLowerCase(), 
+        supabaseUrl,
+        endpoint: `${supabaseUrl}/functions/v1/send-email-verification`
+      });
       
       const response = await fetch(
         `${supabaseUrl}/functions/v1/send-email-verification`,
@@ -70,7 +80,16 @@ const Auth = () => {
         }
       );
 
-      const result = await response.json();
+      console.log('Resend Edge Function response status:', response.status);
+
+      const result = await response.json().catch(async (parseError) => {
+        console.error('Failed to parse response:', parseError);
+        const text = await response.text().catch(() => 'Unknown error');
+        console.error('Response text:', text);
+        return { success: false, error: `Failed to parse response: ${text}` };
+      });
+      
+      console.log('Resend Edge Function result:', result);
 
       if (!response.ok || !result.success) {
         const errorMessage = result.error || "Failed to send confirmation email. Please try again.";
@@ -221,9 +240,17 @@ const Auth = () => {
             );
           }
 
-          // Show success message and confirmation email notice
-          //setEmailConfirmationSent(true);
-          await handleResendConfirmation();
+          // Send verification email via Resend (Supabase email is disabled)
+          // The signUp function already tries to send email, but we'll also call resend here
+          // to ensure it's sent even if the signUp call didn't trigger it
+          try {
+            await handleResendConfirmation();
+          } catch (emailError) {
+            console.error('Error sending verification email:', emailError);
+            // Still show success - user can resend
+          }
+
+          // Show success message
           toast({
             title: "Account Created Successfully!",
             description: "Please check your email to verify your account before signing in.",

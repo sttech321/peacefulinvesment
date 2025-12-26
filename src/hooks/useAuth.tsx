@@ -178,8 +178,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     // Send custom verification email via our Edge Function (Resend)
+    // IMPORTANT: Supabase email confirmation must be DISABLED in Supabase dashboard
+    // Settings > Authentication > Email Auth > Disable "Enable email confirmations"
     try {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      if (!supabaseUrl) {
+        console.error('VITE_SUPABASE_URL is not set');
+        return { error, user: data.user };
+      }
+
+      console.log('Sending verification email via Resend...', { email, supabaseUrl });
+      
       const response = await fetch(
         `${supabaseUrl}/functions/v1/send-email-verification`,
         {
@@ -189,20 +198,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
           },
           body: JSON.stringify({
-            email,
+            email: email.trim().toLowerCase(),
             fullName,
             redirectTo: redirectUrl,
           }),
         }
       );
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('Failed to send verification email:', errorData.error || 'Unknown error');
+      const result = await response.json().catch(() => ({ success: false, error: 'Failed to parse response' }));
+
+      if (!response.ok || !result.success) {
+        const errorMsg = result.error || 'Unknown error';
+        console.error('Failed to send verification email via Resend:', errorMsg, result);
         // Don't fail signup if email fails - user can resend later
+        // But log it so we can debug
+      } else {
+        console.log('Verification email sent successfully via Resend:', result);
       }
     } catch (emailErr) {
-      console.error('Error sending verification email:', emailErr);
+      console.error('Error sending verification email via Resend:', emailErr);
       // Don't fail signup if email fails - user can resend later
     }
 
