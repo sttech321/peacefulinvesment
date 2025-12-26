@@ -134,44 +134,28 @@ const handler = async (req: Request): Promise<Response> => {
     // Redirect to home page after verification - the auth state change will handle navigation
     const redirectUrl = `${baseUrl}/`;
 
-    // Check if user already exists
-    const { data: existingUser } = await supabaseAdmin.auth.admin.getUserByEmail(trimmedEmail);
-    
-    // Determine the appropriate link type
-    // If user exists but email not confirmed, use 'email' type for verification
-    // If user doesn't exist, use 'signup' type
-    let linkType: 'signup' | 'email' = 'signup';
-    if (existingUser?.user) {
-      if (existingUser.user.email_confirmed_at) {
-        // User exists and is already confirmed - still generate email link for re-verification if needed
-        linkType = 'email';
-      } else {
-        // User exists but not confirmed - use email type
-        linkType = 'email';
-      }
-    }
-
-    console.log(`Generating ${linkType} link for email: ${trimmedEmail}, user exists: ${!!existingUser?.user}, email confirmed: ${existingUser?.user?.email_confirmed_at ? 'yes' : 'no'}`);
-
-    // Generate email verification token/link
-    // We'll use Supabase's admin API to generate the verification link
+    // Try to generate link - start with 'signup' type for new users
+    // If user already exists, we'll catch the error and try 'email' type
     let userData: any = null;
     let userError: any = null;
     
-    const linkResult = await supabaseAdmin.auth.admin.generateLink({
-      type: linkType,
+    console.log(`Attempting to generate signup link for email: ${trimmedEmail}`);
+    
+    const signupLinkResult = await supabaseAdmin.auth.admin.generateLink({
+      type: 'signup',
       email: trimmedEmail,
       options: {
         redirectTo: redirectUrl,
       },
     });
     
-    userData = linkResult.data;
-    userError = linkResult.error;
+    userData = signupLinkResult.data;
+    userError = signupLinkResult.error;
 
-    // If signup type failed and user exists, try email type as fallback
-    if ((userError || !userData) && linkType === 'signup') {
-      console.log('Signup link generation failed, trying email type as fallback...');
+    // If signup type failed (likely because user already exists), try email type
+    if (userError || !userData) {
+      console.log('Signup link generation failed, trying email type as fallback...', userError?.message);
+      
       const emailLinkResult = await supabaseAdmin.auth.admin.generateLink({
         type: 'email',
         email: trimmedEmail,
@@ -184,6 +168,9 @@ const handler = async (req: Request): Promise<Response> => {
         userData = emailLinkResult.data;
         userError = null;
         console.log('Successfully generated email verification link');
+      } else {
+        // Keep the original error if email type also fails
+        userError = emailLinkResult.error || userError;
       }
     }
 
