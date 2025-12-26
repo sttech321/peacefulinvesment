@@ -209,14 +209,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (!response.ok || !result.success) {
         const errorMsg = result.error || 'Unknown error';
-        console.error('Failed to send verification email via Resend:', errorMsg, result);
+        console.error('Failed to send verification email via Resend:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorMsg,
+          result: result,
+          url: `${supabaseUrl}/functions/v1/send-email-verification`
+        });
         // Don't fail signup if email fails - user can resend later
         // But log it so we can debug
       } else {
         console.log('Verification email sent successfully via Resend:', result);
       }
     } catch (emailErr) {
-      console.error('Error sending verification email via Resend:', emailErr);
+      console.error('Error sending verification email via Resend:', {
+        error: emailErr,
+        message: emailErr instanceof Error ? emailErr.message : 'Unknown error',
+        stack: emailErr instanceof Error ? emailErr.stack : undefined
+      });
       // Don't fail signup if email fails - user can resend later
     }
 

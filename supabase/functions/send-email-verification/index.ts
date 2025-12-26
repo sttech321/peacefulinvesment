@@ -430,10 +430,27 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (emailResponse.error) {
       console.error("Resend error:", emailResponse.error);
+      
+      // Provide more specific error messages
+      let errorMessage = "Failed to send email";
+      if (emailResponse.error.message) {
+        errorMessage = emailResponse.error.message;
+        
+        // Check for common Resend errors
+        if (emailResponse.error.message.includes("API key")) {
+          errorMessage = "Email service configuration error. Please check RESEND_API_KEY.";
+        } else if (emailResponse.error.message.includes("domain") || emailResponse.error.message.includes("sender")) {
+          errorMessage = "Email sender domain not verified. Please verify your domain in Resend.";
+        } else if (emailResponse.error.message.includes("rate limit")) {
+          errorMessage = "Email rate limit exceeded. Please try again later.";
+        }
+      }
+      
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: emailResponse.error.message || "Failed to send email" 
+          error: errorMessage,
+          details: emailResponse.error
         }),
         {
           status: 500,
@@ -455,10 +472,24 @@ const handler = async (req: Request): Promise<Response> => {
     );
   } catch (error) {
     console.error("Error in send-email-verification:", error);
+    
+    let errorMessage = "Unknown error occurred";
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      
+      // Provide more context for common errors
+      if (error.message.includes("fetch") || error.message.includes("network")) {
+        errorMessage = "Network error while sending email. Please try again.";
+      } else if (error.message.includes("JSON")) {
+        errorMessage = "Invalid request data. Please check the request format.";
+      }
+    }
+    
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error instanceof Error ? error.message : "Unknown error occurred" 
+        error: errorMessage,
+        type: error instanceof Error ? error.constructor.name : "Unknown"
       }),
       {
         status: 500,

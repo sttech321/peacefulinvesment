@@ -92,10 +92,27 @@ const Auth = () => {
       console.log('Resend Edge Function result:', result);
 
       if (!response.ok || !result.success) {
-        const errorMessage = result.error || "Failed to send confirmation email. Please try again.";
+        // Provide more specific error messages
+        let errorMessage = result.error || "Failed to send confirmation email.";
+        
+        // Check for specific error types
+        if (response.status === 404) {
+          errorMessage = "Email service not found. Please contact support.";
+        } else if (response.status === 500) {
+          if (result.error?.includes("RESEND_API_KEY")) {
+            errorMessage = "Email service configuration error. Please contact support.";
+          } else if (result.error?.includes("Supabase configuration")) {
+            errorMessage = "Email service configuration error. Please contact support.";
+          } else {
+            errorMessage = result.error || "Email service error. Please try again or contact support.";
+          }
+        } else if (response.status === 401) {
+          errorMessage = "Authentication error. Please refresh the page and try again.";
+        }
+        
         setErrors({ general: errorMessage });
         toast({
-          title: "Error",
+          title: "Email Error",
           description: errorMessage,
           variant: "destructive",
         });
@@ -108,10 +125,20 @@ const Auth = () => {
         });
       }
     } catch (error) {
-      const errorMessage = 'Failed to send confirmation email. Please try again.';
+      console.error('Error in handleResendConfirmation:', error);
+      let errorMessage = 'Failed to send confirmation email. ';
+      
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        errorMessage += 'Network error. Please check your connection and try again.';
+      } else if (error instanceof Error) {
+        errorMessage += error.message;
+      } else {
+        errorMessage += 'Please try again or contact support.';
+      }
+      
       setErrors({ general: errorMessage });
       toast({
-        title: "Error",
+        title: "Email Error",
         description: errorMessage,
         variant: "destructive",
       });
