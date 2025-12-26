@@ -73,20 +73,44 @@ serve(async (req) => {
     }
 
     // 1️⃣ find orphaned auth users
-    const { data: users, error } = await supabaseAdmin.rpc(
-      "get_orphan_auth_users"
-    );
-
-    if (error) {
-      console.error("Error fetching orphaned users:", error);
+    // Instead of using RPC function, query directly to find users without profiles
+    // Get all auth users
+    const { data: allAuthUsers, error: authUsersError } = await supabaseAdmin.auth.admin.listUsers();
+    
+    if (authUsersError) {
+      console.error("Error fetching auth users:", authUsersError);
       return new Response(
-        JSON.stringify({ success: false, error: error.message }),
+        JSON.stringify({ success: false, error: authUsersError.message }),
         {
           status: 500,
           headers: { "Content-Type": "application/json", ...corsHeaders },
         }
       );
     }
+
+    // Get all profile user_ids
+    const { data: profiles, error: profilesError } = await supabaseAdmin
+      .from("profiles")
+      .select("user_id");
+
+    if (profilesError) {
+      console.error("Error fetching profiles:", profilesError);
+      return new Response(
+        JSON.stringify({ success: false, error: profilesError.message }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    // Find orphaned users (auth users without profiles)
+    const profileUserIds = new Set((profiles || []).map(p => p.user_id));
+    const orphanedUsers = (allAuthUsers?.users || []).filter(
+      authUser => !profileUserIds.has(authUser.id)
+    );
+
+    const users = orphanedUsers.map(u => ({ id: u.id }));
 
     if (!users || users.length === 0) {
       return new Response(

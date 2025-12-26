@@ -349,18 +349,65 @@ export default function AdminUsers() {
   };
 
   const logAdminAction = async (action: AdminAction) => {
-    const { error } = await supabase
-      .from('admin_actions')
-      .insert({
+    try {
+      // Check if user exists in profiles table before inserting
+      // This prevents foreign key constraint violations
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('user_id')
+        .eq('user_id', action.userId)
+        .maybeSingle();
+
+      // Only insert admin action if user exists in profiles
+      // This prevents foreign key constraint violations when deleting users
+      if (!profile || profileError) {
+        console.warn('Cannot log admin action: user does not exist in profiles table', action.userId);
+        return; // Don't throw - user might have been deleted, logging is not critical
+      }
+
+      // Try to find a verification request for this user (optional)
+      // admin_actions.verification_request_id is nullable according to types
+      const { data: verificationRequest } = await supabase
+        .from('verification_requests')
+        .select('id')
+        .eq('user_id', action.userId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      // Map action types to admin_actions table action values
+      const actionMap: Record<string, string> = {
+        'approve': 'approved',
+        'reject': 'rejected',
+        'verify': 'approved',
+        'suspend': 'rejected', // Map suspend to rejected for admin_actions
+        'activate': 'approved', // Map activate to approved for admin_actions
+        'change_role': 'approved' // Map role change to approved for admin_actions
+      };
+
+      const insertData: any = {
         admin_id: user?.id,
         user_id: action.userId,
-        action: action.type,
-        note: action.note
-      });
+        action: actionMap[action.type] || 'approved',
+        note: action.note || null
+      };
 
-    if (error) {
+      // Only include verification_request_id if it exists
+      if (verificationRequest) {
+        insertData.verification_request_id = verificationRequest.id;
+      }
+
+      const { error } = await supabase
+        .from('admin_actions')
+        .insert(insertData);
+
+      if (error) {
         console.error('Error logging admin action:', error);
-        throw error;
+        // Don't throw - logging is not critical
+      }
+    } catch (err) {
+      console.error('Error in logAdminAction:', err);
+      // Don't throw - logging is not critical, don't block the main operation
     }
   };
 
