@@ -374,15 +374,8 @@ const Auth = () => {
           // Store email for potential auto-resend if link expires
           localStorage.setItem('pendingVerificationEmail', email.trim().toLowerCase());
 
-          // Send verification email via Resend (Supabase email is disabled)
-          // The signUp function already tries to send email, but we'll also call resend here
-          // to ensure it's sent even if the signUp call didn't trigger it
-          try {
-            await handleResendConfirmation();
-          } catch (emailError) {
-            console.error('Error sending verification email:', emailError);
-            // Still show success - user can resend
-          }
+          // Note: The signUp function in useAuth.tsx already sends the verification email via Resend
+          // No need to call handleResendConfirmation() again here to avoid duplicate emails
 
           // Show success message
           toast({
