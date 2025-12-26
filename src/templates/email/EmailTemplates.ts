@@ -66,8 +66,6 @@ export const EMAIL_TEMPLATES: Record<EmailType, EmailTemplate> = {
         <p style="word-break: break-all; color: #FFD700;">{{resetLink}}</p>
         
         <div class="divider"></div>
-        
-        <p><strong>Need help?</strong> Contact our support team at <a href="mailto:support@peacefulinvestment.com">support@peacefulinvestment.com</a></p>
       `
     })
   },
@@ -132,13 +130,9 @@ export const EMAIL_TEMPLATES: Record<EmailType, EmailTemplate> = {
           <p style="margin: 0; color: #374151;">{{message}}</p>
         </div>
         
-        <p>We'll get back to you within 24 hours during business days. For urgent matters, please call our support line.</p>
+        <p>We'll get back to you within 24 hours during business days.</p>
         
         <div class="divider"></div>
-        
-        <p><strong>Contact Information:</strong></p>
-        <p>Email: <a href="mailto:support@peacefulinvestment.com">support@peacefulinvestment.com</a></p>
-        <p>Phone: +1 (772) 321-1897</p>
       `
     })
   },
@@ -201,13 +195,10 @@ export const EMAIL_TEMPLATES: Record<EmailType, EmailTemplate> = {
           <p style="margin: 0; color: #374151;">{{message}}</p>
         </div>
         
-        <p>Our team typically responds within 24 hours during business days. If you have an urgent inquiry, please don't hesitate to call us.</p>
+        <p>Our team typically responds within 24 hours during business days.</p>
         
         <div class="divider"></div>
         
-        <p><strong>Contact Information:</strong></p>
-        <p>📧 Email: <a href="mailto:support@peacefulinvestment.com">support@peacefulinvestment.com</a></p>
-        <p>📞 Phone: +1 (772) 321-1897</p>
         <p>🌐 Website: <a href="https://peacefulinvestment.com">peacefulinvestment.com</a></p>
       `
     })

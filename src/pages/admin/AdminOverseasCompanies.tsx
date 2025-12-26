@@ -14,13 +14,6 @@ import {
   DialogFooter,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { 
   Building2, 
   Search, 
@@ -718,7 +711,7 @@ export default function AdminOverseasCompanies() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="space-y-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-4 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -728,23 +721,63 @@ export default function AdminOverseasCompanies() {
                     className="pl-8 rounded-[8px] placeholder:text-sm border-0 shadow-none mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
                   />
                 </div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
-                    <SelectValue placeholder="Filter by status" />
-                  </SelectTrigger>
-                  <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="processing">Processing</SelectItem>
-                    <SelectItem value="name_selected">Name Selected</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="rejected">Rejected</SelectItem>
-                  </SelectContent>
-                </Select>
-                <div className="flex items-center justify-center sm:justify-start">
-                  <Badge variant="outline" className="py-2 px-4 rounded-[8px] h-[40px] mt-1 text-white">
-                    {filteredRequests.length} requests
-                  </Badge>
+                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                  <div className="flex flex-wrap gap-2 items-center">
+                    <span className="text-sm text-muted-foreground font-medium">Status:</span>
+                    <Button
+                      variant={statusFilter === "all" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setStatusFilter("all")}
+                      className="rounded-[8px] border-0 h-9 px-3 text-xs"
+                    >
+                      All
+                    </Button>
+                    <Button
+                      variant={statusFilter === "pending" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setStatusFilter("pending")}
+                      className="rounded-[8px] border-0 h-9 px-3 text-xs"
+                    >
+                      Pending
+                    </Button>
+                    <Button
+                      variant={statusFilter === "processing" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setStatusFilter("processing")}
+                      className="rounded-[8px] border-0 h-9 px-3 text-xs"
+                    >
+                      Processing
+                    </Button>
+                    <Button
+                      variant={statusFilter === "name_selected" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setStatusFilter("name_selected")}
+                      className="rounded-[8px] border-0 h-9 px-3 text-xs"
+                    >
+                      Name Selected
+                    </Button>
+                    <Button
+                      variant={statusFilter === "completed" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setStatusFilter("completed")}
+                      className="rounded-[8px] border-0 h-9 px-3 text-xs"
+                    >
+                      Completed
+                    </Button>
+                    <Button
+                      variant={statusFilter === "rejected" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setStatusFilter("rejected")}
+                      className="rounded-[8px] border-0 h-9 px-3 text-xs"
+                    >
+                      Rejected
+                    </Button>
+                  </div>
+                  <div className="flex items-center">
+                    <Badge variant="outline" className="py-2 px-4 rounded-[8px] h-9 text-white">
+                      {filteredRequests.length} requests
+                    </Badge>
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -841,7 +874,7 @@ export default function AdminOverseasCompanies() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="space-y-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-4 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -851,21 +884,47 @@ export default function AdminOverseasCompanies() {
                    className="pl-10 rounded-[8px] border-0 shadow-none mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
                   />
                 </div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger  className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
-                    <SelectValue placeholder="Filter by status" />
-                  </SelectTrigger>
-                  <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                    <SelectItem value="suspended">Suspended</SelectItem>
-                  </SelectContent>
-                </Select>
-                <div className="flex items-center justify-center sm:justify-start">
-                  <Badge variant="outline" className="py-2 px-4 rounded-[8px] h-[40px] mt-1">
-                    {filteredCompanies.length} companies
-                  </Badge>
+                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                  <div className="flex flex-wrap gap-2 items-center">
+                    <span className="text-sm text-muted-foreground font-medium">Status:</span>
+                    <Button
+                      variant={statusFilter === "all" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setStatusFilter("all")}
+                      className="rounded-[8px] border-0 h-9 px-3 text-xs"
+                    >
+                      All
+                    </Button>
+                    <Button
+                      variant={statusFilter === "active" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setStatusFilter("active")}
+                      className="rounded-[8px] border-0 h-9 px-3 text-xs"
+                    >
+                      Active
+                    </Button>
+                    <Button
+                      variant={statusFilter === "inactive" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setStatusFilter("inactive")}
+                      className="rounded-[8px] border-0 h-9 px-3 text-xs"
+                    >
+                      Inactive
+                    </Button>
+                    <Button
+                      variant={statusFilter === "suspended" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setStatusFilter("suspended")}
+                      className="rounded-[8px] border-0 h-9 px-3 text-xs"
+                    >
+                      Suspended
+                    </Button>
+                  </div>
+                  <div className="flex items-center">
+                    <Badge variant="outline" className="py-2 px-4 rounded-[8px] h-9">
+                      {filteredCompanies.length} companies
+                    </Badge>
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -1023,21 +1082,19 @@ export default function AdminOverseasCompanies() {
                   <div className="space-y-4">
                     <div>
                       <Label htmlFor="selected_company_name">Select Company Name</Label>
-                      <Select 
-                        value={selectedCompanyName} 
-                        onValueChange={setSelectedCompanyName}
-                      >
-                        <SelectTrigger className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }>
-                          <SelectValue placeholder="Choose a company name" />
-                        </SelectTrigger>
-                        <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
-                          {selectedRequest.company_names.map((name, index) => (
-                            <SelectItem key={index} value={name}>
-                              {name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {selectedRequest.company_names.map((name, index) => (
+                          <Button
+                            key={index}
+                            variant={selectedCompanyName === name ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setSelectedCompanyName(name)}
+                            className="rounded-[8px] border-0 h-9 px-3 text-xs"
+                          >
+                            {name}
+                          </Button>
+                        ))}
+                      </div>
                     </div>
 
                     <div>

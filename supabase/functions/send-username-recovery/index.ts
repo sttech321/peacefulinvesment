@@ -143,9 +143,6 @@ const handler = async (req: Request): Promise<Response> => {
                 <!-- Footer -->
                 <tr>
                   <td style="padding: 20px 30px; background-color: #f8f9fa; border-top: 1px solid #eeeeee; text-align: center;">
-                    <p style="color: #aaaaaa; font-size: 12px; margin: 0 0 8px 0; line-height: 1.5;">
-                      Need help? Contact our support team at <a href="mailto:support@peacefulinvestment.com" style="color: #007bff; text-decoration: none;">support@peacefulinvestment.com</a>
-                    </p>
                     <p style="color: #aaaaaa; font-size: 12px; margin: 0; line-height: 1.5;">
                       © ${new Date().getFullYear()} Peaceful Investment. All rights reserved.
                     </p>
@@ -173,8 +170,6 @@ You can use this email address as your username to sign in to your account.
 Sign in here: https://www.peacefulinvestment.com/auth
 
 Security Notice: If you didn't request this username recovery, please ignore this email. Your account remains secure.
-
-Need help? Contact our support team at support@peacefulinvestment.com
 
 © ${new Date().getFullYear()} Peaceful Investment. All rights reserved.
     `.trim();

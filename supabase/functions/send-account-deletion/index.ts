@@ -142,13 +142,6 @@ Deno.serve(async (req: Request) => {
                       If you believe this deletion was made in error, or if you have any questions or concerns, please contact our support team immediately.
                     </p>
                     
-                    <div style="margin-top: 30px; padding-top: 30px; border-top: 1px solid #e0e0e0;">
-                      <p style="color: #888888; font-size: 14px; line-height: 1.6; margin: 0 0 10px 0;">
-                        <strong>Contact Information:</strong><br>
-                        Email: <a href="mailto:support@peacefulinvestment.com" style="color: #667eea; text-decoration: none;">support@peacefulinvestment.com</a><br>
-                        Phone: <a href="tel:+17723211897" style="color: #667eea; text-decoration: none;">+1 (772) 321-1897</a>
-                      </p>
-                    </div>
                     
                     <p style="color: #888888; font-size: 12px; margin-top: 30px; line-height: 1.6;">
                       Best regards,<br>
@@ -184,11 +177,7 @@ We are writing to inform you that your account with Peaceful Investment has been
 
 ${deletion_reason ? `Reason for Deletion:\n${deletion_reason}\n\n` : ''}This action is irreversible. All your personal data, account information, and associated records have been permanently removed from our database in accordance with our data retention policies.
 
-If you believe this deletion was made in error, or if you have any questions or concerns, please contact our support team immediately.
-
-Contact Information:
-Email: support@peacefulinvestment.com
-Phone: +1 (772) 321-1897
+If you believe this deletion was made in error, or if you have any questions or concerns, please contact our support team.
 
 Best regards,
 Peaceful Investment Support Team

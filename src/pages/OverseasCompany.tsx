@@ -63,6 +63,7 @@ const OverseasCompany = () => {
     contactEmail: user?.email || "",
   });
 
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [files, setFiles] = useState<FileList | null>(null);
   const [hasRedirected, setHasRedirected] = useState(false);
  
@@ -104,23 +105,63 @@ const OverseasCompany = () => {
     }
   }, [fromProfile, isOverseasCompanyCompleted, hasRedirected, companyInfo, navigate, toast, updateProfile, refetchProfile, currentRequest]);
 
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    // Validate First Choice Company Name
+    if (!formData.companyName1.trim()) {
+      newErrors.companyName1 = "First choice company name is required";
+    }
+
+    // Validate Second Choice Company Name
+    if (!formData.companyName2.trim()) {
+      newErrors.companyName2 = "Second choice company name is required";
+    }
+
+    // Validate Third Choice Company Name
+    if (!formData.companyName3.trim()) {
+      newErrors.companyName3 = "Third choice company name is required";
+    }
+
+    // Validate Business Type
+    if (!formData.businessType) {
+      newErrors.businessType = "Business type is required";
+    }
+
+    // Validate Business Description
+    if (!formData.businessDescription.trim()) {
+      newErrors.businessDescription = "Business description is required";
+    }
+
+    // Validate Contact Email
+    if (!formData.contactEmail.trim()) {
+      newErrors.contactEmail = "Contact email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contactEmail)) {
+      newErrors.contactEmail = "Please enter a valid email address";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-      
-    if (!formData.companyName1 || !formData.businessType) {
+    
+    // Validate all fields
+    if (!validateForm()) {
       toast({
-        title: "Missing Information",
-        description: "Please fill in all required fields.",
+        title: "Validation Error",
+        description: "Please fill in all required fields correctly.",
         variant: "destructive"
       });
       return;
     }
 
     const companyNames = [
-      formData.companyName1,
-      formData.companyName2,
-      formData.companyName3
-    ].filter(Boolean);
+      formData.companyName1.trim(),
+      formData.companyName2.trim(),
+      formData.companyName3.trim()
+    ];
 
     try {
       await submitRequest({
@@ -144,6 +185,7 @@ const OverseasCompany = () => {
         businessDescription: "",
         contactEmail: user?.email || ""
       });
+      setErrors({});
 
       // Update profile to mark overseas company as required
       if (updateProfile) {
@@ -286,7 +328,7 @@ const OverseasCompany = () => {
                   Company Registration Request
                 </CardTitle>
                 <CardDescription>
-                  Submit your company registration details. Provide 3 name choices in order of preference.
+                  Submit your company registration details. All fields are required. Provide 3 name choices in order of preference.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -308,50 +350,82 @@ const OverseasCompany = () => {
                       <Input
                         id="companyName1"
                         value={formData.companyName1}
-                        onChange={(e) => setFormData({ ...formData, companyName1: e.target.value })}
+                        onChange={(e) => {
+                          setFormData({ ...formData, companyName1: e.target.value });
+                          if (errors.companyName1) {
+                            setErrors({ ...errors, companyName1: "" });
+                          }
+                        }}
                         placeholder="Enter your preferred company name"
                         disabled={hasActiveRequest}
                         required
-                        className="rounded-[8px] border-0 shadow-none mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
+                        className={`rounded-[8px] border-0 shadow-none mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none ${errors.companyName1 ? 'border-red-500 border' : ''}`}
                       />
+                      {errors.companyName1 && (
+                        <p className="text-sm text-red-500 mt-1">{errors.companyName1}</p>
+                      )}
                     </div>
 
                     <div>
                       <Label htmlFor="companyName2" className="text-sm font-medium leading-none text-muted-foreground pb-2">
-                        Second Choice Company Name
+                        Second Choice Company Name *
                       </Label>
                       <Input
                         id="companyName2"
                         value={formData.companyName2}
-                       className="rounded-[8px] border-0 shadow-none mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
-                        onChange={(e) => setFormData({ ...formData, companyName2: e.target.value })}
+                        onChange={(e) => {
+                          setFormData({ ...formData, companyName2: e.target.value });
+                          if (errors.companyName2) {
+                            setErrors({ ...errors, companyName2: "" });
+                          }
+                        }}
                         placeholder="Enter alternative company name"
                         disabled={hasActiveRequest}
+                        required
+                        className={`rounded-[8px] border-0 shadow-none mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none ${errors.companyName2 ? 'border-red-500 border' : ''}`}
                       />
+                      {errors.companyName2 && (
+                        <p className="text-sm text-red-500 mt-1">{errors.companyName2}</p>
+                      )}
                     </div>
 
                     <div>
                       <Label htmlFor="companyName3" className="text-sm font-medium leading-none text-muted-foreground pb-2">
-                        Third Choice Company Name
+                        Third Choice Company Name *
                       </Label>
                       <Input
                         id="companyName3"
-                        className="rounded-[8px] border-0 shadow-none mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
                         value={formData.companyName3}
-                        onChange={(e) => setFormData({ ...formData, companyName3: e.target.value })}
+                        onChange={(e) => {
+                          setFormData({ ...formData, companyName3: e.target.value });
+                          if (errors.companyName3) {
+                            setErrors({ ...errors, companyName3: "" });
+                          }
+                        }}
                         placeholder="Enter third choice company name"
                         disabled={hasActiveRequest}
+                        required
+                        className={`rounded-[8px] border-0 shadow-none mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none ${errors.companyName3 ? 'border-red-500 border' : ''}`}
                       />
+                      {errors.companyName3 && (
+                        <p className="text-sm text-red-500 mt-1">{errors.companyName3}</p>
+                      )}
                     </div>
 
                     <div>
                       <Label htmlFor="businessType" className="text-sm font-medium leading-none text-muted-foreground pb-2">Business Type *</Label>
                       <Select 
                         value={formData.businessType} 
-                        onValueChange={(value) => setFormData({ ...formData, businessType: value })}
+                        onValueChange={(value) => {
+                          setFormData({ ...formData, businessType: value });
+                          if (errors.businessType) {
+                            setErrors({ ...errors, businessType: "" });
+                          }
+                        }}
                         disabled={hasActiveRequest}
+                        required
                       >
-                        <SelectTrigger className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
+                        <SelectTrigger className={`mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400 ${errors.businessType ? 'border-red-500 border' : ''}`} style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                           <SelectValue placeholder="Select business type" />
                         </SelectTrigger>
                         <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
@@ -362,20 +436,32 @@ const OverseasCompany = () => {
                           ))}
                         </SelectContent>
                       </Select>
+                      {errors.businessType && (
+                        <p className="text-sm text-red-500 mt-1">{errors.businessType}</p>
+                      )}
                     </div>
 
                     <div>
                       <Label htmlFor="businessDescription" className="text-sm font-medium leading-none text-muted-foreground pb-2">
-                        Business Description
+                        Business Description *
                       </Label>
                       <Textarea
                         id="businessDescription"
                         value={formData.businessDescription}
-                        onChange={(e) => setFormData({ ...formData, businessDescription: e.target.value })}
+                        onChange={(e) => {
+                          setFormData({ ...formData, businessDescription: e.target.value });
+                          if (errors.businessDescription) {
+                            setErrors({ ...errors, businessDescription: "" });
+                          }
+                        }}
                         placeholder="Briefly describe your business activities"
-                        className="min-h-[100px] mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
                         disabled={hasActiveRequest}
+                        required
+                        className={`min-h-[100px] mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none ${errors.businessDescription ? 'border-red-500 border' : ''}`}
                       />
+                      {errors.businessDescription && (
+                        <p className="text-sm text-red-500 mt-1">{errors.businessDescription}</p>
+                      )}
                     </div>
 
                     <div>
@@ -383,13 +469,21 @@ const OverseasCompany = () => {
                       <Input
                         id="contactEmail"
                         type="email"
-                        className="rounded-[8px] border-0 shadow-none mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
                         value={formData.contactEmail}
-                        onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })}
+                        onChange={(e) => {
+                          setFormData({ ...formData, contactEmail: e.target.value });
+                          if (errors.contactEmail) {
+                            setErrors({ ...errors, contactEmail: "" });
+                          }
+                        }}
                         placeholder="your@email.com"
                         disabled={hasActiveRequest}
                         required
+                        className={`rounded-[8px] border-0 shadow-none mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none ${errors.contactEmail ? 'border-red-500 border' : ''}`}
                       />
+                      {errors.contactEmail && (
+                        <p className="text-sm text-red-500 mt-1">{errors.contactEmail}</p>
+                      )}
                     </div>
                   </div>
 

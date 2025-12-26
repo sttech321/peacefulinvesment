@@ -339,7 +339,6 @@ View your request: ${baseUrl || 'https://peacefulinvestment.com'}/requests
 
 ---
 This is an automated notification from Peaceful Investment.
-If you have any questions, please contact our support team at support@peacefulinvestment.com
 
 © ${new Date().getFullYear()} Peaceful Investment. All rights reserved.
   `.trim();

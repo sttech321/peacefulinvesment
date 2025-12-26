@@ -200,9 +200,6 @@ Submitted: ${new Date().toLocaleString()}
                       <p style="color: #333333; font-size: 14px; margin: 0 0 10px 0;"><strong>Your Message:</strong></p>
                       <p style="color: #555555; font-size: 14px; margin: 0; white-space: pre-wrap;">${safeMessage}</p>
                     </div>
-                    <p style="color: #555555; font-size: 14px; line-height: 1.6; margin: 20px 0 0 0;">
-                      If you have any urgent questions, please contact us at <a href="mailto:support@peacefulinvestment.com">support@peacefulinvestment.com</a> or call us at +1 (772) 321-1897.
-                    </p>
                     <p style="color: #888888; font-size: 12px; margin-top: 30px;">
                       Best regards,<br>
                       Peaceful Investment Support Team
@@ -226,8 +223,6 @@ We've received your message and our team will get back to you within 24 hours.
 
 Your Message:
 ${contactData.message}
-
-If you have any urgent questions, please contact us at support@peacefulinvestment.com or call us at +1 (772) 321-1897.
 
 Best regards,
 Peaceful Investment Support Team

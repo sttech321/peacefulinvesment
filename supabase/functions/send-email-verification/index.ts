@@ -285,9 +285,7 @@ const handler = async (req: Request): Promise<Response> => {
         </div>
         <div class="footer">
             <p>
-                This email was sent by <strong>Peaceful Investment</strong><br>
-                If you have any questions, please contact us at 
-                <a href="mailto:support@peacefulinvestment.com">support@peacefulinvestment.com</a>
+                This email was sent by <strong>Peaceful Investment</strong>
             </p>
             <p style="margin-top: 15px; font-size: 12px; color: #9ca3af;">
                 © ${new Date().getFullYear()} Peaceful Investment. All rights reserved.<br>

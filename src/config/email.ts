@@ -23,8 +23,8 @@ export const emailConfig = {
   templateSettings: {
     baseUrl: import.meta.env.VITE_APP_URL || 'https://peacefulinvestment.com',
     companyName: 'Peaceful Investment',
-    supportEmail: 'support@peacefulinvestment.com',
-    phoneNumber: '+1 (772) 321-1897',
+   // supportEmail: 'support@peacefulinvestment.com',
+   // phoneNumber: '+1 (772) 321-1897',
   },
 };
 
