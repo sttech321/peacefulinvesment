@@ -791,9 +791,9 @@ export default function AdminOverseasCompanies() {
                       </div>
                       <div className="flex items-center gap-2">
                         {getRequestStatusBadge(status)}
-                        <span className="text-sm font-medium text-white capitalize">
+                        {/* <span className="text-sm font-medium text-white capitalize">
                           {label}
-                        </span>
+                        </span> */}
                       </div>
                     </div>
                   ))}
@@ -827,7 +827,7 @@ export default function AdminOverseasCompanies() {
               </div>
 
               {/* Filters */}
-              <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
+              {/* <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
                 <CardHeader>
                   <CardTitle>Filters</CardTitle>
                   <CardDescription>
@@ -905,7 +905,7 @@ export default function AdminOverseasCompanies() {
                     </div>
                   </div>
                 </CardContent>
-              </Card>
+              </Card> */}
 
               {/* Requests List */}
               <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">

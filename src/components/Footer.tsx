@@ -57,10 +57,10 @@ const Footer = () => {
   };
 
   const getDefaultFooterLinks = (): LinkItem[] => [
-    { label: 'Quick Links', to: '/#', order: 1 },
-    { label: 'Home', to: '/', order: 2 },
-    { label: 'About us', to: '/about', order: 3 },
-    { label: 'App is coming soon', to: '/downloads', order: 4 },
+    // { label: 'Quick Links', to: '/#', order: 1 },
+    { label: 'Home', to: '/', order: 1 },
+    { label: 'About us', to: '/about', order: 2 },
+    { label: 'App is coming soon', to: '/downloads', order: 3},
   ];
 
   return (
@@ -191,14 +191,14 @@ const Footer = () => {
                     </svg>
                   </Link>
                 </li>
-                <li>
+                {/* <li>
                   <a
                     href='mailto:support@peacefulinvestment.com'
                     className='text-[15px] font-normal text-white transition-colors hover:text-primary'
                   >
                     Help Center
                   </a>
-                </li>
+                </li> */}
               </ul>
             </div>
           </div>

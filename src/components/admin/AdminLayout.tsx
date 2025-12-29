@@ -89,6 +89,36 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     setExpandedMenus(newExpanded);
   };
 
+  // Close expanded menus when navigating to a different section
+  useEffect(() => {
+    // Find which menu (if any) the current location belongs to
+    const currentMenu = navigation.find(item => {
+      if (item.href && location.pathname === item.href) {
+        return true;
+      }
+      // Check if it's a submenu item
+      if (item.subMenu) {
+        return item.subMenu.some(
+          subItem => location.pathname === subItem.href.split('?')[0] || 
+                     location.search.includes(`status=${subItem.status}`)
+        );
+      }
+      return false;
+    });
+
+    // If we're on a menu with submenus, keep it expanded
+    // Otherwise, close all expanded menus
+    if (currentMenu && currentMenu.subMenu) {
+      // Keep this menu expanded
+      if (!expandedMenus.has(currentMenu.name)) {
+        setExpandedMenus(new Set([currentMenu.name]));
+      }
+    } else {
+      // Close all expanded menus when navigating to a non-submenu section
+      setExpandedMenus(new Set());
+    }
+  }, [location.pathname, location.search]);
+
   const handleSignOut = async () => {
     await signOut();
   };
