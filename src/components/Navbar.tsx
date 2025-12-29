@@ -78,6 +78,7 @@ const Navbar = () => {
   // Use configured links if available, otherwise use defaults
   const defaultNavLinks = user
     ? [
+        { name: 'Home', href: '/' },
         { name: 'Dashboard', href: '/dashboard' },
         { name: 'Accounts', href: '/meta-trader-accounts' },
         { name: 'Referrals', href: '/referrals' },
