@@ -11,7 +11,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Plus, Edit2, Trash2, AlertCircle } from "lucide-react";
+import { Loader2, Plus, Edit2, Trash2, AlertCircle, ChevronUp, ChevronDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -29,7 +29,7 @@ type TreeNode = BlogCategory & {
 };
 
 export default function AdminBlogCategories() {
-  const { categories, loading, createCategory, updateCategory, deleteCategory } =
+  const { categories, loading, createCategory, updateCategory, deleteCategory, reorderCategories } =
     useCategories();
   const { toast } = useToast();
 
@@ -161,6 +161,17 @@ export default function AdminBlogCategories() {
     await deleteCategory(id);
   };
 
+  const handleReorder = async (categoryId: string, direction: 'up' | 'down', parentId: string | null = null) => {
+    const result = await reorderCategories(categoryId, direction, parentId);
+    if (result.error) {
+      toast({
+        title: "Error",
+        description: "Failed to reorder category. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -189,7 +200,15 @@ export default function AdminBlogCategories() {
   const roots: TreeNode[] = Array.from(nodeMap.values()).filter((n) => !n.parent_id || !nodeMap.has(n.parent_id));
 
   const sortRec = (nodes: TreeNode[]) => {
-    nodes.sort((a, b) => a.name.localeCompare(b.name));
+    // Sort by sort_order first, then by name as fallback
+    nodes.sort((a, b) => {
+      const orderA = a.sort_order ?? 0;
+      const orderB = b.sort_order ?? 0;
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+      return a.name.localeCompare(b.name);
+    });
     nodes.forEach((n) => sortRec(n.children));
   };
   sortRec(roots);
@@ -284,15 +303,35 @@ export default function AdminBlogCategories() {
       );
 
       if (hasChildren && expanded[node.id]) {
-        rows.push(...renderTreeRows(node.children.sort((a,b)=>a.name.localeCompare(b.name)), depth + 1));
+        // Sort children by sort_order, then by name
+        const sortedChildren = [...node.children].sort((a, b) => {
+          const orderA = a.sort_order ?? 0;
+          const orderB = b.sort_order ?? 0;
+          if (orderA !== orderB) {
+            return orderA - orderB;
+          }
+          return a.name.localeCompare(b.name);
+        });
+        rows.push(...renderTreeRows(sortedChildren, depth + 1));
       }
     });
     return rows;
   };
 
   // ---------------- listing table rows helper (same as before) ----------------
-  const renderCategoryRows = (node: TreeNode, depth: number = 0): JSX.Element[] => {
+  const renderCategoryRows = (node: TreeNode, depth: number = 0, parentSiblings: TreeNode[] = []): JSX.Element[] => {
     const rows: JSX.Element[] = [];
+
+    // Get siblings for this node (same parent)
+    // For root level, use roots array; for children, use parent's children
+    const nodeSiblings = depth === 0 
+      ? roots 
+      : (nodeMap.get(node.parent_id || '')?.children || []);
+    
+    // Find current index in siblings
+    const currentIndex = nodeSiblings.findIndex(n => n.id === node.id);
+    const canMoveUp = currentIndex > 0;
+    const canMoveDown = currentIndex < nodeSiblings.length - 1;
 
     rows.push(
       <tr key={node.id} className="border-b border-muted/20 last:border-0 hover:bg-white/10">
@@ -316,6 +355,26 @@ export default function AdminBlogCategories() {
           <Button
             variant="outline"
             size="icon"
+            onClick={() => handleReorder(node.id, 'up', node.parent_id || null)}
+            disabled={!canMoveUp}
+            className="rounded-[8px] border-0 hover:bg-white/80 disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Move up"
+          >
+            <ChevronUp className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => handleReorder(node.id, 'down', node.parent_id || null)}
+            disabled={!canMoveDown}
+            className="rounded-[8px] border-0 hover:bg-white/80 disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Move down"
+          >
+            <ChevronDown className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
             onClick={() => startEdit(node)}
             className="rounded-[8px] border-0 hover:bg-white/80"
           >
@@ -334,7 +393,7 @@ export default function AdminBlogCategories() {
     );
 
     node.children.forEach((child) => {
-      rows.push(...renderCategoryRows(child, depth + 1));
+      rows.push(...renderCategoryRows(child, depth + 1, node.children));
     });
 
     return rows;
@@ -379,7 +438,7 @@ export default function AdminBlogCategories() {
               </tr>
             )}
 
-            {roots.map((root) => renderCategoryRows(root, 0))}
+            {roots.map((root) => renderCategoryRows(root, 0, roots))}
           </tbody>
         </table>
       </div>

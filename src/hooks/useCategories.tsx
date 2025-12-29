@@ -17,6 +17,7 @@ export interface BlogCategory {
   updated_at?: string;
   subcategories?: Subcategory[];
   parent_id?: string | null;
+  sort_order?: number;
 }
 
 export interface CategoryMap {
@@ -52,7 +53,8 @@ export function useCategories() {
           *
         `
         )
-        .order("name");
+        .order("sort_order", { ascending: true })
+        .order("name", { ascending: true }); // Fallback to name if sort_order is same
 
       if (error) throw error;
 
@@ -67,6 +69,7 @@ export function useCategories() {
           updated_at: cat.updated_at,
           subcategories: cat.blog_subcategories || [],
           parent_id: cat.parent_id ?? null,
+          sort_order: cat.sort_order ?? 0,
         })) ?? [];
 
       setCategories(mapped);
@@ -96,6 +99,25 @@ export function useCategories() {
 
   const createCategory = async (input: CreateCategoryInput) => {
     try {
+      // Get the maximum sort_order for categories with the same parent
+      let maxOrderQuery = supabase
+        .from("blog_categories")
+        .select("sort_order");
+      
+      if (input.parent_id === null) {
+        maxOrderQuery = maxOrderQuery.is("parent_id", null);
+      } else {
+        maxOrderQuery = maxOrderQuery.eq("parent_id", input.parent_id);
+      }
+      
+      const { data: siblings } = await maxOrderQuery
+        .order("sort_order", { ascending: false })
+        .limit(1);
+      
+      const nextSortOrder = siblings && siblings.length > 0 
+        ? (siblings[0].sort_order ?? 0) + 1 
+        : 0;
+
       const { data, error } = await supabase
         .from("blog_categories")
         .insert([
@@ -104,7 +126,8 @@ export function useCategories() {
             slug: input.slug,
             description: input.description ?? null,
             color: input.color ?? "#6B7280",
-            parent_id: input.parent_id ?? null, // <-- include parent_id
+            parent_id: input.parent_id ?? null,
+            sort_order: nextSortOrder,
           },
         ])
         .select(
@@ -119,6 +142,7 @@ export function useCategories() {
       const newCat: BlogCategory = {
         ...data,
         subcategories: [],
+        sort_order: data.sort_order ?? 0,
       };
 
       setCategories((prev) => [...prev, newCat]);
@@ -147,7 +171,7 @@ export function useCategories() {
 
       setCategories((prev) =>
         prev.map((cat) =>
-          cat.id === id ? { ...data, subcategories: cat.subcategories || [] } : cat
+          cat.id === id ? { ...data, subcategories: cat.subcategories || [], sort_order: data.sort_order ?? cat.sort_order ?? 0 } : cat
         )
       );
 
@@ -176,6 +200,84 @@ export function useCategories() {
     }
   };
 
+  const reorderCategories = async (categoryId: string, direction: 'up' | 'down', parentId: string | null = null) => {
+    try {
+      // Get all categories with the same parent (siblings)
+      let query = supabase
+        .from("blog_categories")
+        .select("id, sort_order");
+      
+      // Handle null parent_id correctly
+      if (parentId === null) {
+        query = query.is("parent_id", null);
+      } else {
+        query = query.eq("parent_id", parentId);
+      }
+      
+      const { data: siblings, error: fetchError } = await query
+        .order("sort_order", { ascending: true })
+        .order("name", { ascending: true });
+
+      if (fetchError) throw fetchError;
+      if (!siblings || siblings.length <= 1) {
+        return { error: null }; // Nothing to reorder
+      }
+
+      // Find current category index
+      const currentIndex = siblings.findIndex(cat => cat.id === categoryId);
+      if (currentIndex === -1) {
+        return { error: { message: "Category not found" } };
+      }
+
+      // Calculate new index
+      let newIndex: number;
+      if (direction === 'up') {
+        if (currentIndex === 0) {
+          return { error: null }; // Already at top
+        }
+        newIndex = currentIndex - 1;
+      } else {
+        if (currentIndex === siblings.length - 1) {
+          return { error: null }; // Already at bottom
+        }
+        newIndex = currentIndex + 1;
+      }
+
+      // Swap sort_order values
+      const currentCat = siblings[currentIndex];
+      const targetCat = siblings[newIndex];
+
+      // Update both categories
+      const updates = [
+        { id: currentCat.id, sort_order: targetCat.sort_order },
+        { id: targetCat.id, sort_order: currentCat.sort_order }
+      ];
+
+      // Use a transaction-like approach with Promise.all
+      const updatePromises = updates.map(update =>
+        supabase
+          .from("blog_categories")
+          .update({ sort_order: update.sort_order })
+          .eq("id", update.id)
+      );
+
+      const results = await Promise.all(updatePromises);
+      const errors = results.filter(r => r.error);
+      
+      if (errors.length > 0) {
+        throw errors[0].error;
+      }
+
+      // Refresh categories
+      await fetchCategories();
+
+      return { error: null };
+    } catch (error) {
+      console.error("Error reordering categories:", error);
+      return { error };
+    }
+  };
+
   return {
     categories,     // for admin list / forms
     categoryMap,    // for frontend badges etc.
@@ -184,5 +286,6 @@ export function useCategories() {
     createCategory,
     updateCategory,
     deleteCategory,
+    reorderCategories,
   };
 }

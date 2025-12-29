@@ -159,8 +159,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           {/* Navigation */}
           <nav className='flex-1 space-y-1 p-4 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent'>
             {navigation.map(item => {
-              const isActive = location.pathname === item.href || 
-                (item.href && location.pathname.startsWith(item.href));
+              // Use exact match to prevent false positives (e.g., /admin/blog matching /admin/blog-categories)
+              const isActive = location.pathname === item.href;
               const isExpanded = expandedMenus.has(item.name);
               const hasSubMenu = item.subMenu && item.subMenu.length > 0;
               
