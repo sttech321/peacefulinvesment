@@ -157,7 +157,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           </div>
 
           {/* Navigation */}
-          <nav className='flex-1 space-y-1 p-4 overflow-y-auto'>
+          <nav className='flex-1 space-y-1 p-4 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent'>
             {navigation.map(item => {
               const isActive = location.pathname === item.href || 
                 (item.href && location.pathname.startsWith(item.href));
@@ -191,7 +191,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                             e.preventDefault();
                             toggleMenu(item.name);
                           }}
-                          className='p-1.5 rounded hover:bg-muted/50 text-[var(--yellowcolor)] hover:text-[var(--yellowcolor)] transition-colors flex items-center justify-center'
+                          className='p-1.5 rounded hover:bg-muted/20 text-[var(--yellowcolor)] hover:text-[var(--yellowcolor)] transition-colors flex items-center justify-center'
                           aria-label={isExpanded ? 'Collapse menu' : 'Expand menu'}
                         >
                           {isExpanded ? (
@@ -209,15 +209,15 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                               <Link
                                 key={subItem.name}
                                 to={subItem.href}
-                                className={`flex items-center space-x-3 rounded-lg px-3 py-2 text-sm transition-colors ${
+                                className={`flex items-center space-x-2 rounded-lg px-3 py-2 text-sm  gap-0 transition-colors ${
                                   isSubActive
-                                    ? 'bg-primary/80 text-primary-foreground'
-                                    : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+                                    ? 'bg-muted/10 text-primary'
+                                    : 'text-muted-foreground hover:bg-muted/10 hover:text-white'
                                 }`}
                                 onClick={() => setSidebarOpen(false)}
                               >
-                                <Folder className='h-3 w-3 ml-1' />
-                                <span>{subItem.name}</span>
+                                <Folder className='h-3 w-3 ml-0 text-primary' />
+                                <span className='ml-0'>{subItem.name}</span>
                               </Link>
                             );
                           })}

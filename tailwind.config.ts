@@ -157,5 +157,5 @@ export default {
       },
     },
   },
-  plugins: [animatePlugin, typographyPlugin],
+  plugins: [animatePlugin, typographyPlugin, require('tailwind-scrollbar')],
 } satisfies Config;
