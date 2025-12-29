@@ -106,14 +106,16 @@ export default function AdminOverseasCompanies() {
   // Common state
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [activeTab, setActiveTab] = useState<"requests" | "companies">("requests");
   
   // Folder view state (sub-menu structure)
-  const [showFolderView, setShowFolderView] = useState(true);
-  const [selectedStatusFolder, setSelectedStatusFolder] = useState<string | null>(null);
+  // Initialize based on URL - if no status param, show folder view
+  const initialStatusFromUrl = searchParams.get('status');
+  const [statusFilter, setStatusFilter] = useState(initialStatusFromUrl || "all");
+  const [activeTab, setActiveTab] = useState<"requests" | "companies">("requests");
+  const [showFolderView, setShowFolderView] = useState(!initialStatusFromUrl);
+  const [selectedStatusFolder, setSelectedStatusFolder] = useState<string | null>(initialStatusFromUrl);
   
-  // Read status from URL query parameter
+  // Read status from URL query parameter - this is the primary source of truth
   useEffect(() => {
     const statusFromUrl = searchParams.get('status');
     if (statusFromUrl) {
@@ -121,6 +123,7 @@ export default function AdminOverseasCompanies() {
       setSelectedStatusFolder(statusFromUrl);
       setShowFolderView(false);
     } else {
+      // Only show folder view if we're on the base URL without status
       setShowFolderView(true);
       setSelectedStatusFolder(null);
       setStatusFilter("all");
@@ -151,23 +154,6 @@ export default function AdminOverseasCompanies() {
       filterCompanies();
     }
   }, [requests, companies, searchTerm, statusFilter, activeTab]);
-
-  // When a status folder is selected, filter and show list view
-  useEffect(() => {
-    if (selectedStatusFolder) {
-      setStatusFilter(selectedStatusFolder);
-      setShowFolderView(false);
-    }
-  }, [selectedStatusFolder]);
-
-  // Reset to folder view when switching tabs
-  useEffect(() => {
-    if (activeTab === "requests") {
-      setShowFolderView(true);
-      setSelectedStatusFolder(null);
-      setStatusFilter("all");
-    }
-  }, [activeTab]);
 
   const fetchRequests = async () => {
     try {
@@ -545,6 +531,8 @@ export default function AdminOverseasCompanies() {
     setSelectedStatusFolder(status);
     setStatusFilter(status);
     setShowFolderView(false);
+    // Update URL with status parameter
+    setSearchParams({ status });
   };
 
   // Handle back to folder view
