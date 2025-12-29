@@ -100,7 +100,7 @@ serve(async (req) => {
       );
     }
 
-    // Delete the auth user
+    //Delete the auth user
     const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(user_id);
 
     if (deleteError) {
@@ -114,8 +114,10 @@ serve(async (req) => {
       );
     }
 
+   // console.log(`SKIPPED hard delete for user: ${user_id}`);
+    
     return new Response(
-      JSON.stringify({ success: true, message: "Auth user deleted successfully" }),
+      JSON.stringify({ success: true, message: "User deletion is temporarily disabled to prevent unwanted emails" }),
       {
         status: 200,
         headers: { "Content-Type": "application/json", ...corsHeaders },

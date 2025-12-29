@@ -153,6 +153,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signUp = async (email: string, password: string, fullName: string) => {
     const redirectUrl = `${window.location.origin}/`;
 
+    // Sign up with Supabase
+    // NOTE: If "Confirm email" is ENABLED in Supabase dashboard, Supabase will automatically
+    // send its own verification email. In that case, we should NOT send our custom email
+    // to avoid duplicate emails. Keep "Confirm email" DISABLED to use our custom Resend emails.
     const { error, data } = await supabase.auth.signUp({
       email,
       password,
@@ -170,14 +174,79 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         description: error.message,
         variant: 'destructive',
       });
-    } else {
-      toast({
-        title: 'Check your email',
-        description: 'We sent you a confirmation link to complete your registration.',
-      });
+      return { error, user: data.user };
     }
 
-    return { error, user: data.user };
+    // Check if Supabase sent an email automatically (happens when "Confirm email" is enabled)
+    // If user.session is null and user.email is set, Supabase sent an email
+    // In that case, skip our custom email to avoid duplicates
+    const supabaseSentEmail = !data.session && data.user && data.user.email;
+    
+    if (supabaseSentEmail) {
+      console.log('Supabase sent verification email automatically (Confirm email is enabled). Skipping custom email to avoid duplicates.');
+      console.warn('IMPORTANT: To use custom Resend emails, disable "Confirm email" in Supabase Dashboard > Authentication > Email Auth');
+      return { error: null, user: data.user };
+    }
+
+    // Send custom verification email via our Edge Function (Resend)
+    // This only runs if Supabase email confirmation is DISABLED
+    // Settings > Authentication > Email Auth > Disable "Enable email confirmations"
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      if (!supabaseUrl) {
+        console.error('VITE_SUPABASE_URL is not set');
+        return { error, user: data.user };
+      }
+
+      console.log('Sending verification email via Resend...', { email, supabaseUrl });
+      
+      const response = await fetch(
+        `${supabaseUrl}/functions/v1/send-email-verification`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            email: email.trim().toLowerCase(),
+            fullName,
+            redirectTo: redirectUrl,
+          }),
+        }
+      );
+
+      const result = await response.json().catch(() => ({ success: false, error: 'Failed to parse response' }));
+
+      if (!response.ok || !result.success) {
+        const errorMsg = result.error || 'Unknown error';
+        console.error('Failed to send verification email via Resend:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorMsg,
+          result: result,
+          url: `${supabaseUrl}/functions/v1/send-email-verification`
+        });
+        // Don't fail signup if email fails - user can resend later
+        // But log it so we can debug
+      } else {
+        console.log('Verification email sent successfully via Resend:', result);
+      }
+    } catch (emailErr) {
+      console.error('Error sending verification email via Resend:', {
+        error: emailErr,
+        message: emailErr instanceof Error ? emailErr.message : 'Unknown error',
+        stack: emailErr instanceof Error ? emailErr.stack : undefined
+      });
+      // Don't fail signup if email fails - user can resend later
+    }
+
+    toast({
+      title: 'Check your email',
+      description: 'We sent you a confirmation link to complete your registration.',
+    });
+
+    return { error: null, user: data.user };
   };
 
   const signOut = async () => {

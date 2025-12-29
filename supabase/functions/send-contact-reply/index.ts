@@ -120,9 +120,6 @@ Deno.serve(async (req: Request) => {
                       <p style="color: #555555; font-size: 14px; margin: 0; white-space: pre-wrap;">${safeReply}</p>
                     </div>
                     
-                    <p style="color: #555555; font-size: 14px; line-height: 1.6; margin: 20px 0 0 0;">
-                      If you have any further questions, please don't hesitate to contact us at <a href="mailto:support@peacefulinvestment.com">support@peacefulinvestment.com</a> or call us at +1 (772) 321-1897.
-                    </p>
                     <p style="color: #888888; font-size: 12px; margin-top: 30px;">
                       Best regards,<br>
                       Peaceful Investment Support Team
@@ -146,8 +143,6 @@ Thank you for contacting us. We've received your message and here's our response
 
 ${original_message ? `Your Original Message:\n${original_message}\n\n` : ''}Our Response:
 ${reply_message}
-
-If you have any further questions, please don't hesitate to contact us at support@peacefulinvestment.com or call us at +1 (772) 321-1897.
 
 Best regards,
 Peaceful Investment Support Team

@@ -349,18 +349,75 @@ export default function AdminUsers() {
   };
 
   const logAdminAction = async (action: AdminAction) => {
-    const { error } = await supabase
-      .from('admin_actions')
-      .insert({
-        admin_id: user?.id,
-        user_id: action.userId,
-        action: action.type,
-        note: action.note
-      });
+    try {
+      // admin_actions table requires:
+      // 1. user_id must exist in profiles (foreign key constraint)
+      // 2. verification_request_id must exist (NOT NULL in schema)
+      // 
+      // Only log actions that are verification-related (approve, reject, requested_more_info)
+      // Skip logging for other actions (suspend, activate, change_role) since they don't have verification requests
+      const isVerificationAction = action.type === 'approve' || action.type === 'reject';
+      
+      if (!isVerificationAction) {
+        // Skip logging for non-verification actions
+        console.log('Skipping admin_actions log for non-verification action:', action.type);
+        return;
+      }
 
-    if (error) {
+      // Check if user exists in profiles table before inserting
+      // This prevents foreign key constraint violations
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('user_id')
+        .eq('user_id', action.userId)
+        .maybeSingle();
+
+      // Only insert admin action if user exists in profiles
+      // This prevents foreign key constraint violations when deleting users
+      if (!profile || profileError) {
+        console.warn('Cannot log admin action: user does not exist in profiles table', action.userId);
+        return; // Don't throw - user might have been deleted, logging is not critical
+      }
+
+      // Find the verification request for this user (REQUIRED - NOT NULL in schema)
+      const { data: verificationRequest, error: vrError } = await supabase
+        .from('verification_requests')
+        .select('id')
+        .eq('user_id', action.userId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      // verification_request_id is REQUIRED (NOT NULL), so skip if not found
+      if (!verificationRequest || vrError) {
+        console.warn('Cannot log admin action: no verification request found for user', action.userId);
+        return; // Don't throw - logging is not critical
+      }
+
+      // Map action types to admin_actions table action values
+      const actionMap: Record<string, string> = {
+        'approve': 'approved',
+        'reject': 'rejected',
+        'verify': 'approved'
+      };
+
+      const { error } = await supabase
+        .from('admin_actions')
+        .insert({
+          admin_id: user?.id || '',
+          user_id: action.userId,
+          verification_request_id: verificationRequest.id, // REQUIRED - NOT NULL
+          action: actionMap[action.type] || 'approved',
+          note: action.note || null
+        });
+
+      if (error) {
         console.error('Error logging admin action:', error);
-        throw error;
+        // Don't throw - logging is not critical
+      }
+    } catch (err) {
+      console.error('Error in logAdminAction:', err);
+      // Don't throw - logging is not critical, don't block the main operation
     }
   };
 

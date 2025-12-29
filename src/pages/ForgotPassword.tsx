@@ -49,27 +49,81 @@ const ForgotPassword = () => {
     setError("");
 
     try {
-      // Supabase's resetPasswordForEmail is designed to not reveal if email exists (for security)
-      // It will send email if exists, or silently succeed if doesn't exist (to prevent email enumeration)
-      // No need to check if email exists first - just proceed with reset request
-      const redirectUrl = `${window.location.origin}/reset-password`;
-      
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
-        redirectTo: redirectUrl,
-      });
-
-      if (resetError) {
-        // Supabase typically succeeds even for non-existent emails to prevent email enumeration attacks
-        // Only throw if there's a real configuration error
-        console.error('Password reset error:', resetError);
-        throw resetError;
+      // Use our custom Edge Function to send password reset email via Resend
+      // This avoids spam filters and provides better deliverability
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      if (!supabaseUrl) {
+        throw new Error('VITE_SUPABASE_URL is not configured');
       }
 
-      setEmailSent(true);
-      toast({
-        title: "Reset email sent",
-        description: "Check your email (including spam folder) for password reset instructions",
+      const redirectUrl = `${window.location.origin}/reset-password`;
+      
+      console.log('Calling password reset Edge Function:', { 
+        email: trimmedEmail, 
+        supabaseUrl,
+        endpoint: `${supabaseUrl}/functions/v1/send-password-reset`
       });
+      
+      const response = await fetch(
+        `${supabaseUrl}/functions/v1/send-password-reset`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY || '',
+          },
+          body: JSON.stringify({
+            email: trimmedEmail,
+            redirectTo: redirectUrl,
+          }),
+        }
+      );
+
+      console.log('Password reset Edge Function response status:', response.status);
+
+      const result = await response.json().catch(async (parseError) => {
+        console.error('Failed to parse response:', parseError);
+        const text = await response.text().catch(() => 'Unknown error');
+        console.error('Response text:', text);
+        return { success: false, error: `Failed to parse response: ${text}` };
+      });
+      
+      console.log('Password reset Edge Function result:', result);
+
+      if (!response.ok || !result.success) {
+        // Provide more specific error messages
+        let errorMessage = result.error || "Failed to send password reset email.";
+        
+        // Check for specific error types
+        if (response.status === 404) {
+          errorMessage = "Email service not found. Please contact support.";
+        } else if (response.status === 500) {
+          if (result.error?.includes("RESEND_API_KEY")) {
+            errorMessage = "Email service configuration error. Please contact support.";
+          } else if (result.error?.includes("Supabase configuration")) {
+            errorMessage = "Email service configuration error. Please contact support.";
+          } else {
+            errorMessage = result.error || "Email service error. Please try again or contact support.";
+          }
+        } else if (response.status === 401) {
+          errorMessage = "Authentication error. Please refresh the page and try again.";
+        }
+        
+        setError(errorMessage);
+        toast({
+          title: "Email Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      } else {
+        setError("");
+        setEmailSent(true);
+        toast({
+          title: "Reset email sent",
+          description: "If an account exists with this email, a password reset link has been sent. Please check your inbox.",
+        });
+      }
       
     } catch (err: any) {
       // Handle errors - but note that Supabase resetPasswordForEmail typically succeeds

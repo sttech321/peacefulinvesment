@@ -50,16 +50,70 @@ const Auth = () => {
     setIsLoading(true);
     setErrors({});
     try {
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email: email.trim().toLowerCase(),
-      });
+      // Use our custom Edge Function to send verification email via Resend
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      if (!supabaseUrl) {
+        throw new Error('VITE_SUPABASE_URL is not configured');
+      }
 
-      if (error) {
-        setErrors({ general: error.message });
+      const redirectUrl = `${window.location.origin}/`;
+      
+      console.log('Calling Resend Edge Function:', { 
+        email: email.trim().toLowerCase(), 
+        supabaseUrl,
+        endpoint: `${supabaseUrl}/functions/v1/send-email-verification`
+      });
+      
+      const response = await fetch(
+        `${supabaseUrl}/functions/v1/send-email-verification`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            email: email.trim().toLowerCase(),
+            fullName: fullName || undefined,
+            redirectTo: redirectUrl,
+          }),
+        }
+      );
+
+      console.log('Resend Edge Function response status:', response.status);
+
+      const result = await response.json().catch(async (parseError) => {
+        console.error('Failed to parse response:', parseError);
+        const text = await response.text().catch(() => 'Unknown error');
+        console.error('Response text:', text);
+        return { success: false, error: `Failed to parse response: ${text}` };
+      });
+      
+      console.log('Resend Edge Function result:', result);
+
+      if (!response.ok || !result.success) {
+        // Provide more specific error messages
+        let errorMessage = result.error || "Failed to send confirmation email.";
+        
+        // Check for specific error types
+        if (response.status === 404) {
+          errorMessage = "Email service not found. Please contact support.";
+        } else if (response.status === 500) {
+          if (result.error?.includes("RESEND_API_KEY")) {
+            errorMessage = "Email service configuration error. Please contact support.";
+          } else if (result.error?.includes("Supabase configuration")) {
+            errorMessage = "Email service configuration error. Please contact support.";
+          } else {
+            errorMessage = result.error || "Email service error. Please try again or contact support.";
+          }
+        } else if (response.status === 401) {
+          errorMessage = "Authentication error. Please refresh the page and try again.";
+        }
+        
+        setErrors({ general: errorMessage });
         toast({
-          title: "Error",
-          description: error.message || "Failed to send confirmation email. Please try again.",
+          title: "Email Error",
+          description: errorMessage,
           variant: "destructive",
         });
       } else {
@@ -71,10 +125,20 @@ const Auth = () => {
         });
       }
     } catch (error) {
-      const errorMessage = 'Failed to send confirmation email. Please try again.';
+      console.error('Error in handleResendConfirmation:', error);
+      let errorMessage = 'Failed to send confirmation email. ';
+      
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        errorMessage += 'Network error. Please check your connection and try again.';
+      } else if (error instanceof Error) {
+        errorMessage += error.message;
+      } else {
+        errorMessage += 'Please try again or contact support.';
+      }
+      
       setErrors({ general: errorMessage });
       toast({
-        title: "Error",
+        title: "Email Error",
         description: errorMessage,
         variant: "destructive",
       });
@@ -97,7 +161,7 @@ const Auth = () => {
     setEmailConfirmationSent(false);
   }, [searchParams]);
 
-  // Capture referral code from URL and handle auth errors
+  // Capture referral code from URL and handle auth errors/verification
   useEffect(() => {
     const refCode = searchParams.get('ref');
     if (refCode) {
@@ -105,9 +169,61 @@ const Auth = () => {
       console.log('Referral code detected in Auth:', refCode);
     }
 
-    // Handle Supabase auth errors from URL hash
-    const handleAuthError = () => {
+    // Handle Supabase auth verification and errors from URL hash
+    const handleAuthCallback = async () => {
       const hash = window.location.hash;
+      
+      // Check for verification tokens first
+      if (hash.includes('access_token=') || hash.includes('type=')) {
+        const urlParams = new URLSearchParams(hash.substring(1));
+        const accessToken = urlParams.get('access_token');
+        const refreshToken = urlParams.get('refresh_token');
+        const type = urlParams.get('type');
+        const error = urlParams.get('error');
+        
+        // If we have tokens and it's a verification, try to set the session
+        if (accessToken && refreshToken && (type === 'signup' || type === 'email') && !error) {
+          try {
+            console.log('Processing email verification tokens...');
+            const { data, error: sessionError } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+            });
+            
+            if (!sessionError && data.session) {
+              console.log('Email verification successful!');
+              // Clean up stored email
+              localStorage.removeItem('pendingVerificationEmail');
+              toast({
+                title: "Email Verified!",
+                description: "Your email has been successfully verified. You can now sign in.",
+              });
+              // Clean up URL
+              window.history.replaceState(
+                {},
+                document.title,
+                window.location.pathname + window.location.search
+              );
+              // Navigate to home after a brief delay
+              setTimeout(() => {
+                navigate('/');
+              }, 1500);
+            } else if (sessionError) {
+              console.error('Session error during verification:', sessionError);
+              setErrors({
+                general: sessionError.message || 'Failed to verify email. Please try again.',
+              });
+            }
+          } catch (err) {
+            console.error('Error processing verification tokens:', err);
+            setErrors({
+              general: 'Failed to process verification link. Please try again.',
+            });
+          }
+        }
+      }
+      
+      // Handle errors in URL hash
       if (hash.includes('error=')) {
         const urlParams = new URLSearchParams(hash.substring(1));
         const error = urlParams.get('error');
@@ -115,12 +231,64 @@ const Auth = () => {
 
         if (
           error === 'access_denied' &&
-          errorDescription?.includes('expired')
+          (errorDescription?.includes('expired') || errorDescription?.includes('invalid'))
         ) {
-          setErrors({
-            general:
-              'Email confirmation link has expired. Please enter your email below and click "Resend Confirmation" to get a new link.',
-          });
+          // Automatically resend verification email if link is expired
+          console.log('Expired link detected, attempting to auto-resend...');
+          
+          // Try to extract email from URL or use stored email
+          const storedEmail = localStorage.getItem('pendingVerificationEmail');
+          
+          if (storedEmail) {
+            setEmail(storedEmail);
+            setEmailConfirmationSent(false);
+            // Show message that we'll resend
+            setErrors({
+              general:
+                'Your verification link has expired. A new verification email is being sent automatically. Please check your inbox.',
+            });
+            // Automatically trigger resend after setting email
+            setTimeout(async () => {
+              try {
+                const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+                if (supabaseUrl) {
+                  const redirectUrl = `${window.location.origin}/`;
+                  const response = await fetch(
+                    `${supabaseUrl}/functions/v1/send-email-verification`,
+                    {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+                      },
+                      body: JSON.stringify({
+                        email: storedEmail,
+                        redirectTo: redirectUrl,
+                      }),
+                    }
+                  );
+                  
+                  const result = await response.json().catch(() => ({ success: false }));
+                  if (response.ok && result.success) {
+                    setEmailConfirmationSent(true);
+                    setErrors({});
+                    toast({
+                      title: "New Verification Email Sent",
+                      description: "A new verification email has been sent to your inbox.",
+                    });
+                  }
+                }
+              } catch (err) {
+                console.error('Auto-resend failed:', err);
+              }
+            }, 1000);
+          } else {
+            setErrors({
+              general:
+                'Email confirmation link has expired or is invalid. Please enter your email below and click "Resend Confirmation" to get a new link.',
+            });
+          }
+          
           window.history.replaceState(
             {},
             document.title,
@@ -139,8 +307,8 @@ const Auth = () => {
       }
     };
 
-    handleAuthError();
-  }, [searchParams]);
+    handleAuthCallback();
+  }, [searchParams, navigate, toast]);
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -203,8 +371,13 @@ const Auth = () => {
             );
           }
 
-          // Show success message and confirmation email notice
-          setEmailConfirmationSent(true);
+          // Store email for potential auto-resend if link expires
+          localStorage.setItem('pendingVerificationEmail', email.trim().toLowerCase());
+
+          // Note: The signUp function in useAuth.tsx already sends the verification email via Resend
+          // No need to call handleResendConfirmation() again here to avoid duplicate emails
+
+          // Show success message
           toast({
             title: "Account Created Successfully!",
             description: "Please check your email to verify your account before signing in.",
@@ -446,8 +619,8 @@ const Auth = () => {
                         </div>
                         <div className='mt-2 text-xs text-blue-600 space-y-1'>
                           <p>• Check your spam/junk folder if you don't see the email</p>
-                          <p>• The verification link expires in 24 hours</p>
-                          <p>• Add info@peacefulinvestment.com to your contacts to avoid spam</p>
+                          <p>• If your link expires, we'll automatically send you a new one</p>
+                          <p>• Add security@peacefulinvestment.com to your contacts to avoid spam</p>
                         </div>
                       </div>
                     </div>
