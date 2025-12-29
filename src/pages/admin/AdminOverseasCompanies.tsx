@@ -1000,7 +1000,7 @@ export default function AdminOverseasCompanies() {
                           variant="outline"
                           size="sm"
                           onClick={handleBackToFolders}
-                          className="mt-4 rounded-[8px]"
+                          className="mt-4 rounded-[8px] gap-0 hover:bg-white/80 border-0 text-sm"
                         >
                           <ArrowLeft className="h-4 w-4 mr-2" />
                           Back to Folders
@@ -1144,7 +1144,7 @@ export default function AdminOverseasCompanies() {
 
       {/* Request Details Dialog */}
       <Dialog open={requestDetailsOpen} onOpenChange={setRequestDetailsOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent">
           <DialogHeader>
             <DialogTitle>Request Details</DialogTitle>
             <DialogDescription>
@@ -1303,6 +1303,7 @@ export default function AdminOverseasCompanies() {
                         value={registrationNumber}
                         onChange={(e) => setRegistrationNumber(e.target.value)}
                         placeholder="Enter registration number"
+                        className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
                       />
                     </div>
                     <div>
@@ -1312,6 +1313,7 @@ export default function AdminOverseasCompanies() {
                         type="date"
                         value={incorporationDate}
                         onChange={(e) => setIncorporationDate(e.target.value)}
+                        className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
                       />
                     </div>
                     <div>
@@ -1321,6 +1323,7 @@ export default function AdminOverseasCompanies() {
                         value={contactPhone}
                         onChange={(e) => setContactPhone(e.target.value)}
                         placeholder="Enter contact phone"
+                        className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
                       />
                     </div>
                   </div>
@@ -1333,11 +1336,13 @@ export default function AdminOverseasCompanies() {
                       onChange={(e) => setAdminNotes(e.target.value)}
                       placeholder="Add notes about the approval..."
                       rows={3}
+                      className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
                     />
                   </div>
 
                   <div className="flex gap-2">
                     <Button
+                      className="rounded-[8px] gap-0"
                       onClick={() => handleProcessRequest(selectedRequest, 'approve')}
                       disabled={processingRequest || !registrationNumber || !incorporationDate}
                     >
@@ -1350,6 +1355,7 @@ export default function AdminOverseasCompanies() {
                     </Button>
                     <Button
                       variant="destructive"
+                      className="rounded-[8px] gap-0"
                       onClick={() => handleProcessRequest(selectedRequest, 'reject')}
                       disabled={processingRequest}
                     >

@@ -1338,10 +1338,11 @@ export default function AdminReferrals() {
                   <Input
                     value={selectedReferral.referral_link}
                     readOnly
-                    className="flex-1"
+                    className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
                   />
                   <Button
                     variant="outline"
+                    className="rounded-[8px] gap-0 border-0"
                     size="sm"
                     onClick={() => {
                       navigator.clipboard.writeText(selectedReferral.referral_link);

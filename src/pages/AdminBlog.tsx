@@ -390,7 +390,7 @@ const AdminBlog = () => {
                 New Post
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto border-0">
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto border-0 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent">
               <DialogHeader>
                 <DialogTitle>{editingPost ? "Edit Blog Post" : "Create New Blog Post"}</DialogTitle>
               </DialogHeader>
