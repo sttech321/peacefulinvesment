@@ -821,10 +821,10 @@ export default function AdminOverseasCompanies() {
                   variant="ghost"
                   size="sm"
                   onClick={handleBackToFolders}
-                  className="gap-2 rounded-[8px] hover:bg-muted/20 border-0 text-white"
+                  className="gap-0 rounded-[8px] hover:bg-white/80 border-0 bg-white hover:text-black text-sm"
                 >
-                  <ArrowLeft className="h-4 w-4" />
-                  Back to Folders
+                  <ArrowLeft className="h-4 w-4 mr-1" />
+                  Back to Folders 
                 </Button>
                 <div className="flex items-center gap-2">
                   {selectedStatusFolder && (
