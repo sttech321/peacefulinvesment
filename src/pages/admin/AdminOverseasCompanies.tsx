@@ -690,7 +690,7 @@ export default function AdminOverseasCompanies() {
       </div>
 
       {/* Tabs */}
-      <div className="flex space-x-1 bg-muted/20 p-1 rounded-lg">
+      {/* <div className="flex space-x-1 bg-muted/20 p-1 rounded-lg">
         <Button
           variant={activeTab === "requests" ? "default" : "ghost"}
           size="sm"
@@ -709,7 +709,7 @@ export default function AdminOverseasCompanies() {
           <Building2 className="h-4 w-4 mr-2 " />
           Companies ({companies.length})
         </Button>
-      </div>
+      </div> */}
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
