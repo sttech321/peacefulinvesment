@@ -1,4 +1,4 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -19,6 +19,9 @@ import {
   Share2,
   Table2,
   DollarSign,
+  ChevronDown,
+  ChevronRight,
+  Folder,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -27,7 +30,14 @@ interface AdminLayoutProps {
   children: ReactNode;
 }
 
-const navigation = [
+interface NavigationItem {
+  name: string;
+  href?: string;
+  icon: any;
+  subMenu?: Array<{ name: string; href: string; status: string }>;
+}
+
+const navigation: NavigationItem[] = [
   { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
   { name: 'Users', href: '/admin/users', icon: Users },
   { name: 'Trading Accounts', href: '/admin/accounts', icon: CreditCard },
@@ -35,6 +45,13 @@ const navigation = [
     name: 'Overseas Companies',
     href: '/admin/overseas-companies',
     icon: Building2,
+    subMenu: [
+      { name: 'Pending', href: '/admin/overseas-companies?status=pending', status: 'pending' },
+      { name: 'Processing', href: '/admin/overseas-companies?status=processing', status: 'processing' },
+      { name: 'Name Selected', href: '/admin/overseas-companies?status=name_selected', status: 'name_selected' },
+      { name: 'Completed', href: '/admin/overseas-companies?status=completed', status: 'completed' },
+      { name: 'Rejected', href: '/admin/overseas-companies?status=rejected', status: 'rejected' },
+    ],
   },
   { name: 'Referrals', href: '/admin/referrals', icon: Share2 },
   {
@@ -56,9 +73,21 @@ const navigation = [
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  // Start with all menus collapsed by default
+  const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set());
   const location = useLocation();
   const { user, signOut } = useAuth();
   const { isAdmin } = useUserRole();
+
+  const toggleMenu = (menuName: string) => {
+    const newExpanded = new Set(expandedMenus);
+    if (newExpanded.has(menuName)) {
+      newExpanded.delete(menuName);
+    } else {
+      newExpanded.add(menuName);
+    }
+    setExpandedMenus(newExpanded);
+  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -128,23 +157,88 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           </div>
 
           {/* Navigation */}
-          <nav className='flex-1 space-y-2 p-4'>
+          <nav className='flex-1 space-y-1 p-4 overflow-y-auto'>
             {navigation.map(item => {
-              const isActive = location.pathname === item.href;
+              const isActive = location.pathname === item.href || 
+                (item.href && location.pathname.startsWith(item.href));
+              const isExpanded = expandedMenus.has(item.name);
+              const hasSubMenu = item.subMenu && item.subMenu.length > 0;
+              
+              // Check if any sub-menu item is active
+              const isSubMenuActive = item.subMenu?.some(
+                subItem => location.search.includes(`status=${subItem.status}`)
+              );
+
               return (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className={`flex items-center space-x-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                  } `}
-                  onClick={() => setSidebarOpen(false)}
-                >
-                  <item.icon className='h-4 w-4' />
-                  <span>{item.name}</span>
-                </Link>
+                <div key={item.name}>
+                  {hasSubMenu ? (
+                    <>
+                      <div className='flex items-center'>
+                        <Link
+                          to={item.href || '#'}
+                          className={`flex-1 flex items-center space-x-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                            isActive || isSubMenuActive
+                              ? 'bg-primary text-primary-foreground'
+                              : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                          }`}
+                          onClick={() => setSidebarOpen(false)}
+                        >
+                          <item.icon className='h-4 w-4' />
+                          <span>{item.name}</span>
+                        </Link>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            toggleMenu(item.name);
+                          }}
+                          className='p-1.5 rounded hover:bg-muted/50 text-[var(--yellowcolor)] hover:text-[var(--yellowcolor)] transition-colors flex items-center justify-center'
+                          aria-label={isExpanded ? 'Collapse menu' : 'Expand menu'}
+                        >
+                          {isExpanded ? (
+                            <ChevronDown className='h-4 w-4 text-[var(--yellowcolor)]' />
+                          ) : (
+                            <ChevronRight className='h-4 w-4 text-[var(--yellowcolor)]' />
+                          )}
+                        </button>
+                      </div>
+                      {isExpanded && item.subMenu && (
+                        <div className='ml-4 mt-1 space-y-1'>
+                          {item.subMenu.map((subItem) => {
+                            const isSubActive = location.search.includes(`status=${subItem.status}`);
+                            return (
+                              <Link
+                                key={subItem.name}
+                                to={subItem.href}
+                                className={`flex items-center space-x-3 rounded-lg px-3 py-2 text-sm transition-colors ${
+                                  isSubActive
+                                    ? 'bg-primary/80 text-primary-foreground'
+                                    : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+                                }`}
+                                onClick={() => setSidebarOpen(false)}
+                              >
+                                <Folder className='h-3 w-3 ml-1' />
+                                <span>{subItem.name}</span>
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <Link
+                      to={item.href || '#'}
+                      className={`flex items-center space-x-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                        isActive
+                          ? 'bg-primary text-primary-foreground'
+                          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                      }`}
+                      onClick={() => setSidebarOpen(false)}
+                    >
+                      <item.icon className='h-4 w-4' />
+                      <span>{item.name}</span>
+                    </Link>
+                  )}
+                </div>
               );
             })}
           </nav>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,7 +36,9 @@ import {
   User,
   RefreshCw,
   FileText,
-  ExternalLink
+  ExternalLink,
+  Folder,
+  ArrowLeft
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -88,6 +91,7 @@ export default function AdminOverseasCompanies() {
   const { user } = useAuth();
   const { isAdmin } = useUserRole();
   const { toast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
   
   // State for requests
   const [requests, setRequests] = useState<OverseasCompanyRequest[]>([]);
@@ -104,6 +108,24 @@ export default function AdminOverseasCompanies() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [activeTab, setActiveTab] = useState<"requests" | "companies">("requests");
+  
+  // Folder view state (sub-menu structure)
+  const [showFolderView, setShowFolderView] = useState(true);
+  const [selectedStatusFolder, setSelectedStatusFolder] = useState<string | null>(null);
+  
+  // Read status from URL query parameter
+  useEffect(() => {
+    const statusFromUrl = searchParams.get('status');
+    if (statusFromUrl) {
+      setStatusFilter(statusFromUrl);
+      setSelectedStatusFolder(statusFromUrl);
+      setShowFolderView(false);
+    } else {
+      setShowFolderView(true);
+      setSelectedStatusFolder(null);
+      setStatusFilter("all");
+    }
+  }, [searchParams]);
   
   // Request management state
   const [processingRequest, setProcessingRequest] = useState(false);
@@ -129,6 +151,23 @@ export default function AdminOverseasCompanies() {
       filterCompanies();
     }
   }, [requests, companies, searchTerm, statusFilter, activeTab]);
+
+  // When a status folder is selected, filter and show list view
+  useEffect(() => {
+    if (selectedStatusFolder) {
+      setStatusFilter(selectedStatusFolder);
+      setShowFolderView(false);
+    }
+  }, [selectedStatusFolder]);
+
+  // Reset to folder view when switching tabs
+  useEffect(() => {
+    if (activeTab === "requests") {
+      setShowFolderView(true);
+      setSelectedStatusFolder(null);
+      setStatusFilter("all");
+    }
+  }, [activeTab]);
 
   const fetchRequests = async () => {
     try {
@@ -484,6 +523,40 @@ export default function AdminOverseasCompanies() {
     }
   };
 
+  // Get status counts for folder view
+  const getStatusCounts = () => {
+    const statuses: Array<'pending' | 'processing' | 'name_selected' | 'completed' | 'rejected'> = [
+      'pending',
+      'processing',
+      'name_selected',
+      'completed',
+      'rejected'
+    ];
+    
+    return statuses.map(status => ({
+      status,
+      count: requests.filter(r => r.status === status).length,
+      label: status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
+    }));
+  };
+
+  // Handle folder click - show requests for that status
+  const handleFolderClick = (status: string) => {
+    setSelectedStatusFolder(status);
+    setStatusFilter(status);
+    setShowFolderView(false);
+  };
+
+  // Handle back to folder view
+  const handleBackToFolders = () => {
+    setShowFolderView(true);
+    setSelectedStatusFolder(null);
+    setStatusFilter("all");
+    setSearchTerm("");
+    // Clear status from URL
+    setSearchParams({});
+  };
+
   const handleExport = async (type: 'excel' | 'pdf') => {
     try {
       let dataToExport: any[] = [];
@@ -702,166 +775,243 @@ export default function AdminOverseasCompanies() {
       {/* Conditional Content */}
       {activeTab === "requests" ? (
         <>
-          {/* Filters */}
-          <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
-            <CardHeader>
-              <CardTitle>Filters</CardTitle>
-              <CardDescription>
-                Search and filter overseas company requests
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-4 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search requests..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-8 rounded-[8px] placeholder:text-sm border-0 shadow-none mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
-                  />
+          {showFolderView ? (
+            /* Folder View - Sub-menu showing status folders */
+            <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
+              <CardHeader>
+                <CardTitle>Request Status Folders</CardTitle>
+                <CardDescription>
+                  Click on a folder to view all requests with that status
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                  {getStatusCounts().map(({ status, count, label }) => (
+                    <div
+                      key={status}
+                      onClick={() => handleFolderClick(status)}
+                      className="group cursor-pointer p-6 bg-muted/20 rounded-lg border border-muted/40 hover:border-primary/50 hover:bg-muted/30 transition-all duration-200 hover:shadow-lg"
+                    >
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center group-hover:bg-primary/30 transition-colors">
+                          <Folder className="h-6 w-6 text-primary" />
+                        </div>
+                        <div className="text-right">
+                          <div className="text-2xl font-bold text-white">{count}</div>
+                          <div className="text-xs text-muted-foreground">requests</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {getRequestStatusBadge(status)}
+                        <span className="text-sm font-medium text-white capitalize">
+                          {label}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-                  <div className="flex flex-wrap gap-2 items-center">
-                    <span className="text-sm text-muted-foreground font-medium">Status:</span>
-                    <Button
-                      variant={statusFilter === "all" ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setStatusFilter("all")}
-                      className="rounded-[8px] border-0 h-9 px-3 text-xs"
-                    >
-                      All
-                    </Button>
-                    <Button
-                      variant={statusFilter === "pending" ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setStatusFilter("pending")}
-                      className="rounded-[8px] border-0 h-9 px-3 text-xs"
-                    >
-                      Pending
-                    </Button>
-                    <Button
-                      variant={statusFilter === "processing" ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setStatusFilter("processing")}
-                      className="rounded-[8px] border-0 h-9 px-3 text-xs"
-                    >
-                      Processing
-                    </Button>
-                    <Button
-                      variant={statusFilter === "name_selected" ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setStatusFilter("name_selected")}
-                      className="rounded-[8px] border-0 h-9 px-3 text-xs"
-                    >
-                      Name Selected
-                    </Button>
-                    <Button
-                      variant={statusFilter === "completed" ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setStatusFilter("completed")}
-                      className="rounded-[8px] border-0 h-9 px-3 text-xs"
-                    >
-                      Completed
-                    </Button>
-                    <Button
-                      variant={statusFilter === "rejected" ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setStatusFilter("rejected")}
-                      className="rounded-[8px] border-0 h-9 px-3 text-xs"
-                    >
-                      Rejected
-                    </Button>
-                  </div>
-                  <div className="flex items-center">
-                    <Badge variant="outline" className="py-2 px-4 rounded-[8px] h-9 text-white">
-                      {filteredRequests.length} requests
-                    </Badge>
-                  </div>
+              </CardContent>
+            </Card>
+          ) : (
+            /* List View - Shows requests filtered by selected status */
+            <>
+              {/* Back Button */}
+              <div className="flex items-center gap-4 mb-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleBackToFolders}
+                  className="gap-2 rounded-[8px] hover:bg-muted/20 border-0 text-white"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Back to Folders
+                </Button>
+                <div className="flex items-center gap-2">
+                  {selectedStatusFolder && (
+                    <>
+                      {getRequestStatusBadge(selectedStatusFolder)}
+                      <span className="text-sm text-muted-foreground capitalize">
+                        {selectedStatusFolder.replace('_', ' ')} Requests
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
-            </CardContent>
-          </Card>
 
-          {/* Requests List */}
-          <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
-            <CardHeader>
-              <CardTitle>Company Requests</CardTitle>
-              <CardDescription>
-                All overseas company registration requests
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {filteredRequests.length > 0 ? (
-                  filteredRequests.map((request) => (
-                    <div key={request.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-muted/20 rounded-lg gap-4">
-                      <div className="flex items-start space-x-4">
-                        <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
-                          <FileText className="h-5 w-5 text-primary" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex flex-wrap items-center gap-2 mb-1">
-                            <p className="font-medium truncate text-white">
-                              {request.selected_company_name || request.company_names[0]}
-                            </p>
-                            {getRequestStatusBadge(request.status)}
-                            <span className={`text-sm text-white ${getBusinessTypeColor(request.business_type)}`}>
-                              {request.business_type}
-                            </span>
+              {/* Filters */}
+              <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
+                <CardHeader>
+                  <CardTitle>Filters</CardTitle>
+                  <CardDescription>
+                    Search and filter overseas company requests
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-4 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search requests..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-8 rounded-[8px] placeholder:text-sm border-0 shadow-none mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
+                      />
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                      <div className="flex flex-wrap gap-2 items-center">
+                        <span className="text-sm text-muted-foreground font-medium">Status:</span>
+                        <Button
+                          variant={statusFilter === "all" ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setStatusFilter("all")}
+                          className="rounded-[8px] border-0 h-9 px-3 text-xs"
+                        >
+                          All
+                        </Button>
+                        <Button
+                          variant={statusFilter === "pending" ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setStatusFilter("pending")}
+                          className="rounded-[8px] border-0 h-9 px-3 text-xs"
+                        >
+                          Pending
+                        </Button>
+                        <Button
+                          variant={statusFilter === "processing" ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setStatusFilter("processing")}
+                          className="rounded-[8px] border-0 h-9 px-3 text-xs"
+                        >
+                          Processing
+                        </Button>
+                        <Button
+                          variant={statusFilter === "name_selected" ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setStatusFilter("name_selected")}
+                          className="rounded-[8px] border-0 h-9 px-3 text-xs"
+                        >
+                          Name Selected
+                        </Button>
+                        <Button
+                          variant={statusFilter === "completed" ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setStatusFilter("completed")}
+                          className="rounded-[8px] border-0 h-9 px-3 text-xs"
+                        >
+                          Completed
+                        </Button>
+                        <Button
+                          variant={statusFilter === "rejected" ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setStatusFilter("rejected")}
+                          className="rounded-[8px] border-0 h-9 px-3 text-xs"
+                        >
+                          Rejected
+                        </Button>
+                      </div>
+                      <div className="flex items-center">
+                        <Badge variant="outline" className="py-2 px-4 rounded-[8px] h-9 text-white">
+                          {filteredRequests.length} requests
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Requests List */}
+              <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
+                <CardHeader>
+                  <CardTitle>Company Requests</CardTitle>
+                  <CardDescription>
+                    {selectedStatusFolder 
+                      ? `All ${selectedStatusFolder.replace('_', ' ')} requests`
+                      : "All overseas company registration requests"
+                    }
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {filteredRequests.length > 0 ? (
+                      filteredRequests.map((request) => (
+                        <div key={request.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-muted/20 rounded-lg gap-4">
+                          <div className="flex items-start space-x-4">
+                            <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
+                              <FileText className="h-5 w-5 text-primary" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex flex-wrap items-center gap-2 mb-1">
+                                <p className="font-medium truncate text-white">
+                                  {request.selected_company_name || request.company_names[0]}
+                                </p>
+                                {getRequestStatusBadge(request.status)}
+                                <span className={`text-sm text-white ${getBusinessTypeColor(request.business_type)}`}>
+                                  {request.business_type}
+                                </span>
+                              </div>
+                              <p className="text-sm text-muted-foreground mb-1 truncate">
+                                {request.user?.email || 'Unknown user'}
+                              </p>
+                              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                                <span className="flex items-center gap-1">
+                                  <MapPin className="h-3 w-3" />
+                                  {request.jurisdiction}
+                                </span>
+                                <span>Submitted: {formatDate(request.submitted_at)}</span>
+                                {request.company_names.length > 1 && (
+                                  <span>{request.company_names.length} name options</span>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                          <p className="text-sm text-muted-foreground mb-1 truncate">
-                            {request.user?.email || 'Unknown user'}
-                          </p>
-                          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              <MapPin className="h-3 w-3" />
-                              {request.jurisdiction}
-                            </span>
-                            <span>Submitted: {formatDate(request.submitted_at)}</span>
-                            {request.company_names.length > 1 && (
-                              <span>{request.company_names.length} name options</span>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedRequest(request);
+                                setRequestDetailsOpen(true);
+                              }}
+                              className="bg-muted/20 hover:bg-muted/40 rounded-[8px]"
+                            >
+                              <Eye className="h-4 w-4 text-white" />
+                            </Button>
+                            {request.status === 'pending' && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedRequest(request);
+                                  setRequestDetailsOpen(true);
+                                }}
+                                className="text-white bg-green-600 hover:bg-green-700 hover:text-white rounded-[8px]"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
                             )}
                           </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2 flex-wrap">
+                      ))
+                    ) : (
+                      <div className="text-center py-8">
+                        <FileText className="h-12 w-12 text-primary mx-auto mb-4" />
+                        <p className="text-muted-foreground">No requests found</p>
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
-                          onClick={() => {
-                            setSelectedRequest(request);
-                            setRequestDetailsOpen(true);
-                          }}
-                          className="bg-muted/20 hover:bg-muted/40 rounded-[8px]"
+                          onClick={handleBackToFolders}
+                          className="mt-4 rounded-[8px]"
                         >
-                          <Eye className="h-4 w-4 text-white" />
+                          <ArrowLeft className="h-4 w-4 mr-2" />
+                          Back to Folders
                         </Button>
-                        {request.status === 'pending' && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedRequest(request);
-                              setRequestDetailsOpen(true);
-                            }}
-                            className="text-white bg-green-600 hover:bg-green-700 hover:text-white rounded-[8px]"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        )}
                       </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-8">
-                    <FileText className="h-12 w-12 text-primary mx-auto mb-4" />
-                    <p className="text-muted-foreground">No requests found</p>
+                    )}
                   </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
+            </>
+          )}
         </>
       ) : (
         <>
