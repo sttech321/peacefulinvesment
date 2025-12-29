@@ -16,8 +16,7 @@ const LandingCTAnew = () => {
           </h2>
 
           <p className="mx-auto max-w-4xl font-open-sans text-lg text-white lg:text-xl">
-            Join successful investors who trust our platform for
-            their trading needs.
+            Join successful investors who trust our platform for their trading needs.
           </p>
 
           {/* CTA Buttons */}
@@ -30,7 +29,7 @@ const LandingCTAnew = () => {
                   className="bg-gradient-pink-to-yellow inline-block rounded-[12px] p-[2px]"
                 >
                   <Button className="block h-[45px] rounded-[10px] bg-black px-6 text-xs font-semibold uppercase text-white hover:bg-gradient-pink-to-yellow">
-                    Start Free Trial
+                   Sign up today
                   </Button>
                 </Link>
               )}

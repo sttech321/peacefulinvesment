@@ -71,7 +71,7 @@ const Footer = () => {
       <div className='flex grid-cols-1 flex-wrap justify-center gap-8 md:grid-cols-2 lg:grid-cols-3 lg:flex-nowrap'>
         {/* Left column images */}
 
-        {isBlogPage && (
+        
           <div className='imgLeft01 max-w-40'>
             <Link
               to='https://knightsoftheholyrosary.wordpress.com/2012/06/23/the-sacred-heart-of-jesus-the-immaculate-heart-of-mary-and-the-message-of-fatima/'
@@ -81,7 +81,7 @@ const Footer = () => {
               <img src={Left03} alt='Left 03' />
             </Link>
           </div>
-        )}
+     
 
         {/* Main Footer Content */}
 
@@ -103,8 +103,7 @@ const Footer = () => {
               </h2>
 
               <p className='pt-2 font-open-sans text-sm text-white'>
-                We're on a mission to democratize access to professional trading
-                tools and create opportunities for financial growth across the
+                We're on a mission to democratize access to professional investments and create opportunities for financial growth across the
                 globe.
               </p>
             </div>
@@ -206,7 +205,7 @@ const Footer = () => {
         </div>
 
         {/* Right column images */}
-        {isBlogPage && (
+       
           <div className='imgRight01 max-w-40'>
             <Link
               to='https://knightsoftheholyrosary.wordpress.com/2012/06/23/the-sacred-heart-of-jesus-the-immaculate-heart-of-mary-and-the-message-of-fatima/'
@@ -216,7 +215,7 @@ const Footer = () => {
               <img src={Right03} alt='Right 03' />
             </Link>
           </div>
-        )}
+      
       </div>
 
       {/* Bottom Bar */}

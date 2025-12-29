@@ -3,6 +3,8 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import logoAnimation from '@/assets/new-logo.gif';
+
 import {
   Card,
   CardContent,
@@ -422,15 +424,19 @@ const Auth = () => {
           <Card className='block rounded-sm border-0 bg-black shadow-none'>
             <CardHeader className='text-center'>
               <div className='mb-4 flex justify-center'>
-                <Shield className='h-12 w-12 text-primary' />
+                 <img
+              src={logoAnimation}
+              alt='Peaceful Investment'
+              className='h-full w-full max-w-[68px]'
+            />
               </div>
               <CardTitle className='font-inter text-2xl font-semibold text-white'>
                 {isSignUp ? 'Create Your Account' : 'Welcome Back'}
               </CardTitle>
               <CardDescription className='text-white'>
                 {isSignUp
-                  ? 'Start managing your MetaTrader bots today.'
-                  : 'Login to manage your bots and investments.'}
+                  ? 'Start managing your investments today.'
+                  : 'Login to manage your investments.'}
               </CardDescription>
               {referralCode && isSignUp && (
                 <div className='mt-2 rounded-lg border border-green-200 bg-green-50 p-3'>

@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
-import { Mail, MapPin, Shield, CheckCircle, AlertCircle } from 'lucide-react';
+import { Mail, MapPin, Shield, CheckCircle, AlertCircle, Link } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import Footer from '@/components/Footer';
@@ -243,7 +243,7 @@ const Contact = () => {
             <Card className='block rounded-sm border-0 bg-black shadow-none'>
               <CardHeader>
                 <CardTitle className='flex items-center gap-2 font-inter font-semibold text-white'>
-                  <Mail className='h-5 w-5' />
+                  <Mail className='h-5 w-5 text-primary' />
                   Send us a Message
                 </CardTitle>
                 <CardDescription>
@@ -508,7 +508,7 @@ const Contact = () => {
             <Card className='border-0 bg-transparent shadow-none'>
               <CardHeader>
                 <CardTitle className='flex items-center gap-2 font-inter font-semibold text-white'>
-                  <Shield className='h-5 w-5' />
+                  <Shield className='h-5 w-5 text-primary' />
                   Contact Information
                 </CardTitle>
                 <CardDescription>
@@ -525,7 +525,9 @@ const Contact = () => {
                       Email Support
                     </h4>
                     <p className='font-open-sans text-sm font-normal text-muted-foreground'>
+                      <a href={`mailto:${contactInfo.email}`} className='hover:text-primary'>
                       {contactInfo.email}
+                      </a> 
                     </p>
                     <p className='font-open-sans text-sm font-normal text-muted-foreground'>
                       24/7 support available
@@ -587,8 +589,7 @@ const Contact = () => {
                     Is there emergency support available?
                   </h4>
                   <p className='text-sm text-muted-foreground'>
-                    Yes, for urgent technical issues affecting your trading,
-                    call our emergency line.
+                   Yes, for urgent issues, use high-priority <a href={`mailto:${contactInfo.email}`} className='text-primary hover:text-muted'>email</a> or <a href={`tel:${contactInfo.phone}`} className='text-primary hover:text-muted'>phone</a>.
                   </p>
                 </div>
               </CardContent>

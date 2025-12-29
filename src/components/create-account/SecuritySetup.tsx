@@ -4,6 +4,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Shield } from "lucide-react";
+import logoAnimation from '@/assets/new-logo.gif';
+
 
 interface SecuritySetupProps {
   formData: FormData;
@@ -46,7 +48,11 @@ const SecuritySetup = ({ formData, updateFormData, errors }: SecuritySetupProps)
       )}
 
       <div className="flex items-center gap-2 mb-4">
-        <Shield className="h-5 w-5 text-primary" />
+         <img
+              src={logoAnimation}
+              alt='Peaceful Investment'
+              className='h-full w-full max-w-[32px]'
+            />
         <h3 className="text-lg font-semibold text-white">Security Questions</h3>
       </div>
 
@@ -96,12 +102,16 @@ const SecuritySetup = ({ formData, updateFormData, errors }: SecuritySetupProps)
         </div>
       ))}
 
-      <Alert className="bg-white/10 border border-secondary-foreground text-white rounded-sm">
-        <Shield className="h-4 w-4 !text-primary" />
-        <AlertDescription>
+      <Alert className="bg-black border border-secondary-foreground text-white rounded-sm">
+         <div className="flex"><img
+              src={logoAnimation}
+              alt='Peaceful Investment'
+              className='h-full w-full max-w-[32px]'
+            />
+        <AlertDescription className="pl-2">
           <strong className="text-red-500">Important:</strong> Make sure to remember your answers exactly as you type them. 
           These questions are case-sensitive and will be used for account recovery.
-        </AlertDescription>
+        </AlertDescription></div>
       </Alert>
     </div>
   );
