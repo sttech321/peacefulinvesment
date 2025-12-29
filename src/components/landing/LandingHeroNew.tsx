@@ -43,8 +43,8 @@ const LandingHeroNew = () => {
                   className="bg-gradient-pink-to-yellow rounded-[12px] p-[2px]"
                 >
                   <Button className="block h-[45px] rounded-[10px] bg-black px-6 text-xs font-semibold uppercase text-white hover:bg-gradient-pink-to-yellow">
-                    Start Trading
-                  </Button>
+                    Start Investing
+                  </Button> 
                 </Link>
               )}
 

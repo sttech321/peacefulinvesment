@@ -27,7 +27,7 @@ export default function About() {
     {
       icon: Shield,
       title: "Trust & Security",
-      description: "Your financial security is our top priority. We implement the highest standards of data protection and regulatory compliance."
+      description: "Your financial security is our top priority. We implement the highest standards of data protection."
     },
     {
       icon: Heart,
@@ -37,12 +37,12 @@ export default function About() {
     {
       icon: Zap,
       title: "Innovation",
-      description: "We continuously evolve our platform with cutting-edge technology to provide the best trading experience."
+      description: "We continuously evolve our platform with cutting-edge technology to provide the best investing experience."
     },
     {
       icon: Globe,
       title: "Global Reach",
-      description: "Serving clients worldwide with localized support and multi-language capabilities."
+      description: "Serving clients worldwide with localized support."
     }
   ];
 
@@ -78,7 +78,7 @@ export default function About() {
     {
       year: "2020",
       title: "Company Founded",
-      description: "Peaceful Investment was established with a vision to democratize access to professional trading tools."
+      description: "Peaceful Investment was established with a vision to democratize access to professional investments."
     },
     {
       year: "2021",
@@ -117,14 +117,14 @@ export default function About() {
               <span className="text-[var(--yellowcolor)]"> Worldwide</span>
             </h1>
             <p className="max-w-3xl mx-auto font-inter text-lg md:text-[20px] font-normal text-white mb-8">
-              We're on a mission to democratize access to professional trading tools and create 
+              We're on a mission to democratize access to investing and create 
               opportunities for financial growth across the globe.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               {!user && (
               <Link to="/auth?mode=signup" className="bg-gradient-pink-to-yellow rounded-[12px] p-[2px]">
                 <Button className="hover:bg-gradient-pink-to-yellow flex  rounded-[10px] border-0 bg-black p-0 px-5 font-inter text-xs font-semibold uppercase text-white hover:text-white w-full">
-                  Start Trading Today
+                  Start investing
                   <ArrowRight className="w-5 h-5 ml-0 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
@@ -160,7 +160,7 @@ export default function About() {
                       Mission
                     </h3>
                     <p className="font-open-sans text-lg text-muted-foreground">
-                      To provide accessible, secure, and innovative trading solutions that empower 
+                      To provide accessible, secure, and innovative investing solutions that empower 
                       individuals to achieve their financial goals through transparent and ethical practices.
                     </p>
                   </div>
@@ -192,11 +192,11 @@ export default function About() {
                   </h3>
                   <div className="space-y-4">
                     {[
-                      "Advanced trading technology with MetaTrader integration",
-                      "24/7 customer support in multiple languages",
-                      "Regulated and compliant trading environment",
+                      "Advanced investing technology with MetaTrader integration",
+                      //"24/7 customer support in multiple languages",
+                      "The best trading environment",
                       "Educational resources and market analysis",
-                      "Competitive spreads and low fees",
+                      "Over 30 years of combined experience in investment management and technology",
                       "Mobile trading apps for iOS and Android"
                     ].map((feature, index) => (
                       <div key={index} className="flex items-center space-x-3">
@@ -395,7 +395,7 @@ export default function About() {
             Ready to Start Your <span className="text-[var(--yellowcolor)]">Trading Journey?</span>
           </h2>
           <p className="mx-auto max-w-3xl font-open-sans text-lg text-white lg:text-xl">
-            Join thousands of successful traders who trust Peaceful Investment for their financial growth.
+            Join thousands of successful investors who trust Peaceful Investment for their financial growth.
           </p>
           <div className="flex sm:flex-row gap-4 justify-center pt-8 md:pt-10 max-w-sm mx-auto">
              {!user && (

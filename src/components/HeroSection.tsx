@@ -110,7 +110,7 @@ const HeroSection = () => {
               style={{ animationDelay: '0.2s' }}
             >
               Control Your{' '}
-              <span className='text-primary-gradient'>Investment Bots</span>{' '}
+              <span className='text-primary-gradient'>Sto Investments</span>{' '}
               from Anywhere
             </h1>
 
