@@ -1247,7 +1247,7 @@ export default function AdminReferrals() {
 
       {/* Referral Details Dialog */}
       <Dialog open={referralDetailsOpen} onOpenChange={setReferralDetailsOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent">
           <DialogHeader>
             <DialogTitle>Referral Details</DialogTitle>
             <DialogDescription>

@@ -191,7 +191,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                             e.preventDefault();
                             toggleMenu(item.name);
                           }}
-                          className='p-1.5 rounded hover:bg-muted/20 text-[var(--yellowcolor)] hover:text-[var(--yellowcolor)] transition-colors flex items-center justify-center'
+                          className='p-1.5 rounded hover:bg-muted/20 text-[var(--yellowcolor)] hover:text-[var(--yellowcolor)] transition-colors flex items-center justify-center mr-[-10px]'
                           aria-label={isExpanded ? 'Collapse menu' : 'Expand menu'}
                         >
                           {isExpanded ? (

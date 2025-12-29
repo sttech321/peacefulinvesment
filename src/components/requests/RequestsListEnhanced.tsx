@@ -374,7 +374,7 @@ const RequestsListEnhanced = () => {
             </div>
 
             {request.description && (
-              <div className="mt-4 pt-4 border-t">
+              <div className="mt-4 pt-4 border-t border-secondary-foreground">
                 <p className="text-sm text-muted-foreground mb-1">Description</p>
                 <p className="text-sm line-clamp-2 text-white">{request.description}</p>
               </div>
