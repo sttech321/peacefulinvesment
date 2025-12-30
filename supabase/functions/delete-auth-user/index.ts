@@ -208,8 +208,66 @@ serve(async (req) => {
       userExists = false;
     }
 
+    // Delete related data first (hard delete) - order matters due to foreign key constraints
+    const deletionErrors: string[] = [];
+    
+    console.log(`[HARD DELETE] Starting hard delete for user ${user_id}...`);
+
+    // Helper function to safely delete from a table
+    const safeDelete = async (tableName: string, condition: { column: string; value: string }, description: string) => {
+      try {
+        const { error } = await supabaseAdmin
+          .from(tableName)
+          .delete()
+          .eq(condition.column, condition.value);
+        if (error) {
+          console.error(`[HARD DELETE] Error deleting ${tableName}:`, error);
+          deletionErrors.push(`${tableName}: ${error.message}`);
+          return false;
+        } else {
+          console.log(`[HARD DELETE] Deleted ${tableName} for user ${user_id}`);
+          return true;
+        }
+      } catch (err: any) {
+        console.error(`[HARD DELETE] Exception deleting ${tableName}:`, err);
+        deletionErrors.push(`${tableName}: ${err?.message || "Unknown error"}`);
+        return false;
+      }
+    };
+
+    // Delete in order to respect foreign key constraints
+    // 1. Delete referral_signups first (references referrals)
+    await safeDelete("referral_signups", { column: "referred_user_id", value: user_id }, "referral signups");
+
+    // 2. Delete verification_requests (references profiles)
+    await safeDelete("verification_requests", { column: "user_id", value: user_id }, "verification requests");
+
+    // 3. Delete admin_actions (references profiles and verification_requests)
+    await safeDelete("admin_actions", { column: "user_id", value: user_id }, "admin actions");
+
+    // 4. Delete overseas company requests
+    await safeDelete("overseas_company_requests", { column: "user_id", value: user_id }, "overseas company requests");
+
+    // 5. Delete overseas companies
+    await safeDelete("overseas_companies", { column: "user_id", value: user_id }, "overseas companies");
+
+    // 6. Delete referrals (references user_id)
+    await safeDelete("referrals", { column: "user_id", value: user_id }, "referrals");
+
+    // 7. Delete transactions
+    await safeDelete("transactions", { column: "user_id", value: user_id }, "transactions");
+
+    // 8. Delete metatrader accounts (references auth.users)
+    await safeDelete("metatrader_accounts", { column: "user_id", value: user_id }, "metatrader accounts");
+
+    // 9. Delete user roles
+    await safeDelete("user_roles", { column: "user_id", value: user_id }, "user roles");
+
+    // 10. Delete profile last (may have CASCADE dependencies)
+    await safeDelete("profiles", { column: "user_id", value: user_id }, "profiles");
+
     // Delete the auth user
-    let deleteError = null;
+    let deleteError: any = null;
     let deleteSuccess = false;
     
     if (userExists) {
@@ -232,16 +290,35 @@ serve(async (req) => {
       deleteSuccess = true;
     }
 
-    // Return success even if deletion failed, as profile and related data are already soft-deleted
-    // This prevents blocking the admin deletion process
+    // Collect all errors
+    const allErrors = [...deletionErrors];
     if (deleteError) {
-      console.warn(`Auth user deletion failed for ${user_id}, but profile data has been soft-deleted`);
+      const errorMsg = (deleteError as any)?.message || String(deleteError) || "Unknown error";
+      allErrors.push(`auth user: ${errorMsg}`);
+    }
+
+    // Return success even if some deletions failed
+    // This prevents blocking the admin deletion process
+    if (deleteError || deletionErrors.length > 0) {
+      const hasAuthError = !!deleteError;
+      const hasDataErrors = deletionErrors.length > 0;
+      
+      let message = "User deletion completed with some issues:";
+      if (hasDataErrors) {
+        message += " Some related data could not be deleted.";
+      }
+      if (hasAuthError) {
+        message += " Auth user deletion had issues.";
+      }
+      
+      console.warn(`Deletion completed with errors for ${user_id}:`, allErrors);
       return new Response(
         JSON.stringify({ 
           success: true, 
           warning: true,
-          message: "Profile and related data deleted successfully. Auth user deletion had issues but data is safe.",
-          error: deleteError.message 
+          message: message,
+          errors: allErrors.length > 0 ? allErrors : undefined,
+          error: (deleteError ? ((deleteError as any)?.message || String(deleteError)) : undefined) || (deletionErrors.length > 0 ? "Some data deletions failed" : undefined)
         }),
         {
           status: 200, // Return 200 to indicate partial success
@@ -254,7 +331,7 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         message: deleteSuccess 
-          ? "User deleted successfully from auth system" 
+          ? "User and all related data deleted successfully from the system" 
           : "User deletion completed (user may not have existed in auth system)"
       }),
       {
@@ -314,4 +391,3 @@ serve(async (req) => {
     );
   }
 });
-
