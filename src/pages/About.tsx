@@ -357,7 +357,7 @@ export default function About() {
                       <Card className="glass-card bg-black border-1 shadow-lg relative">
                         <CardContent className="p-0">
                           <div className="flex items-center mb-3">
-                            <Badge variant="secondary" className="mr-3 bg-primary hover:bg-primary">
+                            <Badge variant="secondary" className="mr-3 bg-primary hover:bg-primary border-0">
                               {milestone.year}
                             </Badge>
                             <Award className="w-5 h-5 text-primary" />
