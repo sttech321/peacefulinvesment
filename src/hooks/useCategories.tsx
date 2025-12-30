@@ -278,6 +278,83 @@ export function useCategories() {
     }
   };
 
+  // More efficient reorder function that moves a category to a specific target position
+  const reorderToPosition = async (
+    categoryId: string, 
+    targetIndex: number, 
+    parentId: string | null = null
+  ) => {
+    try {
+      // Get all categories with the same parent (siblings)
+      let query = supabase
+        .from("blog_categories")
+        .select("id, sort_order");
+      
+      // Handle null parent_id correctly
+      if (parentId === null) {
+        query = query.is("parent_id", null);
+      } else {
+        query = query.eq("parent_id", parentId);
+      }
+      
+      const { data: siblings, error: fetchError } = await query
+        .order("sort_order", { ascending: true })
+        .order("name", { ascending: true });
+
+      if (fetchError) throw fetchError;
+      if (!siblings || siblings.length <= 1) {
+        return { error: null };
+      }
+
+      // Find current category index
+      const currentIndex = siblings.findIndex(cat => cat.id === categoryId);
+      if (currentIndex === -1) {
+        return { error: { message: "Category not found" } };
+      }
+
+      // Clamp target index to valid range
+      const clampedTargetIndex = Math.max(0, Math.min(targetIndex, siblings.length - 1));
+      
+      if (currentIndex === clampedTargetIndex) {
+        return { error: null }; // Already at target position
+      }
+
+      // Create a new array with the reordered items
+      const reordered = [...siblings];
+      const [movedItem] = reordered.splice(currentIndex, 1);
+      reordered.splice(clampedTargetIndex, 0, movedItem);
+
+      // Calculate new sort_order values (use increments of 10 for easier reordering later)
+      const updates = reordered.map((cat, index) => ({
+        id: cat.id,
+        sort_order: index * 10
+      }));
+
+      // Update all categories in parallel
+      const updatePromises = updates.map(update =>
+        supabase
+          .from("blog_categories")
+          .update({ sort_order: update.sort_order })
+          .eq("id", update.id)
+      );
+
+      const results = await Promise.all(updatePromises);
+      const errors = results.filter(r => r.error);
+      
+      if (errors.length > 0) {
+        throw errors[0].error;
+      }
+
+      // Refresh categories
+      await fetchCategories();
+
+      return { error: null };
+    } catch (error) {
+      console.error("Error reordering categories to position:", error);
+      return { error };
+    }
+  };
+
   return {
     categories,     // for admin list / forms
     categoryMap,    // for frontend badges etc.
@@ -287,5 +364,6 @@ export function useCategories() {
     updateCategory,
     deleteCategory,
     reorderCategories,
+    reorderToPosition,
   };
 }

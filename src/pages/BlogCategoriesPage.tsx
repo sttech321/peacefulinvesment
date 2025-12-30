@@ -11,7 +11,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Plus, Edit2, Trash2, AlertCircle, ChevronUp, ChevronDown } from "lucide-react";
+import { Loader2, Plus, Edit2, Trash2, AlertCircle, GripVertical } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -29,7 +29,7 @@ type TreeNode = BlogCategory & {
 };
 
 export default function AdminBlogCategories() {
-  const { categories, loading, createCategory, updateCategory, deleteCategory, reorderCategories } =
+  const { categories, loading, createCategory, updateCategory, deleteCategory, reorderCategories, reorderToPosition } =
     useCategories();
   const { toast } = useToast();
 
@@ -41,6 +41,10 @@ export default function AdminBlogCategories() {
 
   // state for tree UI: which nodes are expanded
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+
+  // Drag and drop state
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -170,6 +174,100 @@ export default function AdminBlogCategories() {
         variant: "destructive",
       });
     }
+  };
+
+  // Drag and drop handlers
+  const handleDragStart = (e: React.DragEvent, categoryId: string) => {
+    setDraggedId(categoryId);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", categoryId);
+    // Use a transparent image for cleaner drag
+    const img = new Image();
+    img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs=';
+    e.dataTransfer.setDragImage(img, 0, 0);
+  };
+
+  const handleDragOver = (e: React.DragEvent, categoryId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = "move";
+    if (draggedId && draggedId !== categoryId) {
+      setDragOverId(categoryId);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    // Only clear if we're actually leaving the row (not just moving to a child element)
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const x = e.clientX;
+    const y = e.clientY;
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+      setDragOverId(null);
+    }
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetCategoryId: string, targetParentId: string | null) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverId(null);
+    
+    if (!draggedId || draggedId === targetCategoryId) {
+      setDraggedId(null);
+      return;
+    }
+
+    // Get siblings for the target (same parent)
+    const targetSiblings = targetParentId === null 
+      ? roots 
+      : (nodeMap.get(targetParentId)?.children || []);
+    
+    const draggedNode = nodeMap.get(draggedId);
+    if (!draggedNode) {
+      setDraggedId(null);
+      return;
+    }
+
+    // Only allow reordering within the same parent level
+    if (draggedNode.parent_id !== targetParentId) {
+      toast({
+        title: "Cannot reorder",
+        description: "You can only reorder categories within the same level.",
+        variant: "destructive",
+      });
+      setDraggedId(null);
+      return;
+    }
+
+    const draggedIndex = targetSiblings.findIndex(n => n.id === draggedId);
+    const targetIndex = targetSiblings.findIndex(n => n.id === targetCategoryId);
+
+    if (draggedIndex === -1 || targetIndex === -1 || draggedIndex === targetIndex) {
+      setDraggedId(null);
+      return;
+    }
+
+    // Use the efficient reorderToPosition function to move directly to target
+    const result = await reorderToPosition(draggedId, targetIndex, targetParentId);
+    
+    if (result.error) {
+      toast({
+        title: "Error",
+        description: "Failed to reorder category. Please try again.",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: "Category order updated successfully.",
+      });
+    }
+
+    setDraggedId(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedId(null);
+    setDragOverId(null);
   };
 
   if (loading) {
@@ -322,25 +420,45 @@ export default function AdminBlogCategories() {
   const renderCategoryRows = (node: TreeNode, depth: number = 0, parentSiblings: TreeNode[] = []): JSX.Element[] => {
     const rows: JSX.Element[] = [];
 
-    // Get siblings for this node (same parent)
-    // For root level, use roots array; for children, use parent's children
-    const nodeSiblings = depth === 0 
-      ? roots 
-      : (nodeMap.get(node.parent_id || '')?.children || []);
-    
-    // Find current index in siblings
-    const currentIndex = nodeSiblings.findIndex(n => n.id === node.id);
-    const canMoveUp = currentIndex > 0;
-    const canMoveDown = currentIndex < nodeSiblings.length - 1;
+    const isDragging = draggedId === node.id;
+    const isDragOver = dragOverId === node.id;
+    const nodeParentId = node.parent_id || null;
 
     rows.push(
-      <tr key={node.id} className="border-b border-muted/20 last:border-0 hover:bg-white/10">
+      <tr 
+        key={node.id} 
+        draggable={true}
+        onDragStart={(e) => handleDragStart(e, node.id)}
+        onDragOver={(e) => handleDragOver(e, node.id)}
+        onDragLeave={handleDragLeave}
+        onDrop={(e) => handleDrop(e, node.id, nodeParentId)}
+        onDragEnd={handleDragEnd}
+        className={`border-b border-muted/20 last:border-0 transition-all duration-150 ${
+          isDragging 
+            ? "opacity-40 cursor-grabbing bg-muted/20" 
+            : "hover:bg-white/10 cursor-grab active:cursor-grabbing"
+        } ${
+          isDragOver ? "bg-primary/20 border-primary border-t-2 border-b-2 shadow-lg" : ""
+        }`}
+        style={{
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
+        }}
+      >
         <td
           className="py-2 text-white px-4 whitespace-nowrap"
           style={{ paddingLeft: depth === 0 ? 16 : 24 * depth }}
         >
-          {depth > 0 ? "— " : ""}
-          {node.name}
+          <div className="flex items-center gap-2">
+            <GripVertical 
+              className="h-4 w-4 text-muted-foreground flex-shrink-0 cursor-grab active:cursor-grabbing" 
+              style={{ opacity: isDragging ? 0.3 : 1 }}
+            />
+            <span>
+              {depth > 0 ? "— " : ""}
+              {node.name}
+            </span>
+          </div>
         </td>
         <td className="py-2 text-muted-foreground px-4 whitespace-nowrap">{node.slug}</td>
         <td className="py-2 px-4 whitespace-nowrap">
@@ -355,28 +473,9 @@ export default function AdminBlogCategories() {
           <Button
             variant="outline"
             size="icon"
-            onClick={() => handleReorder(node.id, 'up', node.parent_id || null)}
-            disabled={!canMoveUp}
-            className="rounded-[8px] border-0 hover:bg-white/80 disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Move up"
-          >
-            <ChevronUp className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => handleReorder(node.id, 'down', node.parent_id || null)}
-            disabled={!canMoveDown}
-            className="rounded-[8px] border-0 hover:bg-white/80 disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Move down"
-          >
-            <ChevronDown className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
             onClick={() => startEdit(node)}
             className="rounded-[8px] border-0 hover:bg-white/80"
+            title="Edit category"
           >
             <Edit2 className="h-4 w-4" />
           </Button>
@@ -385,6 +484,7 @@ export default function AdminBlogCategories() {
             size="icon"
             className="text-red-600 hover:text-red-700 hover:bg-red-50 rounded-[8px] border-0"
             onClick={() => handleDelete(node.id)}
+            title="Delete category"
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -426,14 +526,18 @@ export default function AdminBlogCategories() {
               <th className="text-right px-4 py-4 text-white">Actions</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody
+            onDragOver={(e) => {
+              e.preventDefault(); // Allow drops on tbody
+            }}
+          >
             {roots.length === 0 && (
               <tr>
                 <td
                   colSpan={4}
                   className="py-6 text-center text-white"
                 >
-                  No categories yet. Click “Add Category” to create one.
+                  No categories yet. Click "Add Category" to create one.
                 </td>
               </tr>
             )}
