@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Plus, Trash2, Settings, Link2, Mail, ChevronUp, ChevronDown } from "lucide-react";
+import { Loader2, Plus, Trash2, Settings, Link2, Mail, GripVertical } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useToast } from "@/hooks/use-toast";
@@ -26,6 +26,11 @@ export default function AdminSettings() {
   const [headerLinks, setHeaderLinks] = useState<LinkItem[]>([]);
   const [footerLinks, setFooterLinks] = useState<LinkItem[]>([]);
   const [depositWithdrawalEmail, setDepositWithdrawalEmail] = useState("");
+  
+  // Drag and drop state
+  const [draggedLinkId, setDraggedLinkId] = useState<string | null>(null);
+  const [dragOverLinkId, setDragOverLinkId] = useState<string | null>(null);
+  const [draggedLinkType, setDraggedLinkType] = useState<'header' | 'footer' | null>(null);
 
   // Fetch app settings
   useEffect(() => {
@@ -292,6 +297,85 @@ export default function AdminSettings() {
     setFooterLinks(updated);
   };
 
+  // Drag and drop handlers for links
+  const handleLinkDragStart = (e: React.DragEvent, linkId: string, type: 'header' | 'footer') => {
+    setDraggedLinkId(linkId);
+    setDraggedLinkType(type);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", linkId);
+    const img = new Image();
+    img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs=';
+    e.dataTransfer.setDragImage(img, 0, 0);
+  };
+
+  const handleLinkDragOver = (e: React.DragEvent, linkId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = "move";
+    if (draggedLinkId && draggedLinkId !== linkId) {
+      setDragOverLinkId(linkId);
+    }
+  };
+
+  const handleLinkDragLeave = (e: React.DragEvent) => {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const x = e.clientX;
+    const y = e.clientY;
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+      setDragOverLinkId(null);
+    }
+  };
+
+  const handleLinkDrop = (e: React.DragEvent, targetLinkId: string, type: 'header' | 'footer') => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverLinkId(null);
+    
+    if (!draggedLinkId || !draggedLinkType || draggedLinkId === targetLinkId || draggedLinkType !== type) {
+      setDraggedLinkId(null);
+      setDraggedLinkType(null);
+      return;
+    }
+
+    const links = type === 'header' ? headerLinks : footerLinks;
+    const setLinks = type === 'header' ? setHeaderLinks : setFooterLinks;
+    
+    // Sort links by order
+    const sorted = [...links]
+      .map((link, idx) => ({ ...link, order: link.order !== undefined ? link.order : idx }))
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
+    
+    const draggedIndex = sorted.findIndex(l => `${l.label}-${l.to}` === draggedLinkId);
+    const targetIndex = sorted.findIndex(l => `${l.label}-${l.to}` === targetLinkId);
+    
+    if (draggedIndex === -1 || targetIndex === -1 || draggedIndex === targetIndex) {
+      setDraggedLinkId(null);
+      setDraggedLinkType(null);
+      return;
+    }
+
+    // Reorder the array
+    const reordered = [...sorted];
+    const [movedItem] = reordered.splice(draggedIndex, 1);
+    reordered.splice(targetIndex, 0, movedItem);
+    
+    // Update order values
+    const updated = reordered.map((link, index) => ({
+      ...link,
+      order: index + 1
+    }));
+    
+    setLinks(updated);
+    setDraggedLinkId(null);
+    setDraggedLinkType(null);
+  };
+
+  const handleLinkDragEnd = () => {
+    setDraggedLinkId(null);
+    setDragOverLinkId(null);
+    setDraggedLinkType(null);
+  };
+
   if (loadingSettings) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -377,30 +461,35 @@ export default function AdminSettings() {
                 .sort((a, b) => (a.order || 0) - (b.order || 0))
                 .map((link, sortedIndex) => {
                   const originalIndex = headerLinks.findIndex(l => l === link);
+                  const linkId = `${link.label}-${link.to}`;
+                  const isDragging = draggedLinkId === linkId && draggedLinkType === 'header';
+                  const isDragOver = dragOverLinkId === linkId && draggedLinkType === 'header';
+                  
                   return (
-                    <div key={`${link.order}-${sortedIndex}`} className="flex gap-3 items-center">
-                      <div className="flex flex-col gap-1">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => moveHeaderLink(sortedIndex, 'up')}
-                          disabled={sortedIndex === 0}
-                          className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground rounded-[8px] border-0"
-                        >
-                          <ChevronUp className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => moveHeaderLink(sortedIndex, 'down')}
-                          disabled={sortedIndex === headerLinks.length - 1}
-                          className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground rounded-[8px] border-0"
-                        >
-                          <ChevronDown className="h-4 w-4" />
-                        </Button>
-                      </div>
+                    <div 
+                      key={`${link.order}-${sortedIndex}`} 
+                      draggable={true}
+                      onDragStart={(e) => handleLinkDragStart(e, linkId, 'header')}
+                      onDragOver={(e) => handleLinkDragOver(e, linkId)}
+                      onDragLeave={handleLinkDragLeave}
+                      onDrop={(e) => handleLinkDrop(e, linkId, 'header')}
+                      onDragEnd={handleLinkDragEnd}
+                      className={`flex gap-3 items-center transition-all duration-150 ${
+                        isDragging 
+                          ? "opacity-40 cursor-grabbing bg-muted/20" 
+                          : "hover:bg-white/5 cursor-grab active:cursor-grabbing"
+                      } ${
+                        isDragOver ? "bg-primary/20 border-primary border-2 rounded-lg shadow-lg" : ""
+                      } p-2 rounded-lg`}
+                      style={{
+                        userSelect: 'none',
+                        WebkitUserSelect: 'none',
+                      }}
+                    >
+                      <GripVertical 
+                        className="h-5 w-5 text-muted-foreground flex-shrink-0 cursor-grab active:cursor-grabbing" 
+                        style={{ opacity: isDragging ? 0.3 : 1 }}
+                      />
                       <div className="flex-1 grid grid-cols-2 gap-3">
                         <Input
                           placeholder="Link Label"
@@ -470,30 +559,35 @@ export default function AdminSettings() {
                 .sort((a, b) => (a.order || 0) - (b.order || 0))
                 .map((link, sortedIndex) => {
                   const originalIndex = footerLinks.findIndex(l => l === link);
+                  const linkId = `${link.label}-${link.to}`;
+                  const isDragging = draggedLinkId === linkId && draggedLinkType === 'footer';
+                  const isDragOver = dragOverLinkId === linkId && draggedLinkType === 'footer';
+                  
                   return (
-                    <div key={`${link.order}-${sortedIndex}`} className="flex gap-3 items-center">
-                      <div className="flex flex-col gap-1">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => moveFooterLink(sortedIndex, 'up')}
-                          disabled={sortedIndex === 0}
-                          className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground rounded-[8px] border-0"
-                        >
-                          <ChevronUp className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => moveFooterLink(sortedIndex, 'down')}
-                          disabled={sortedIndex === footerLinks.length - 1}
-                          className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground rounded-[8px] border-0"
-                        >
-                          <ChevronDown className="h-4 w-4" />
-                        </Button>
-                      </div>
+                    <div 
+                      key={`${link.order}-${sortedIndex}`} 
+                      draggable={true}
+                      onDragStart={(e) => handleLinkDragStart(e, linkId, 'footer')}
+                      onDragOver={(e) => handleLinkDragOver(e, linkId)}
+                      onDragLeave={handleLinkDragLeave}
+                      onDrop={(e) => handleLinkDrop(e, linkId, 'footer')}
+                      onDragEnd={handleLinkDragEnd}
+                      className={`flex gap-3 items-center transition-all duration-150 ${
+                        isDragging 
+                          ? "opacity-40 cursor-grabbing bg-muted/20" 
+                          : "hover:bg-white/5 cursor-grab active:cursor-grabbing"
+                      } ${
+                        isDragOver ? "bg-primary/20 border-primary border-2 rounded-lg shadow-lg" : ""
+                      } p-2 rounded-lg`}
+                      style={{
+                        userSelect: 'none',
+                        WebkitUserSelect: 'none',
+                      }}
+                    >
+                      <GripVertical 
+                        className="h-5 w-5 text-muted-foreground flex-shrink-0 cursor-grab active:cursor-grabbing" 
+                        style={{ opacity: isDragging ? 0.3 : 1 }}
+                      />
                       <div className="flex-1 grid grid-cols-2 gap-3">
                         <Input
                           placeholder="Link Label"
