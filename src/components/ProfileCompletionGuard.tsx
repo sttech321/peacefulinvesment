@@ -14,7 +14,7 @@ interface ProfileCompletionGuardProps {
 const ProfileCompletionGuard = ({ children }: ProfileCompletionGuardProps) => {
   const { user } = useAuth();
   const { profile, loading: profileLoading, refetchProfile } = useProfile();
-  const { requests, loading: requestsLoading } = useOverseasCompany();
+  const { requests, loading: requestsLoading, refetch: refetchOverseasCompany } = useOverseasCompany();
   const location = useLocation();
   const navigate = useNavigate();
   const lastPathRef = useRef<string>("");
@@ -37,27 +37,31 @@ const ProfileCompletionGuard = ({ children }: ProfileCompletionGuardProps) => {
     location.pathname === path || location.pathname.startsWith("/auth")
   );
 
-  // Refetch profile data when navigating to ensure we have latest data
-  // This prevents stale data issues when profile is updated on other pages (like /profile)
+  // Refetch profile and overseas company requests when navigating to ensure we have latest data
+  // This prevents stale data issues when profile/requests are updated on other pages (like /profile, /overseas-company)
   // IMPORTANT: This hook must be called before any conditional returns (Rules of Hooks)
   useEffect(() => {
-    if (user && !profileLoading && !isAllowedPath) {
+    if (user && !profileLoading && !requestsLoading && !isAllowedPath) {
       // Refetch if path changed or on initial mount (when lastPathRef is empty)
       const shouldRefetch = lastPathRef.current === "" || lastPathRef.current !== location.pathname;
       
       if (shouldRefetch) {
-        console.log('[ProfileCompletionGuard] Refetching profile to ensure latest data', { 
+        console.log('[ProfileCompletionGuard] Refetching profile and overseas company requests to ensure latest data', { 
           pathname: location.pathname,
           previousPath: lastPathRef.current || '(initial mount)'
         });
         refetchProfile();
+        // Also refetch overseas company requests to ensure we have the latest status
+        if (refetchOverseasCompany) {
+          refetchOverseasCompany();
+        }
         lastPathRef.current = location.pathname;
       }
     } else if (isAllowedPath) {
       // Reset last path when on allowed path so we refetch when leaving
       lastPathRef.current = "";
     }
-  }, [user, location.pathname, profileLoading, refetchProfile, isAllowedPath]);
+  }, [user, location.pathname, profileLoading, requestsLoading, refetchProfile, refetchOverseasCompany, isAllowedPath]);
 
   // Watch for profile changes - monitor key fields that indicate profile completion
   // This ensures the guard reacts when profile is updated from other components
@@ -211,6 +215,7 @@ const ProfileCompletionGuard = ({ children }: ProfileCompletionGuardProps) => {
   const requestStatus = currentRequest?.status;
 
   // Determine if overseas company requirement is satisfied
+  // A request with status 'pending', 'processing', 'name_selected', or 'completed' satisfies the requirement
   const overseasCompanySatisfied = overseasCompanyCompleted || 
     (hasSubmittedRequest && ['pending', 'processing', 'name_selected', 'completed'].includes(requestStatus || ''));
 
@@ -257,7 +262,9 @@ const ProfileCompletionGuard = ({ children }: ProfileCompletionGuardProps) => {
     requestStatus,
     overseasCompanySatisfied,
     requestsCount: requests?.length || 0,
-    profileData
+    currentRequestId: currentRequest?.id,
+    profileData,
+    willGrantAccess: isProfileComplete && isUSAClient && (!overseasCompanyRequired || overseasCompanySatisfied)
   });
 
   // For USA users: Once profile is complete AND overseas company requirement is satisfied, grant immediate access
