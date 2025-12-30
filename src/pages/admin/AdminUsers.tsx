@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,7 +56,9 @@ import {
   X,
   MessageSquare,
   FileImage,
-  ExternalLink
+  ExternalLink,
+  Folder,
+  ArrowLeft
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -115,12 +118,19 @@ export default function AdminUsers() {
   const { user } = useAuth();
   const { isAdmin } = useUserRole();
   const { toast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [users, setUsers] = useState<User[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
+  
+  // Folder view state (sub-menu structure)
+  // Initialize based on URL - if no status param, show folder view
+  const initialStatusFromUrl = searchParams.get('status');
+  const [statusFilter, setStatusFilter] = useState(initialStatusFromUrl || "all");
+  const [showFolderView, setShowFolderView] = useState(!initialStatusFromUrl);
+  const [selectedStatusFolder, setSelectedStatusFolder] = useState<string | null>(initialStatusFromUrl);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [userDetailsOpen, setUserDetailsOpen] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
@@ -159,6 +169,21 @@ export default function AdminUsers() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [deleteReason, setDeleteReason] = useState("");
+
+  // Read status from URL query parameter - this is the primary source of truth
+  useEffect(() => {
+    const statusFromUrl = searchParams.get('status');
+    if (statusFromUrl) {
+      setStatusFilter(statusFromUrl);
+      setSelectedStatusFolder(statusFromUrl);
+      setShowFolderView(false);
+    } else {
+      // Only show folder view if we're on the base URL without status
+      setShowFolderView(true);
+      setSelectedStatusFolder(null);
+      setStatusFilter("all");
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     fetchUsers();
@@ -650,7 +675,7 @@ export default function AdminUsers() {
         console.log('[DELETE HANDLER] Single user deletion completed');
         
         // Check if there were any warnings during deletion
-        const hasWarnings = deleteResult?.authWarning === true;
+        const hasWarnings = deleteResult && 'authWarning' in deleteResult && deleteResult.authWarning === true;
         toast({
           title: hasWarnings ? "User Deleted (with warnings)" : "Success",
           description: hasWarnings 
@@ -999,6 +1024,42 @@ export default function AdminUsers() {
     }
   };
 
+  // Get status counts for folder view
+  const getStatusCounts = () => {
+    const statuses: Array<'verified' | 'pending_verification' | 'unverified' | 'rejected' | 'blocked'> = [
+      'verified',
+      'pending_verification',
+      'unverified',
+      'rejected',
+      'blocked'
+    ];
+    
+    return statuses.map(status => ({
+      status,
+      count: users.filter(u => u.status === status).length,
+      label: status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
+    }));
+  };
+
+  // Handle folder click - show users for that status
+  const handleFolderClick = (status: string) => {
+    setSelectedStatusFolder(status);
+    setStatusFilter(status);
+    setShowFolderView(false);
+    // Update URL with status parameter
+    setSearchParams({ status });
+  };
+
+  // Handle back to folder view
+  const handleBackToFolders = () => {
+    setShowFolderView(true);
+    setSelectedStatusFolder(null);
+    setStatusFilter("all");
+    setSearchTerm("");
+    // Clear status from URL
+    setSearchParams({});
+  };
+
   const handleExport = async (type: 'excel' | 'pdf') => {
     try {
       const formattedData = formatDataForExport(users, 'users');
@@ -1160,7 +1221,7 @@ export default function AdminUsers() {
               </div>
 
               {/* Status Filter Buttons */}
-              <div className="flex flex-wrap gap-2 items-center">
+              {/* <div className="flex flex-wrap gap-2 items-center">
                 <span className="text-sm text-muted-foreground font-medium">Status:</span>
                 <Button
                   variant={statusFilter === "all" ? "default" : "outline"}
@@ -1210,7 +1271,7 @@ export default function AdminUsers() {
                 >
                   Blocked
                 </Button>
-              </div>
+              </div> */}
 
               {/* User Count Badge */}
               <div className="flex items-center">
@@ -1309,32 +1370,96 @@ export default function AdminUsers() {
             </Card>
           )}
 
-      {/* Users List */}
-      <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
-        <CardHeader>
-          <div className="block sm:flex items-center justify-between mb-2 sm:mb-0">
-            <div className="pb-4 sm:pb-0">
-              <CardTitle className="mb-1 sm:mb-0">Users</CardTitle>
-              <CardDescription>
-                All registered users in the system
-              </CardDescription>
+      {/* Conditional Content */}
+      {showFolderView ? (
+        /* Folder View - Sub-menu showing status folders */
+        <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
+          <CardHeader>
+            <CardTitle>User Status Folders</CardTitle>
+            <CardDescription>
+              Click on a folder to view all users with that status
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+              {getStatusCounts().map(({ status, count, label }) => (
+                <div
+                  key={status}
+                  onClick={() => handleFolderClick(status)}
+                  className="group cursor-pointer p-6 bg-muted/20 rounded-lg border border-muted/40 hover:border-primary/50 hover:bg-muted/30 transition-all duration-200 hover:shadow-lg"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center group-hover:bg-primary/30 transition-colors">
+                      <Folder className="h-6 w-6 text-primary" />
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-white">{count}</div>
+                      <div className="text-xs text-muted-foreground">users</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {getStatusBadge(status)}
+                  </div>
+                </div>
+              ))}
             </div>
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="rounded-[8px] hover:bg-white/80 border-0"
-                onClick={selectAllUsers}
-              >
-                Select All
-              </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        /* List View - Shows users filtered by selected status */
+        <>
+          {/* Back Button */}
+          <div className="flex items-center gap-4 mb-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleBackToFolders}
+              className="gap-0 rounded-[8px] hover:bg-white/80 border-0 bg-white hover:text-black text-sm"
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Back to Folders 
+            </Button>
+            <div className="flex items-center gap-2">
+              {selectedStatusFolder && (
+                <>
+                  {getStatusBadge(selectedStatusFolder)}
+                  <span className="text-sm text-muted-foreground capitalize">
+                    {selectedStatusFolder.replace('_', ' ')} Users
+                  </span>
+                </>
+              )}
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {filteredUsers.length > 0 ? (
-              filteredUsers.map((user) => (
+
+          {/* Users List */}
+          <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
+            <CardHeader>
+              <div className="block sm:flex items-center justify-between mb-2 sm:mb-0">
+                <div className="pb-4 sm:pb-0">
+                  <CardTitle className="mb-1 sm:mb-0">Users</CardTitle>
+                  <CardDescription>
+                    {selectedStatusFolder 
+                      ? `All ${selectedStatusFolder.replace('_', ' ')} users`
+                      : "All registered users in the system"
+                    }
+                  </CardDescription>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-[8px] hover:bg-white/80 border-0"
+                    onClick={selectAllUsers}
+                  >
+                    Select All
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {filteredUsers.length > 0 ? (
+                  filteredUsers.map((user) => (
                 <div key={user.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-muted/20 rounded-lg gap-4">
                   <div className="flex items-center space-x-4">
                     <Checkbox
@@ -1439,15 +1564,26 @@ export default function AdminUsers() {
                   </div>
                 </div>
               ))
-            ) : (
-              <div className="text-center py-8">
-                <Users className="h-12 w-12 text-primary mx-auto mb-4" />
-                <p className="text-muted-foreground">No users found</p>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+                  ) : (
+                    <div className="text-center py-8">
+                      <Users className="h-12 w-12 text-primary mx-auto mb-4" />
+                      <p className="text-muted-foreground">No users found</p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleBackToFolders}
+                        className="mt-4 rounded-[8px] gap-0 hover:bg-white/80 border-0 text-sm"
+                      >
+                        <ArrowLeft className="h-4 w-4 mr-2" />
+                        Back to Folders
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </>
+      )}
 
       {/* User Details Dialog */}
       <Dialog open={userDetailsOpen} onOpenChange={setUserDetailsOpen}>

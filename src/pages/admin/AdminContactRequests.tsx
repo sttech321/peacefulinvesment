@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,7 +36,9 @@ import {
   CheckCircle,
   Loader2,
   Phone,
-  User
+  User,
+  Folder,
+  ArrowLeft
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -63,11 +66,19 @@ export default function AdminContactRequests() {
   const { user } = useAuth();
   const { isAdmin } = useUserRole();
   const { toast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [requests, setRequests] = useState<ContactRequest[]>([]);
   const [filteredRequests, setFilteredRequests] = useState<ContactRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  
+  // Folder view state (sub-menu structure)
+  // Initialize based on URL - if no status param, show folder view
+  const initialStatusFromUrl = searchParams.get('status');
+  const [statusFilter, setStatusFilter] = useState(initialStatusFromUrl || "all");
+  const [showFolderView, setShowFolderView] = useState(!initialStatusFromUrl);
+  const [selectedStatusFolder, setSelectedStatusFolder] = useState<string | null>(initialStatusFromUrl);
+  
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [selectedRequest, setSelectedRequest] = useState<ContactRequest | null>(null);
   const [requestDetailsOpen, setRequestDetailsOpen] = useState(false);
@@ -76,6 +87,21 @@ export default function AdminContactRequests() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [requestToDelete, setRequestToDelete] = useState<ContactRequest | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Read status from URL query parameter - this is the primary source of truth
+  useEffect(() => {
+    const statusFromUrl = searchParams.get('status');
+    if (statusFromUrl) {
+      setStatusFilter(statusFromUrl);
+      setSelectedStatusFolder(statusFromUrl);
+      setShowFolderView(false);
+    } else {
+      // Only show folder view if we're on the base URL without status
+      setShowFolderView(true);
+      setSelectedStatusFolder(null);
+      setStatusFilter("all");
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     fetchRequests();
@@ -377,6 +403,41 @@ export default function AdminContactRequests() {
     }
   };
 
+  // Get status counts for folder view
+  const getStatusCounts = () => {
+    const statuses: Array<'pending' | 'in_progress' | 'resolved' | 'closed'> = [
+      'pending',
+      'in_progress',
+      'resolved',
+      'closed'
+    ];
+    
+    return statuses.map(status => ({
+      status,
+      count: requests.filter(r => r.status === status).length,
+      label: status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
+    }));
+  };
+
+  // Handle folder click - show requests for that status
+  const handleFolderClick = (status: string) => {
+    setSelectedStatusFolder(status);
+    setStatusFilter(status);
+    setShowFolderView(false);
+    // Update URL with status parameter
+    setSearchParams({ status });
+  };
+
+  // Handle back to folder view
+  const handleBackToFolders = () => {
+    setShowFolderView(true);
+    setSelectedStatusFolder(null);
+    setStatusFilter("all");
+    setSearchTerm("");
+    // Clear status from URL
+    setSearchParams({});
+  };
+
   const getContactMethodIcon = (method: string) => {
     return method === 'phone' ? <Phone className="h-4 w-4" /> : <Mail className="h-4 w-4" />;
   };
@@ -549,68 +610,132 @@ export default function AdminContactRequests() {
         </Card>
       </div>
 
-      {/* Filters */}
-      <Card className="border-muted/20  bg-white/5 border rounded-lg p-4">
-        <CardHeader>
-          <CardTitle>Filters</CardTitle>
-          <CardDescription>
-            Search and filter contact requests
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-4 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search requests..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 rounded-[8px] border-0 shadow-none mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
-              />
+      {/* Conditional Content */}
+      {showFolderView ? (
+        /* Folder View - Sub-menu showing status folders */
+        <Card className="border-muted/20 bg-white/5 border rounded-lg p-4">
+          <CardHeader>
+            <CardTitle>Request Status Folders</CardTitle>
+            <CardDescription>
+              Click on a folder to view all requests with that status
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {getStatusCounts().map(({ status, count, label }) => (
+                <div
+                  key={status}
+                  onClick={() => handleFolderClick(status)}
+                  className="group cursor-pointer p-6 bg-muted/20 rounded-lg border border-muted/40 hover:border-primary/50 hover:bg-muted/30 transition-all duration-200 hover:shadow-lg"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center group-hover:bg-primary/30 transition-colors">
+                      <Folder className="h-6 w-6 text-primary" />
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-white">{count}</div>
+                      <div className="text-xs text-muted-foreground">requests</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {getStatusBadge(status)}
+                  </div>
+                </div>
+              ))}
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="in_progress">In Progress</SelectItem>
-                <SelectItem value="resolved">Resolved</SelectItem>
-                <SelectItem value="closed">Closed</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-              <SelectTrigger className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
-                <SelectValue placeholder="Filter by priority" />
-              </SelectTrigger>
-              <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
-                <SelectItem value="all">All Priorities</SelectItem>
-                <SelectItem value="high">High Priority</SelectItem>
-                <SelectItem value="medium">Medium Priority</SelectItem>
-                <SelectItem value="low">Low Priority</SelectItem>
-              </SelectContent>
-            </Select>
-            <div className="flex items-center space-x-2">
-              <Badge variant="outline" className="py-2 px-4 h-10 rounded-[8px] mt-1 text-white">
-                {filteredRequests.length} requests
-              </Badge>
+          </CardContent>
+        </Card>
+      ) : (
+        /* List View - Shows requests filtered by selected status */
+        <>
+          {/* Back Button */}
+          <div className="flex items-center gap-4 mb-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleBackToFolders}
+              className="gap-0 rounded-[8px] hover:bg-white/80 border-0 bg-white hover:text-black text-sm"
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Back to Folders 
+            </Button>
+            <div className="flex items-center gap-2">
+              {selectedStatusFolder && (
+                <>
+                  {getStatusBadge(selectedStatusFolder)}
+                  <span className="text-sm text-muted-foreground capitalize">
+                    {selectedStatusFolder.replace('_', ' ')} Requests
+                  </span>
+                </>
+              )}
             </div>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Requests List */}
-      <Card className="border-muted/20  bg-white/5 border rounded-lg p-4">
-        <CardHeader>
-          <CardTitle>Requests</CardTitle>
-          <CardDescription>
-            All customer contact requests
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {filteredRequests.length > 0 ? (
+          {/* Filters */}
+          <Card className="border-muted/20  bg-white/5 border rounded-lg p-4">
+            <CardHeader>
+              <CardTitle>Filters</CardTitle>
+              <CardDescription>
+                Search and filter contact requests
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-4 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search requests..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-9 rounded-[8px] border-0 shadow-none mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
+                  />
+                </div>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
+                    <SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
+                  <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="in_progress">In Progress</SelectItem>
+                    <SelectItem value="resolved">Resolved</SelectItem>
+                    <SelectItem value="closed">Closed</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                  <SelectTrigger className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
+                    <SelectValue placeholder="Filter by priority" />
+                  </SelectTrigger>
+                  <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
+                    <SelectItem value="all">All Priorities</SelectItem>
+                    <SelectItem value="high">High Priority</SelectItem>
+                    <SelectItem value="medium">Medium Priority</SelectItem>
+                    <SelectItem value="low">Low Priority</SelectItem>
+                  </SelectContent>
+                </Select>
+                <div className="flex items-center space-x-2">
+                  <Badge variant="outline" className="py-2 px-4 h-10 rounded-[8px] mt-1 text-white">
+                    {filteredRequests.length} requests
+                  </Badge>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Requests List */}
+          <Card className="border-muted/20  bg-white/5 border rounded-lg p-4">
+            <CardHeader>
+              <CardTitle>Requests</CardTitle>
+              <CardDescription>
+                {selectedStatusFolder 
+                  ? `All ${selectedStatusFolder.replace('_', ' ')} requests`
+                  : "All customer contact requests"
+                }
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {filteredRequests.length > 0 ? (
               filteredRequests.map((request) => (
                 <div key={request.id} className="flex items-center justify-between p-4 bg-muted/20 rounded-lg">
                   <div className="flex items-start space-x-4">
@@ -672,15 +797,26 @@ export default function AdminContactRequests() {
                   </div>
                 </div>
               ))
-            ) : (
-              <div className="text-center py-8">
-                <MessageSquare className="h-12 w-12 text-primary mx-auto mb-4" />
-                <p className="text-muted-foreground">No requests found</p>
+                ) : (
+                  <div className="text-center py-8">
+                    <MessageSquare className="h-12 w-12 text-primary mx-auto mb-4" />
+                    <p className="text-muted-foreground">No requests found</p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleBackToFolders}
+                      className="mt-4 rounded-[8px] gap-0 hover:bg-white/80 border-0 text-sm"
+                    >
+                      <ArrowLeft className="h-4 w-4 mr-2" />
+                      Back to Folders
+                    </Button>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </>
+      )}
 
       {/* Request Details Dialog */}
       <Dialog open={requestDetailsOpen} onOpenChange={setRequestDetailsOpen}>

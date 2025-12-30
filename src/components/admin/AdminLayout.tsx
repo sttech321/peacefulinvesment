@@ -39,7 +39,18 @@ interface NavigationItem {
 
 const navigation: NavigationItem[] = [
   { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
-  { name: 'Users', href: '/admin/users', icon: Users },
+  {
+    name: 'Users',
+    href: '/admin/users',
+    icon: Users,
+    subMenu: [
+      { name: 'Verified', href: '/admin/users?status=verified', status: 'verified' },
+      { name: 'Pending', href: '/admin/users?status=pending_verification', status: 'pending_verification' },
+      { name: 'Unverified', href: '/admin/users?status=unverified', status: 'unverified' },
+      { name: 'Rejected', href: '/admin/users?status=rejected', status: 'rejected' },
+      { name: 'Blocked', href: '/admin/users?status=blocked', status: 'blocked' },
+    ],
+  },
   { name: 'Trading Accounts', href: '/admin/accounts', icon: CreditCard },
   {
     name: 'Overseas Companies',
@@ -58,11 +69,23 @@ const navigation: NavigationItem[] = [
     name: 'Deposit/Withdrawal Requests',
     href: '/admin/deposit-withdrawal-request',
     icon: DollarSign,
+    subMenu: [
+      { name: 'Pending', href: '/admin/deposit-withdrawal-request?status=pending', status: 'pending' },
+      { name: 'Processing', href: '/admin/deposit-withdrawal-request?status=processing', status: 'processing' },
+      { name: 'Completed', href: '/admin/deposit-withdrawal-request?status=completed', status: 'completed' },
+      { name: 'Rejected', href: '/admin/deposit-withdrawal-request?status=rejected', status: 'rejected' },
+    ],
   },
   {
     name: 'Contact Requests',
     href: '/admin/contact-requests',
     icon: MessageSquare,
+    subMenu: [
+      { name: 'Pending', href: '/admin/contact-requests?status=pending', status: 'pending' },
+      { name: 'In Progress', href: '/admin/contact-requests?status=in_progress', status: 'in_progress' },
+      { name: 'Resolved', href: '/admin/contact-requests?status=resolved', status: 'resolved' },
+      { name: 'Closed', href: '/admin/contact-requests?status=closed', status: 'closed' },
+    ],
   },
   { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
   { name: 'Audit Log', href: '/admin/audit-log', icon: Activity },
@@ -96,11 +119,19 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       if (item.href && location.pathname === item.href) {
         return true;
       }
-      // Check if it's a submenu item
+      // Check if it's a submenu item - must match both pathname and status
       if (item.subMenu) {
         return item.subMenu.some(
-          subItem => location.pathname === subItem.href.split('?')[0] || 
-                     location.search.includes(`status=${subItem.status}`)
+          subItem => {
+            const subItemPath = subItem.href.split('?')[0];
+            const subItemStatus = subItem.status;
+            const currentPath = location.pathname;
+            const currentStatus = new URLSearchParams(location.search).get('status');
+            
+            // Match if pathname matches AND status matches (if status is present)
+            return currentPath === subItemPath && 
+                   (!currentStatus || currentStatus === subItemStatus);
+          }
         );
       }
       return false;
@@ -194,9 +225,20 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               const isExpanded = expandedMenus.has(item.name);
               const hasSubMenu = item.subMenu && item.subMenu.length > 0;
               
-              // Check if any sub-menu item is active
+              // Check if any sub-menu item is active - must match both pathname and status
               const isSubMenuActive = item.subMenu?.some(
-                subItem => location.search.includes(`status=${subItem.status}`)
+                subItem => {
+                  const subItemPath = subItem.href.split('?')[0];
+                  const subItemStatus = subItem.status;
+                  const currentPath = location.pathname;
+                  const currentStatus = new URLSearchParams(location.search).get('status');
+                  
+                  // Match if pathname matches AND status is present AND matches
+                  // If no status parameter, none of the submenu items should be active
+                  return currentPath === subItemPath && 
+                         currentStatus !== null && 
+                         currentStatus === subItemStatus;
+                }
               );
 
               return (
@@ -234,7 +276,18 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                       {isExpanded && item.subMenu && (
                         <div className='ml-4 mt-1 space-y-1'>
                           {item.subMenu.map((subItem) => {
-                            const isSubActive = location.search.includes(`status=${subItem.status}`);
+                            // Check if submenu item is active - must match both pathname and status
+                            const subItemPath = subItem.href.split('?')[0];
+                            const subItemStatus = subItem.status;
+                            const currentPath = location.pathname;
+                            const currentStatus = new URLSearchParams(location.search).get('status');
+                            
+                            // Match if pathname matches AND status is present AND matches
+                            // If no status parameter, none of the submenu items should be active
+                            const isSubActive = currentPath === subItemPath && 
+                                               currentStatus !== null && 
+                                               currentStatus === subItemStatus;
+                            
                             return (
                               <Link
                                 key={subItem.name}

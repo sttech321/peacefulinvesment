@@ -827,7 +827,7 @@ export default function AdminOverseasCompanies() {
               </div>
 
               {/* Filters */}
-              {/* <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
+              <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
                 <CardHeader>
                   <CardTitle>Filters</CardTitle>
                   <CardDescription>
@@ -845,7 +845,7 @@ export default function AdminOverseasCompanies() {
                         className="pl-8 rounded-[8px] placeholder:text-sm border-0 shadow-none mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
                       />
                     </div>
-                    <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                    {/* <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
                       <div className="flex flex-wrap gap-2 items-center">
                         <span className="text-sm text-muted-foreground font-medium">Status:</span>
                         <Button
@@ -902,10 +902,10 @@ export default function AdminOverseasCompanies() {
                           {filteredRequests.length} requests
                         </Badge>
                       </div>
-                    </div>
+                    </div> */}
                   </div>
                 </CardContent>
-              </Card> */}
+              </Card>
 
               {/* Requests List */}
               <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
