@@ -214,21 +214,40 @@ serve(async (req) => {
     console.log(`[HARD DELETE] Starting hard delete for user ${user_id}...`);
 
     // Helper function to safely delete from a table
+    // Returns true if deletion succeeded or table doesn't exist, false only on actual errors
     const safeDelete = async (tableName: string, condition: { column: string; value: string }, description: string) => {
       try {
+        // Check if table exists first (optional - will fail gracefully if it doesn't)
         const { error } = await supabaseAdmin
           .from(tableName)
           .delete()
           .eq(condition.column, condition.value);
+        
         if (error) {
+          // If table doesn't exist, that's okay - just log and continue
+          if (error.message?.includes("does not exist") || error.code === "42P01") {
+            console.log(`[HARD DELETE] Table ${tableName} does not exist, skipping`);
+            return true; // Not an error - table just doesn't exist
+          }
+          // If no rows affected, that's also okay
+          if (error.message?.includes("0 rows") || error.code === "PGRST116") {
+            console.log(`[HARD DELETE] No rows to delete from ${tableName} for user ${user_id}`);
+            return true; // Not an error - just no data to delete
+          }
+          // Actual error - log it
           console.error(`[HARD DELETE] Error deleting ${tableName}:`, error);
           deletionErrors.push(`${tableName}: ${error.message}`);
           return false;
         } else {
-          console.log(`[HARD DELETE] Deleted ${tableName} for user ${user_id}`);
+          console.log(`[HARD DELETE] Successfully deleted from ${tableName} for user ${user_id}`);
           return true;
         }
       } catch (err: any) {
+        // If table doesn't exist in the catch, that's okay
+        if (err?.message?.includes("does not exist") || err?.code === "42P01") {
+          console.log(`[HARD DELETE] Table ${tableName} does not exist, skipping`);
+          return true;
+        }
         console.error(`[HARD DELETE] Exception deleting ${tableName}:`, err);
         deletionErrors.push(`${tableName}: ${err?.message || "Unknown error"}`);
         return false;
@@ -236,34 +255,42 @@ serve(async (req) => {
     };
 
     // Delete in order to respect foreign key constraints
+    // Order matters: delete child records before parent records
+    
     // 1. Delete referral_signups first (references referrals)
     await safeDelete("referral_signups", { column: "referred_user_id", value: user_id }, "referral signups");
 
-    // 2. Delete verification_requests (references profiles)
+    // 2. Delete request_documents (references requests) - delete before requests
+    await safeDelete("request_documents", { column: "user_id", value: user_id }, "request documents");
+
+    // 3. Delete requests (deposit/withdrawal requests)
+    await safeDelete("requests", { column: "user_id", value: user_id }, "requests");
+
+    // 4. Delete verification_requests (references profiles)
     await safeDelete("verification_requests", { column: "user_id", value: user_id }, "verification requests");
 
-    // 3. Delete admin_actions (references profiles and verification_requests)
+    // 5. Delete admin_actions (references profiles and verification_requests)
     await safeDelete("admin_actions", { column: "user_id", value: user_id }, "admin actions");
 
-    // 4. Delete overseas company requests
+    // 6. Delete overseas company requests
     await safeDelete("overseas_company_requests", { column: "user_id", value: user_id }, "overseas company requests");
 
-    // 5. Delete overseas companies
+    // 7. Delete overseas companies
     await safeDelete("overseas_companies", { column: "user_id", value: user_id }, "overseas companies");
 
-    // 6. Delete referrals (references user_id)
+    // 8. Delete referrals (references user_id)
     await safeDelete("referrals", { column: "user_id", value: user_id }, "referrals");
 
-    // 7. Delete transactions
+    // 9. Delete transactions
     await safeDelete("transactions", { column: "user_id", value: user_id }, "transactions");
 
-    // 8. Delete metatrader accounts (references auth.users)
+    // 10. Delete metatrader accounts (references auth.users)
     await safeDelete("metatrader_accounts", { column: "user_id", value: user_id }, "metatrader accounts");
 
-    // 9. Delete user roles
+    // 11. Delete user roles
     await safeDelete("user_roles", { column: "user_id", value: user_id }, "user roles");
 
-    // 10. Delete profile last (may have CASCADE dependencies)
+    // 12. Delete profile last (may have CASCADE dependencies, but delete explicitly to be safe)
     await safeDelete("profiles", { column: "user_id", value: user_id }, "profiles");
 
     // Delete the auth user
@@ -297,11 +324,19 @@ serve(async (req) => {
       allErrors.push(`auth user: ${errorMsg}`);
     }
 
-    // Return success even if some deletions failed
-    // This prevents blocking the admin deletion process
-    if (deleteError || deletionErrors.length > 0) {
+    // Check if there were any critical errors
+    // Filter out non-critical errors (like table doesn't exist, no rows to delete)
+    const criticalErrors = allErrors.filter(err => {
+      const errLower = err.toLowerCase();
+      return !errLower.includes("does not exist") && 
+             !errLower.includes("no rows") &&
+             !errLower.includes("0 rows");
+    });
+
+    // If there are critical errors, return warning
+    if (deleteError || criticalErrors.length > 0) {
       const hasAuthError = !!deleteError;
-      const hasDataErrors = deletionErrors.length > 0;
+      const hasDataErrors = criticalErrors.length > 0;
       
       let message = "User deletion completed with some issues:";
       if (hasDataErrors) {
@@ -311,14 +346,14 @@ serve(async (req) => {
         message += " Auth user deletion had issues.";
       }
       
-      console.warn(`Deletion completed with errors for ${user_id}:`, allErrors);
+      console.warn(`Deletion completed with errors for ${user_id}:`, criticalErrors);
       return new Response(
         JSON.stringify({ 
           success: true, 
           warning: true,
           message: message,
-          errors: allErrors.length > 0 ? allErrors : undefined,
-          error: (deleteError ? ((deleteError as any)?.message || String(deleteError)) : undefined) || (deletionErrors.length > 0 ? "Some data deletions failed" : undefined)
+          errors: criticalErrors.length > 0 ? criticalErrors : undefined,
+          error: (deleteError ? ((deleteError as any)?.message || String(deleteError)) : undefined) || (criticalErrors.length > 0 ? "Some data deletions failed" : undefined)
         }),
         {
           status: 200, // Return 200 to indicate partial success
@@ -327,6 +362,7 @@ serve(async (req) => {
       );
     }
     
+    // Complete success - all deletions succeeded
     return new Response(
       JSON.stringify({ 
         success: true, 
