@@ -645,12 +645,18 @@ export default function AdminUsers() {
           console.warn('[DELETE HANDLER] No valid email address available for user, skipping email notification. Email:', userToDelete.email);
         }
         
-        await deleteSingleUser(userToDelete.user_id);
+        const deleteResult = await deleteSingleUser(userToDelete.user_id);
         
         console.log('[DELETE HANDLER] Single user deletion completed');
+        
+        // Check if there were any warnings during deletion
+        const hasWarnings = deleteResult?.authWarning === true;
         toast({
-          title: "Success",
-          description: "User deleted successfully from all accessible tables",
+          title: hasWarnings ? "User Deleted (with warnings)" : "Success",
+          description: hasWarnings 
+            ? "User profile and data deleted. Auth user deletion had issues but data is safe."
+            : "User deleted successfully from all accessible tables",
+          variant: hasWarnings ? "default" : "default",
         });
       }
 
@@ -678,7 +684,7 @@ export default function AdminUsers() {
     }
   };
 
-  const deleteSingleUser = async (userId: string) => {
+  const deleteSingleUser = async (userId: string): Promise<{ authWarning?: boolean } | void> => {
     try {
       // Soft delete: Update profile to inactive and blocked status instead of hard delete
       console.log(`[DELETE] Starting soft delete for user: ${userId}`);
@@ -823,12 +829,24 @@ export default function AdminUsers() {
         if (authDeleteError) {
           console.error('[DELETE] Error deleting auth user:', authDeleteError);
           console.warn('[DELETE] Auth user deletion failed, but profile and related data have been soft-deleted');
+          // Return warning flag
+          return { authWarning: true };
         } else {
-          console.log('[DELETE] Auth user deleted successfully:', authDeleteData);
+          const result = authDeleteData as { success?: boolean; warning?: boolean; message?: string; error?: string };
+          if (result?.warning) {
+            console.warn('[DELETE] Auth user deletion had issues:', result.message);
+            console.warn('[DELETE] Error details:', result.error);
+            // Return warning flag
+            return { authWarning: true };
+          } else {
+            console.log('[DELETE] Auth user deleted successfully:', result.message || 'User deleted');
+          }
         }
       } catch (authErr: any) {
         console.error('[DELETE] Exception deleting auth user:', authErr);
         console.warn('[DELETE] Auth user deletion failed, but profile and related data have been soft-deleted');
+        // Return warning flag
+        return { authWarning: true };
       }
 
       // Clean up orphaned auth users (users without profiles)
@@ -872,6 +890,9 @@ export default function AdminUsers() {
       }
 
       console.log(`[DELETE] Successfully soft-deleted user ${userId} from all accessible tables`);
+      
+      // Return undefined if no warnings (successful deletion)
+      return undefined;
     } catch (error) {
       console.error('Error in deleteSingleUser:', error);
       throw error;

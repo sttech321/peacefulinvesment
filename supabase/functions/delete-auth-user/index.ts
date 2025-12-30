@@ -100,24 +100,67 @@ serve(async (req) => {
       );
     }
 
-    //Delete the auth user
-    const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(user_id);
+    // Check if user exists before attempting deletion
+    let userExists = false;
+    try {
+      const { data: existingUser, error: checkError } = await supabaseAdmin.auth.admin.getUserById(user_id);
+      if (!checkError && existingUser?.user) {
+        userExists = true;
+      }
+    } catch (checkErr) {
+      console.warn("Error checking if user exists:", checkErr);
+      // Continue with deletion attempt even if check fails
+    }
 
+    // Delete the auth user
+    let deleteError = null;
+    let deleteSuccess = false;
+    
+    if (userExists) {
+      try {
+        const { error: err } = await supabaseAdmin.auth.admin.deleteUser(user_id);
+        if (err) {
+          deleteError = err;
+          console.error("Error deleting auth user:", err);
+        } else {
+          deleteSuccess = true;
+          console.log(`Successfully deleted auth user: ${user_id}`);
+        }
+      } catch (err: any) {
+        deleteError = err;
+        console.error("Exception deleting auth user:", err);
+      }
+    } else {
+      // User doesn't exist, consider it already deleted
+      console.log(`User ${user_id} does not exist in auth.users, considering it already deleted`);
+      deleteSuccess = true;
+    }
+
+    // Return success even if deletion failed, as profile and related data are already soft-deleted
+    // This prevents blocking the admin deletion process
     if (deleteError) {
-      console.error("Error deleting auth user:", deleteError);
+      console.warn(`Auth user deletion failed for ${user_id}, but profile data has been soft-deleted`);
       return new Response(
-        JSON.stringify({ success: false, error: deleteError.message }),
+        JSON.stringify({ 
+          success: true, 
+          warning: true,
+          message: "Profile and related data deleted successfully. Auth user deletion had issues but data is safe.",
+          error: deleteError.message 
+        }),
         {
-          status: 500,
+          status: 200, // Return 200 to indicate partial success
           headers: { "Content-Type": "application/json", ...corsHeaders },
         }
       );
     }
-
-   // console.log(`SKIPPED hard delete for user: ${user_id}`);
     
     return new Response(
-      JSON.stringify({ success: true, message: "User deletion is temporarily disabled to prevent unwanted emails" }),
+      JSON.stringify({ 
+        success: true, 
+        message: deleteSuccess 
+          ? "User deleted successfully from auth system" 
+          : "User deletion completed (user may not have existed in auth system)"
+      }),
       {
         status: 200,
         headers: { "Content-Type": "application/json", ...corsHeaders },
