@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, useSearchParams } from "react-router-dom"; 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -51,7 +51,8 @@ const OverseasCompany = () => {
     companyInfo, 
     loading, 
     submitRequest, 
-    uploadDocuments 
+    uploadDocuments,
+    refetch: refetchOverseasCompany
   } = useOverseasCompany();
 
   const [formData, setFormData] = useState({
@@ -66,9 +67,24 @@ const OverseasCompany = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [files, setFiles] = useState<FileList | null>(null);
   const [hasRedirected, setHasRedirected] = useState(false);
+  const autoSwitchedRef = useRef(false);
  
   const currentRequest = requests?.[0];
   const hasActiveRequest = currentRequest && currentRequest.status !== 'completed' && currentRequest.status !== 'rejected';
+  
+  // Set default tab - will be updated when requests load
+  const [activeTab, setActiveTab] = useState<string>("request");
+  
+  // Auto-switch to status tab if there's an active request (only once on initial load)
+  // Users can still manually change tabs after this
+  useEffect(() => {
+    if (!loading && requests !== undefined) {
+      if (hasActiveRequest && !autoSwitchedRef.current) {
+        setActiveTab("status");
+        autoSwitchedRef.current = true;
+      }
+    }
+  }, [loading, requests, hasActiveRequest]);
   
   // Check if overseas company is completed (has companyInfo or status is completed)
   const isOverseasCompanyCompleted = (companyInfo && companyInfo.length > 0) || currentRequest?.status === 'completed';
@@ -171,10 +187,8 @@ const OverseasCompany = () => {
         contact_email: formData.contactEmail
       });
 
-      toast({
-        title: "Request Submitted",
-        description: "Your overseas company request has been submitted successfully."
-      });
+      // Refetch requests to ensure ProfileCompletionGuard gets updated data
+      await refetchOverseasCompany();
 
       // Reset form
       setFormData({
@@ -194,22 +208,20 @@ const OverseasCompany = () => {
             overseas_company_required: true,
             has_completed_profile: true // Keep profile as completed
           } as any);
+          // Refetch profile to ensure all components get updated data
+          await refetchProfile();
         } catch (err) {
           console.warn("Failed to update profile:", err);
         }
       }
 
-      // If user came from profile flow, redirect back to profile after submission
-      if (fromProfile) {
-        toast({
-          title: "Request Submitted",
-          description: "Your request has been submitted. Redirecting back to profile...",
-        });
-        setTimeout(() => {
-          navigate('/profile');
-        }, 1500);
-        return;
-      }
+      // After submission, switch to status tab to show the submitted request
+      // Don't redirect - let user see their request status
+      setActiveTab("status");
+      toast({
+        title: "Request Submitted",
+        description: "Your request has been submitted successfully. View status in the Current Status tab.",
+      });
 
       // For users coming from create-account flow
       if (user && profile && !profile.has_completed_profile) {
@@ -310,7 +322,7 @@ const OverseasCompany = () => {
           </Card>
         </div>
 
-        <Tabs defaultValue="request" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <div className="bg-gradient-pink-to-yellow mb-5 rounded-lg p-[2px] lg:mb-12">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="request">New Request</TabsTrigger>

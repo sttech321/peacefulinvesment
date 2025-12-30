@@ -13,6 +13,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useProfile, UserProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useOverseasCompany } from "@/hooks/useOverseasCompany";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import Footer from "@/components/Footer";
@@ -167,8 +168,7 @@ const buildProfilePayload = (form: FormData, profile?: UserProfile | null) => {
     security_questions: Array.isArray(form.securityQuestions)
       ? form.securityQuestions.map((q) => ({
           question: q.question || null,
-          // DO NOT send plaintext answers to DB — mask for safety, server should handle verification
-          answer_masked: q.answer ? "***MASKED***" : null,
+          answer: q.answer?.trim() || null,
         }))
       : [],
 
@@ -181,7 +181,12 @@ const buildProfilePayload = (form: FormData, profile?: UserProfile | null) => {
 
     // avatar + metadata (if present on form)
     avatar_url: (form as any).avatar_url || null,
-    metadata: (form as any).metadata || null,
+    metadata: {
+      ...((profile?.metadata as any) || {}),
+      ...((form as any).metadata || {}),
+      // Store driver's license number in metadata (encrypted on server side)
+      ...(form.socialSecurityNumber ? { drivers_license_number: form.socialSecurityNumber } : {}),
+    },
 
     has_completed_profile: !!(form as any).hasCompletedProfile || false,
   };
@@ -232,6 +237,7 @@ const Profile = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { requests: overseasRequests } = useOverseasCompany();
 
   const [currentStep, setCurrentStep] = useState(1);
   const [isSaving, setIsSaving] = useState(false);
@@ -240,6 +246,7 @@ const Profile = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [showStepFlow, setShowStepFlow] = useState(true);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const autoUpdateInProgressRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fileInputRefStepFlow = useRef<HTMLInputElement>(null);
 
@@ -278,11 +285,15 @@ const Profile = () => {
     const countryCode = (profileData as any)?.country_code || "";
     const country = (profileData as any)?.country || "";
 
+    // Get driver's license number from metadata if available
+    const metadata = (profileData as any)?.metadata || {};
+    const driversLicenseNumber = metadata.drivers_license_number || "";
+
     return {
       firstName,
       lastName,
       dateOfBirth: (profileData as any)?.date_of_birth || "",
-      socialSecurityNumber: "", // never hydrate full SSN
+      socialSecurityNumber: driversLicenseNumber, // Load driver's license from metadata
       phone: profileData.phone || "",
       address: profileData.address || "",
       country: country || "",
@@ -305,7 +316,7 @@ const Profile = () => {
       netWorth: (profileData as any)?.net_worth || 0,
       liquidNetWorth: (profileData as any)?.liquid_net_worth || 0,
       securityQuestions:
-        (profileData as any)?.security_questions?.map((q: any) => ({ question: q.question || "", answer: "" })) ||
+        (profileData as any)?.security_questions?.map((q: any) => ({ question: q.question || "", answer: q.answer || "" })) ||
         [
           { question: "", answer: "" },
           { question: "", answer: "" },
@@ -371,6 +382,80 @@ const Profile = () => {
   // derive max steps based on isUSAClient
   const computedMaxSteps = (isUSA: boolean) => TOTAL_STEPS + (isUSA ? 1 : 0);
 
+  // Find the next pending (incomplete) step based on form data
+  const findNextPendingStep = (data: FormData, maxSteps: number): number => {
+    const trimSafe = (s?: string) => (s || "").toString().trim();
+
+    // Check step 1: Personal Information
+    if (!trimSafe(data.firstName) || !trimSafe(data.lastName) || !data.dateOfBirth || !trimSafe(data.socialSecurityNumber)) {
+      return 1;
+    }
+
+    // Check step 2: Contact Information
+    if (!trimSafe(data.phone) || !trimSafe(data.address) || !trimSafe(data.country) || 
+        !trimSafe(data.state) || !trimSafe(data.city) || !trimSafe(data.zipCode)) {
+      return 2;
+    }
+
+    // Check step 3: Employment Information
+    if (!data.employmentStatus) {
+      return 3;
+    }
+    if (["employed", "part-time"].includes((data.employmentStatus || "").toLowerCase())) {
+      if (!trimSafe(data.employer) || !trimSafe(data.employerCountry) || 
+          !trimSafe(data.employerAddressLine1) || !trimSafe(data.employerCity) || 
+          !trimSafe(data.employerState) || !trimSafe(data.employerZip) || !trimSafe(data.occupation)) {
+        return 3;
+      }
+    }
+    if ((data.employmentStatus || "").toLowerCase() === "self-employed" && !trimSafe(data.businessNature)) {
+      return 3;
+    }
+
+    // Check step 4: Financial Status
+    if (!data.annualIncome || data.annualIncome <= 0) {
+      return 4;
+    }
+
+    // Check step 5: Security Setup
+    if (data.securityQuestions.some((q) => !q.question || !q.answer?.trim())) {
+      return 5;
+    }
+
+    // Check step 6: Document Upload
+    const requiredDocumentTypes = ["drivers_license_front", "drivers_license_back", "passport"];
+    const hasRequiredDocuments = requiredDocumentTypes.some((type) =>
+      Boolean((data.documentsByType as any)?.[type]?.length)
+    );
+    if (!hasRequiredDocuments) {
+      return 6;
+    }
+
+    // Check step 7: Investment Experience
+    if (!data.investmentExperience || !data.riskTolerance || 
+        !Array.isArray(data.investmentGoals) || data.investmentGoals.length === 0) {
+      return 7;
+    }
+
+    // Step 8 is review, so if we get here and it's not USA, go to step 8
+    if (!data.isUSAClient) {
+      return 8;
+    }
+
+    // Check step 9: Overseas Company (only for USA clients)
+    if (data.isUSAClient && data.overseasCompanyRequired) {
+      // Check if overseas company is completed OR if there's a submitted request
+      // Note: This function doesn't have access to overseasRequests, so we only check the flag
+      // The areAllStepsCompleted function will do the full check including requests
+      if (!data.overseasCompanyCompleted) {
+        return 9;
+      }
+    }
+
+    // All steps complete, return the last step
+    return maxSteps;
+  };
+
   // Save in-flight guard to avoid overlapping saves (ADDED)
   const saveInFlightRef = useRef(false);
 
@@ -383,9 +468,61 @@ const Profile = () => {
   useEffect(() => {
     if (!loading && profile) {
       const isCompleted = Boolean((profile as any)?.has_completed_profile);
-      setShowStepFlow(!isCompleted);
-
-      if (isCompleted) {
+      const profileFormData = mapProfileToFormData(profile);
+      const isUSAClient = profileFormData.isUSAClient;
+      const overseasCompanyRequired = profileFormData.overseasCompanyRequired;
+      const overseasCompanyCompleted = profileFormData.overseasCompanyCompleted;
+      const maxSteps = computedMaxSteps(isUSAClient);
+      
+      // Check if all steps are truly completed
+      const nextPendingStep = findNextPendingStep(profileFormData, maxSteps);
+      const allStepsComplete = nextPendingStep >= maxSteps;
+      
+      // For USA users, check if overseas company requirement is satisfied
+      let overseasCompanySatisfied = true;
+      if (isUSAClient && overseasCompanyRequired && !overseasCompanyCompleted) {
+        const currentRequest = overseasRequests?.[0];
+        const hasSubmittedRequest = currentRequest !== undefined;
+        const requestStatus = currentRequest?.status;
+        overseasCompanySatisfied = overseasCompanyCompleted ||
+          (hasSubmittedRequest && ['pending', 'processing', 'name_selected', 'completed'].includes(requestStatus || ''));
+      }
+      
+      // If all steps are complete but has_completed_profile is not set, update it automatically
+      if (allStepsComplete && overseasCompanySatisfied && !isCompleted && !autoUpdateInProgressRef.current) {
+        console.log("Auto-updating has_completed_profile to true - all steps are complete");
+        autoUpdateInProgressRef.current = true;
+        updateProfile({ has_completed_profile: true } as any).then(() => {
+          console.log("Successfully auto-updated has_completed_profile");
+          return refetchProfile();
+        }).then(() => {
+          autoUpdateInProgressRef.current = false;
+        }).catch((err) => {
+          console.warn("Failed to auto-update has_completed_profile:", err);
+          autoUpdateInProgressRef.current = false;
+        });
+      }
+      
+      // If all steps are complete AND overseas company is satisfied (if required), hide step flow
+      const shouldShowStepFlow = !(allStepsComplete && overseasCompanySatisfied && (isCompleted || allStepsComplete));
+      
+      setShowStepFlow(shouldShowStepFlow);
+      
+      // If USA client, overseas company required, but not satisfied, show step flow and redirect to step 9
+      if (isUSAClient && overseasCompanyRequired && !overseasCompanySatisfied && shouldShowStepFlow) {
+        // Find next pending step and redirect there
+        if (user?.id && !restoredRef.current) {
+          const targetStep = Math.max(nextPendingStep, Math.min(parseInt(localStorage.getItem(getProfileStepKey(user.id)) || "1", 10), maxSteps));
+          
+          if (targetStep >= 1 && targetStep <= maxSteps) {
+            console.log("USA client - Redirecting to next pending step:", targetStep);
+            setCurrentStep(targetStep);
+            localStorage.setItem(getProfileStepKey(user.id), targetStep.toString());
+          }
+          restoredRef.current = true;
+        }
+      } else if (!shouldShowStepFlow && isCompleted) {
+        // All steps completed - reset form with profile data
         form.reset({
           full_name: profile.full_name || "",
           phone: profile.phone || "",
@@ -399,24 +536,21 @@ const Profile = () => {
           investment_experience: profile.investment_experience || "",
           risk_tolerance: profile.risk_tolerance || "",
         });
-      } else {
-        // Load saved step for step flow; clamp to computed max steps
+      } else if (shouldShowStepFlow && !allStepsComplete) {
+        // Load next pending step for step flow; clamp to computed max steps
         if (user?.id && !restoredRef.current && currentStep === 1) {
-          const savedStep = localStorage.getItem(getProfileStepKey(user.id));
-          if (savedStep) {
-            const parsed = parseInt(savedStep, 10);
-            const max = computedMaxSteps(mapProfileToFormData(profile).isUSAClient);
-            if (!isNaN(parsed) && parsed >= 1 && parsed <= max) {
-              console.log("Restoring saved step (one-time):", parsed);
-              setCurrentStep(parsed);
-            }
+          const targetStep = Math.max(nextPendingStep, Math.min(parseInt(localStorage.getItem(getProfileStepKey(user.id)) || "1", 10), maxSteps));
+          
+          if (targetStep >= 1 && targetStep <= maxSteps) {
+            console.log("Redirecting to next pending step:", targetStep, "(next pending:", nextPendingStep, ")");
+            setCurrentStep(targetStep);
           }
           restoredRef.current = true;
         }
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile, loading]);
+  }, [profile, loading, overseasRequests]);
 
   // Update completed-profile form when profile changes
   useEffect(() => {
@@ -471,11 +605,22 @@ const Profile = () => {
     if (!loading && profile && !isInitialized && user?.id) {
       const initialData = initializeFormData();
       setFormData(initialData);
-      // clamp current step to allowed range after initialization
-      setCurrentStep((prev) => {
-        const max = computedMaxSteps(initialData.isUSAClient);
-        return Math.min(Math.max(1, prev), max);
-      });
+      
+      const max = computedMaxSteps(initialData.isUSAClient);
+      
+      // Find the next pending (incomplete) step based on form data
+      const nextPendingStep = findNextPendingStep(initialData, max);
+      
+      // Use the next pending step, but don't go beyond the saved step if it's higher
+      // This allows users to continue from where they left off if they've completed all previous steps
+      const savedStep = localStorage.getItem(getProfileStepKey(user.id));
+      const parsedSavedStep = savedStep ? parseInt(savedStep, 10) : 1;
+      
+      // If saved step is higher than next pending step, use saved step (user was working ahead)
+      // Otherwise, use next pending step (redirect to first incomplete step)
+      const targetStep = Math.max(nextPendingStep, Math.min(parsedSavedStep, max));
+      
+      setCurrentStep(Math.min(Math.max(1, targetStep), max));
       setIsInitialized(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -789,7 +934,7 @@ const Profile = () => {
   const handleCompleteProfile = async () => {
     const saved = await saveProgress(false);
     if (saved) {
-      // Check if USA client BEFORE updating profile - if yes, redirect immediately
+      // Check if USA client BEFORE updating profile
       const isUSAClient = formData.isUSAClient || Boolean((profile as any)?.is_usa_client);
       
       const { error } = await updateProfile({ has_completed_profile: true });
@@ -803,21 +948,27 @@ const Profile = () => {
           }
         }
        
-        // If USA client, redirect immediately to overseas company form
+        // Always refetch profile to ensure all components get updated data
+        try { 
+          await refetchProfile(); 
+        } catch (refetchError) {
+          console.warn("Error refetching profile after completion:", refetchError);
+        }
+       
+        // If USA client, redirect to overseas company form after refetch
         if (isUSAClient) {
           toast({
             title: 'Profile Completed!',
             description: 'Redirecting to overseas company registration...',
           });
-          // Redirect immediately - don't wait for profile refetch
-          navigate('/overseas-company?from=profile');
+          // Small delay to ensure state updates propagate
+          setTimeout(() => {
+            navigate('/overseas-company?from=profile');
+          }, 100);
           return;
         }
 
-        // For non-USA clients, refetch and show completed view
-        try { 
-          await refetchProfile(); 
-        } catch (_) { /* ignore */ }
+        // For non-USA clients, show completed view
         setShowStepFlow(false);
         toast({
           title: 'Profile Completed!',
@@ -981,8 +1132,65 @@ const Profile = () => {
     );
   }
 
-  // Show completed profile view if profile is completed
-  if (!showStepFlow && (profile as any)?.has_completed_profile) {
+  // Check if all steps are truly completed before showing the form
+  const areAllStepsCompleted = () => {
+    if (!profile) {
+      console.log("areAllStepsCompleted: No profile");
+      return false;
+    }
+    
+    // Get profile form data to check step completion
+    const profileFormData = mapProfileToFormData(profile);
+    const isUSAClient = profileFormData.isUSAClient;
+    const maxSteps = computedMaxSteps(isUSAClient);
+    
+    // Check if there are any pending steps
+    const nextPendingStep = findNextPendingStep(profileFormData, maxSteps);
+    console.log("areAllStepsCompleted: nextPendingStep:", nextPendingStep, "maxSteps:", maxSteps, "isUSAClient:", isUSAClient);
+    
+    // If nextPendingStep is less than maxSteps, there are incomplete steps
+    if (nextPendingStep < maxSteps) {
+      console.log("areAllStepsCompleted: Steps incomplete, nextPendingStep:", nextPendingStep, "< maxSteps:", maxSteps);
+      return false;
+    }
+    
+    // For USA users, also check if overseas company requirement is satisfied
+    if (isUSAClient) {
+      const overseasCompanyRequired = profileFormData.overseasCompanyRequired;
+      const overseasCompanyCompleted = profileFormData.overseasCompanyCompleted;
+      
+      if (overseasCompanyRequired && !overseasCompanyCompleted) {
+        // Check if they have a submitted request (pending, processing, name_selected, or completed)
+        const currentRequest = overseasRequests?.[0];
+        const hasSubmittedRequest = currentRequest !== undefined;
+        const requestStatus = currentRequest?.status;
+        const overseasCompanySatisfied = overseasCompanyCompleted ||
+          (hasSubmittedRequest && ['pending', 'processing', 'name_selected', 'completed'].includes(requestStatus || ''));
+        
+        console.log("areAllStepsCompleted: USA client - overseasCompanyRequired:", overseasCompanyRequired, "overseasCompanyCompleted:", overseasCompanyCompleted, "hasSubmittedRequest:", hasSubmittedRequest, "requestStatus:", requestStatus, "overseasCompanySatisfied:", overseasCompanySatisfied);
+        
+        // If overseas company is required but not satisfied, steps are not fully done
+        if (!overseasCompanySatisfied) {
+          console.log("areAllStepsCompleted: Overseas company requirement not satisfied");
+          return false;
+        }
+      }
+    }
+    
+    // All steps are complete - check if profile flag needs to be updated
+    const isCompleted = Boolean((profile as any)?.has_completed_profile);
+    if (!isCompleted) {
+      console.log("areAllStepsCompleted: All steps complete but flag not set - will auto-update");
+      // Auto-update will happen in useEffect
+    }
+    
+    console.log("areAllStepsCompleted: All steps completed!");
+    return true;
+  };
+
+  // Show completed profile view if all steps are truly completed
+  // Check areAllStepsCompleted() first - if true, show form regardless of showStepFlow state
+  if (areAllStepsCompleted()) {
     return (
       <div className="min-h-screen pink-yellow-shadow pt-28">
         <div className="max-w-7xl mx-auto space-y-8 pb-20">

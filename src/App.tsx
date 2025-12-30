@@ -8,6 +8,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { useReferralProcessor } from "@/hooks/useReferralProcessor";
 import Navbar from "@/components/Navbar";
 import RouteGuard from "@/components/RouteGuard";
+import ProfileCompletionGuard from "@/components/ProfileCompletionGuard";
 import Index from "./pages/Index";
 import Downloads from "./pages/Downloads";
 import Blog from "./pages/Blog";
@@ -56,10 +57,11 @@ function AppContent() {
 
   return (
     <RouteGuard>
-       <ScrollToTop />
+      <ScrollToTop />
       <div className="min-h-screen w-full">
         <Navbar />
-        <Routes>
+        <ProfileCompletionGuard>
+          <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/downloads" element={<Downloads />} />
                   <Route path="/blog" element={<Blog />} />
@@ -80,7 +82,7 @@ function AppContent() {
                   <Route path="/trading" element={<TradingDashboard />} />
                   <Route path="/contact" element={<Contact />} />
                   <Route path="/about" element={<About />} />
-            <Route path="/create-admin" element={<CreateAdminUser />} />
+                  <Route path="/create-admin" element={<CreateAdminUser />} />
                    
                    {/* Admin Routes */}
                   <Route path="/admin" element={
@@ -189,8 +191,9 @@ function AppContent() {
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
-              </div>
-            </RouteGuard>
+          </ProfileCompletionGuard>
+        </div>
+      </RouteGuard>
   );
 }
 

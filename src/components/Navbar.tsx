@@ -22,6 +22,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useProfile } from '@/hooks/useProfile';
 import { supabase } from '@/integrations/supabase/client';
 import logoAnimation from '@/assets/new-logo.gif';
 
@@ -35,6 +36,7 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { user, signOut } = useAuth();
   const { isAdmin } = useUserRole();
+  const { profile } = useProfile();
   const navigate = useNavigate();
   const [headerLinks, setHeaderLinks] = useState<LinkItem[]>([]);
 
@@ -100,8 +102,37 @@ const Navbar = () => {
     : defaultNavLinks);
 
   // Services dropdown for logged-in users
+  // Show "Overseas Company" only for USA users who have completed their profile
+  // Check both is_usa_client flag and country code as fallback
+  const countryCode = (profile?.country_code || profile?.country || "").toString().trim().toUpperCase();
+  const country = (profile?.country || "").toString().trim().toLowerCase();
+  const isUSAClient = profile?.is_usa_client || 
+                      countryCode === "US" || 
+                      countryCode === "USA" || 
+                      country === "united states";
+  
+  // Check if profile is effectively complete (similar to ProfileCompletionGuard)
+  const isProfileEffectivelyComplete = () => {
+    if (!profile) return false;
+    if (profile.has_completed_profile) return true;
+    // Check if essential fields are filled (indicates profile was filled)
+    const essentialFieldsCount = [
+      profile.full_name,
+      profile.phone,
+      profile.address,
+      profile.city,
+      profile.state,
+      profile.zip_code
+    ].filter(Boolean).length;
+    // If they have at least 3 essential fields, consider profile filled
+    return essentialFieldsCount >= 3;
+  };
+  
+  const isProfileComplete = isProfileEffectivelyComplete();
+  const showOverseasCompany = isUSAClient && isProfileComplete;
+
   const servicesLinks = [
-    { name: 'Overseas Company', href: '/overseas-company' },
+    ...(showOverseasCompany ? [{ name: 'Overseas Company', href: '/overseas-company' }] : []),
     { name: 'Requests', href: '/requests' },
   ];
 

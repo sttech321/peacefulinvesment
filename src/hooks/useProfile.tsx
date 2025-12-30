@@ -79,7 +79,10 @@ function useProfile() {
         .single();
 
       if (error) throw error;
+      
+      // Update local state immediately so all components using this hook get the update
       setProfile(data);
+      
       return { data };
     } catch (error) {
       return { error };
