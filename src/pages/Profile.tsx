@@ -383,7 +383,7 @@ const Profile = () => {
   const computedMaxSteps = (isUSA: boolean) => TOTAL_STEPS + (isUSA ? 1 : 0);
 
   // Find the next pending (incomplete) step based on form data
-  const findNextPendingStep = (data: FormData, maxSteps: number): number => {
+  const findNextPendingStep = (data: FormData, maxSteps: number, overseasRequests?: any[]): number => {
     const trimSafe = (s?: string) => (s || "").toString().trim();
 
     // Check step 1: Personal Information
@@ -445,10 +445,19 @@ const Profile = () => {
     // Check step 9: Overseas Company (only for USA clients)
     if (data.isUSAClient && data.overseasCompanyRequired) {
       // Check if overseas company is completed OR if there's a submitted request
-      // Note: This function doesn't have access to overseasRequests, so we only check the flag
-      // The areAllStepsCompleted function will do the full check including requests
-      if (!data.overseasCompanyCompleted) {
-        return 9;
+      const overseasCompanyCompleted = data.overseasCompanyCompleted;
+      if (!overseasCompanyCompleted) {
+        // Check if there's a pending request that satisfies the requirement
+        const currentRequest = overseasRequests?.[0];
+        const hasSubmittedRequest = currentRequest !== undefined;
+        const requestStatus = currentRequest?.status;
+        const overseasCompanySatisfied = overseasCompanyCompleted ||
+          (hasSubmittedRequest && ['pending', 'processing', 'name_selected', 'completed'].includes(requestStatus || ''));
+        
+        // If not satisfied, step 9 is still pending
+        if (!overseasCompanySatisfied) {
+          return 9;
+        }
       }
     }
 
@@ -475,7 +484,7 @@ const Profile = () => {
       const maxSteps = computedMaxSteps(isUSAClient);
       
       // Check if all steps are truly completed
-      const nextPendingStep = findNextPendingStep(profileFormData, maxSteps);
+      const nextPendingStep = findNextPendingStep(profileFormData, maxSteps, overseasRequests);
       const allStepsComplete = nextPendingStep >= maxSteps;
       
       // For USA users, check if overseas company requirement is satisfied
@@ -609,7 +618,7 @@ const Profile = () => {
       const max = computedMaxSteps(initialData.isUSAClient);
       
       // Find the next pending (incomplete) step based on form data
-      const nextPendingStep = findNextPendingStep(initialData, max);
+      const nextPendingStep = findNextPendingStep(initialData, max, overseasRequests);
       
       // Use the next pending step, but don't go beyond the saved step if it's higher
       // This allows users to continue from where they left off if they've completed all previous steps
@@ -1145,7 +1154,7 @@ const Profile = () => {
     const maxSteps = computedMaxSteps(isUSAClient);
     
     // Check if there are any pending steps
-    const nextPendingStep = findNextPendingStep(profileFormData, maxSteps);
+    const nextPendingStep = findNextPendingStep(profileFormData, maxSteps, overseasRequests);
     console.log("areAllStepsCompleted: nextPendingStep:", nextPendingStep, "maxSteps:", maxSteps, "isUSAClient:", isUSAClient);
     
     // If nextPendingStep is less than maxSteps, there are incomplete steps
@@ -1182,9 +1191,11 @@ const Profile = () => {
     if (!isCompleted) {
       console.log("areAllStepsCompleted: All steps complete but flag not set - will auto-update");
       // Auto-update will happen in useEffect
+      // Return true anyway since all form validation passed
+      // The flag will be set by the useEffect, and ProfileCompletionGuard will catch up on next render
     }
     
-    console.log("areAllStepsCompleted: All steps completed!");
+    console.log("areAllStepsCompleted: All steps completed!", { has_completed_profile: isCompleted });
     return true;
   };
 

@@ -747,7 +747,12 @@ export default function AdminUsers() {
           throw new Error(`Database column missing. Please run migration to add is_active column to profiles table. Error: ${profileError.message}`);
         }
         
-        throw new Error(`Failed to delete profile: ${profileError.message}`);
+        // Check if error is due to RLS policy blocking the update
+        if (profileError.code === '42501' || profileError.message?.includes('permission') || profileError.message?.includes('policy')) {
+          throw new Error(`Permission denied. RLS policy may be blocking the update. Error: ${profileError.message}`);
+        }
+        
+        throw new Error(`Database error deleting user: ${profileError.message || profileError.code || 'Unknown error'}`);
       }
 
       if (!updateData || updateData.length === 0) {
@@ -762,6 +767,15 @@ export default function AdminUsers() {
           .maybeSingle();
           
         console.log(`[DELETE] User verification:`, { checkData, checkError });
+        
+        // If user doesn't exist, that's okay - they may have already been deleted
+        if (checkError || !checkData) {
+          console.warn(`[DELETE] User ${userId} does not exist in profiles table. Continuing with deletion of related data.`);
+          // Don't throw error - continue with deletion of related data
+        } else {
+          // User exists but update failed - this is a problem, likely RLS policy issue
+          throw new Error(`Database error deleting user: Failed to update profile. User exists but update was blocked. This may be due to RLS policies. Please check database permissions.`);
+        }
       } else {
         console.log(`[DELETE] Successfully updated ${updateData.length} profile record(s) for user ${userId}`);
         console.log(`[DELETE] Updated record:`, updateData[0]);

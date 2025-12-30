@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
@@ -13,10 +13,11 @@ interface ProfileCompletionGuardProps {
 
 const ProfileCompletionGuard = ({ children }: ProfileCompletionGuardProps) => {
   const { user } = useAuth();
-  const { profile, loading: profileLoading } = useProfile();
+  const { profile, loading: profileLoading, refetchProfile } = useProfile();
   const { requests, loading: requestsLoading } = useOverseasCompany();
   const location = useLocation();
   const navigate = useNavigate();
+  const lastPathRef = useRef<string>("");
 
   // Always allow access to these pages - check FIRST before any other logic
   const allowedPaths = [
@@ -35,6 +36,51 @@ const ProfileCompletionGuard = ({ children }: ProfileCompletionGuardProps) => {
   const isAllowedPath = allowedPaths.some(path => 
     location.pathname === path || location.pathname.startsWith("/auth")
   );
+
+  // Refetch profile data when navigating to ensure we have latest data
+  // This prevents stale data issues when profile is updated on other pages (like /profile)
+  // IMPORTANT: This hook must be called before any conditional returns (Rules of Hooks)
+  useEffect(() => {
+    if (user && !profileLoading && !isAllowedPath) {
+      // Refetch if path changed or on initial mount (when lastPathRef is empty)
+      const shouldRefetch = lastPathRef.current === "" || lastPathRef.current !== location.pathname;
+      
+      if (shouldRefetch) {
+        console.log('[ProfileCompletionGuard] Refetching profile to ensure latest data', { 
+          pathname: location.pathname,
+          previousPath: lastPathRef.current || '(initial mount)'
+        });
+        refetchProfile();
+        lastPathRef.current = location.pathname;
+      }
+    } else if (isAllowedPath) {
+      // Reset last path when on allowed path so we refetch when leaving
+      lastPathRef.current = "";
+    }
+  }, [user, location.pathname, profileLoading, refetchProfile, isAllowedPath]);
+
+  // Watch for profile changes - monitor key fields that indicate profile completion
+  // This ensures the guard reacts when profile is updated from other components
+  const profileCompletionKey = profile ? JSON.stringify({
+    has_completed_profile: profile.has_completed_profile,
+    first_name: (profile as any)?.first_name,
+    last_name: (profile as any)?.last_name,
+    full_name: profile.full_name,
+    date_of_birth: (profile as any)?.date_of_birth,
+    ssn_last4: (profile as any)?.ssn_last4,
+    updated_at: profile.updated_at
+  }) : null;
+
+  useEffect(() => {
+    // This effect will trigger when profile completion-related fields change
+    // The component will automatically re-render and re-evaluate completion status
+    if (profile && !isAllowedPath) {
+      console.log('[ProfileCompletionGuard] Profile completion data changed, re-evaluating', {
+        has_completed_profile: profile.has_completed_profile,
+        updated_at: profile.updated_at
+      });
+    }
+  }, [profileCompletionKey, profile, isAllowedPath]);
 
   // If on allowed path, show children immediately (no profile checks, no loading checks)
   if (isAllowedPath) {
@@ -63,37 +109,90 @@ const ProfileCompletionGuard = ({ children }: ProfileCompletionGuardProps) => {
   const isProfileEffectivelyComplete = () => {
     if (!profile) return false;
 
-    // Check the flag first
-    if (profile.has_completed_profile) return true;
-
-    // Check if essential fields are filled (indicates profile was filled)
-    const essentialFieldsCount = [
-      profile.full_name,
-      profile.phone,
-      profile.address,
-      profile.city,
-      profile.state,
-      profile.zip_code
-    ].filter(Boolean).length;
-
-    // If they have at least 3 essential fields, consider profile filled
-    const hasEssentialFields = essentialFieldsCount >= 3;
+    // Always validate steps to ensure data integrity
+    // Don't blindly trust has_completed_profile flag - it might be incorrectly set
+    // This matches the validation logic in Profile.tsx findNextPendingStep
     
-    // Also check if all critical fields are present (more comprehensive check)
-    const hasAllCriticalFields = 
-      profile.full_name &&
-      profile.phone &&
-      profile.address &&
-      profile.city &&
-      profile.state &&
-      profile.zip_code &&
-      profile.employment_status &&
-      profile.annual_income &&
-      profile.investment_experience &&
-      profile.risk_tolerance;
+    // Step 1: Personal Information
+    // Check for first_name/last_name first, fallback to splitting full_name
+    let firstName = (profile as any)?.first_name || "";
+    let lastName = (profile as any)?.last_name || "";
+    
+    // If first_name/last_name are missing but full_name exists, split it
+    if ((!firstName || !lastName) && profile.full_name) {
+      const nameParts = profile.full_name.trim().split(" ");
+      if (nameParts.length > 0) {
+        firstName = nameParts[0] || "";
+        lastName = nameParts.slice(1).join(" ") || "";
+      }
+    }
+    
+    const dateOfBirth = (profile as any)?.date_of_birth || "";
+    const ssnLast4 = (profile as any)?.ssn_last4 || "";
+    // Also check metadata for drivers_license_number as fallback (some profiles may have it there but not in ssn_last4)
+    const metadata = (profile as any)?.metadata || {};
+    const driversLicenseNumber = metadata.drivers_license_number || "";
+    // Consider personal info complete if we have ssn_last4 OR drivers_license_number in metadata
+    const hasIdentityDocument = ssnLast4 || driversLicenseNumber.trim();
+    const hasPersonalInfo = firstName.trim() && lastName.trim() && dateOfBirth && hasIdentityDocument;
 
-    // Consider complete if they have all critical fields OR essential fields
-    return hasAllCriticalFields || hasEssentialFields;
+    // Step 2: Contact Information
+    const hasContactInfo = profile.phone?.trim() && 
+                           profile.address?.trim() && 
+                           profile.country?.trim() && 
+                           profile.state?.trim() && 
+                           profile.city?.trim() && 
+                           profile.zip_code?.trim();
+
+    // Step 3: Employment Information
+    const hasEmploymentInfo = profile.employment_status?.trim();
+
+    // Step 4: Financial Status
+    const hasFinancialInfo = profile.annual_income && profile.annual_income > 0;
+
+    // Step 5: Security Setup
+    const securityQuestions = (profile as any)?.security_questions || [];
+    const hasSecurityQuestions = Array.isArray(securityQuestions) && 
+                                 securityQuestions.length >= 2 &&
+                                 securityQuestions.every((q: any) => q?.question?.trim() && q?.answer?.trim());
+
+    // Step 6: Document Upload
+    const documentsByType = (profile as any)?.documents_by_type || {};
+    const requiredDocumentTypes = ["drivers_license_front", "drivers_license_back", "passport"];
+    const hasRequiredDocuments = requiredDocumentTypes.some((type) =>
+      Boolean(documentsByType[type]?.length)
+    );
+
+    // Step 7: Investment Experience
+    const hasInvestmentInfo = profile.investment_experience?.trim() && 
+                              profile.risk_tolerance?.trim() &&
+                              Array.isArray((profile as any)?.investment_goals) &&
+                              (profile as any).investment_goals.length > 0;
+
+    // All steps must be complete (steps 1-7, step 8 is review, step 9 is checked separately)
+    const allStepsComplete = hasPersonalInfo && 
+                             hasContactInfo && 
+                             hasEmploymentInfo && 
+                             hasFinancialInfo && 
+                             hasSecurityQuestions && 
+                             hasRequiredDocuments && 
+                             hasInvestmentInfo;
+
+    // If flag is set but steps are incomplete, log a warning
+    if (profile.has_completed_profile && !allStepsComplete) {
+      console.warn('[ProfileCompletionGuard] Profile flag is set but steps are incomplete:', {
+        has_completed_profile: profile.has_completed_profile,
+        hasPersonalInfo,
+        hasContactInfo,
+        hasEmploymentInfo,
+        hasFinancialInfo,
+        hasSecurityQuestions,
+        hasRequiredDocuments,
+        hasInvestmentInfo
+      });
+    }
+
+    return allStepsComplete;
   };
 
   const isProfileComplete = isProfileEffectivelyComplete();
@@ -116,6 +215,39 @@ const ProfileCompletionGuard = ({ children }: ProfileCompletionGuardProps) => {
     (hasSubmittedRequest && ['pending', 'processing', 'name_selected', 'completed'].includes(requestStatus || ''));
 
   // Debug logging
+  // Helper to check personal info (matching the logic above)
+  const checkPersonalInfo = (p: typeof profile) => {
+    if (!p) return false;
+    let firstName = (p as any)?.first_name || "";
+    let lastName = (p as any)?.last_name || "";
+    if ((!firstName || !lastName) && p.full_name) {
+      const nameParts = p.full_name.trim().split(" ");
+      if (nameParts.length > 0) {
+        firstName = nameParts[0] || "";
+        lastName = nameParts.slice(1).join(" ") || "";
+      }
+    }
+    const ssnLast4 = (p as any)?.ssn_last4 || "";
+    const metadata = (p as any)?.metadata || {};
+    const driversLicenseNumber = metadata.drivers_license_number || "";
+    const hasIdentityDocument = ssnLast4 || driversLicenseNumber.trim();
+    return !!(firstName.trim() && lastName.trim() && (p as any)?.date_of_birth && hasIdentityDocument);
+  };
+
+  const profileData = profile ? {
+    has_completed_profile: profile.has_completed_profile,
+    hasPersonalInfo: checkPersonalInfo(profile),
+    hasContactInfo: !!(profile.phone && profile.address && profile.country && profile.state && profile.city && profile.zip_code),
+    hasEmploymentInfo: !!profile.employment_status,
+    hasFinancialInfo: !!(profile.annual_income && profile.annual_income > 0),
+    hasSecurityQuestions: Array.isArray((profile as any)?.security_questions) && (profile as any).security_questions.length >= 2,
+    hasRequiredDocuments: (() => {
+      const docs = (profile as any)?.documents_by_type || {};
+      return ["drivers_license_front", "drivers_license_back", "passport"].some(type => Boolean(docs[type]?.length));
+    })(),
+    hasInvestmentInfo: !!(profile.investment_experience && profile.risk_tolerance && Array.isArray((profile as any)?.investment_goals) && (profile as any).investment_goals.length > 0)
+  } : null;
+
   console.log('[ProfileCompletionGuard] Profile completion check:', {
     isProfileComplete,
     isUSAClient,
@@ -124,7 +256,8 @@ const ProfileCompletionGuard = ({ children }: ProfileCompletionGuardProps) => {
     hasSubmittedRequest,
     requestStatus,
     overseasCompanySatisfied,
-    requestsCount: requests?.length || 0
+    requestsCount: requests?.length || 0,
+    profileData
   });
 
   // For USA users: Once profile is complete AND overseas company requirement is satisfied, grant immediate access
