@@ -64,7 +64,17 @@ const navigation: NavigationItem[] = [
       { name: 'Rejected', href: '/admin/overseas-companies?status=rejected', status: 'rejected' },
     ],
   },
-  { name: 'Referrals', href: '/admin/referrals', icon: Share2 },
+  {
+    name: 'Referrals',
+    href: '/admin/referrals',
+    icon: Share2,
+    subMenu: [
+      { name: 'Pending', href: '/admin/referrals?status=pending', status: 'pending' },
+      { name: 'Deposited', href: '/admin/referrals?status=deposited', status: 'deposited' },
+      { name: 'Earning', href: '/admin/referrals?status=earning', status: 'earning' },
+      { name: 'Completed', href: '/admin/referrals?status=completed', status: 'completed' },
+    ],
+  },
   {
     name: 'Deposit/Withdrawal Requests',
     href: '/admin/deposit-withdrawal-request',

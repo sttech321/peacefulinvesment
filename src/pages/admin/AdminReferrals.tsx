@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,7 +60,9 @@ import {
   Filter,
   MoreHorizontal,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Folder,
+  ArrowLeft
 } from "lucide-react";
 import {
   Tooltip,
@@ -132,6 +135,7 @@ export default function AdminReferrals() {
   const { user } = useAuth();
   const { isAdmin } = useUserRole();
   const { toast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
   
   // State for referrals
   const [referrals, setReferrals] = useState<Referral[]>([]);
@@ -150,7 +154,14 @@ export default function AdminReferrals() {
   // Common state
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  
+  // Folder view state (sub-menu structure)
+  // Initialize based on URL - if no status param, show folder view
+  const initialStatusFromUrl = searchParams.get('status');
+  const [statusFilter, setStatusFilter] = useState(initialStatusFromUrl || "all");
+  const [showFolderView, setShowFolderView] = useState(!initialStatusFromUrl);
+  const [selectedStatusFolder, setSelectedStatusFolder] = useState<string | null>(initialStatusFromUrl);
+  
   const [activeTab, setActiveTab] = useState<"referrals" | "payments" | "signups" | "analytics">("referrals");
   
   // Stats state
@@ -175,6 +186,21 @@ export default function AdminReferrals() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [referralToDelete, setReferralToDelete] = useState<Referral | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Read status from URL query parameter - this is the primary source of truth
+  useEffect(() => {
+    const statusFromUrl = searchParams.get('status');
+    if (statusFromUrl) {
+      setStatusFilter(statusFromUrl);
+      setSelectedStatusFolder(statusFromUrl);
+      setShowFolderView(false);
+    } else {
+      // Only show folder view if we're on the base URL without status
+      setShowFolderView(true);
+      setSelectedStatusFolder(null);
+      setStatusFilter("all");
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     fetchAllData();
@@ -427,6 +453,41 @@ export default function AdminReferrals() {
     }
 
     setFilteredSignups(filtered);
+  };
+
+  // Get status counts for folder view
+  const getStatusCounts = () => {
+    const statuses: Array<'pending' | 'deposited' | 'earning' | 'completed'> = [
+      'pending',
+      'deposited',
+      'earning',
+      'completed'
+    ];
+    
+    return statuses.map(status => ({
+      status,
+      count: referrals.filter(r => r.status === status).length,
+      label: status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
+    }));
+  };
+
+  // Handle folder click - show referrals for that status
+  const handleFolderClick = (status: string) => {
+    setSelectedStatusFolder(status);
+    setStatusFilter(status);
+    setShowFolderView(false);
+    // Update URL with status parameter
+    setSearchParams({ status });
+  };
+
+  // Handle back to folder view
+  const handleBackToFolders = () => {
+    setShowFolderView(true);
+    setSelectedStatusFolder(null);
+    setStatusFilter("all");
+    setSearchTerm("");
+    // Clear status from URL
+    setSearchParams({});
   };
 
   const handleCreatePayment = async () => {
@@ -855,47 +916,99 @@ export default function AdminReferrals() {
 
         {/* Referrals Tab */}
         <TabsContent value="referrals" className="space-y-6 pt-4 sm:pt-0">
-          {/* Filters */}
-          <Card className="border border-muted/20 p-0 mt-3 sm:mt-0 rounded-lg bg-white/5">
-            <CardHeader>
-              <CardTitle>Filters</CardTitle>
-              <CardDescription>
-                Search and filter referrals
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-4 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search referrals..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-9 rounded-[8px] border-0 shadow-none mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
-                  />
+          {/* Conditional Content */}
+          {showFolderView ? (
+            /* Folder View - Sub-menu showing status folders */
+            <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
+              <CardHeader>
+                <CardTitle>Referral Status Folders</CardTitle>
+                <CardDescription>
+                  Click on a folder to view all referrals with that status
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {getStatusCounts().map(({ status, count, label }) => (
+                    <div
+                      key={status}
+                      onClick={() => handleFolderClick(status)}
+                      className="group cursor-pointer p-6 bg-muted/20 rounded-lg border border-muted/40 hover:border-primary/50 hover:bg-muted/30 transition-all duration-200 hover:shadow-lg"
+                    >
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center group-hover:bg-primary/30 transition-colors">
+                          <Folder className="h-6 w-6 text-primary" />
+                        </div>
+                        <div className="text-right">
+                          <div className="text-2xl font-bold text-white">{count}</div>
+                          <div className="text-xs text-muted-foreground">referrals</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {getStatusBadge(status)}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
-                    <SelectValue placeholder="Filter by status" />
-                  </SelectTrigger>
-                  <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="deposited">Deposited</SelectItem>
-                    <SelectItem value="earning">Earning</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                  </SelectContent>
-                </Select>
-                <div className="flex items-center justify-center sm:justify-start">
-                  <Badge variant="outline" className="rounded-[8px] h-10 mt-1 text-white">
-                    {filteredReferrals.length} referrals
-                  </Badge>
+              </CardContent>
+            </Card>
+          ) : (
+            /* List View - Shows referrals filtered by selected status */
+            <>
+              {/* Back Button */}
+              <div className="flex items-center gap-4 mb-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleBackToFolders}
+                  className="gap-0 rounded-[8px] hover:bg-white/80 border-0 bg-white hover:text-black text-sm"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-1" />
+                  Back to Folders 
+                </Button>
+                <div className="flex items-center gap-2">
+                  {selectedStatusFolder && (
+                    <>
+                      {getStatusBadge(selectedStatusFolder)}
+                      <span className="text-sm text-muted-foreground capitalize">
+                        {selectedStatusFolder.replace('_', ' ')} Referrals
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
-            </CardContent>
-          </Card>
 
-          {/* Referrals List */}
+              {/* Filters */}
+              <Card className="border border-muted/20 p-0 mt-3 sm:mt-0 rounded-lg bg-white/5">
+                <CardHeader>
+                  <CardTitle>Filters</CardTitle>
+                  <CardDescription>
+                    Search and filter referrals
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {/* Search Box - Full Width */}
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search referrals..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-9 rounded-[8px] border-0 shadow-none h-[40px] focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
+                      />
+                    </div>
+
+                    {/* Results Count */}
+                    <div className="flex items-center justify-end">
+                      <Badge variant="outline" className="py-2 px-4 h-10 rounded-[8px] text-white">
+                        {filteredReferrals.length} referrals
+                      </Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Referrals List */}
           <Card className="border border-muted/20 p-0  rounded-lg bg-white/5">
             <CardHeader>
               <CardTitle>All Referrals</CardTitle>
@@ -1002,11 +1115,22 @@ export default function AdminReferrals() {
                   <div className="text-center py-8">
                     <Users className="h-12 w-12 text-primary mx-auto mb-4" />
                     <p className="text-muted-foreground">No referrals found</p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleBackToFolders}
+                      className="mt-4 rounded-[8px] gap-0 hover:bg-white/80 border-0 text-sm"
+                    >
+                      <ArrowLeft className="h-4 w-4 mr-2" />
+                      Back to Folders
+                    </Button>
                   </div>
                 )}
               </div>
             </CardContent>
           </Card>
+            </>
+          )}
         </TabsContent>
 
         {/* Payments Tab */}
@@ -1020,18 +1144,21 @@ export default function AdminReferrals() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-4">
+                {/* Search Box - Full Width */}
                 <div className="relative">
-                  <Search className="absolute left-3 top-4 h-4 w-4 text-muted-foreground" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Search payments..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                   className="pl-9 rounded-[8px] border-0 shadow-none mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
+                    className="pl-9 rounded-[8px] border-0 shadow-none h-[40px] focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
                   />
                 </div>
-                <div className="flex items-center justify-center sm:justify-start">
-                  <Badge variant="outline" className="rounded-[8px] h-10 mt-1">
+
+                {/* Results Count */}
+                <div className="flex items-center justify-end">
+                  <Badge variant="outline" className="py-2 px-4 h-10 rounded-[8px] text-white">
                     {filteredPayments.length} payments
                   </Badge>
                 </div>
@@ -1110,18 +1237,21 @@ export default function AdminReferrals() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-4">
+                {/* Search Box - Full Width */}
                 <div className="relative">
-                  <Search className="absolute left-3 top-4 h-4 w-4 text-muted-foreground" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Search signups..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-9 rounded-[8px] border-0 shadow-none mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
+                    className="pl-9 rounded-[8px] border-0 shadow-none h-[40px] focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
                   />
                 </div>
-                <div className="flex items-center justify-center sm:justify-start">
-                  <Badge variant="outline" className="rounded-[8px] h-10 mt-1">
+
+                {/* Results Count */}
+                <div className="flex items-center justify-end">
+                  <Badge variant="outline" className="py-2 px-4 h-10 rounded-[8px] text-white">
                     {filteredSignups.length} signups
                   </Badge>
                 </div>
