@@ -680,41 +680,76 @@ export default function AdminContactRequests() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="space-y-4">
+                {/* Search Box - Full Width */}
                 <div className="relative">
-                  <Search className="absolute left-3 top-4 h-4 w-4 text-muted-foreground" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Search requests..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-9 rounded-[8px] border-0 shadow-none mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
+                    className="pl-9 rounded-[8px] border-0 shadow-none h-[40px] focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
                   />
                 </div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
-                    <SelectValue placeholder="Filter by status" />
-                  </SelectTrigger>
-                  <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="in_progress">In Progress</SelectItem>
-                    <SelectItem value="resolved">Resolved</SelectItem>
-                    <SelectItem value="closed">Closed</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                  <SelectTrigger className='mt-1 rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
-                    <SelectValue placeholder="Filter by priority" />
-                  </SelectTrigger>
-                  <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
-                    <SelectItem value="all">All Priorities</SelectItem>
-                    <SelectItem value="high">High Priority</SelectItem>
-                    <SelectItem value="medium">Medium Priority</SelectItem>
-                    <SelectItem value="low">Low Priority</SelectItem>
-                  </SelectContent>
-                </Select>
-                <div className="flex items-center space-x-2">
-                  <Badge variant="outline" className="py-2 px-4 h-10 rounded-[8px] mt-1 text-white">
+
+                {/* Priority Filter Buttons */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm text-muted-foreground font-medium whitespace-nowrap">Priority:</span>
+                  <div className="flex gap-2 flex-wrap">
+                    <Button
+                      variant={priorityFilter === "all" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setPriorityFilter("all")}
+                      className={`h-[40px] rounded-[8px] border-0 px-3 text-xs ${
+                        priorityFilter === "all" 
+                          ? "bg-white text-black hover:bg-white/90" 
+                          : "bg-white/10 text-white hover:bg-white/20"
+                      }`}
+                    >
+                      All Priorities
+                    </Button>
+                    <Button
+                      variant={priorityFilter === "high" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setPriorityFilter("high")}
+                      className={`h-[40px] rounded-[8px] border-0 px-3 text-xs ${
+                        priorityFilter === "high" 
+                          ? "bg-white text-black hover:bg-white/90" 
+                          : "bg-white/10 text-white hover:bg-white/20"
+                      }`}
+                    >
+                      High Priority
+                    </Button>
+                    <Button
+                      variant={priorityFilter === "medium" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setPriorityFilter("medium")}
+                      className={`h-[40px] rounded-[8px] border-0 px-3 text-xs ${
+                        priorityFilter === "medium" 
+                          ? "bg-white text-black hover:bg-white/90" 
+                          : "bg-white/10 text-white hover:bg-white/20"
+                      }`}
+                    >
+                      Medium Priority
+                    </Button>
+                    <Button
+                      variant={priorityFilter === "low" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setPriorityFilter("low")}
+                      className={`h-[40px] rounded-[8px] border-0 px-3 text-xs ${
+                        priorityFilter === "low" 
+                          ? "bg-white text-black hover:bg-white/90" 
+                          : "bg-white/10 text-white hover:bg-white/20"
+                      }`}
+                    >
+                      Low Priority
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Results Count */}
+                <div className="flex items-center justify-end">
+                  <Badge variant="outline" className="py-2 px-4 h-10 rounded-[8px] text-white">
                     {filteredRequests.length} requests
                   </Badge>
                 </div>

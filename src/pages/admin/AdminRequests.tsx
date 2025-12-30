@@ -721,40 +721,64 @@ export default function AdminRequests() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="space-y-4">
+                {/* Search Box - Full Width */}
                 <div className="relative">
-                  <Search className="absolute left-3 top-4 h-4 w-4 text-muted-foreground" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Search requests..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-8 rounded-[8px] placeholder:text-sm border-0 shadow-none mt-1 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
+                    className="pl-9 rounded-[8px] placeholder:text-sm border-0 shadow-none h-[40px] focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent resize-none"
                   />
                 </div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className='mt-1 h-[40px] rounded-[8px] bg-white text-black border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent hover:bg-white/90 data-[placeholder]:text-gray-600' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
-                    <SelectValue placeholder="All Status" />
-                  </SelectTrigger>
-                  <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="processing">Processing</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="rejected">Rejected</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={typeFilter} onValueChange={setTypeFilter}>
-                  <SelectTrigger className='mt-1 h-[40px] rounded-[8px] bg-white text-black border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent hover:bg-white/90 data-[placeholder]:text-gray-600' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
-                    <SelectValue placeholder="All Types" />
-                  </SelectTrigger>
-                  <SelectContent className='border-secondary-foreground bg-black/90 text-white'>
-                    <SelectItem value="all">All Types</SelectItem>
-                    <SelectItem value="deposit">Deposit</SelectItem>
-                    <SelectItem value="withdrawal">Withdrawal</SelectItem>
-                  </SelectContent>
-                </Select>
-                <div className="flex items-center justify-center sm:justify-start">
-                  <Badge variant="outline" className="py-2 px-4 rounded-[8px] h-[40px] mt-1">
+
+                {/* Type Filter Buttons */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm text-muted-foreground font-medium whitespace-nowrap">Type:</span>
+                  <div className="flex gap-2 flex-wrap">
+                    <Button
+                      variant={typeFilter === "all" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setTypeFilter("all")}
+                      className={`h-[40px] rounded-[8px] border-0 px-3 text-xs ${
+                        typeFilter === "all" 
+                          ? "bg-white text-black hover:bg-white/90" 
+                          : "bg-white/10 text-white hover:bg-white/20"
+                      }`}
+                    >
+                      All Types
+                    </Button>
+                    <Button
+                      variant={typeFilter === "deposit" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setTypeFilter("deposit")}
+                      className={`h-[40px] rounded-[8px] border-0 px-3 text-xs ${
+                        typeFilter === "deposit" 
+                          ? "bg-white text-black hover:bg-white/90" 
+                          : "bg-white/10 text-white hover:bg-white/20"
+                      }`}
+                    >
+                      Deposit
+                    </Button>
+                    <Button
+                      variant={typeFilter === "withdrawal" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setTypeFilter("withdrawal")}
+                      className={`h-[40px] rounded-[8px] border-0 px-3 text-xs ${
+                        typeFilter === "withdrawal" 
+                          ? "bg-white text-black hover:bg-white/90" 
+                          : "bg-white/10 text-white hover:bg-white/20"
+                      }`}
+                    >
+                      Withdrawal
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Results Count */}
+                <div className="flex items-center justify-end">
+                  <Badge variant="outline" className="py-2 px-4 rounded-[8px] h-[40px] text-white">
                     {filteredRequests.length} requests
                   </Badge>
                 </div>
