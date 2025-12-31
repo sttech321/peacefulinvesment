@@ -113,13 +113,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const { isAdmin } = useUserRole();
 
   const toggleMenu = (menuName: string) => {
-    const newExpanded = new Set(expandedMenus);
-    if (newExpanded.has(menuName)) {
-      newExpanded.delete(menuName);
+    // If the clicked menu is already expanded, close it
+    if (expandedMenus.has(menuName)) {
+      setExpandedMenus(new Set());
     } else {
-      newExpanded.add(menuName);
+      // Otherwise, close all menus and open only the clicked one (accordion behavior)
+      setExpandedMenus(new Set([menuName]));
     }
-    setExpandedMenus(newExpanded);
   };
 
   // Close expanded menus when navigating to a different section
