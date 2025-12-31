@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import logoAnimation from '@/assets/patrik-logo-animation.gif';
-
+import React, { useEffect, useRef, useState } from 'react';
+import logoAnimation from '@/assets/preloader-animation-video.mp4';
+import audiologoAnimation from '@/assets/audio-logoAnimation.mp3';
 interface LoadingScreenProps {
   /**
    * Optional maximum time (ms) to keep the splash
@@ -12,12 +12,20 @@ interface LoadingScreenProps {
    */
   onFinish?: () => void;
 }
+// const videoRef = useRef(null);
 
+// const enableSound = () => {
+//   videoRef.current.muted = false;
+//   videoRef.current.play();
+// };
 const LoadingScreen: React.FC<LoadingScreenProps> = ({
   timeoutMs = 13000,
   onFinish,
 }) => {
   const [phase, setPhase] = useState<'full' | 'moving' | 'hidden'>('full');
+  const [audioEnabled, setAudioEnabled] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
     // For a 2-stage effect, we spend most of the time
@@ -46,6 +54,21 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({
 
   const isMoving = phase === 'moving';
 
+  const handleEnableAudio = () => {
+    setAudioEnabled(true);
+
+    if (videoRef.current) {
+      videoRef.current.muted = false;
+      void videoRef.current.play();
+    }
+
+    if (audioRef.current) {
+      audioRef.current.muted = false;
+      audioRef.current.currentTime = 0;
+      void audioRef.current.play();
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 pointer-events-none bg-black">
       {/* Logo layer stays on a black background during both phases */}
@@ -57,22 +80,40 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({
                 alignItems: 'flex-start',
                 justifyContent: 'flex-start',
                 paddingTop: '14px',
-                paddingLeft: '24px',
+                paddingLeft: '0px',
               }
             : undefined
         }
       >
-        <img
+        <video
+          ref={videoRef}
           src={logoAnimation}
-          alt="Loading"
+          autoPlay
+          muted={!audioEnabled}
+          loop
+          playsInline
           className={`object-contain transition-all duration-700 ease-in-out ${
             isMoving ? 'w-10 h-10 rounded-full' : 'w-full h-full'
           }`}
         />
-      </div>
+ 
+        {!audioEnabled && (
+          <button
+            type="button"
+            onClick={handleEnableAudio}
+            className="absolute bottom-8 right-8 pointer-events-auto rounded-full bg-white/10 px-4 py-2 text-sm font-medium uppercase tracking-wide text-white backdrop-blur transition hover:bg-white/20"
+          >
+            Enable sound
+          </button>
+
+          
+        )}
+      </div> 
+
     </div>
   );
 };
 
 export default LoadingScreen;
 
+// 
