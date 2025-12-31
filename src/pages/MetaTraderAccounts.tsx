@@ -82,8 +82,8 @@ export default function MetaTraderAccounts() {
     return (
       <div className="min-h-screen flex items-center justify-center pink-yellow-shadow">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-          <h2 className="text-xl font-semibold mb-2 text-white">Loading Your Accounts</h2>
+         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
+          <h2 className="text-xl font-semibold mb-2 text-white pt-5">Loading Your Accounts</h2>
           <p className="text-muted-foreground">Fetching your MetaTrader account data...</p>
         </div>
       </div>

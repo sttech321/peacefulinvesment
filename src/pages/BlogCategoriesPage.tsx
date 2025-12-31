@@ -463,7 +463,7 @@ export default function AdminBlogCategories() {
         <td className="py-2 text-muted-foreground px-4 whitespace-nowrap">{node.slug}</td>
         <td className="py-2 px-4 whitespace-nowrap">
           <Badge
-            className="text-xs"
+            className="text-xs border-0"
             style={{ backgroundColor: node.color, color: "white" }}
           >
             {node.color}
