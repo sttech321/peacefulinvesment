@@ -105,11 +105,8 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({
           >
             Enable sound
           </button>
-
-          
         )}
-      </div> 
-
+      </div>
     </div>
   );
 };
