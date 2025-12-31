@@ -116,8 +116,7 @@ const FinancialStatus = ({ formData, updateFormData, errors }: FinancialStatusPr
       <div className="p-4 bg-white/10 rounded-sm border border-secondary-foreground">
         <h4 className="font-medium mb-2 text-white">Why do we need this information?</h4>
         <ul className="text-sm text-muted-foreground space-y-1">
-          <li>• To ensure we recommend suitable investment products</li>
-          <li>• To comply with regulatory requirements (KYC/AML)</li>
+          <li>• To ensure we recommend suitable investment products</li> 
           <li>• To help you set appropriate investment goals</li>
           <li>• To provide personalized financial advice</li>
         </ul>
