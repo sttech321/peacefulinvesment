@@ -22,6 +22,7 @@ import {
   ChevronDown,
   ChevronRight,
   Folder,
+  Mail,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -97,6 +98,7 @@ const navigation: NavigationItem[] = [
       { name: 'Closed', href: '/admin/contact-requests?status=closed', status: 'closed' },
     ],
   },
+  { name: 'Email', href: '/admin/email', icon: Mail },
   { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
   { name: 'Audit Log', href: '/admin/audit-log', icon: Activity },
   { name: 'Blog Management', href: '/admin/blog', icon: FileText },

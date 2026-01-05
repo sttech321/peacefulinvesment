@@ -41,6 +41,7 @@ import AdminAccounts from "./pages/admin/AdminAccounts";
 import AdminOverseasCompanies from "./pages/admin/AdminOverseasCompanies";
 import AdminReferrals from "./pages/admin/AdminReferrals";
 import AdminContactRequests from "./pages/admin/AdminContactRequests";
+import AdminEmail from "./pages/admin/AdminEmail";
 import AdminRequests from "./pages/admin/AdminRequests";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminAuditLog from "./pages/admin/AdminAuditLog";
@@ -131,6 +132,13 @@ function AppContent() {
                     <AdminRouteGuard>
                       <AdminLayout>
                         <AdminContactRequests />
+                      </AdminLayout>
+                    </AdminRouteGuard>
+                  } />
+                  <Route path="/admin/email" element={
+                    <AdminRouteGuard>
+                      <AdminLayout>
+                        <AdminEmail />
                       </AdminLayout>
                     </AdminRouteGuard>
                   } />
