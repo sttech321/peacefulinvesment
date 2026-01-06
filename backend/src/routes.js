@@ -1,0 +1,35 @@
+import express from "express";
+import { fetchEmailsForAccount } from "./emailService.js";
+
+const router = express.Router();
+
+/**
+ * GET /api/emails?email_account_id=UUID
+ */
+router.get("/emails", async (req, res) => {
+  try {
+    const { email_account_id } = req.query;
+
+    if (!email_account_id) {
+      return res.status(400).json({
+        success: false,
+        message: "email_account_id is required",
+      });
+    }
+
+    const emails = await fetchEmailsForAccount(email_account_id);
+
+    res.json({
+      success: true,
+      data: emails,
+    });
+  } catch (error) {
+    console.error("Fetch emails error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to fetch emails",
+    });
+  }
+});
+
+export default router;

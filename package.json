@@ -6,7 +6,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-username/peaceful-investment-platform.git"
+    "url": "git+https://github.com/your-username/peaceful-investment-platform.git"
   },
   "keywords": [
     "investment",
@@ -73,6 +73,7 @@
     "embla-carousel-react": "^8.6.0",
     "fuse.js": "^7.1.0",
     "html2canvas": "^1.4.1",
+    "imapflow": "^1.2.4",
     "input-otp": "^1.4.2",
     "jspdf": "^3.0.1",
     "lodash.debounce": "^4.0.8",
@@ -132,5 +133,13 @@
     "*.{json,css,md}": [
       "prettier --write"
     ]
-  }
+  },
+  "main": "eslint.config.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/peaceful-investment-platform/issues"
+  },
+  "homepage": "https://github.com/your-username/peaceful-investment-platform#readme"
 }

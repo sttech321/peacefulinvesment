@@ -4,13 +4,12 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
 };
 
 Deno.serve(async (req: Request) => {
-  /* =======================
-     CORS
-  ======================= */
+  // CORS
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
@@ -23,9 +22,7 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    /* =======================
-       AUTH
-    ======================= */
+    // AUTH
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(
@@ -41,7 +38,10 @@ Deno.serve(async (req: Request) => {
     );
 
     const jwt = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await supabase.auth.getUser(jwt);
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser(jwt);
 
     if (authError || !user) {
       return new Response(
@@ -50,9 +50,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    /* =======================
-       ADMIN CHECK
-    ======================= */
+    // ADMIN CHECK
     const { data: role } = await supabase
       .from("user_roles")
       .select("role")
@@ -66,79 +64,45 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    /* =======================
-       FETCH EMAIL ACCOUNTS
-    ======================= */
-    const { data: accounts, error: accountsError } = await supabase
+    // FETCH EMAIL ACCOUNTS
+    const { data: accounts } = await supabase
       .from("email_accounts")
       .select("*")
       .eq("sync_enabled", true);
 
-    if (accountsError || !accounts || accounts.length === 0) {
+    if (!accounts || accounts.length === 0) {
       return new Response(
         JSON.stringify({ success: false, error: "No email accounts found" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    /* =======================
-       CALL IMAP WORKER
-    ======================= */
+    // CALL NODE IMAP WORKER
     const IMAP_WORKER_URL = Deno.env.get("IMAP_WORKER_URL");
     if (!IMAP_WORKER_URL) {
-      return new Response(
-        JSON.stringify({ success: false, error: "IMAP_WORKER_URL not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      throw new Error("IMAP_WORKER_URL not configured");
     }
 
-    const results: any[] = [];
+    const results = [];
 
     for (const account of accounts) {
-      try {
-        const workerResponse = await fetch(IMAP_WORKER_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": authHeader, // ✅ PASS REAL JWT
-          },
-          body: JSON.stringify({
-            id: account.id,
-            email: account.email,
-            imap_host: account.imap_host,
-            imap_port: account.imap_port,
-            imap_secure: account.imap_secure,
-            smtp_host: account.smtp_host,
-            smtp_port: account.smtp_port,
-            smtp_secure: account.smtp_secure,
-            username: account.email,
-            password: account.password,
-            provider: account.provider,
-          }),
-        });
+      const res = await fetch(IMAP_WORKER_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: authHeader,
+        },
+        body: JSON.stringify(account),
+      });
 
-        const data = await workerResponse.json();
-
-        results.push({
-          account_id: account.id,
-          email: account.email,
-          worker_response: data,
-        });
-      } catch (err: any) {
-        results.push({
-          account_id: account.id,
-          email: account.email,
-          error: err.message,
-        });
-      }
+      results.push({
+        email: account.email,
+        response: await res.json(),
+      });
     }
 
     return new Response(
-      JSON.stringify({
-        success: true,
-        processed_accounts: results.length,
-        results,
-      }),
+      JSON.stringify({ success: true, results }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err: any) {
