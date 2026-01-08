@@ -210,3 +210,27 @@ async function fetchRepliesForAccount(email_account_id) {
 
   return replyMap;
 }
+
+export async function deleteEmail({
+  email_account_id,
+  mailbox = "INBOX",
+  uid,
+}) {
+  const account = await getEmailAccount(email_account_id);
+  if (!account) throw new Error("Email account not found");
+
+  const client = createImapClient(account);
+
+  await client.connect();
+  await client.mailboxOpen(mailbox);
+
+  // 1️⃣ Mark email as \Deleted
+  await client.messageFlagsAdd(uid, ["\\Deleted"], { uid: true });
+
+  // 2️⃣ Permanently remove it
+  await client.messageDelete(Number(uid), { uid: true });
+
+  await client.logout();
+
+  return { success: true };
+}

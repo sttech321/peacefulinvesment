@@ -2,7 +2,8 @@ import express from "express";
 import { 
   fetchEmailsForAccount,
   markEmailAsRead,
-  replyToEmail
+  replyToEmail,
+  deleteEmail
 } from "./emailService.js";
 
 const router = express.Router();
@@ -67,6 +68,37 @@ router.post('/reply', async (req, res) => {
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+router.post("/delete", async (req, res) => {
+  try {
+    const { email_account_id, uid, mailbox } = req.body;
+
+    if (!email_account_id || !uid) {
+      return res.status(400).json({
+        success: false,
+        message: "email_account_id and uid are required",
+      });
+    }
+
+    const result = await deleteEmail({
+      email_account_id,
+      uid,
+      mailbox: mailbox || "INBOX",
+    });
+
+    res.json({
+      success: true,
+      message: "Email deleted successfully",
+    });
+
+  } catch (error) {
+    console.error("Delete email error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to delete email",
+    });
   }
 });
 

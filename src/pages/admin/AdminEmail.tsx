@@ -90,6 +90,9 @@ export default function AdminEmail() {
   const [pageByAccount, setPageByAccount] = useState<Record<string, number>>({});
   const PAGE_LIMIT = 20;
 
+  const [deleteMessage, setDeleteMessage] = useState<EmailMessage | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
   const emptyAccount = {
     email: "",
     password: "",
@@ -217,7 +220,7 @@ export default function AdminEmail() {
 
   /* ================= EMAIL SYNC ================= */
 
-const syncAccountEmails = async (
+  const syncAccountEmails = async (
     accountId: string,
     page = 1
   ) => {
@@ -271,7 +274,7 @@ const syncAccountEmails = async (
       setSyncing(false);
       setLoading(false);
     }
-};
+  };
 
   const handleSyncAll = async () => {
     setMessages([]);
@@ -327,6 +330,51 @@ const syncAccountEmails = async (
   const unreadCount = filteredMessages.filter(m => !m.is_read).length;
 
   /* ================= UI ================= */
+
+  /* ================= DELETE Email ================= */
+  const handleDeleteEmail = (message: EmailMessage) => {
+    setDeleteMessage(message); // just open dialog
+  };
+
+  const confirmDeleteEmail = async () => {
+    if (!deleteMessage) return;
+
+    try {
+      setDeleting(true);
+
+      const uid = deleteMessage.id.split("-").pop();
+
+      // 🔥 OPTIMISTIC UI UPDATE
+      setMessages(prev =>
+        prev.filter(m => m.id !== deleteMessage.id)
+      );
+
+      await fetch("http://localhost:3001/api/emails/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email_account_id: deleteMessage.email_account?.id,
+          uid,
+          mailbox: "INBOX",
+        }),
+      });
+
+      toast({
+        title: "Deleted",
+        description: "Email deleted successfully",
+      });
+
+      setDeleteMessage(null);
+    } catch {
+      toast({
+        title: "Error",
+        description: "Failed to delete email",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -448,6 +496,14 @@ const syncAccountEmails = async (
                             }}
                           >
                             <Reply className="h-4 w-4" />
+                          </Button>
+
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteEmail(m)}
+                          >
+                            <Trash2 className="h-4 w-4 text-red-500" />
                           </Button>
                         </div>
                       </TableCell>
@@ -724,6 +780,39 @@ const syncAccountEmails = async (
               }}
             >
               {replyLoading ? "Sending..." : "Send Reply"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={!!deleteMessage}
+        onOpenChange={() => setDeleteMessage(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Email</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this email?
+              This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteMessage(null)}
+              disabled={deleting}
+            >
+              Cancel
+            </Button>
+
+            <Button
+              variant="destructive"
+              disabled={deleting}
+              onClick={confirmDeleteEmail}
+            >
+              {deleting ? "Deleting..." : "Delete"}
             </Button>
           </DialogFooter>
         </DialogContent>
