@@ -86,6 +86,10 @@ export default function AdminEmail() {
   const [replyBody, setReplyBody] = useState("");
   const [replyLoading, setReplyLoading] = useState(false);
 
+  const [hasMoreByAccount, setHasMoreByAccount] = useState<Record<string, boolean>>({});
+  const [pageByAccount, setPageByAccount] = useState<Record<string, number>>({});
+  const PAGE_LIMIT = 20;
+
   const emptyAccount = {
     email: "",
     password: "",
@@ -213,13 +217,16 @@ export default function AdminEmail() {
 
   /* ================= EMAIL SYNC ================= */
 
-  const syncAccountEmails = async (accountId: string) => {
+const syncAccountEmails = async (
+    accountId: string,
+    page = 1
+  ) => {
     try {
       setSyncing(true);
       setLoading(true);
 
       const res = await fetch(
-        `http://localhost:3001/api/emails?email_account_id=${accountId}`
+        `http://localhost:3001/api/emails?email_account_id=${accountId}&page=${page}&limit=${PAGE_LIMIT}`
       );
 
       if (!res.ok) throw new Error("Failed to fetch emails");
@@ -235,27 +242,41 @@ export default function AdminEmail() {
         date_received: e.date,
         is_read: e.is_read,
         email_account: accounts.find(a => a.id === accountId),
-        replies: e.replies || [] // 👈 IMPORTANT
+        replies: e.replies || [],
       }));
 
-      // 🔒 HARD REPLACE FOR THIS ACCOUNT
+      // 🔒 HARD REPLACE FOR THIS ACCOUNT (PAGE-BASED)
       setMessages(prev => [
         ...prev.filter(m => m.email_account?.id !== accountId),
         ...mapped,
       ]);
 
+      setPageByAccount(prev => ({
+        ...prev,
+        [accountId]: page,
+      }));
+
+      setHasMoreByAccount(prev => ({
+        ...prev,
+        [accountId]: json.pagination?.hasMore ?? false,
+      }));
+
     } catch (e: any) {
-      toast({ title: "Error", description: e.message, variant: "destructive" });
+      toast({
+        title: "Error",
+        description: e.message,
+        variant: "destructive",
+      });
     } finally {
       setSyncing(false);
       setLoading(false);
     }
-  };
+};
 
   const handleSyncAll = async () => {
     setMessages([]);
     for (const acc of accounts) {
-      await syncAccountEmails(acc.id);
+      await syncAccountEmails(acc.id, 1);
     }
   };
 
@@ -456,6 +477,47 @@ export default function AdminEmail() {
               </TableBody>
             </Table>
           )}
+
+          {selectedAccount !== "all" && (
+            <div className="flex justify-center items-center gap-4 mt-4">
+              {/* PREVIOUS */}
+              <Button
+                variant="outline"
+                disabled={
+                  syncing ||
+                  (pageByAccount[selectedAccount] || 1) === 1
+                }
+                onClick={() =>
+                  syncAccountEmails(
+                    selectedAccount,
+                    (pageByAccount[selectedAccount] || 1) - 1
+                  )
+                }
+              >
+                Previous
+              </Button>
+
+              <span className="text-sm text-muted-foreground">
+                Page {pageByAccount[selectedAccount] || 1}
+              </span>
+
+              {/* NEXT — ONLY SHOW IF MORE RECORDS EXIST */}
+              {hasMoreByAccount[selectedAccount] && (
+                <Button
+                  variant="outline"
+                  disabled={syncing}
+                  onClick={() =>
+                    syncAccountEmails(
+                      selectedAccount,
+                      (pageByAccount[selectedAccount] || 1) + 1
+                    )
+                  }
+                >
+                  Next
+                </Button>
+              )}
+            </div>
+          )}
         </TabsContent>
 
         {/* ACCOUNTS TAB */}
@@ -649,7 +711,7 @@ export default function AdminEmail() {
 
                   setReplyBody("");
                   setReplyOpen(false);
-                  
+
                 } catch {
                   toast({
                     title: "Error",

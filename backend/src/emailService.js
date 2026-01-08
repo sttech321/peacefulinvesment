@@ -34,22 +34,31 @@ function createImapClient(account) {
   });
 }
 
-export async function fetchEmailsForAccount(email_account_id) {
+export async function fetchEmailsForAccount(email_account_id, page, limit) {
   const account = await getEmailAccount(email_account_id);
   const client = createImapClient(account);
 
-  const allEmails = [];
+  const emails = [];
 
   await client.connect();
-
-  // INBOX
   await client.mailboxOpen("INBOX");
 
-  for await (const msg of client.fetch("1:*", {
+  // 1️⃣ Get all message UIDs
+  const uids = await client.search({ all: true });
+
+  // 2️⃣ Sort newest → oldest
+  uids.sort((a, b) => b - a);
+
+  // 3️⃣ Pagination math
+  const start = (page - 1) * limit;
+  const end = start + limit;
+  const pageUids = uids.slice(start, end);
+
+  // 4️⃣ Fetch only paginated UIDs
+  for await (const msg of client.fetch(pageUids, {
     uid: true,
     source: true,
     flags: true,
-    envelope: true
   })) {
     const parsed = await simpleParser(msg.source);
 
@@ -60,7 +69,7 @@ export async function fetchEmailsForAccount(email_account_id) {
         ? msg.flags.includes("\\Seen")
         : false;
 
-    allEmails.push({
+    emails.push({
       uid: msg.uid,
       mailbox: "inbox",
       from: parsed.from?.text || "",
@@ -69,24 +78,27 @@ export async function fetchEmailsForAccount(email_account_id) {
       text: parsed.text || "",
       html: parsed.html || "",
       is_read: isRead,
-      replies: [] // 👈 placeholder
+      replies: [],
     });
   }
 
   await client.logout();
 
-  // 🔹 FETCH REPLIES FROM DB
+  // 🔹 Attach replies
   const replyMap = await fetchRepliesForAccount(email_account_id);
-
-  // 🔹 ATTACH REPLIES TO EMAILS
-  for (const email of allEmails) {
+  for (const email of emails) {
     email.replies = replyMap[email.uid] || [];
   }
 
-  // Sort latest first
-  allEmails.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-  return allEmails;
+  return {
+    data: emails,
+    pagination: {
+      page,
+      limit,
+      total: uids.length,
+      hasMore: start + emails.length < uids.length,
+    },
+  };
 }
 
 export async function markEmailAsRead(email_account_id, mailbox, uid) {

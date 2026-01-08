@@ -12,7 +12,11 @@ const router = express.Router();
  */
 router.get("/", async (req, res) => {
   try {
-    const { email_account_id } = req.query;
+    const {
+      email_account_id,
+      page = 1,
+      limit = 20,
+    } = req.query;
 
     if (!email_account_id) {
       return res.status(400).json({
@@ -21,12 +25,18 @@ router.get("/", async (req, res) => {
       });
     }
 
-    const emails = await fetchEmailsForAccount(email_account_id);
+    const result = await fetchEmailsForAccount(
+      email_account_id,
+      Number(page),
+      Number(limit)
+    );
 
     res.json({
       success: true,
-      data: emails,
+      data: result.data,
+      pagination: result.pagination,
     });
+
   } catch (error) {
     console.error("Fetch emails error:", error);
     res.status(500).json({
