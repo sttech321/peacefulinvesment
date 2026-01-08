@@ -1,12 +1,16 @@
 import express from "express";
-import { fetchEmailsForAccount } from "./emailService.js";
+import { 
+  fetchEmailsForAccount,
+  markEmailAsRead,
+  replyToEmail
+} from "./emailService.js";
 
 const router = express.Router();
 
 /**
  * GET /api/emails?email_account_id=UUID
  */
-router.get("/emails", async (req, res) => {
+router.get("/", async (req, res) => {
   try {
     const { email_account_id } = req.query;
 
@@ -29,6 +33,30 @@ router.get("/emails", async (req, res) => {
       success: false,
       message: error.message || "Failed to fetch emails",
     });
+  }
+});
+
+router.post("/read", async (req, res) => {
+  const { email_account_id, mailbox, uid } = req.body;
+
+  if (!email_account_id || !mailbox || !uid) {
+    return res.status(400).json({ error: "Missing parameters" });
+  }
+
+  try {
+    const result = await markEmailAsRead(email_account_id, mailbox, uid);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/reply', async (req, res) => {
+  try {
+    const result = await replyToEmail(req.body);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

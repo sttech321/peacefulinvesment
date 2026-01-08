@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/tabs";
 import {
   Plus, Search, RefreshCw, Trash2,
-  Eye, Loader2, Settings,
+  Eye, Reply, Loader2, Settings,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -43,6 +43,12 @@ interface EmailAccount {
   last_sync_at: string | null;
 }
 
+interface EmailReply {
+  id: string;
+  body: string;
+  created_at: string;
+}
+
 interface EmailMessage {
   id: string;
   subject: string | null;
@@ -52,6 +58,7 @@ interface EmailMessage {
   date_received: string;
   is_read: boolean;
   email_account?: EmailAccount;
+  replies?: EmailReply[]; // 👈 ADD THIS
 }
 
 /* ================= COMPONENT ================= */
@@ -72,6 +79,13 @@ export default function AdminEmail() {
   const [deleteAccount, setDeleteAccount] = useState<EmailAccount | null>(null);
   const [editingAccount, setEditingAccount] = useState<EmailAccount | null>(null);
 
+  const [viewMessage, setViewMessage] = useState<EmailMessage | null>(null);
+
+  /* ===== NEW: REPLY STATE ===== */
+  const [replyOpen, setReplyOpen] = useState(false);
+  const [replyBody, setReplyBody] = useState("");
+  const [replyLoading, setReplyLoading] = useState(false);
+
   const emptyAccount = {
     email: "",
     password: "",
@@ -86,7 +100,6 @@ export default function AdminEmail() {
   };
 
   const [form, setForm] = useState<any>(emptyAccount);
-  const [viewMessage, setViewMessage] = useState<EmailMessage | null>(null);
 
   /* ================= FETCH ACCOUNTS ================= */
 
@@ -109,10 +122,10 @@ export default function AdminEmail() {
   }, []);
 
   useEffect(() => {
-  if (accounts.length > 0 && selectedAccount === "all") {
-    setSelectedAccount(accounts[0].id);
-  }
-}, [accounts]);
+    if (accounts.length > 0 && selectedAccount === "all") {
+      setSelectedAccount(accounts[0].id);
+    }
+  }, [accounts]);
 
   useEffect(() => {
     if (accounts.length > 0) {
@@ -214,7 +227,7 @@ export default function AdminEmail() {
       const json = await res.json();
 
       const mapped: EmailMessage[] = (json.data || []).map((e: any) => ({
-        id: e.uid.toString(),
+        id: `${accountId}-${e.uid}`,
         subject: e.subject,
         from_email: e.from,
         body_text: e.text,
@@ -222,9 +235,14 @@ export default function AdminEmail() {
         date_received: e.date,
         is_read: e.is_read,
         email_account: accounts.find(a => a.id === accountId),
+        replies: e.replies || [] // 👈 IMPORTANT
       }));
 
-      setMessages(prev => [...prev, ...mapped]);
+      // 🔒 HARD REPLACE FOR THIS ACCOUNT
+      setMessages(prev => [
+        ...prev.filter(m => m.email_account?.id !== accountId),
+        ...mapped,
+      ]);
 
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
@@ -238,6 +256,36 @@ export default function AdminEmail() {
     setMessages([]);
     for (const acc of accounts) {
       await syncAccountEmails(acc.id);
+    }
+  };
+
+
+    /* ===== NEW: MARK AS READ ===== */
+  const markAsRead = async (message: EmailMessage) => {
+    if (message.is_read) return;
+
+    try {
+      await fetch("http://localhost:3001/api/emails/read", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email_account_id: message.email_account?.id,
+          mailbox: "INBOX",
+          uid: message.id.split("-").pop(),
+        }),
+      });
+
+      setMessages(prev =>
+        prev.map(m =>
+          m.id === message.id ? { ...m, is_read: true } : m
+        )
+      );
+    } catch {
+      toast({
+        title: "Error",
+        description: "Failed to mark email as read",
+        variant: "destructive",
+      });
     }
   };
 
@@ -346,21 +394,65 @@ export default function AdminEmail() {
                   <TableHead />
                 </TableRow>
               </TableHeader>
-              <TableBody>
+              <TableBody key={selectedAccount}>
                 {filteredMessages.map(m => (
-                  <TableRow key={m.id} className={!m.is_read ? "font-medium" : ""}>
-                    <TableCell>{m.from_email}</TableCell>
-                    <TableCell>{m.subject}</TableCell>
-                    <TableCell>
-                      {format(new Date(m.date_received), "MMM d yyyy HH:mm")}
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="sm" onClick={() => setViewMessage(m)}>
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                  <>
+                    {/* MAIN EMAIL ROW */}
+                    <TableRow key={m.id} className={!m.is_read ? "font-bold" : ""}>
+                      <TableCell>{m.from_email}</TableCell>
+                      <TableCell>{m.subject}</TableCell>
+                      <TableCell>
+                        {format(new Date(m.date_received), "MMM d yyyy HH:mm")}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setViewMessage(m);
+                              markAsRead(m);
+                            }}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setViewMessage(m);
+                              setReplyOpen(true);
+                              markAsRead(m);
+                            }}
+                          >
+                            <Reply className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+
+                    {/* 🔽 REPLIES ROW */}
+                    {m.replies && m.replies.length > 0 && (
+                      <TableRow className="bg-muted/30">
+                        <TableCell colSpan={4}>
+                          <div className="space-y-2 pl-6 border-l border-muted">
+                            {m.replies.map(reply => (
+                              <div key={reply.id} className="text-sm">
+                                <div className="text-xs text-muted-foreground">
+                                  Reply • {format(new Date(reply.created_at), "MMM d yyyy HH:mm")}
+                                </div>
+                                <div className="mt-1 whitespace-pre-wrap">
+                                  {reply.body}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                  )}
+                </>
+              ))}
               </TableBody>
             </Table>
           )}
@@ -487,6 +579,94 @@ export default function AdminEmail() {
             : <pre>{viewMessage?.body_text}</pre>}
         </DialogContent>
       </Dialog>
+      
+      {/* REPLY DIALOG */}
+      <Dialog open={replyOpen} onOpenChange={setReplyOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Reply</DialogTitle>
+            <DialogDescription>
+              To: {viewMessage?.from_email}
+            </DialogDescription>
+          </DialogHeader>
+
+          <textarea
+            className="w-full min-h-[200px] p-2 rounded bg-black text-white border"
+            placeholder="Write your reply..."
+            value={replyBody}
+            onChange={e => setReplyBody(e.target.value)}
+          />
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setReplyOpen(false)}
+            >
+              Cancel
+            </Button>
+
+            <Button
+              disabled={replyLoading}
+              onClick={async () => {
+                if (!viewMessage) return;
+
+                try {
+                  setReplyLoading(true);
+                  const messageUid = viewMessage.id.split("-").pop();
+                  await fetch("http://localhost:3001/api/emails/reply", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      email_account_id: viewMessage.email_account?.id,
+                      message_uid: messageUid,            // ✅ REQUIRED
+                      to_email: viewMessage.from_email,   // ✅ REQUIRED (correct key)
+                      subject: viewMessage.subject,
+                      body: replyBody,
+                    }),
+                  });
+
+                  toast({
+                    title: "Sent",
+                    description: "Reply sent successfully",
+                  });
+
+                  const newReply = {
+                    id: `temp-${Date.now()}`,          // temporary ID
+                    body: replyBody,
+                    created_at: new Date().toISOString(),
+                  };
+
+                  setMessages(prev =>
+                    prev.map(m =>
+                      m.id === viewMessage.id
+                        ? {
+                            ...m,
+                            replies: [...(m.replies || []), newReply],
+                          }
+                        : m
+                    )
+                  );
+
+                  setReplyBody("");
+                  setReplyOpen(false);
+                  
+                } catch {
+                  toast({
+                    title: "Error",
+                    description: "Failed to send reply",
+                    variant: "destructive",
+                  });
+                } finally {
+                  setReplyLoading(false);
+                }
+              }}
+            >
+              {replyLoading ? "Sending..." : "Send Reply"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
