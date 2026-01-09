@@ -65,6 +65,8 @@ interface EmailMessage {
 /* ================= COMPONENT ================= */
 
 export default function AdminEmail() {
+  const backendUrl = import.meta.env.NODE_BACKEND_URL || 'https://m8okk0c4w8oskkk4gkgkg0kw.peacefulinvestment.com';
+  console.log('Backend URL:', backendUrl);
   const { toast } = useToast();
 
   const [accounts, setAccounts] = useState<EmailAccount[]>([]);
@@ -93,6 +95,8 @@ export default function AdminEmail() {
 
   const [deleteMessage, setDeleteMessage] = useState<EmailMessage | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   const emptyAccount = {
     email: "",
@@ -141,19 +145,70 @@ export default function AdminEmail() {
     }
   }, [accounts.length]);
 
+  /* ================= VALIDATE ACCOUNT FORM ================= */
+  const validateAccountForm = () => {
+    const errors: Record<string, string> = {};
+
+    if (!form.email?.trim()) {
+      errors.email = "Email is required";
+    } else if (!/^\S+@\S+\.\S+$/.test(form.email)) {
+      errors.email = "Invalid email format";
+    }
+
+    if (!editingAccount && !form.password?.trim()) {
+      errors.password = "Password is required";
+    }
+
+    if (!form.imap_host?.trim()) {
+      errors.imap_host = "IMAP host is required";
+    }
+
+    if (!form.imap_port) {
+      errors.imap_port = "IMAP port is required";
+    }
+
+    if (!form.smtp_host?.trim()) {
+      errors.smtp_host = "SMTP host is required";
+    }
+
+    if (!form.smtp_port) {
+      errors.smtp_port = "SMTP port is required";
+    }
+
+    setFormErrors(errors);
+
+    return Object.keys(errors).length === 0;
+  };
+
   /* ================= ADD ACCOUNT ================= */
 
   const handleAddAccount = async () => {
-    const { error } = await supabase.from("email_accounts").insert(form);
+    if (!validateAccountForm()) {
+      toast({
+        title: "Validation error",
+        description: "Please fill all the fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const { error } = await supabase
+      .from("email_accounts")
+      .insert(form);
 
     if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
       return;
     }
 
     toast({ title: "Success", description: "Email account added" });
     setAddOpen(false);
     setForm(emptyAccount);
+    setFormErrors({});
     fetchAccounts();
   };
 
@@ -230,7 +285,7 @@ export default function AdminEmail() {
       setLoading(true);
 
       const res = await fetch(
-        `http://localhost:3001/api/emails?email_account_id=${accountId}&page=${page}&limit=${PAGE_LIMIT}`
+        `${backendUrl}/api/emails?email_account_id=${accountId}&page=${page}&limit=${PAGE_LIMIT}`
       );
 
       if (!res.ok) throw new Error("Failed to fetch emails");
@@ -248,6 +303,13 @@ export default function AdminEmail() {
         email_account: accounts.find(a => a.id === accountId),
         replies: e.replies || [],
       }));
+
+      // ✅ SORT HERE — newest first (Gmail-safe)
+      mapped.sort(
+        (a, b) =>
+          new Date(b.date_received).getTime() -
+          new Date(a.date_received).getTime()
+      );
 
       // 🔒 HARD REPLACE FOR THIS ACCOUNT (PAGE-BASED)
       setMessages(prev => [
@@ -290,7 +352,7 @@ export default function AdminEmail() {
     if (message.is_read) return;
 
     try {
-      await fetch("http://localhost:3001/api/emails/read", {
+      await fetch(backendUrl + "/api/emails/read", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -350,7 +412,7 @@ export default function AdminEmail() {
         prev.filter(m => m.id !== deleteMessage.id)
       );
 
-      await fetch("http://localhost:3001/api/emails/delete", {
+      await fetch(backendUrl + "/api/emails/delete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -761,7 +823,7 @@ export default function AdminEmail() {
                 try {
                   setReplyLoading(true);
                   const messageUid = viewMessage.id.split("-").pop();
-                  await fetch("http://localhost:3001/api/emails/reply", {
+                  await fetch(backendUrl + "/api/emails/reply", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
@@ -861,38 +923,38 @@ function AccountForm({ form, setForm, isEdit = false }: any) {
     <div className="grid grid-cols-2 gap-4 pt-4">
       <div>
         <Label>Email</Label>
-        <Input value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties } />
+        <Input required type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties } />
       </div>
 
       <div>
         <Label>Password {isEdit && "(leave blank to keep)"}</Label>
-        <Input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties } />
+        <Input required type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties } />
       </div>
 
       <div>
         <Label>IMAP Host</Label>
-        <Input value={form.imap_host} onChange={e => setForm({ ...form, imap_host: e.target.value })} className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties } />
+        <Input required value={form.imap_host} onChange={e => setForm({ ...form, imap_host: e.target.value })} className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties } />
       </div>
 
       <div>
         <Label>IMAP Port</Label>
-        <Input type="number" value={form.imap_port} onChange={e => setForm({ ...form, imap_port: Number(e.target.value) })} className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties } />
+        <Input required type="number" value={form.imap_port} onChange={e => setForm({ ...form, imap_port: Number(e.target.value) })} className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties } />
       </div>
 
       <div>
         <Label>SMTP Host</Label>
-        <Input value={form.smtp_host} onChange={e => setForm({ ...form, smtp_host: e.target.value })} 
+        <Input required value={form.smtp_host} onChange={e => setForm({ ...form, smtp_host: e.target.value })} 
         className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties } />
       </div>
 
       <div>
         <Label>SMTP Port</Label>
-        <Input type="number" value={form.smtp_port} onChange={e => setForm({ ...form, smtp_port: Number(e.target.value) })}  className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties } />
+        <Input required type="number" value={form.smtp_port} onChange={e => setForm({ ...form, smtp_port: Number(e.target.value) })}  className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties } />
       </div>
 
       <div>
         <Label>Provider</Label>
-        <Select value={form.provider} onValueChange={v => setForm({ ...form, provider: v })}>
+        <Select required value={form.provider} onValueChange={v => setForm({ ...form, provider: v })}>
           <SelectTrigger className="rounded-[8px] border-muted-foreground/60 hover:border-muted-foreground shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400 h-[36px]" style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
             <SelectValue />
             </SelectTrigger>
