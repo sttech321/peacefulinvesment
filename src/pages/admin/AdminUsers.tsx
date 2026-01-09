@@ -1831,13 +1831,16 @@ export default function AdminUsers() {
 
       {/* Edit User Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent">
-          <DialogHeader>
+        <DialogContent className="max-w-4xl p-0 gap-0">
+          
+          <DialogHeader className="p-4">
             <DialogTitle>Edit User Profile</DialogTitle>
             <DialogDescription>
               Modify user information and account settings
             </DialogDescription>
           </DialogHeader>
+          
+          <div className="px-4 mb-4 max-h-[70vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent">
           {editingUser && (
             <div className="space-y-6">
               <div className="flex items-center space-x-3 mb-6">
@@ -2094,6 +2097,7 @@ export default function AdminUsers() {
               </DialogFooter>
             </div>
           )}
+          </div>
         </DialogContent>
       </Dialog>
 

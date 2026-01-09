@@ -1065,9 +1065,9 @@ export default function AdminReferrals() {
                               <Eye className="h-4 w-4" />
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent>
+                          {/* <TooltipContent>
                             <p className="text-white">View Details</p>
-                          </TooltipContent>
+                          </TooltipContent> */}
                         </Tooltip>
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -1075,7 +1075,7 @@ export default function AdminReferrals() {
                               variant="ghost"
                               size="sm"
                               className={`rounded-[8px] ${
-                                referral.is_active ? "bg-red-600 hover:bg-red-700 text-white" : "bg-green-600 hover:bg-green-700 text-white"
+                                referral.is_active ? "bg-red-600 hover:bg-red-700 text-white hover:text-white" : "bg-green-600 hover:bg-green-700 text-white hover:text-white"
                               }`}
                               onClick={() => handleToggleReferralStatus(referral)}
                             >
@@ -1086,16 +1086,16 @@ export default function AdminReferrals() {
                               )}
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent>
+                          {/* <TooltipContent>
                             <p className="text-white">{referral.is_active ? 'Deactivate' : 'Activate'}</p>
-                          </TooltipContent>
+                          </TooltipContent> */}
                         </Tooltip>
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="rounded-[8px] bg-red-600 hover:bg-red-700 text-white"
+                              className="rounded-[8px] bg-red-600 hover:bg-red-700 text-white hover:text-white"
                               onClick={() => {
                                 setReferralToDelete(referral);
                                 setDeleteDialogOpen(true);
@@ -1104,9 +1104,9 @@ export default function AdminReferrals() {
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent>
-                            <p className="text-white">Delete Referral</p>
-                          </TooltipContent>
+                          {/* <TooltipContent>
+                            <p className="text-white">Delete Referral yyy</p>
+                          </TooltipContent> */}
                         </Tooltip>
                       </div>
                     </div>
@@ -1377,13 +1377,15 @@ export default function AdminReferrals() {
 
       {/* Referral Details Dialog */}
       <Dialog open={referralDetailsOpen} onOpenChange={setReferralDetailsOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent">
-          <DialogHeader>
+      <DialogContent className="max-w-4xl p-0 gap-0">
+          <DialogHeader className="p-4">
             <DialogTitle>Referral Details</DialogTitle>
             <DialogDescription>
               Detailed information about the referral program
             </DialogDescription>
           </DialogHeader>
+
+      <div className="px-4 mb-4 max-h-[70vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent">
           {selectedReferral && (
             <div className="space-y-6">
               <div className="flex items-center space-x-3">
@@ -1488,6 +1490,7 @@ export default function AdminReferrals() {
               </div>
             </div>
           )}
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -1550,13 +1553,14 @@ export default function AdminReferrals() {
           <DialogFooter>
             <Button
               variant="outline"
+              className="rounded-[8px] hover:bg-muted/10 border-0"
               onClick={() => setPaymentDialogOpen(false)}
             >
               Cancel
             </Button>
             <Button
               onClick={handleCreatePayment}
-              className="gap-0 mb-3 sm:mb-0"
+              className="gap-0 mb-3 sm:mb-0 rounded-[8px] border-0"
               disabled={creatingPayment || !newPayment.referral_id || !newPayment.amount}
             >
               {creatingPayment ? (
@@ -1596,6 +1600,7 @@ export default function AdminReferrals() {
               <DialogFooter>
                 <Button
                   variant="outline"
+                  className="rounded-[8px] hover:bg-muted/10 border-0"
                   onClick={() => {
                     setDeleteDialogOpen(false);
                     setReferralToDelete(null);
@@ -1607,6 +1612,7 @@ export default function AdminReferrals() {
                 <Button
                   variant="destructive"
                   onClick={handleDeleteReferral}
+                  className="rounded-[8px] gap-0 border-0"
                   disabled={deleting}
                 >
                   {deleting ? (

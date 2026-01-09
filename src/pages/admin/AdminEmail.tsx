@@ -25,6 +25,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { Textarea } from "@/components/ui/textarea";
 
 /* ================= TYPES ================= */
 
@@ -410,7 +411,7 @@ export default function AdminEmail() {
               </DialogHeader>
               <AccountForm form={form} setForm={setForm} />
               <DialogFooter>
-                <Button onClick={handleAddAccount}>Add</Button>
+                <Button className="rounded-[8px;]" onClick={handleAddAccount}>Add Email</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -419,21 +420,21 @@ export default function AdminEmail() {
 
       {/* TABS */}
       <Tabs defaultValue="messages">
-        <TabsList>
-          <TabsTrigger value="messages">
+        <TabsList className="bg-white/20 grid-cols-2 p-1 mb-5 h-auto">
+          <TabsTrigger value="messages" className="w-100">
             Messages {unreadCount > 0 && <Badge className="ml-2">{unreadCount}</Badge>}
           </TabsTrigger>
-          <TabsTrigger value="accounts">Accounts</TabsTrigger>
+          <TabsTrigger value="accounts" className="w-100">Accounts</TabsTrigger>
         </TabsList>
 
         {/* MESSAGES */}
         <TabsContent value="messages">
           <div className="flex gap-2 mb-4">
             <Select value={selectedAccount} onValueChange={setSelectedAccount}>
-              <SelectTrigger className="w-[220px]">
+              <SelectTrigger className="w-100 min-w-96 max-w-lg rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400 h-10" style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                 <SelectValue placeholder="All Accounts" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="border-secondary-foreground bg-black/90 text-white">
                 <SelectItem value="all">All Accounts</SelectItem>
                 {accounts.map(acc => (
                   <SelectItem key={acc.id} value={acc.id}>
@@ -445,21 +446,28 @@ export default function AdminEmail() {
 
             <Input
               placeholder="Search..."
-              className="w-[300px]"
+              className='w-100 min-w-96 max-w-lg rounded-[8px] shadow-none mt-0 focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 h-10 border-0' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
             />
           </div>
 
           {loading ? (
-            <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+            <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto mb-4"></div>
+          <div className="text-white text-lg">Loading emails...</div>
+        </div>
+      </div>
           ) : (
-            <Table className="text-white">
+            
+            <div className="rounded-md border border-muted/20 overflow-x-auto">
+            <Table className="border-none p-0 rounded-lg bg-white/5">
               <TableHeader>
-                <TableRow>
-                  <TableHead>From</TableHead>
-                  <TableHead>Subject</TableHead>
-                  <TableHead>Date</TableHead>
+                <TableRow className="border-b border-muted/20 hover:bg-white/15 bg-white/15 text-white">
+                  <TableHead className="text-white">From</TableHead>
+                  <TableHead className="text-white">Subject</TableHead>
+                  <TableHead className="text-white">Date</TableHead>
                   <TableHead />
                 </TableRow>
               </TableHeader>
@@ -467,10 +475,10 @@ export default function AdminEmail() {
                 {filteredMessages.map(m => (
                   <>
                     {/* MAIN EMAIL ROW */}
-                    <TableRow key={m.id} className={!m.is_read ? "font-bold" : ""}>
-                      <TableCell>{m.from_email}</TableCell>
-                      <TableCell>{m.subject}</TableCell>
-                      <TableCell>
+                    <TableRow className={`border-b border-muted/20 hover:bg-white/10 ${!m.is_read ? "font-bold" : ""}`} key={m.id}>
+                      <TableCell className="text-white">{m.from_email}</TableCell>
+                      <TableCell className="text-white">{m.subject}</TableCell>
+                      <TableCell className="text-white">
                         {format(new Date(m.date_received), "MMM d yyyy HH:mm")}
                       </TableCell>
                       <TableCell>
@@ -478,32 +486,35 @@ export default function AdminEmail() {
                           <Button
                             variant="ghost"
                             size="sm"
+                            className="bg-muted/20 hover:bg-muted/40 rounded-[8px] border-0"
                             onClick={() => {
                               setViewMessage(m);
                               markAsRead(m);
                             }}
                           >
-                            <Eye className="h-4 w-4" />
+                            <Eye className="h-4 w-4 text-white " />
                           </Button>
 
                           <Button
                             variant="ghost"
                             size="sm"
+                            className="bg-muted/20 hover:bg-muted/40 rounded-[8px] border-0"
                             onClick={() => {
                               setViewMessage(m);
                               setReplyOpen(true);
                               markAsRead(m);
                             }}
                           >
-                            <Reply className="h-4 w-4" />
+                            <Reply className="h-4 w-4 text-white " />
                           </Button>
 
                           <Button
                             variant="ghost"
                             size="sm"
+                             className="bg-red-600 hover:bg-red-700 rounded-[8px] border-0"
                             onClick={() => handleDeleteEmail(m)}
                           >
-                            <Trash2 className="h-4 w-4 text-red-500" />
+                            <Trash2 className="h-4 w-4 text-white" />
                           </Button>
                         </div>
                       </TableCell>
@@ -511,15 +522,15 @@ export default function AdminEmail() {
 
                     {/* 🔽 REPLIES ROW */}
                     {m.replies && m.replies.length > 0 && (
-                      <TableRow className="bg-muted/30">
+                      <TableRow className="border-b border-muted/20 bg-muted/20 hover:bg-muted/10 ">
                         <TableCell colSpan={4}>
-                          <div className="space-y-2 pl-6 border-l border-muted">
+                          <div className="space-y-0 px-5">
                             {m.replies.map(reply => (
-                              <div key={reply.id} className="text-sm">
-                                <div className="text-xs text-muted-foreground">
+                              <div key={reply.id} className="text-sm py-2 border-b border-muted/20 last:border-0 last:pb-0 first:pt-0">
+                                <div className="text-xs text-white font-semibold font-inter">
                                   Reply • {format(new Date(reply.created_at), "MMM d yyyy HH:mm")}
                                 </div>
-                                <div className="mt-1 whitespace-pre-wrap">
+                                <div className="mt-1 text-muted-foreground whitespace-pre-wrap">
                                   {reply.body}
                                 </div>
                               </div>
@@ -532,6 +543,7 @@ export default function AdminEmail() {
               ))}
               </TableBody>
             </Table>
+</div>
           )}
 
           {selectedAccount !== "all" && (
@@ -539,6 +551,7 @@ export default function AdminEmail() {
               {/* PREVIOUS */}
               <Button
                 variant="outline"
+                className="rounded-[8px] hover:bg-white/90 border-0"
                 disabled={
                   syncing ||
                   (pageByAccount[selectedAccount] || 1) === 1
@@ -562,6 +575,7 @@ export default function AdminEmail() {
                 <Button
                   variant="outline"
                   disabled={syncing}
+                  className="rounded-[8px] hover:bg-white/90 border-0"
                   onClick={() =>
                     syncAccountEmails(
                       selectedAccount,
@@ -577,20 +591,24 @@ export default function AdminEmail() {
         </TabsContent>
 
         {/* ACCOUNTS TAB */}
+
+        
+          
         <TabsContent value="accounts">
-          <Table className="w-full text-white">
+          <div className="rounded-md border border-muted/20 overflow-x-auto">
+          <Table className="border-none p-0 rounded-lg bg-white/5">
             <TableHeader>
-              <TableRow>
-                <TableHead>Email</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+              <TableRow className="border-b border-muted/20 hover:bg-white/15 bg-white/15 text-white">
+                <TableHead className="text-white">Email</TableHead>
+                <TableHead className="text-white">Status</TableHead>
+                <TableHead className="text-right text-white">Actions</TableHead>
               </TableRow>
             </TableHeader>
 
             <TableBody>
               {accounts.map(acc => (
-                <TableRow key={acc.id}>
-                  <TableCell>{acc.email}</TableCell>
+                <TableRow className="border-b border-muted/20 hover:bg-white/10" key={acc.id}>
+                  <TableCell className="text-white">{acc.email}</TableCell>
 
                   <TableCell>
                     <Badge>{acc.sync_enabled ? "Active" : "Disabled"}</Badge>
@@ -601,34 +619,38 @@ export default function AdminEmail() {
                     <Button
                       size="sm"
                       variant="ghost"
+                      className="bg-muted/20 hover:bg-muted/40 rounded-[8px] border-0"
                       onClick={() => syncAccountEmails(acc.id)}
                       disabled={syncing}
                     >
-                      <RefreshCw className="h-4 w-4" />
+                      <RefreshCw className="h-4 w-4 text-white" />
                     </Button>
 
                     {/* Edit */}
                     <Button
                       size="sm"
                       variant="ghost"
+                      className="bg-muted/20 hover:bg-muted/40 rounded-[8px] border-0"
                       onClick={() => openEdit(acc)}
                     >
-                      <Settings className="h-4 w-4" />
+                      <Settings className="h-4 w-4 text-white" />
                     </Button>
 
                     {/* Delete */}
                     <Button
                       size="sm"
                       variant="ghost"
+                      className="bg-red-600 hover:bg-red-700 rounded-[8px] border-0"
                       onClick={() => setDeleteAccount(acc)}
                     >
-                      <Trash2 className="h-4 w-4 text-red-500" />
+                      <Trash2 className="h-4 w-4 text-white" />
                     </Button>
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
+          </div>
         </TabsContent>
 
       </Tabs>
@@ -646,10 +668,10 @@ export default function AdminEmail() {
           <AccountForm form={form} setForm={setForm} isEdit />
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditOpen(false)}>
+            <Button  className="rounded-[8px] hover:bg-muted border-0" variant="outline" onClick={() => setEditOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleUpdateAccount}>
+            <Button  className="rounded-[8px] bg-primary hover:bg-primary-700 border-0" onClick={handleUpdateAccount}>
               Update
             </Button>
           </DialogFooter>
@@ -661,7 +683,7 @@ export default function AdminEmail() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Email Account</DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="pt-4 text-black">
               Are you sure you want to delete this email account?
               This action cannot be undone.
             </DialogDescription>
@@ -670,6 +692,7 @@ export default function AdminEmail() {
           <DialogFooter>
             <Button
               variant="outline"
+              className="rounded-[8px] hover:bg-muted border-0"
               onClick={() => setDeleteAccount(null)}
             >
               Cancel
@@ -677,6 +700,7 @@ export default function AdminEmail() {
 
             <Button
               variant="destructive"
+              className="rounded-[8px]"
               onClick={handleDeleteAccount}
             >
               Delete
@@ -687,14 +711,16 @@ export default function AdminEmail() {
 
       {/* VIEW MESSAGE */}
       <Dialog open={!!viewMessage} onOpenChange={() => setViewMessage(null)}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
+        <DialogContent className="max-w-4xl p-0 gap-0">
+          <DialogHeader className="p-4">
             <DialogTitle>{viewMessage?.subject}</DialogTitle>
-            <DialogDescription>{viewMessage?.from_email}</DialogDescription>
+            <DialogDescription className=" text-black/80 font-inter">{viewMessage?.from_email}</DialogDescription>
           </DialogHeader>
+          <div className="px-4 mb-4 max-h-[70vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent">
           {viewMessage?.body_html
             ? <div dangerouslySetInnerHTML={{ __html: viewMessage.body_html }} />
             : <pre>{viewMessage?.body_text}</pre>}
+            </div>
         </DialogContent>
       </Dialog>
       
@@ -703,14 +729,16 @@ export default function AdminEmail() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Reply</DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="pt-2 text-black">
               To: {viewMessage?.from_email}
             </DialogDescription>
           </DialogHeader>
 
-          <textarea
-            className="w-full min-h-[200px] p-2 rounded bg-black text-white border"
+          <Textarea
+            className="rounded-[8px] shadow-none mt-1 boder-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none resize-none" 
+            style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
             placeholder="Write your reply..."
+             rows={6}
             value={replyBody}
             onChange={e => setReplyBody(e.target.value)}
           />
@@ -718,12 +746,14 @@ export default function AdminEmail() {
           <DialogFooter>
             <Button
               variant="outline"
+              className="rounded-[8px] hover:bg-muted/20 border-0"
               onClick={() => setReplyOpen(false)}
             >
               Cancel
             </Button>
 
             <Button
+            className="rounded-[8px] border-0 hover:bg-primary/80 bg-primary"
               disabled={replyLoading}
               onClick={async () => {
                 if (!viewMessage) return;
@@ -792,7 +822,7 @@ export default function AdminEmail() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Email</DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="pt-4 text-black">
               Are you sure you want to delete this email?
               This action cannot be undone.
             </DialogDescription>
@@ -801,6 +831,7 @@ export default function AdminEmail() {
           <DialogFooter>
             <Button
               variant="outline"
+              className="rounded-[8px] hover:bg-muted/10 border-0"
               onClick={() => setDeleteMessage(null)}
               disabled={deleting}
             >
@@ -809,6 +840,7 @@ export default function AdminEmail() {
 
             <Button
               variant="destructive"
+              className="rounded-[8px]"
               disabled={deleting}
               onClick={confirmDeleteEmail}
             >
@@ -861,8 +893,10 @@ function AccountForm({ form, setForm, isEdit = false }: any) {
       <div>
         <Label>Provider</Label>
         <Select value={form.provider} onValueChange={v => setForm({ ...form, provider: v })}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
-          <SelectContent>
+          <SelectTrigger className="rounded-[8px] border-muted-foreground/60 hover:border-muted-foreground shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400 h-[36px]" style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
+            <SelectValue />
+            </SelectTrigger>
+          <SelectContent className="border-secondary-foreground bg-black/90 text-white">
             <SelectItem value="custom">Custom</SelectItem>
             <SelectItem value="gmail">Gmail</SelectItem>
             <SelectItem value="outlook">Outlook</SelectItem>

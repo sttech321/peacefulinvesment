@@ -1132,13 +1132,16 @@ export default function AdminOverseasCompanies() {
 
       {/* Request Details Dialog */}
       <Dialog open={requestDetailsOpen} onOpenChange={setRequestDetailsOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent">
-          <DialogHeader>
+        <DialogContent className="max-w-4xl p-0 gap-0">
+
+          <DialogHeader className="p-4">
             <DialogTitle>Request Details</DialogTitle>
             <DialogDescription>
               Review and process overseas company registration request
             </DialogDescription>
           </DialogHeader>
+
+<div className="px-4 mb-4 max-h-[70vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent">
           {selectedRequest && (
             <div className="space-y-6">
               <div className="flex items-center space-x-3">
@@ -1383,6 +1386,7 @@ export default function AdminOverseasCompanies() {
               </div>
             </div>
           )}
+          </div>
         </DialogContent>
       </Dialog>
 

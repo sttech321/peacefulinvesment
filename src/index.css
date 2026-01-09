@@ -190,6 +190,12 @@
     background-size: 100%;
   }
 
+
+  div[role="dialog"] button[type="button"] {
+    outline: none;
+    box-shadow: none;
+}
+
   /* Glass Card Effect */
   .glass-card {
     background: hsl(var(--glass-bg));

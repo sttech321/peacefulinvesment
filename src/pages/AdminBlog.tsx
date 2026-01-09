@@ -390,11 +390,13 @@ const AdminBlog = () => {
                 New Post
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto border-0 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent">
-              <DialogHeader>
+            <DialogContent className="max-w-4xl p-0 gap-0">
+
+              <DialogHeader className="p-4">
                 <DialogTitle>{editingPost ? "Edit Blog Post" : "Create New Blog Post"}</DialogTitle>
               </DialogHeader>
 
+            <div className="px-4 mb-4 max-h-[70vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent">
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <Label htmlFor="featured_image">Featured Image</Label>
@@ -722,6 +724,7 @@ const AdminBlog = () => {
                   <Button type="submit" className="rounded-[8px] border-0 hover:bg-primary/80">{editingPost ? "Update Post" : "Create Post"}</Button>
                 </div>
               </form>
+              </div>
             </DialogContent>
           </Dialog>
         </div>
