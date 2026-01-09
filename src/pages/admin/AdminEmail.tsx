@@ -383,7 +383,7 @@ export default function AdminEmail() {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-white">Email Management</h1>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handleSyncAll} disabled={syncing}>
+          <Button variant="outline" onClick={handleSyncAll} disabled={syncing} className="rounded-[8px] gap-0">
             <RefreshCw className={`h-4 w-4 mr-2 ${syncing && "animate-spin"}`} />
             Sync All
           </Button>
@@ -398,7 +398,7 @@ export default function AdminEmail() {
               }}
             >
             <DialogTrigger asChild>
-              <Button>
+              <Button className="rounded-[8px] gap-0">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Email Account
               </Button>
@@ -826,35 +826,36 @@ export default function AdminEmail() {
 
 function AccountForm({ form, setForm, isEdit = false }: any) {
   return (
-    <div className="grid grid-cols-2 gap-4 py-4">
+    <div className="grid grid-cols-2 gap-4 pt-4">
       <div>
         <Label>Email</Label>
-        <Input value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
+        <Input value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties } />
       </div>
 
       <div>
         <Label>Password {isEdit && "(leave blank to keep)"}</Label>
-        <Input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} />
+        <Input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties } />
       </div>
 
       <div>
         <Label>IMAP Host</Label>
-        <Input value={form.imap_host} onChange={e => setForm({ ...form, imap_host: e.target.value })} />
+        <Input value={form.imap_host} onChange={e => setForm({ ...form, imap_host: e.target.value })} className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties } />
       </div>
 
       <div>
         <Label>IMAP Port</Label>
-        <Input type="number" value={form.imap_port} onChange={e => setForm({ ...form, imap_port: Number(e.target.value) })} />
+        <Input type="number" value={form.imap_port} onChange={e => setForm({ ...form, imap_port: Number(e.target.value) })} className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties } />
       </div>
 
       <div>
         <Label>SMTP Host</Label>
-        <Input value={form.smtp_host} onChange={e => setForm({ ...form, smtp_host: e.target.value })} />
+        <Input value={form.smtp_host} onChange={e => setForm({ ...form, smtp_host: e.target.value })} 
+        className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties } />
       </div>
 
       <div>
         <Label>SMTP Port</Label>
-        <Input type="number" value={form.smtp_port} onChange={e => setForm({ ...form, smtp_port: Number(e.target.value) })} />
+        <Input type="number" value={form.smtp_port} onChange={e => setForm({ ...form, smtp_port: Number(e.target.value) })}  className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties } />
       </div>
 
       <div>
