@@ -622,7 +622,7 @@ export default function AdminEmail() {
                       {/* REPLIES THREAD */}
                       {hasReplies && isExpanded && (
                         <TableRow className="border-b border-muted/20 bg-transparent hover:bg-white/10">
-                          <TableCell colSpan={4} className="bg-transparent pt-0 pb-4">
+                          <TableCell colSpan={4} className="bg-transparent pt-0 pb-6">
                             <div className="pl-10 pr-6 pt-6">
                               <div className="space-y-3">
                                 {replies.map((reply, idx) => (
