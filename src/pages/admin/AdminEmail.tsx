@@ -537,10 +537,10 @@ export default function AdminEmail() {
                 {filteredMessages.map(m => (
                   <>
                     {/* MAIN EMAIL ROW */}
-                    <TableRow className={`border-b border-muted/20 hover:bg-white/10 ${!m.is_read ? "font-bold" : ""}`} key={m.id}>
+                    <TableRow className={`border-b border-muted/20 hover:bg-white/10 ${!m.is_read ? "font-bold bg-white/15" : ""}`} key={m.id}>
                       <TableCell className="text-white">{m.from_email}</TableCell>
                       <TableCell className="text-white">{m.subject}</TableCell>
-                      <TableCell className="text-white">
+                      <TableCell className="text-white whitespace-nowrap">
                         {format(new Date(m.date_received), "MMM d yyyy HH:mm")}
                       </TableCell>
                       <TableCell>
@@ -791,11 +791,11 @@ export default function AdminEmail() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Reply</DialogTitle>
-            <DialogDescription className="pt-2 text-black">
+            <DialogDescription className="pt-2 text-gray-600 font-inter">
               To: {viewMessage?.from_email}
             </DialogDescription>
           </DialogHeader>
-
+ 
           <Textarea
             className="rounded-[8px] shadow-none mt-1 boder-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none resize-none" 
             style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
