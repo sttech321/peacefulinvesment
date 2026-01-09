@@ -190,8 +190,8 @@
     background-size: 100%;
   }
 
-
-  div[role="dialog"] button[type="button"] {
+body div[role="dialog"]{outline: none;}
+body div[role="dialog"] button[type="button"].top-4.right-4 {
     outline: none;
     box-shadow: none;
 }
