@@ -2070,7 +2070,7 @@ export default function AdminUsers() {
                 </div>
               </div>
 
-              <DialogFooter>
+              <DialogFooter className="pb-1">
                 <Button
                   variant="outline"
                   className="rounded-[8px] border-0 hover:bg-white/80"

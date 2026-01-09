@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -449,8 +449,8 @@ export default function AdminAuditLog() {
                   filteredLogs.map((log) => (
                     <TableRow className="border-b border-muted/20 hover:bg-white/10" key={log.id}>
                       <TableCell>
-                        <div className="flex items-center space-x-2">
-                          {getActionIcon(log.action)}
+                        <div className="flex items-center space-x-2">                       
+                          {getActionIcon(log.action) && React.cloneElement(getActionIcon(log.action), { className: "h-4 w-4 text-white" })}
                           <span className="font-medium text-white">{getActionDisplayName(log.action)}</span>
                         </div>
                       </TableCell>

@@ -671,11 +671,11 @@ export default function AdminBlogCategories() {
 
             <div className="flex justify-end gap-2 pt-2">
               <Button
-                type="button"
+                type="button" 
                 variant="outline"
                 onClick={() => setOpen(false)}
                 disabled={saving}
-                className="rounded-[8px] border-0"
+                className="rounded-[8px] border-0 hover:bg-white/80 bg-white"
               >
                 Cancel
               </Button>
