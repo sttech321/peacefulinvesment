@@ -23,6 +23,7 @@ import {
   ChevronRight,
   Folder,
   Mail,
+  Heart,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -103,6 +104,7 @@ const navigation: NavigationItem[] = [
   { name: 'Audit Log', href: '/admin/audit-log', icon: Activity },
   { name: 'Blog Management', href: '/admin/blog', icon: FileText },
   { name: 'Categories', href: '/admin/blog-categories', icon: Table2 },
+  { name: 'Prayer Management', href: '/admin/prayer-tasks', icon: Heart },
   { name: 'Settings', href: '/admin/settings', icon: Settings },
 ];
 

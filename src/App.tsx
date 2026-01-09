@@ -47,7 +47,9 @@ import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminAuditLog from "./pages/admin/AdminAuditLog";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminEmailTest from "./pages/admin/AdminEmailTest";
+import AdminPrayerTasks from "./pages/admin/AdminPrayerTasks";
 import CreateAdminUser from "./pages/CreateAdminUser";
+import PrayerTasks from "./pages/PrayerTasks";
 import LoadingScreen from "@/components/ui/loading-screen";
 import ScrollToTop from './ScrollToTop';
 
@@ -83,6 +85,7 @@ function AppContent() {
                   <Route path="/trading" element={<TradingDashboard />} />
                   <Route path="/contact" element={<Contact />} />
                   <Route path="/about" element={<About />} />
+                  <Route path="/prayer-tasks" element={<PrayerTasks />} />
                   <Route path="/create-admin" element={<CreateAdminUser />} />
                    
                    {/* Admin Routes */}
@@ -191,6 +194,13 @@ function AppContent() {
                       <AdminRouteGuard>
                         <AdminLayout>
                           <AdminEmailTest />
+                        </AdminLayout>
+                      </AdminRouteGuard>
+                    } />
+                    <Route path="/admin/prayer-tasks" element={
+                      <AdminRouteGuard>
+                        <AdminLayout>
+                          <AdminPrayerTasks />
                         </AdminLayout>
                       </AdminRouteGuard>
                     } />
