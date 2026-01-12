@@ -269,9 +269,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                           }`}
                           onClick={() => setSidebarOpen(false)}
                         >
-                          <item.icon className='h-4 w-4' />
+                          <item.icon className='h-4 w-4 min-w-4' />
                           <span>{item.name}</span>
-                        </Link>
+                        </Link> 
                         <button
                           onClick={(e) => {
                             e.preventDefault();
@@ -356,7 +356,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 variant='ghost'
                 size='sm'
                 onClick={handleSignOut}
-                className='text-muted-foreground hover:text-foreground'
+                className='text-muted-foreground hover:text-foreground rounded-[8px]'
               >
                 <LogOut className='h-4 w-4' />
               </Button>
