@@ -197,11 +197,11 @@ This is an automated notification. Please do not reply to this email.
         'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
         'X-Mailer': 'Peaceful Investment',
         'X-Priority': '1',
-        'Message-ID': `<account-deletion-${Date.now()}@peacefulinvestment.com>`,
+        //'Message-ID': `<account-deletion-${Date.now()}@peacefulinvestment.com>`,
       },
       tags: [
         { name: 'category', value: 'account' },
-        { name: 'type', value: 'deletion' },
+        //{ name: 'type', value: 'deletion' },
       ],
     });
 
