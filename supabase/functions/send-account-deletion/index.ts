@@ -171,9 +171,9 @@ Update regarding your Peaceful Investment account
 
 Dear ${user_name || "Valued User"},
 
-We are writing to inform you that your account with Peaceful Investment has been permanently deleted from our system.
+We are writing to inform you that your Peaceful Investment account has been removed by an administrator following an internal review.
 
-⚠️ Important: You will no longer be able to access your account or any associated services.
+As a result, access to the account is no longer available.
 
 ${deletion_reason ? `Reason for Deletion:\n${deletion_reason}\n\n` : ''}This action is irreversible. All your personal data, account information, and associated records have been permanently removed from our database in accordance with our data retention policies.
 
@@ -183,7 +183,9 @@ Peaceful Investment Support Team
 ---
 This is an automated notification. Please do not reply to this email.
     `.trim();
-
+    const timestamp = Date.now();
+    const randomId = Math.random().toString(36).substring(2, 15);
+    const messageId = `<account_update.${timestamp}.${randomId}@peacefulinvestment.com>`;
     // Send email using Resend
     const emailResponse = await resend.emails.send({
       from: "Peaceful Investment Support <support@peacefulinvestment.com>",
@@ -193,14 +195,18 @@ This is an automated notification. Please do not reply to this email.
       text: emailText,
       html: emailHtml,
       headers: {
-        'List-Unsubscribe': '<https://www.peacefulinvestment.com/unsubscribe>',
-        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-        'X-Mailer': 'Peaceful Investment',
-        'X-Priority': '1',
-        //'Message-ID': `<account-deletion-${Date.now()}@peacefulinvestment.com>`,
+        // RFC 5322 compliant Message-ID for better deliverability
+        'Message-ID': messageId,
+        // Entity reference for tracking
+        'X-Entity-Ref-ID': `email_verification-${timestamp}`,
+        // Transactional email headers (DO NOT use 'Precedence: bulk' - that's for marketing)
+        'Auto-Submitted': 'auto-generated', // Marks as transactional, not marketing
+        'X-Auto-Response-Suppress': 'All', // Prevents auto-replies
+        // DO NOT include List-Unsubscribe for transactional emails (triggers spam filters)
+        // DO NOT use X-Priority (can trigger spam filters)
       },
       tags: [
-        { name: 'category', value: 'account' },
+        { name: 'email-type', value: 'account-update' },
         //{ name: 'type', value: 'deletion' },
       ],
     });
