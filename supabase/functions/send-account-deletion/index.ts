@@ -100,7 +100,7 @@ Deno.serve(async (req: Request) => {
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Account Deletion Notice</title>
+        <title>Confirmation of Your Account Request</title>
       </head>
       <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif; background-color: #f5f5f5; padding: 0; margin: 0;">
         <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f5f5f5;">
@@ -110,7 +110,7 @@ Deno.serve(async (req: Request) => {
                 <!-- Header -->
                 <tr>
                   <td style="padding: 40px 30px; text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                    <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">Account Deletion Notice</h1>
+                    <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">Confirmation of Your Account Request</h1>
                   </td>
                 </tr>
                 
@@ -122,7 +122,7 @@ Deno.serve(async (req: Request) => {
                     </p>
                     
                     <p style="color: #555555; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
-                      We are writing to inform you that your account with Peaceful Investment has been permanently deleted from our system.
+                      This email confirms that your account deletion request has been completed.
                     </p>
                     
                     <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 20px; border-radius: 4px; margin: 25px 0;">
@@ -167,11 +167,11 @@ Deno.serve(async (req: Request) => {
     `;
 
     const emailText = `
-Account Deletion Notice
+Confirmation of Your Account Request
 
 Dear ${user_name || "Valued User"},
 
-We are writing to inform you that your account with Peaceful Investment has been permanently deleted from our system.
+This email confirms that your account deletion request has been completed.
 
 ⚠️ Important: You will no longer be able to access your account or any associated services.
 
@@ -189,7 +189,7 @@ This is an automated notification. Please do not reply to this email.
       from: "Peaceful Investment Support <support@peacefulinvestment.com>",
       to: [user_email],
       reply_to: "support@peacefulinvestment.com",
-      subject: "Account Deletion Notice - Peaceful Investment",
+      subject: "Confirmation of Your Account Request - Peaceful Investment",
       text: emailText,
       html: emailHtml,
       headers: {
