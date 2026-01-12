@@ -100,7 +100,7 @@ Deno.serve(async (req: Request) => {
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Confirmation of Your Account Request</title>
+        <title>Update regarding your Peaceful Investment account</title>
       </head>
       <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif; background-color: #f5f5f5; padding: 0; margin: 0;">
         <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f5f5f5;">
@@ -110,7 +110,7 @@ Deno.serve(async (req: Request) => {
                 <!-- Header -->
                 <tr>
                   <td style="padding: 40px 30px; text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                    <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">Confirmation of Your Account Request</h1>
+                    <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">Update regarding your Peaceful Investment account</h1>
                   </td>
                 </tr>
                 
@@ -122,12 +122,12 @@ Deno.serve(async (req: Request) => {
                     </p>
                     
                     <p style="color: #555555; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
-                      This email confirms that your account deletion request has been completed.
+                      We are writing to inform you that your Peaceful Investment account has been removed by an administrator following an internal review.
                     </p>
                     
                     <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 20px; border-radius: 4px; margin: 25px 0;">
                       <p style="color: #856404; font-size: 15px; line-height: 1.6; margin: 0; font-weight: 600;">
-                        ⚠️ Important: You will no longer be able to access your account or any associated services.
+                        As a result, access to the account is no longer available.
                       </p>
                     </div>
                     
@@ -139,7 +139,7 @@ Deno.serve(async (req: Request) => {
                     ` : ''}
                     
                     <p style="color: #555555; font-size: 16px; line-height: 1.6; margin: 20px 0;">
-                      This action is irreversible. All your personal data, account information, and associated records have been permanently removed from our database in accordance with our data retention policies.
+                      If you believe this action was taken in error or require additional information, please reply to this email and our support team will be happy to assist you.
                     </p>
                     
                     
@@ -167,11 +167,11 @@ Deno.serve(async (req: Request) => {
     `;
 
     const emailText = `
-Confirmation of Your Account Request
+Update regarding your Peaceful Investment account
 
 Dear ${user_name || "Valued User"},
 
-This email confirms that your account deletion request has been completed.
+We are writing to inform you that your account with Peaceful Investment has been permanently deleted from our system.
 
 ⚠️ Important: You will no longer be able to access your account or any associated services.
 
@@ -189,7 +189,7 @@ This is an automated notification. Please do not reply to this email.
       from: "Peaceful Investment Support <support@peacefulinvestment.com>",
       to: [user_email],
       reply_to: "support@peacefulinvestment.com",
-      subject: "Confirmation of Your Account Request - Peaceful Investment",
+      subject: "Update regarding your Peaceful Investment account",
       text: emailText,
       html: emailHtml,
       headers: {
