@@ -303,22 +303,24 @@ const DocumentUpload = ({ requestId, onDocumentsChange, existingDocuments = [] }
         {/* Existing Documents */}
         {existingDocuments.length > 0 && (
           <div className="space-y-4">
-            <h4 className="font-medium">Uploaded Documents:</h4>
+            <h4 className="font-medium text-white">Uploaded Documents:</h4>
             {existingDocuments.map((doc) => (
               <div key={doc.id} className="border rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between mb-2 flex-wrap">
                   <div className="flex items-center gap-2">
                     {getFileIcon(doc.file_type)}
-                    <span className="font-medium">{doc.filename}</span>
+                    <span className="font-normal text-sm text-white/80">{doc.filename}</span>
+                    
+                  </div>
+                  <div className="flex items-center gap-2 pl-[30px] pt-1">
                     <Badge variant="outline">
                       {documentTypes.find(t => t.value === doc.document_type)?.label || doc.document_type}
                     </Badge>
-                  </div>
-                  <div className="flex items-center gap-2">
                     <Check className="h-4 w-4 text-green-600" />
                     <Button
                       variant="ghost"
                       size="sm"
+                      className="rounded-[8px] text-white hover:bg-transparent hover:text-white"
                       onClick={() => deleteDocument(doc)}
                     >
                       <X className="h-4 w-4" />
