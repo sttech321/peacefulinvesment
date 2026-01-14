@@ -1159,56 +1159,56 @@ export default function AdminPrayerTasks() {
           {selectedPersonTask && (
             <div className="space-y-4">
               {/* Name */}
-              <div className="flex items-center gap-3">
-                <User className="h-5 w-5 text-muted-foreground" />
+              <div className="flex items-flex-start gap-3">
+                <User className="h-5 w-5 text-black/60 mt-0.5" />
                 <div>
-                  <p className="text-sm text-muted-foreground">Name</p>
-                  <p className="font-medium">
+                  <p className="text-sm text-black">Name</p>
+                  <p className="font-inter text-[14px] font-normal text-muted-foreground">
                     {selectedPersonTask.person_needs_help}
                   </p>
                 </div>
               </div>
 
               {/* Phone */}
-              <div className="flex items-center gap-3">
-                <Phone className="h-5 w-5 text-muted-foreground" />
+              <div className="flex items-flex-start gap-3">
+                <Phone className="h-5 w-5 text-black/60 mt-0.5" />
                 <div>
-                  <p className="text-sm text-muted-foreground">Phone</p>
+                  <p className="text-sm text-black">Phone</p>
                   {selectedPersonTask.phone_number ? (
                     <a
                       href={`tel:${selectedPersonTask.phone_number}`}
-                      className="font-medium text-primary"
+                      className="font-inter text-[14px] font-normal text-primary hover:underline"
                     >
                       {selectedPersonTask.phone_number}
                     </a>
                   ) : (
-                    <span className="text-muted-foreground">Not provided</span>
+                    <span className="font-inter text-[14px] font-normal text-muted-foreground">Not provided</span>
                   )}
                 </div>
               </div>
 
               {/* Email */}
-              <div className="flex items-center gap-3">
-                <Mail className="h-5 w-5 text-muted-foreground" />
+              <div className="flex items-flex-start gap-3">
+                <Mail className="h-5 w-5 text-black/60 mt-0" />
                 <div>
-                  <p className="text-sm text-muted-foreground">Email</p>
+                  <p className="text-sm text-black">Email</p>
                   {selectedPersonTask.email ? (
                     <a
                       href={`mailto:${selectedPersonTask.email}`}
-                      className="font-medium text-primary"
+                      className="font-inter text-[14px] font-normal text-primary hover:underline"
                     >
                       {selectedPersonTask.email}
                     </a>
                   ) : (
-                    <span className="text-muted-foreground">Not provided</span>
+                    <span className="font-inter text-[14px] font-normal text-muted-foreground">Not provided</span>
                   )}
                 </div>
               </div>
             </div>
           )}
 
-          <div className="flex justify-end pt-6">
-            <Button variant="outline" onClick={() => setViewPersonDialogOpen(false)}>
+          <div className="flex justify-end pt-4">
+            <Button className="rounded-[8px] border-0 hover:bg-white/80" variant="outline" onClick={() => setViewPersonDialogOpen(false)}>
               Close
             </Button>
           </div>
