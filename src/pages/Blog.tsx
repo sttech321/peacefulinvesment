@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
-import { Link } from "react-router-dom";
-import { Calendar, Clock, Eye } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Calendar, Clock, Eye, Heart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useBlog, BlogPost, BlogCategory } from "@/hooks/useBlog";
@@ -29,6 +30,7 @@ import Right03 from "@/assets/right-03.jpg";
 
 const Blog = () => {
   const { posts, categories, loading, initializing } = useBlog();
+  const navigate = useNavigate();
 
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [openParentId, setOpenParentId] = useState<string | null>(null);
@@ -253,9 +255,18 @@ const Blog = () => {
             <h1 className="mb-6 font-inter font-bold uppercase text-white text-3xl md:text-4xl lg:text-5xl xl:text-6xl">
               Catholic <span className="text-[var(--yellowcolor)]">Faith &amp; Prayer</span>
             </h1>
-            <p className="max-w-2xl mx-auto font-inter text-lg md:text-[20px] font-normal text-white">
+            <p className="max-w-2xl mx-auto font-inter text-lg md:text-[20px] font-normal text-white mb-6">
               Daily prayers, spiritual guidance, and charitable mission updates from Peaceful Investment
             </p>
+            <div className="flex justify-center">
+              <Button
+                onClick={() => navigate('/prayer-tasks')}
+                className="bg-gradient-to-r from-[var(--yellowcolor)] to-orange-500 hover:from-orange-500 hover:to-[var(--yellowcolor)] text-black font-semibold px-8 py-6 text-lg rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2"
+              >
+                <Heart className="h-5 w-5" />
+                Join in Prayer - Prayer Tasks
+              </Button>
+            </div>
           </div>
 
           <div className="imgRight01 max-w-40">
@@ -290,6 +301,15 @@ const Blog = () => {
           <div className="mx-auto w-full max-w-7xl">
             {/* Category Filter */}
             <div className="flex flex-col gap-3 mb-8 md:mb-12 items-center">
+              <div className="flex flex-wrap gap-3 justify-center">
+                <Button
+                  onClick={() => navigate('/prayer-tasks')}
+                  className="bg-gradient-to-r from-[var(--yellowcolor)] to-orange-500 hover:from-orange-500 hover:to-[var(--yellowcolor)] text-black font-semibold px-6 py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2 mb-4"
+                >
+                  <Heart className="h-4 w-4" />
+                  Prayer Tasks
+                </Button>
+              </div>
               <div className="flex flex-wrap gap-3 justify-center">
                 <Badge
                   variant={selectedCategory === "all" ? "default" : "outline"}

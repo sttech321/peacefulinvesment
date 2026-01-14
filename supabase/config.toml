@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.send-email-verification]
 verify_jwt = false
+
+[functions.send-prayer-request]
+verify_jwt = false
