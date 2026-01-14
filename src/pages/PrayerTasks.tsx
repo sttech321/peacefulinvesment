@@ -312,13 +312,13 @@ export default function PrayerTasks() {
           </div>
    </div>
 
-
-        <div className="mx-auto w-full max-w-7xl space-y-6 px-0 py-8 md:py-12 lg:py-16">
+<div className="space-y-6 px-5 py-8 md:py-12 lg:py-16">
+        <div className="mx-auto w-full max-w-7xl">
 
           {/* Search */}
           <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
-            <CardContent className="pt-6">
-              <div className="flex gap-4">
+            <CardContent className="p-5">
+              <div className="flex gap-4 flex-col md:flex-row">
                 <div className="flex-1">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -357,8 +357,8 @@ export default function PrayerTasks() {
           </Card>
 
           {/* Tasks List */}
-          <Card className="border-0 bg-transparent p-0">
-            <CardHeader className="px-0 sm:px-0 pt-3 pb-0">
+          <Card className="border-0 bg-transparent p-0 pt-8 md:pt-10">
+            <CardHeader className="px-0 sm:px-0 pt-0 pb-0 p-0 sm:p-0">
               <CardTitle className="text-primary">Available Prayer Tasks</CardTitle>
               <CardDescription className="text-lg font-inter">
                 {filteredTasks.length} task{filteredTasks.length !== 1 ? 's' : ''} found
@@ -455,7 +455,7 @@ export default function PrayerTasks() {
           </Card>
         
       </div>
-
+</div>
       <Footer />
 
       {/* Claim Task Dialog */}
