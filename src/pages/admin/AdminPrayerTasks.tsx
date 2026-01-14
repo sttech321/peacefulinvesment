@@ -31,13 +31,14 @@ import {
   Folder,
   FolderPlus,
   ChevronRight,
-  ChevronDown,
+  ChevronDown, 
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
-
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+ 
 interface PrayerTask {
   id: string;
   name: string;
@@ -600,10 +601,10 @@ export default function AdminPrayerTasks() {
       return (
         <div key={folder.id} className="mb-1">
           <div
-            className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors ${
+            className={`flex items-center justify-between p-3 rounded-[8px] cursor-pointer transition-colors ${
               selectedFolder === folder.id
-                ? 'bg-primary text-primary-foreground'
-                : 'hover:bg-muted'
+                ? 'bg-white/10'
+                : 'hover:bg-muted/10'
             }`}
             onClick={() => {
               setSelectedFolder(folder.id);
@@ -611,7 +612,7 @@ export default function AdminPrayerTasks() {
               setShowFolderView(false);
             }}
           >
-            <div className="flex items-center gap-2 flex-1">
+            <div className="flex gap-2 flex-1">
               {hasChildren && (
                 <button
                   onClick={(e) => {
@@ -624,35 +625,39 @@ export default function AdminPrayerTasks() {
                     }
                     setExpandedFolders(newExpanded);
                   }}
-                  className="p-1 hover:bg-muted/50 rounded"
+                  className="p-0"
                 >
                   {isExpanded ? (
-                    <ChevronDown className="h-4 w-4" />
+                    <ChevronDown className="h-4 w-4 text-white" />
                   ) : (
-                    <ChevronRight className="h-4 w-4" />
+                    <ChevronRight className="h-4 w-4 text-white" />
                   )}
                 </button>
               )}
-              {!hasChildren && <div className="w-5" />}
-              <Folder className="h-4 w-4" />
-              <span className="font-medium">{folder.name}</span>
+              {/* {!hasChildren && <div className="w-5" />} */}
+              <Folder className="h-4 w-4 text-primary mt-1 hidden" />
+              <div className="flex items-center gap-0 flex-wrap">
+
+              <span className="font-medium text-white w-full">{folder.name}</span>
               {folder.email && (
-                <span className="text-xs text-muted-foreground">({folder.email})</span>
+                <span className="text-xs text-muted-foreground w-full">({folder.email})</span>
               )}
-              <Badge variant="secondary" className="ml-2">
+              <Badge variant="secondary" className="mt-2">
                 {folderTasks.length} task{folderTasks.length !== 1 ? 's' : ''}
               </Badge>
+            </div>
             </div>
             <Button
               variant="ghost"
               size="sm"
+              className="rounded-[4px] w-[28px] h-[28px] p-0  hover:bg-red-700 border-0"
               onClick={(e) => {
                 e.stopPropagation();
                 setSelectedFolderToDelete(folder);
                 setDeleteFolderDialogOpen(true);
               }}
             >
-              <Trash2 className="h-4 w-4 text-destructive" />
+              <Trash2 className="h-4 w-4 text-white" />
             </Button>
           </div>
           {isExpanded && hasChildren && (
@@ -686,23 +691,12 @@ export default function AdminPrayerTasks() {
   // Always render something, even if loading
   if (initialLoad && loading) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-white">Prayer Management</h1>
-            <p className="text-muted-foreground mt-1">
-              Manage prayer tasks and organize them by folders
-            </p>
-          </div>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold mb-2 text-white pt-5">Loading Prayer Tasks </h2>
+          <p className="text-muted-foreground">Fetching prayer task data...</p>
         </div>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <span className="ml-3 text-muted-foreground">Loading prayer tasks...</span>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     );
   }
@@ -717,31 +711,31 @@ export default function AdminPrayerTasks() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setCreateFolderDialogOpen(true)}>
+          <Button variant="outline" className="rounded-[8px] border-0 hover:bg-white/80 gap-0" onClick={() => setCreateFolderDialogOpen(true)}>
             <FolderPlus className="mr-2 h-4 w-4" />
             Create Folder
           </Button>
-          <Button onClick={() => setCreateTaskDialogOpen(true)}>
+          <Button  className="gap-0 rounded-[8px] hover:bg-primary/80 border-0" onClick={() => setCreateTaskDialogOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Create Task
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 ">
         {/* Folders Sidebar */}
-        <Card className="lg:col-span-1">
+        <Card className="lg:col-span-1 border border-muted/20 p-0 rounded-lg bg-white/5">
           <CardHeader>
             <CardTitle>Folders</CardTitle>
             <CardDescription>Organize tasks by person</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="sm:pt-0">
             <div className="space-y-2">
               <div
                 className={`p-3 rounded-lg cursor-pointer transition-colors ${
                   selectedFolder === null && !showFolderView
-                    ? 'bg-primary text-primary-foreground'
-                    : 'hover:bg-muted'
+                    ? 'bg-muted/10'
+                    : 'hover:bg-muted/10'
                 }`}
                 onClick={() => {
                   setSelectedFolder(null);
@@ -749,8 +743,7 @@ export default function AdminPrayerTasks() {
                   setShowFolderView(false);
                 }}
               >
-                <div className="flex items-center gap-2 text-white">
-                  <Folder className="h-4 w-4" />
+                <div className="flex items-center gap-2 text-white">                  
                   <span className="font-medium text-white">All Tasks</span>
                   <Badge variant="secondary" className="ml-auto">
                     {tasks.length}
@@ -763,7 +756,7 @@ export default function AdminPrayerTasks() {
         </Card>
 
         {/* Tasks View */}
-        <Card className="lg:col-span-3">
+        <Card className="lg:col-span-3 border border-muted/20 p-0 rounded-lg bg-white/5">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
@@ -776,7 +769,7 @@ export default function AdminPrayerTasks() {
               </div>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0 sm:pt-0">
             {/* Filters */}
             <div className="flex gap-4 mb-6">
               <div className="flex-1">
@@ -786,15 +779,16 @@ export default function AdminPrayerTasks() {
                     placeholder="Search tasks..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
+                    className="pl-10 border-0 rounded-[8px] shadow-none mt-0 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none"
+                    style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
                   />
                 </div>
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="rounded-[8px] border-0 border-muted-foreground/60 hover:border-muted-foreground shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400 h-[40px] w-[200px]" style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="border-secondary-foreground bg-black/90 text-white">
                   <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="TODO">TODO</SelectItem>
                   <SelectItem value="DONE">DONE</SelectItem>
@@ -805,47 +799,48 @@ export default function AdminPrayerTasks() {
 
             {/* Tasks Table */}
             {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                <span className="ml-3 text-muted-foreground">Loading tasks...</span>
+              <div className="flex items-center justify-center py-8 flex-wrap text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                <span className="ml-3 text-muted-foreground w-full">Loading tasks...</span>
               </div>
             ) : filteredTasks.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-muted-foreground mb-4">No prayer tasks found.</p>
-                <Button onClick={() => setCreateTaskDialogOpen(true)} variant="outline">
+                <Button className="rounded-[8px] border-0 hover:bg-white/80 gap-0" onClick={() => setCreateTaskDialogOpen(true)} variant="outline">
                   <Plus className="mr-2 h-4 w-4" />
                   Create Your First Task
                 </Button>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-white" >
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-4 font-medium">Name</th>
-                      <th className="text-left p-4 font-medium">Folder</th>
-                      <th className="text-left p-4 font-medium">Status</th>
-                      <th className="text-left p-4 font-medium">Person Needs Help</th>
-                      <th className="text-left p-4 font-medium">Days</th>
-                      <th className="text-left p-4 font-medium">Start Date & Time</th>
-                      <th className="text-left p-4 font-medium">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+              
+             <div className="rounded-md border border-muted/20 overflow-x-auto">
+               <Table className="border-none p-0 rounded-lg bg-white/5">
+                  <TableHeader>
+                    <TableRow className="border-b border-muted/20 hover:bg-white/15 bg-white/15 text-white">
+                      <TableHead className="text-white">Name</TableHead>
+                      <TableHead className="text-white">Folder</TableHead>
+                      <TableHead className="text-white">Status</TableHead>
+                      <TableHead className="text-white">Person Needs Help</TableHead>
+                      <TableHead className="text-white">Days</TableHead>
+                      <TableHead className="text-white">Start Date & Time</TableHead>
+                      <TableHead className="text-white">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {filteredTasks.map((task) => (
-                      <tr key={task.id} className="border-b hover:bg-muted/50">
-                        <td className="p-4 font-medium">{task.name}</td>
-                        <td className="p-4">
+                      <TableRow key={task.id} className="border-b border-muted/20 hover:bg-white/10">
+                        <TableCell><span className="font-medium text-white">{task.name}</span></TableCell>
+                        <TableCell>
                           <Select
                             value={task.folder_id || "unassigned"}
                             onValueChange={(value) =>
                               handleAssignToFolder(task.id, value === "unassigned" ? null : value)
                             }
                           >
-                            <SelectTrigger className="w-[150px]">
+                            <SelectTrigger className="rounded-[8px] border-0 border-muted-foreground/60 hover:border-muted-foreground shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400 h-[40px] w-[150px]" style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                               <SelectValue />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="border-secondary-foreground bg-black/90 text-white">
                               <SelectItem value="unassigned">Unassigned</SelectItem>
                               {folders.map(folder => (
                                 <SelectItem key={folder.id} value={folder.id}>
@@ -854,29 +849,29 @@ export default function AdminPrayerTasks() {
                               ))}
                             </SelectContent>
                           </Select>
-                        </td>
-                        <td className="p-4">
+                        </TableCell>
+                        <TableCell>
                           <Select
                             value={task.status}
                             onValueChange={(value: 'TODO' | 'DONE' | 'NOT DONE') =>
                               handleUpdateStatus(task.id, value)
                             }
                           >
-                            <SelectTrigger className="w-[120px]">
+                            <SelectTrigger className="rounded-[8px] border-0 border-muted-foreground/60 hover:border-muted-foreground shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400 h-[40px] w-[120px]" style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                               <SelectValue />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="border-secondary-foreground bg-black/90 text-white">
                               <SelectItem value="TODO">TODO</SelectItem>
                               <SelectItem value="DONE">DONE</SelectItem>
                               <SelectItem value="NOT DONE">NOT DONE</SelectItem>
                             </SelectContent>
                           </Select>
-                        </td>
-                        <td className="p-4">
+                        </TableCell>
+                        <TableCell>
                           {task.person_needs_help ? (
                             <Button
                               variant="link"
-                              className="p-0 h-auto text-primary"
+                              className="p-0 h-auto text-white hover:text-white hover:no-underline"
                               onClick={() => {
                                 setSelectedPersonTask(task);
                                 setViewPersonDialogOpen(true);
@@ -885,31 +880,32 @@ export default function AdminPrayerTasks() {
                               {task.person_needs_help}
                             </Button>
                           ) : (
-                            <span className="text-muted-foreground">-</span>
+                            <span className="text-white hover:text-white hover:no-underline">-</span>
                           )}
-                        </td>
-                        <td className="p-4">
-                          {task.current_day} of {task.number_of_days}
-                        </td>
-                        <td className="p-4">
-                          {formatDateTime(task.start_date, task.start_time)}
-                        </td>
-                        <td className="p-4">
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-white">{task.current_day} of {task.number_of_days}</span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-white">{formatDateTime(task.start_date, task.start_time)}</span>
+                        </TableCell>
+                        <TableCell>
                           <Button
                             variant="ghost"
                             size="sm"
+                            className="rounded-[8px] border-0 bg-red-600 hover:bg-red-700"
                             onClick={() => {
                               setSelectedTask(task);
                               setDeleteTaskDialogOpen(true);
                             }}
                           >
-                            <Trash2 className="h-4 w-4 text-destructive" />
+                            <Trash2 className="h-4 w-4 text-white" />
                           </Button>
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </div>
             )}
           </CardContent>
@@ -930,6 +926,7 @@ export default function AdminPrayerTasks() {
               <Label htmlFor="name">Task Name *</Label>
               <Input
                 id="name"
+                className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
                 value={taskFormData.name}
                 onChange={(e) => setTaskFormData({ ...taskFormData, name: e.target.value })}
                 placeholder="e.g., Peaceful Investment"
@@ -942,6 +939,7 @@ export default function AdminPrayerTasks() {
                 value={taskFormData.link_or_video}
                 onChange={(e) => setTaskFormData({ ...taskFormData, link_or_video: e.target.value })}
                 placeholder="https://..."
+                className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
               />
             </div>
             <div>
@@ -950,10 +948,10 @@ export default function AdminPrayerTasks() {
                 value={taskFormData.folder_id || "unassigned"}
                 onValueChange={(value) => setTaskFormData({ ...taskFormData, folder_id: value === "unassigned" ? "" : value })}
               >
-                <SelectTrigger>
+                <SelectTrigger className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }>
                   <SelectValue placeholder="Select a folder (optional)" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="border-secondary-foreground bg-black/90 text-white">
                   <SelectItem value="unassigned">Unassigned</SelectItem>
                   {folders.map(folder => (
                     <SelectItem key={folder.id} value={folder.id}>
@@ -971,6 +969,7 @@ export default function AdminPrayerTasks() {
                 min="1"
                 value={taskFormData.number_of_days}
                 onChange={(e) => setTaskFormData({ ...taskFormData, number_of_days: parseInt(e.target.value) || 1 })}
+                className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
               />
             </div>
             <div>
@@ -981,10 +980,10 @@ export default function AdminPrayerTasks() {
                   setTaskFormData({ ...taskFormData, date_type: value })
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="border-secondary-foreground bg-black/90 text-white">
                   <SelectItem value="today">Today</SelectItem>
                   <SelectItem value="traditional">Traditional Date</SelectItem>
                 </SelectContent>
@@ -994,7 +993,7 @@ export default function AdminPrayerTasks() {
                   type="date"
                   value={taskFormData.traditional_date}
                   onChange={(e) => setTaskFormData({ ...taskFormData, traditional_date: e.target.value })}
-                  className="mt-2"
+                  className="mt-2 rounded-[8px] shadow-none border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none" style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
                 />
               )}
             </div>
@@ -1005,13 +1004,14 @@ export default function AdminPrayerTasks() {
                 type="time"
                 value={taskFormData.start_time}
                 onChange={(e) => setTaskFormData({ ...taskFormData, start_time: e.target.value })}
+                className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
               />
             </div>
             <div className="flex justify-end gap-2 pt-4">
-              <Button variant="outline" onClick={() => setCreateTaskDialogOpen(false)}>
+              <Button className="rounded-[8px] hover:bg-muted/20 border-0" variant="outline" onClick={() => setCreateTaskDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleCreateTask}>
+              <Button className="rounded-[8px] border-0 hover:bg-primary/80 bg-primary" onClick={handleCreateTask}>
                 Create Task
               </Button>
             </div>
@@ -1033,6 +1033,7 @@ export default function AdminPrayerTasks() {
               <Label htmlFor="folder-name">Name *</Label>
               <Input
                 id="folder-name"
+                className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
                 value={folderFormData.name}
                 onChange={(e) => setFolderFormData({ ...folderFormData, name: e.target.value })}
                 placeholder="Person's name"
@@ -1046,6 +1047,7 @@ export default function AdminPrayerTasks() {
                 value={folderFormData.email}
                 onChange={(e) => setFolderFormData({ ...folderFormData, email: e.target.value })}
                 placeholder="email@example.com"
+                className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
               />
             </div>
             <div>
@@ -1056,6 +1058,7 @@ export default function AdminPrayerTasks() {
                 value={folderFormData.phone_number}
                 onChange={(e) => setFolderFormData({ ...folderFormData, phone_number: e.target.value })}
                 placeholder="+1 (555) 123-4567"
+                className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
               />
             </div>
             <div>
@@ -1064,10 +1067,10 @@ export default function AdminPrayerTasks() {
                 value={folderFormData.parent_id || "none"}
                 onValueChange={(value) => setFolderFormData({ ...folderFormData, parent_id: value === "none" ? "" : value })}
               >
-                <SelectTrigger>
+                <SelectTrigger className="rounded-[8px] border-muted-foreground/60 hover:border-muted-foreground shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400 h-[40px]" style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                   <SelectValue placeholder="Select parent folder (optional)" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="border-secondary-foreground bg-black/90 text-white">
                   <SelectItem value="none">None (Root Folder)</SelectItem>
                   {folders.map(folder => (
                     <SelectItem key={folder.id} value={folder.id}>
@@ -1078,10 +1081,10 @@ export default function AdminPrayerTasks() {
               </Select>
             </div>
             <div className="flex justify-end gap-2 pt-4">
-              <Button variant="outline" onClick={() => setCreateFolderDialogOpen(false)}>
+              <Button  className="rounded-[8px] hover:bg-muted/20 border-0" variant="outline" onClick={() => setCreateFolderDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleCreateFolder}>
+              <Button className="rounded-[8px] border-0 hover:bg-primary/80 bg-primary" onClick={handleCreateFolder}>
                 Create Folder
               </Button>
             </div>
@@ -1094,15 +1097,15 @@ export default function AdminPrayerTasks() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Prayer Task</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete "{selectedTask?.name}"? This action cannot be undone.
+            <DialogDescription className="text-black/50 font-inter">
+              Are you sure you want to delete "{selectedTask?.name}"? This action cannot be undone. ddd
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-2 pt-4">
-            <Button variant="outline" onClick={() => setDeleteTaskDialogOpen(false)}>
+            <Button className="rounded-[8px] hover:bg-muted/20 border-0" variant="outline" onClick={() => setDeleteTaskDialogOpen(false)}>
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleDeleteTask} disabled={deleting}>
+            <Button className="rounded-[8px] border-0 hover:bg-red-600/80 bg-red-600" variant="destructive" onClick={handleDeleteTask} disabled={deleting}>
               {deleting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -1121,15 +1124,15 @@ export default function AdminPrayerTasks() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Folder</DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-black/70 font-inter">
               Are you sure you want to delete "{selectedFolderToDelete?.name}"? All tasks in this folder will be unassigned. This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-2 pt-4">
-            <Button variant="outline" onClick={() => setDeleteFolderDialogOpen(false)}>
+            <Button className="rounded-[8px] hover:bg-muted/20 border-0" variant="outline" onClick={() => setDeleteFolderDialogOpen(false)}>
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleDeleteFolder} disabled={deleting}>
+            <Button className="rounded-[8px] border-0 hover:bg-red-600/80 bg-red-600" variant="destructive" onClick={handleDeleteFolder} disabled={deleting}>
               {deleting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

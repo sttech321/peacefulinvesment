@@ -297,23 +297,28 @@ export default function PrayerTasks() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <div className="space-y-6">
-          <div className="text-center space-y-2">
-            <h1 className="text-4xl font-bold flex items-center justify-center gap-2">
-              <Heart className="h-8 w-8 text-primary" />
-              Prayer Management
+    <div className="min-h-screen pink-yellow-shadow pt-20">
+      <div className="animate-slide-up bg-black/20 px-6 py-10 text-center md:py-12 lg:py-24">
+        <div className="mx-auto w-full max-w-7xl">
+           
+             
+             <h1 className="mb-6 font-inter font-bold uppercase text-white text-3xl md:text-4xl lg:text-5xl xl:text-6xl">
+              Prayer <span className="text-[var(--yellowcolor)]">FManagement</span>
             </h1>
-            <p className="text-muted-foreground">
+              <p className="max-w-2xl mx-auto font-inter text-lg md:text-[20px] font-normal text-white mb-6">
               Join us in prayer for those in need
             </p>
+           
           </div>
+   </div>
+
+<div className="space-y-6 px-5 py-8 md:py-12 lg:py-16">
+        <div className="mx-auto w-full max-w-7xl">
 
           {/* Search */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex gap-4">
+          <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
+            <CardContent className="p-5">
+              <div className="flex gap-4 flex-col md:flex-row">
                 <div className="flex-1">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -321,13 +326,15 @@ export default function PrayerTasks() {
                       placeholder="Search by name (e.g., PATRICK)..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
+                      className="pl-10 border-0 rounded-[8px] shadow-none mt-0 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none"
+                      style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
                     />
                   </div>
                 </div>
                 {/* {searchTerm && filteredTasks.length === 0 && ( */}
                   <Button
                     variant="outline"
+                    className="rounded-[8px] border-0 gap-0"
                     onClick={() => setEmailDialogOpen(true)}
                   >
                     <Send className="mr-2 h-4 w-4" />
@@ -336,10 +343,10 @@ export default function PrayerTasks() {
                 {/* )} */}
               </div>
               {searchTerm && filteredTasks.length === 0 && (
-                <div className="mt-4 p-4 bg-muted rounded-lg flex items-start gap-3">
+                <div className="mt-4 p-0 pt-1 bg-transparent rounded-lg flex items-start gap-3">
                   <AlertCircle className="h-5 w-5 text-muted-foreground mt-0.5" />
                   <div>
-                    <p className="font-medium">No task found with name "{searchTerm}"</p>
+                    <p className="font-medium font-inter text-white">No task found with name "{searchTerm}"</p>
                     <p className="text-sm text-muted-foreground mt-1">
                       Click "Send Prayer Request" to let us know about this prayer need.
                     </p>
@@ -350,20 +357,20 @@ export default function PrayerTasks() {
           </Card>
 
           {/* Tasks List */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Available Prayer Tasks</CardTitle>
-              <CardDescription>
+          <Card className="border-0 bg-transparent p-0 pt-8 md:pt-10">
+            <CardHeader className="px-0 sm:px-0 pt-0 pb-0 p-0 sm:p-0">
+              <CardTitle className="text-primary">Available Prayer Tasks</CardTitle>
+              <CardDescription className="text-lg font-inter">
                 {filteredTasks.length} task{filteredTasks.length !== 1 ? 's' : ''} found
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0 sm:p-0">
               {loading ? (
-                <div className="flex justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin" />
+               <div className="flex items-center justify-center min-h-[400px]">
+                  <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
                 </div>
               ) : filteredTasks.length === 0 && !searchTerm ? (
-                <div className="text-center py-8 text-muted-foreground">
+                <div className="text-center py-8 text-white justify-center min-h-[400px]">
                   No prayer tasks available at the moment.
                 </div>
               ) : (
@@ -371,21 +378,21 @@ export default function PrayerTasks() {
                   {filteredTasks.map((task) => (
                     <Card
                       key={task.id}
-                      className={`cursor-pointer transition-colors ${
+                      className={`cursor-pointer transition-colors mt-4 p-6 ${
                         task.status === 'TODO' && !task.email
-                          ? 'hover:border-primary hover:bg-muted/50'
+                          ? 'hover:bg-white/10'
                           : ''
                       } ${
                         task.status !== 'TODO' || task.email
-                          ? 'opacity-75'
+                          ? 'opacity-1'
                           : ''
                       }`}
                       onClick={() => handleTaskClick(task)}
                     >
-                      <CardContent className="pt-6">
+                      <CardContent className="p-0 sm:p-0">
                         <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
                           <div className="md:col-span-1">
-                            <div className="font-semibold text-lg">{task.name}</div>
+                            <div className="font-inter text-sm text-white">{task.name}</div>
                             {getStatusBadge(task.status)}
                           </div>
                           <div className="md:col-span-1">
@@ -394,7 +401,7 @@ export default function PrayerTasks() {
                                 href={task.link_or_video}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-primary hover:underline flex items-center gap-1"
+                                className="text-sm text-primary hover:no-underline flex items-center gap-1"
                                 onClick={(e) => e.stopPropagation()}
                               >
                                 {task.link_or_video.includes('youtube') || task.link_or_video.includes('video') ? (
@@ -405,35 +412,36 @@ export default function PrayerTasks() {
                                 View
                               </a>
                             ) : (
-                              <span className="text-muted-foreground">-</span>
+                              <span className="text-white/70 text-sm">-</span>
                             )}
                           </div>
                           <div className="md:col-span-1">
-                            <div className="text-sm text-muted-foreground">Person needs help</div>
-                            <div className="font-medium">
-                              {task.person_needs_help || <span className="text-muted-foreground">-</span>}
+                            <div className="text-sm text-white">Person needs help</div>
+                            <div className="text-white/70 text-sm pt-2">
+                              {task.person_needs_help || <span>-</span>}
                             </div>
                           </div>
                           <div className="md:col-span-1">
-                            <div className="text-sm text-muted-foreground">Days</div>
-                            <div className="font-medium">
+                            <div className="text-sm text-white">Days</div>
+                            <div className="text-white/70 text-sm pt-2">
                               {task.current_day} of {task.number_of_days}
                             </div>
                           </div>
                           <div className="md:col-span-1">
-                            <div className="text-sm text-muted-foreground">Start Date & Time</div>
-                            <div className="font-medium text-sm">
+                            <div className="text-sm text-white">Start Date & Time</div>
+                            <div className="text-white/70 text-sm pt-2">
                               {formatDateTime(task.start_date, task.start_time)}
                             </div>
                           </div>
                           <div className="md:col-span-1">
                             {task.status === 'TODO' && !task.email ? (
-                              <Button size="sm" className="w-full">
+                              <Button size="sm" className="w-full rounded-[8px]">
                                 Claim Task
                               </Button>
                             ) : (
-                              <div className="text-sm text-muted-foreground">
-                                {task.email ? 'Claimed' : 'Completed'}
+                              <div className="text-sm text-white">
+                                <span className="bg-green-200 text-green-800 block text-center p-2 rounded-[8px]">
+                                {task.email ? 'Claimed' : 'Completed'}</span>
                               </div>
                             )}
                           </div>
@@ -445,9 +453,9 @@ export default function PrayerTasks() {
               )}
             </CardContent>
           </Card>
-        </div>
+        
       </div>
-
+</div>
       <Footer />
 
       {/* Claim Task Dialog */}
@@ -455,7 +463,7 @@ export default function PrayerTasks() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Claim Prayer Task</DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="font-inter text-black/50">
               Please provide your contact information and the name of the person who needs help
             </DialogDescription>
           </DialogHeader>
@@ -468,6 +476,7 @@ export default function PrayerTasks() {
                 value={claimFormData.email}
                 onChange={(e) => setClaimFormData({ ...claimFormData, email: e.target.value })}
                 placeholder="your.email@example.com"
+                className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
               />
             </div>
             <div>
@@ -478,6 +487,7 @@ export default function PrayerTasks() {
                 value={claimFormData.phone_number}
                 onChange={(e) => setClaimFormData({ ...claimFormData, phone_number: e.target.value })}
                 placeholder="+1 (555) 123-4567"
+                className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
               />
             </div>
             <div>
@@ -487,13 +497,14 @@ export default function PrayerTasks() {
                 value={claimFormData.person_needs_help}
                 onChange={(e) => setClaimFormData({ ...claimFormData, person_needs_help: e.target.value })}
                 placeholder="e.g., JEFF"
+                className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
               />
             </div>
             <div className="flex justify-end gap-2 pt-4">
-              <Button variant="outline" onClick={() => setClaimDialogOpen(false)}>
+              <Button className="border-0 rounded-[8px] hover:bg-white/80" variant="outline" onClick={() => setClaimDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleClaimTask} disabled={claiming}>
+              <Button className="border-0 rounded-[8px] hover:bg-primary/80 gap-0" onClick={handleClaimTask} disabled={claiming}>
                 {claiming ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -513,7 +524,7 @@ export default function PrayerTasks() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Send Prayer Request</DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="font-inter text-black/50">
               No task found with that name. Send us your prayer request and we'll add it.
             </DialogDescription>
           </DialogHeader>
@@ -526,6 +537,7 @@ export default function PrayerTasks() {
                 value={emailFormData.email}
                 onChange={(e) => setEmailFormData({ ...emailFormData, email: e.target.value })}
                 placeholder="your.email@example.com"
+                className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
               />
             </div>
             <div>
@@ -536,13 +548,14 @@ export default function PrayerTasks() {
                 onChange={(e) => setEmailFormData({ ...emailFormData, prayer_request: e.target.value })}
                 placeholder="Please describe the prayer need..."
                 rows={5}
+                className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
               />
             </div>
             <div className="flex justify-end gap-2 pt-4">
-              <Button variant="outline" onClick={() => setEmailDialogOpen(false)}>
+              <Button className="border-0 rounded-[8px] hover:bg-white/80" variant="outline" onClick={() => setEmailDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleSendEmail} disabled={sendingEmail}>
+              <Button className="border-0 rounded-[8px] hover:bg-primary/80 gap-0" onClick={handleSendEmail} disabled={sendingEmail}>
                 {sendingEmail ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

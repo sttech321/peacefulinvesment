@@ -1003,7 +1003,7 @@ function AccountForm({ form, setForm, isEdit = false }: any) {
       <div>
         <Label>Provider</Label>
         <Select required value={form.provider} onValueChange={v => setForm({ ...form, provider: v })}>
-          <SelectTrigger className="rounded-[8px] border-muted-foreground/60 hover:border-muted-foreground shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400 h-[36px]" style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
+          <SelectTrigger className="rounded-[8px] border-muted-foreground/60 hover:border-muted-foreground shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400 h-[40px]" style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
             <SelectValue />
             </SelectTrigger>
           <SelectContent className="border-secondary-foreground bg-black/90 text-white">
