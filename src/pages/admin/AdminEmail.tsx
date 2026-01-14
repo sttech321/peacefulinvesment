@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -21,9 +21,6 @@ import {
 import {
   Plus, Search, RefreshCw, Trash2,
   Eye, Reply, Loader2, Settings,
-  ChevronDown, ChevronRight,
-  ReplyIcon,
-  CornerDownRight,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -100,8 +97,6 @@ export default function AdminEmail() {
   const [deleting, setDeleting] = useState(false);
 
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-
-  const [expandedThreads, setExpandedThreads] = useState<Record<string, boolean>>({});
 
   const emptyAccount = {
     email: "",
@@ -404,13 +399,6 @@ export default function AdminEmail() {
     setDeleteMessage(message); // just open dialog
   };
 
-  const toggleThread = (messageId: string) => {
-    setExpandedThreads(prev => ({
-      ...prev,
-      [messageId]: !(prev[messageId] ?? true),
-    }));
-  };
-
   const confirmDeleteEmail = async () => {
     if (!deleteMessage) return;
 
@@ -546,78 +534,73 @@ export default function AdminEmail() {
                 </TableRow>
               </TableHeader>
               <TableBody key={selectedAccount}>
-                {filteredMessages.map(m => {
-                  const replies = m.replies ?? [];
-                  const hasReplies = replies.length > 0;
-                  const isExpanded = expandedThreads[m.id] ?? true;
+                {filteredMessages.map(m => (
+                  <>
+                    {/* MAIN EMAIL ROW */}
+                    <TableRow className={`border-b border-muted/20 hover:bg-white/10 ${!m.is_read ? "font-bold" : ""}`} key={m.id}>
+                      <TableCell className="text-white">{m.from_email}</TableCell>
+                      <TableCell className="text-white">{m.subject}</TableCell>
+                      <TableCell className="text-white">
+                        {format(new Date(m.date_received), "MMM d yyyy HH:mm")}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="bg-muted/20 hover:bg-muted/40 rounded-[8px] border-0"
+                            onClick={() => {
+                              setViewMessage(m);
+                              markAsRead(m);
+                            }}
+                          >
+                            <Eye className="h-4 w-4 text-white " />
+                          </Button>
 
-                  return (
-                    <React.Fragment key={m.id}>
-                      {/* MAIN EMAIL ROW */}
-                      <TableRow className={`border-b border-muted/20 hover:bg-white/10 ${!m.is_read ? "font-bold bg-white/15" : ""}`}>
-                        <TableCell className="text-white">
-                          <div className="flex items-center gap-3">
-                            {hasReplies ? (
-                              <button
-                                type="button"
-                                aria-label={isExpanded ? "Collapse replies" : "Expand replies"}
-                                onClick={() => toggleThread(m.id)}
-                                className="flex h-6 w-6 items-center justify-center rounded-full border border-muted/30 bg-transparent text-muted-foreground transition-colors hover:bg-white/10"
-                              >
-                                {isExpanded ? (
-                                  <ChevronDown className="h-3.5 w-3.5" />
-                                ) : (
-                                  <ChevronRight className="h-3.5 w-3.5" />
-                                )}
-                              </button>
-                            ) : (
-                              <span className="h-6 w-6" />
-                            )}
-                            <span>{m.from_email}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-white">{m.subject}</TableCell>
-                        <TableCell className="text-white whitespace-nowrap">
-                          {format(new Date(m.date_received), "MMM d yyyy HH:mm")}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="bg-muted/20 hover:bg-muted/40 rounded-[8px] border-0"
-                              onClick={() => {
-                                setViewMessage(m);
-                                markAsRead(m);
-                              }}
-                            >
-                              <Eye className="h-4 w-4 text-white " />
-                            </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="bg-muted/20 hover:bg-muted/40 rounded-[8px] border-0"
+                            onClick={() => {
+                              setViewMessage(m);
+                              setReplyOpen(true);
+                              markAsRead(m);
+                            }}
+                          >
+                            <Reply className="h-4 w-4 text-white " />
+                          </Button>
 
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="bg-muted/20 hover:bg-muted/40 rounded-[8px] border-0"
-                              onClick={() => {
-                                setViewMessage(m);
-                                setReplyOpen(true);
-                                markAsRead(m);
-                              }}
-                            >
-                              <Reply className="h-4 w-4 text-white" />
-                            </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                             className="bg-red-600 hover:bg-red-700 rounded-[8px] border-0"
+                            onClick={() => handleDeleteEmail(m)}
+                          >
+                            <Trash2 className="h-4 w-4 text-white" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
 
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="bg-red-600 hover:bg-red-700 rounded-[8px] border-0"
-                              onClick={() => handleDeleteEmail(m)}
-                            >
-                              <Trash2 className="h-4 w-4 text-white" />
-                            </Button>
+                    {/* 🔽 REPLIES ROW */}
+                    {m.replies && m.replies.length > 0 && (
+                      <TableRow className="border-b border-muted/20 bg-muted/20 hover:bg-muted/10 ">
+                        <TableCell colSpan={4}>
+                          <div className="space-y-0 px-5">
+                            {m.replies.map(reply => (
+                              <div key={reply.id} className="text-sm py-2 border-b border-muted/20 last:border-0 last:pb-0 first:pt-0">
+                                <div className="text-xs text-white font-semibold font-inter">
+                                  Reply • {format(new Date(reply.created_at), "MMM d yyyy HH:mm")}
+                                </div>
+                                <div className="mt-1 text-muted-foreground whitespace-pre-wrap">
+                                  {reply.body}
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         </TableCell>
                       </TableRow>
+<<<<<<< HEAD
 
                       {/* REPLIES THREAD */}
                       {hasReplies && isExpanded && (
@@ -651,6 +634,11 @@ export default function AdminEmail() {
                     </React.Fragment>
                   );
                 })}
+=======
+                  )}
+                </>
+              ))}
+>>>>>>> remotes/origin/email_setup
               </TableBody>
             </Table>
 </div>
@@ -839,11 +827,11 @@ export default function AdminEmail() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Reply</DialogTitle>
-            <DialogDescription className="pt-2 text-gray-600 font-inter">
+            <DialogDescription className="pt-2 text-black">
               To: {viewMessage?.from_email}
             </DialogDescription>
           </DialogHeader>
- 
+
           <Textarea
             className="rounded-[8px] shadow-none mt-1 boder-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none resize-none" 
             style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
@@ -1008,7 +996,8 @@ function AccountForm({ form, setForm, isEdit = false }: any) {
             </SelectTrigger>
           <SelectContent className="border-secondary-foreground bg-black/90 text-white">
             <SelectItem value="custom">Custom</SelectItem>
-            <SelectItem value="gmail">Gmail</SelectItem> 
+            <SelectItem value="gmail">Gmail</SelectItem>
+            <SelectItem value="outlook">Outlook</SelectItem>
           </SelectContent>
         </Select>
       </div>

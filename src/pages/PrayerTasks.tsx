@@ -141,7 +141,11 @@ export default function PrayerTasks() {
     if (!selectedTask) return;
 
     try {
-      if (!claimFormData.email.trim() || !claimFormData.phone_number.trim() || !claimFormData.person_needs_help.trim()) {
+      if (
+        !claimFormData.email.trim() ||
+        !claimFormData.phone_number.trim() ||
+        !claimFormData.person_needs_help.trim()
+      ) {
         toast({
           title: "Error",
           description: "Please fill in all fields.",
@@ -152,24 +156,47 @@ export default function PrayerTasks() {
 
       setClaiming(true);
 
-      const { error } = await supabase
-        .from('prayer_tasks')
+      // 1. Update task (claim)
+      const { error: updateError } = await supabase
+        .from("prayer_tasks")
         .update({
           email: claimFormData.email,
           phone_number: claimFormData.phone_number,
           person_needs_help: claimFormData.person_needs_help,
-          status: 'TODO',
+          status: "TODO",
           claimed_by: user?.id || null,
         })
-        .eq('id', selectedTask.id);
+        .eq("id", selectedTask.id);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
 
+      // 2. Send claim confirmation email
+      const { error: emailError } = await supabase.functions.invoke(
+        "send-claim-confirmation",
+        {
+          body: {
+            email: claimFormData.email,
+            task_name: selectedTask.name,
+            person_needs_help: claimFormData.person_needs_help,
+            start_date: selectedTask.start_date,
+            start_time: selectedTask.start_time,
+          },
+        }
+      );
+
+      if (emailError) {
+        console.error("Email error:", emailError);
+        // Do NOT fail the claim if email fails
+      }
+
+      // 3. Success feedback
       toast({
-        title: "Success",
-        description: "Prayer task claimed successfully. Thank you for your prayers!",
+        title: "Task Claimed Successfully",
+        description:
+          "Thank you for claiming this prayer task. A confirmation email has been sent.",
       });
 
+      // 4. Cleanup
       setClaimDialogOpen(false);
       setSelectedTask(null);
       setClaimFormData({
@@ -177,9 +204,10 @@ export default function PrayerTasks() {
         phone_number: "",
         person_needs_help: "",
       });
+
       fetchTasks();
     } catch (error) {
-      console.error('Error claiming task:', error);
+      console.error("Error claiming task:", error);
       toast({
         title: "Error",
         description: "Failed to claim prayer task.",
@@ -211,7 +239,7 @@ export default function PrayerTasks() {
           search_term: searchTerm,
         },
       });
-
+      console.log('Sending email:', data);
       if (error) throw error;
 
       toast({
@@ -297,15 +325,15 @@ export default function PrayerTasks() {
                     />
                   </div>
                 </div>
-                {searchTerm && filteredTasks.length === 0 && (
+                {/* {searchTerm && filteredTasks.length === 0 && ( */}
                   <Button
                     variant="outline"
                     onClick={() => setEmailDialogOpen(true)}
                   >
                     <Send className="mr-2 h-4 w-4" />
-                    Send Prayer Request
+                    Prayer Not Listed? Request One
                   </Button>
-                )}
+                {/* )} */}
               </div>
               {searchTerm && filteredTasks.length === 0 && (
                 <div className="mt-4 p-4 bg-muted rounded-lg flex items-start gap-3">
