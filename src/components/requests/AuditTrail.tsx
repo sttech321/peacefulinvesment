@@ -81,11 +81,11 @@ const AuditTrail = ({ requestId }: AuditTrailProps) => {
   const getActionBadge = (action: string) => {
     switch (action) {
       case 'INSERT':
-        return <Badge className="bg-green-100 text-green-800">Created</Badge>;
+        return <Badge className="bg-green-200 hover:bg-green-300 text-green-700 border-green-500/20 ml-0">Created</Badge>;
       case 'UPDATE':
-        return <Badge className="bg-blue-100 text-blue-800">Updated</Badge>;
+        return <Badge className="bg-blue-200 hover:bg-blue-300 text-blue-700 border-blue-500/20 ml-0">Updated</Badge>;
       case 'DELETE':
-        return <Badge className="bg-red-100 text-red-800">Deleted</Badge>;
+        return <Badge className="bg-red-200 hover:bg-red-300 text-red-700 border-red-500/20 ml-0">Deleted</Badge>;
       default:
         return <Badge variant="secondary">{action}</Badge>;
     }
@@ -199,7 +199,7 @@ const AuditTrail = ({ requestId }: AuditTrailProps) => {
                       <div className="space-y-3 pt-2 border-t border-muted-foreground/20">
                         {entry.action === 'INSERT' && entry.new_values && (
                           <div>
-                            <h4 className="font-medium text-green-800 mb-2">Request Created</h4>
+                            <h4 className="font-medium text-white mb-2">Request Created</h4>
                             <div className="bg-green-50 p-3 rounded text-sm">
                               <p><strong>Type:</strong> {entry.new_values.type}</p>
                               <p><strong>Amount:</strong> {entry.new_values.amount} {entry.new_values.currency}</p>

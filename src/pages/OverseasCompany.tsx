@@ -273,7 +273,7 @@ const OverseasCompany = () => {
       case 'processing': return 'bg-blue-500/10 text-blue-700 border-blue-500/20 hover:bg-blue-500/20';
       case 'completed': return 'bg-green-500/10 text-green-700 border-green-500/20 hover:bg-green-500/20';
       case 'rejected': return 'bg-red-500/10 text-red-700 border-red-500/20 hover:bg-red-500/20';
-      default: return 'bg-gray-500/10 text-gray-700 border-gray-500/20';
+      default: return 'bg-gray-500/20 text-gray-100 border-gray-500/20 hover:bg-gray-500';
     }
   };
 
@@ -656,7 +656,7 @@ const OverseasCompany = () => {
                                 </div>
                                 <div>
                                   <Label className="font-medium text-white">Status</Label>
-                                  <Badge className="bg-green-500/10 text-green-700 border-green-500/20 ml-2">
+                                  <Badge className="bg-green-200 hover:bg-green-300 text-green-700 border-green-500/20 ml-2">
                                     {company.status}
                                   </Badge>
                                 </div>
