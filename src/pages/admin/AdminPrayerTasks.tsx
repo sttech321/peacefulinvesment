@@ -92,6 +92,9 @@ export default function AdminPrayerTasks() {
   const [selectedFolderToDelete, setSelectedFolderToDelete] = useState<PrayerFolder | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  const [viewPersonDialogOpen, setViewPersonDialogOpen] = useState(false);
+  const [selectedPersonTask, setSelectedPersonTask] = useState<PrayerTask | null>(null);
+
   const [taskFormData, setTaskFormData] = useState({
     name: "",
     link_or_video: "",
@@ -870,7 +873,20 @@ export default function AdminPrayerTasks() {
                           </Select>
                         </td>
                         <td className="p-4">
-                          {task.person_needs_help || <span className="text-muted-foreground">-</span>}
+                          {task.person_needs_help ? (
+                            <Button
+                              variant="link"
+                              className="p-0 h-auto text-primary"
+                              onClick={() => {
+                                setSelectedPersonTask(task);
+                                setViewPersonDialogOpen(true);
+                              }}
+                            >
+                              {task.person_needs_help}
+                            </Button>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
                         </td>
                         <td className="p-4">
                           {task.current_day} of {task.number_of_days}
@@ -916,7 +932,7 @@ export default function AdminPrayerTasks() {
                 id="name"
                 value={taskFormData.name}
                 onChange={(e) => setTaskFormData({ ...taskFormData, name: e.target.value })}
-                placeholder="e.g., PATRICK"
+                placeholder="e.g., Peaceful Investment"
               />
             </div>
             <div>
@@ -1122,6 +1138,75 @@ export default function AdminPrayerTasks() {
               ) : (
                 "Delete"
               )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Person Details Dialog */}
+      <Dialog open={viewPersonDialogOpen} onOpenChange={setViewPersonDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Person Details</DialogTitle>
+            <DialogDescription>
+              Contact information for the person who needs help
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedPersonTask && (
+            <div className="space-y-4">
+              {/* Name */}
+              <div className="flex items-center gap-3">
+                <User className="h-5 w-5 text-muted-foreground" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Name</p>
+                  <p className="font-medium">
+                    {selectedPersonTask.person_needs_help}
+                  </p>
+                </div>
+              </div>
+
+              {/* Phone */}
+              <div className="flex items-center gap-3">
+                <Phone className="h-5 w-5 text-muted-foreground" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Phone</p>
+                  {selectedPersonTask.phone_number ? (
+                    <a
+                      href={`tel:${selectedPersonTask.phone_number}`}
+                      className="font-medium text-primary"
+                    >
+                      {selectedPersonTask.phone_number}
+                    </a>
+                  ) : (
+                    <span className="text-muted-foreground">Not provided</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Email */}
+              <div className="flex items-center gap-3">
+                <Mail className="h-5 w-5 text-muted-foreground" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Email</p>
+                  {selectedPersonTask.email ? (
+                    <a
+                      href={`mailto:${selectedPersonTask.email}`}
+                      className="font-medium text-primary"
+                    >
+                      {selectedPersonTask.email}
+                    </a>
+                  ) : (
+                    <span className="text-muted-foreground">Not provided</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-end pt-6">
+            <Button variant="outline" onClick={() => setViewPersonDialogOpen(false)}>
+              Close
             </Button>
           </div>
         </DialogContent>

@@ -23,3 +23,13 @@ verify_jwt = false
 
 [functions.send-prayer-request]
 verify_jwt = false
+[functions.send-claim-confirmation]
+enabled = true
+verify_jwt = true
+import_map = "./functions/send-claim-confirmation/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/send-claim-confirmation/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/send-claim-confirmation/*.html" ]
