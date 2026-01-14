@@ -618,19 +618,11 @@ export default function AdminEmail() {
                           </div>
                         </TableCell>
                       </TableRow>
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> remotes/origin/production
 
                       {/* REPLIES THREAD */}
                       {hasReplies && isExpanded && (
                         <TableRow className="border-b border-muted/20 bg-transparent hover:bg-white/10">
-<<<<<<< HEAD
-                          <TableCell colSpan={4} className="bg-transparent pt-0 pb-6">
-=======
                           <TableCell colSpan={4} className="bg-transparent pt-0 pb-4">
->>>>>>> remotes/origin/production
                             <div className="pl-10 pr-6 pt-6">
                               <div className="space-y-3">
                                 {replies.map((reply, idx) => (
@@ -659,14 +651,6 @@ export default function AdminEmail() {
                     </React.Fragment>
                   );
                 })}
-<<<<<<< HEAD
-=======
-                  )}
-                </>
-              ))}
->>>>>>> remotes/origin/email_setup
-=======
->>>>>>> remotes/origin/production
               </TableBody>
             </Table>
 </div>
