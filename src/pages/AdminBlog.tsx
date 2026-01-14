@@ -747,7 +747,7 @@ const AdminBlog = () => {
 
                   <CardHeader>
                     <div className="flex items-center justify-between mb-2">
-                      <Badge variant={post.status === "published" ? "default" : "outline"} className={post.status === "published" ? "bg-green-500" : "text-white"}>
+                      <Badge variant={post.status === "published" ? "default" : "outline"} className={post.status === "published" ? "bg-green-500 border-0" : "text-white"}>
                         {post.status}
                       </Badge>
 
