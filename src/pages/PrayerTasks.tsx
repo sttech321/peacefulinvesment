@@ -303,7 +303,7 @@ export default function PrayerTasks() {
            
              
              <h1 className="mb-6 font-inter font-bold uppercase text-white text-3xl md:text-4xl lg:text-5xl xl:text-6xl">
-              Prayer <span className="text-[var(--yellowcolor)]">FManagement</span>
+              Prayer <span className="text-[var(--yellowcolor)]">Management</span>
             </h1>
               <p className="max-w-2xl mx-auto font-inter text-lg md:text-[20px] font-normal text-white mb-6">
               Join us in prayer for those in need
