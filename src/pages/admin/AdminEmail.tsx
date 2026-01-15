@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -68,7 +68,7 @@ interface EmailMessage {
 /* ================= COMPONENT ================= */
 
 export default function AdminEmail() {
-  const backendUrl = import.meta.env.NODE_BACKEND_URL || 'https://m8okk0c4w8oskkk4gkgkg0kw.peacefulinvestment.com';
+  const backendUrl = import.meta.env.NODE_BACKEND_URL || 'http://localhost:3000';
   console.log('Backend URL:', backendUrl);
   const { toast } = useToast();
 
@@ -102,6 +102,14 @@ export default function AdminEmail() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   const [expandedThreads, setExpandedThreads] = useState<Record<string, boolean>>({});
+
+  const [selectedEmailIds, setSelectedEmailIds] = useState<Set<string>>(new Set());
+
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  const requestIdRef = useRef(0);
 
   const emptyAccount = {
     email: "",
@@ -142,13 +150,18 @@ export default function AdminEmail() {
     if (accounts.length > 0 && selectedAccount === "all") {
       setSelectedAccount(accounts[0].id);
     }
-  }, [accounts]);
+  }, [accounts.length]);
 
   useEffect(() => {
-    if (accounts.length > 0) {
-      handleSyncAll();
-    }
-  }, [accounts.length]);
+    if (selectedAccount === "all") return;
+
+    const timeout = setTimeout(() => {
+      syncAccountEmails(selectedAccount, 1, searchTerm);
+    }, 400);
+
+    return () => clearTimeout(timeout);
+  }, [searchTerm, selectedAccount]);
+
 
   /* ================= VALIDATE ACCOUNT FORM ================= */
   const validateAccountForm = () => {
@@ -283,19 +296,34 @@ export default function AdminEmail() {
 
   const syncAccountEmails = async (
     accountId: string,
-    page = 1
+    page = 1,
+    search = ""
   ) => {
+
+      // Increment request ID
+      const requestId = ++requestIdRef.current;
+      // Abort previous request
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
     try {
       setSyncing(true);
       setLoading(true);
 
       const res = await fetch(
-        `${backendUrl}/api/emails?email_account_id=${accountId}&page=${page}&limit=${PAGE_LIMIT}`
+        `${backendUrl}/api/emails?email_account_id=${accountId}&page=${page}&limit=${PAGE_LIMIT}&search=${encodeURIComponent(search)}`,
+         { signal: controller.signal }
       );
 
       if (!res.ok) throw new Error("Failed to fetch emails");
 
       const json = await res.json();
+
+       // ❌ Ignore stale responses
+      if (requestId !== requestIdRef.current) return;
 
       const mapped: EmailMessage[] = (json.data || []).map((e: any) => ({
         id: `${accountId}-${e.uid}`,
@@ -317,10 +345,7 @@ export default function AdminEmail() {
       );
 
       // 🔒 HARD REPLACE FOR THIS ACCOUNT (PAGE-BASED)
-      setMessages(prev => [
-        ...prev.filter(m => m.email_account?.id !== accountId),
-        ...mapped,
-      ]);
+      setMessages(mapped);
 
       setPageByAccount(prev => ({
         ...prev,
@@ -333,24 +358,22 @@ export default function AdminEmail() {
       }));
 
     } catch (e: any) {
+      if (e.name === "AbortError") return;
+      // ❌ Ignore errors from stale requests
+      if (requestId !== requestIdRef.current) return;
       toast({
         title: "Error",
         description: e.message,
         variant: "destructive",
       });
     } finally {
-      setSyncing(false);
-      setLoading(false);
+      if (requestId === requestIdRef.current) {
+        setLoading(false);
+        setSyncing(false);
+        abortControllerRef.current = null;
+      }
     }
-  };
-
-  const handleSyncAll = async () => {
-    setMessages([]);
-    for (const acc of accounts) {
-      await syncAccountEmails(acc.id, 1);
-    }
-  };
-
+  }
 
     /* ===== NEW: MARK AS READ ===== */
   const markAsRead = async (message: EmailMessage) => {
@@ -383,19 +406,31 @@ export default function AdminEmail() {
 
   /* ================= FILTER ================= */
 
-  const filteredMessages = messages.filter(m => {
-    const matchSearch =
-      m.subject?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      m.from_email.toLowerCase().includes(searchTerm.toLowerCase());
+  const unreadCount = messages.filter(m => !m.is_read).length;
+  
+  const toggleSelectEmail = (id: string) => {
+    setSelectedEmailIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
 
-    const matchAccount =
-      selectedAccount === "all" ||
-      m.email_account?.id === selectedAccount;
+  const selectAllVisibleEmails = () => {
+    setSelectedEmailIds(prev => {
+      const next = new Set(prev);
+      messages.forEach(m => next.add(m.id));
+      return next;
+    });
+  };
 
-    return matchSearch && matchAccount;
-  });
+  const unselectAllEmails = () => {
+    setSelectedEmailIds(new Set());
+  };
 
-  const unreadCount = filteredMessages.filter(m => !m.is_read).length;
+  const isAllSelected =
+    messages.length > 0 &&
+    messages.every(m => selectedEmailIds.has(m.id));
 
   /* ================= UI ================= */
 
@@ -451,6 +486,52 @@ export default function AdminEmail() {
     }
   };
 
+  const confirmBulkDelete = async () => {
+    try {
+      setDeleting(true);
+
+      const emailsToDelete = messages.filter(m =>
+        selectedEmailIds.has(m.id)
+      );
+
+      // Optimistic UI update
+      setMessages(prev =>
+        prev.filter(m => !selectedEmailIds.has(m.id))
+      );
+
+      setSelectedEmailIds(new Set());
+
+      await Promise.all(
+        emailsToDelete.map(m => {
+          const uid = m.id.split("-").pop();
+          return fetch(backendUrl + "/api/emails/delete", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email_account_id: m.email_account?.id,
+              uid,
+              mailbox: "INBOX",
+            }),
+          });
+        })
+      );
+
+      toast({
+        title: "Deleted",
+        description: "Selected emails deleted successfully",
+      });
+
+    } catch {
+      toast({
+        title: "Error",
+        description: "Failed to delete selected emails",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
 
@@ -458,9 +539,18 @@ export default function AdminEmail() {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-white">Email Management</h1>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handleSyncAll} disabled={syncing} className="rounded-[8px] gap-0">
+          <Button
+            variant="outline"
+            disabled={syncing || selectedAccount === "all"}
+            className="rounded-[8px] gap-0"
+            onClick={() => {
+              if (selectedAccount !== "all") {
+                syncAccountEmails(selectedAccount, 1, searchTerm);
+              }
+            }}
+          >
             <RefreshCw className={`h-4 w-4 mr-2 ${syncing && "animate-spin"}`} />
-            Sync All
+            Refresh
           </Button>
 
           <Dialog
@@ -524,21 +614,58 @@ export default function AdminEmail() {
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
             />
+
+            {selectedEmailIds.size > 0 && (
+              <Button
+                variant="destructive"
+                className="rounded-[8px]"
+                onClick={() => setBulkDeleteOpen(true)}
+              >
+                Delete Selected ({selectedEmailIds.size})
+              </Button>
+            )}
           </div>
 
-          {loading ? (
-            <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto mb-4"></div>
-          <div className="text-white text-lg">Loading emails...</div>
-        </div>
-      </div>
-          ) : (
+            {loading ? (
+              <div className="flex items-center justify-center min-h-[400px]">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto mb-4"></div>
+                  <div className="text-white text-lg">Loading emails...</div>
+                </div>
+              </div>
+            ) : messages.length === 0 && selectedAccount !== "all" ? (
+              <div className="flex items-center justify-center min-h-[300px]">
+                <div className="text-center text-white/70">
+                  <div className="text-lg font-semibold mb-2">
+                    No emails found
+                  </div>
+                  {searchTerm ? (
+                    <div className="text-sm">
+                      No results for “<span className="font-medium">{searchTerm}</span>”
+                    </div>
+                  ) : (
+                    <div className="text-sm">
+                      This inbox is empty
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
             
             <div className="rounded-md border border-muted/20 overflow-x-auto">
             <Table className="border-none p-0 rounded-lg bg-white/5">
               <TableHeader>
                 <TableRow className="border-b border-muted/20 hover:bg-white/15 bg-white/15 text-white">
+                  <TableHead className="w-[40px]">
+                    <input
+                      type="checkbox"
+                      checked={isAllSelected}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        isAllSelected ? unselectAllEmails() : selectAllVisibleEmails();
+                      }}
+                    />
+                  </TableHead>
                   <TableHead className="text-white">From</TableHead>
                   <TableHead className="text-white">Subject</TableHead>
                   <TableHead className="text-white">Date</TableHead>
@@ -546,7 +673,7 @@ export default function AdminEmail() {
                 </TableRow>
               </TableHeader>
               <TableBody key={selectedAccount}>
-                {filteredMessages.map(m => {
+                {messages.map(m => {
                   const replies = m.replies ?? [];
                   const hasReplies = replies.length > 0;
                   const isExpanded = expandedThreads[m.id] ?? true;
@@ -554,7 +681,24 @@ export default function AdminEmail() {
                   return (
                     <React.Fragment key={m.id}>
                       {/* MAIN EMAIL ROW */}
-                      <TableRow className={`border-b border-muted/20 hover:bg-white/10 ${!m.is_read ? "font-bold bg-white/15" : ""}`}>
+                      <TableRow
+                          className={`border-b border-muted/20 hover:bg-white/10 cursor-pointer ${
+                            !m.is_read ? "font-bold bg-white/15" : ""
+                          }`}
+                          onClick={() => {
+                            if (!m.is_read && !selectedEmailIds.has(m.id)) {
+                              setViewMessage(m);
+                              markAsRead(m);
+                            }
+                          }}
+                        >
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            checked={selectedEmailIds.has(m.id)}
+                            onChange={() => toggleSelectEmail(m.id)}
+                          />
+                        </TableCell>
                         <TableCell className="text-white">
                           <div className="flex items-center gap-3">
                             {hasReplies ? (
@@ -586,7 +730,8 @@ export default function AdminEmail() {
                               variant="ghost"
                               size="sm"
                               className="bg-muted/20 hover:bg-muted/40 rounded-[8px] border-0"
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 setViewMessage(m);
                                 markAsRead(m);
                               }}
@@ -598,7 +743,8 @@ export default function AdminEmail() {
                               variant="ghost"
                               size="sm"
                               className="bg-muted/20 hover:bg-muted/40 rounded-[8px] border-0"
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 setViewMessage(m);
                                 setReplyOpen(true);
                                 markAsRead(m);
@@ -611,7 +757,10 @@ export default function AdminEmail() {
                               variant="ghost"
                               size="sm"
                               className="bg-red-600 hover:bg-red-700 rounded-[8px] border-0"
-                              onClick={() => handleDeleteEmail(m)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteEmail(m);
+                              }}
                             >
                               <Trash2 className="h-4 w-4 text-white" />
                             </Button>
@@ -669,7 +818,8 @@ export default function AdminEmail() {
                 onClick={() =>
                   syncAccountEmails(
                     selectedAccount,
-                    (pageByAccount[selectedAccount] || 1) - 1
+                    (pageByAccount[selectedAccount] || 1) - 1,
+                    searchTerm
                   )
                 }
               >
@@ -689,7 +839,8 @@ export default function AdminEmail() {
                   onClick={() =>
                     syncAccountEmails(
                       selectedAccount,
-                      (pageByAccount[selectedAccount] || 1) + 1
+                      (pageByAccount[selectedAccount] || 1) + 1,
+                      searchTerm
                     )
                   }
                 >
@@ -953,6 +1104,44 @@ export default function AdminEmail() {
               className="rounded-[8px]"
               disabled={deleting}
               onClick={confirmDeleteEmail}
+            >
+              {deleting ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
+      {/* ================= BULK DELETE DIALOG ================= */}
+      <Dialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Emails</DialogTitle>
+            <DialogDescription className="pt-4 text-black">
+              Are you sure you want to delete{" "}
+              <strong>{selectedEmailIds.size}</strong> selected emails?
+              This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              className="rounded-[8px]"
+              onClick={() => setBulkDeleteOpen(false)}
+              disabled={deleting}
+            >
+              Cancel
+            </Button>
+
+            <Button
+              variant="destructive"
+              className="rounded-[8px]"
+              disabled={deleting}
+              onClick={async () => {
+                await confirmBulkDelete();
+                setBulkDeleteOpen(false);
+              }}
             >
               {deleting ? "Deleting..." : "Delete"}
             </Button>
