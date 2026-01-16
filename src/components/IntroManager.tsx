@@ -42,7 +42,7 @@ export default function IntroManager() {
     if (introCompleted) return;
 
     if (activeIntro === null) setActiveIntro('gate');
-  }, [activeIntro, introCompleted, location.pathname, user]);
+  }, [activeIntro, introCompleted, loading, location.pathname, user]);
 
   // Listen for "replay" requests (from the small button on the home page).
   React.useEffect(() => {
