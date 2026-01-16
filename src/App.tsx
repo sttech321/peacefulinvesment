@@ -198,7 +198,7 @@ function AppContent() {
                       </AdminRouteGuard>
                     } />
                     <Route path="/admin/prayer-tasks" element={
-                      <AdminRouteGuard>
+                      <AdminRouteGuard> 
                         <AdminLayout>
                           <AdminPrayerTasks />
                         </AdminLayout>
