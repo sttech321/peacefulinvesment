@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Play } from 'lucide-react';
 import logoAnimation from '@/assets/preloader-animation-video.mp4';
 import logoAudio from '@/assets/audio-logoAnimation.mp3';
+import { lockPageScroll } from '@/utils/scrollLock';
 
 export type LoadingScreenVariant = 'gate' | 'replay';
 
@@ -84,6 +85,13 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({
     setPhase('full');
     setHasStarted(variant === 'replay');
   }, [variant]);
+
+  const isVisible = phase !== 'hidden';
+
+  useEffect(() => {
+    if (!isVisible) return;
+    return lockPageScroll();
+  }, [isVisible]);
 
   if (phase === 'hidden') return null;
 
