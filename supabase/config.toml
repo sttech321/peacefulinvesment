@@ -23,6 +23,13 @@ verify_jwt = false
 
 [functions.send-prayer-request]
 verify_jwt = false
+
+[functions.send-daily-prayer-reminder]
+verify_jwt = false
+
+[functions.retry-prayer-reminders]
+verify_jwt = false
+
 [functions.send-claim-confirmation]
 enabled = true
 verify_jwt = true

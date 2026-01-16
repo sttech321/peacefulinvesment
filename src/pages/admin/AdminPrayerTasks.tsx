@@ -31,13 +31,15 @@ import {
   Folder,
   FolderPlus,
   ChevronRight,
-  ChevronDown, 
+  ChevronDown,
+  Pencil,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
  
 interface PrayerTask {
   id: string;
@@ -52,6 +54,7 @@ interface PrayerTask {
   email: string | null;
   phone_number: string | null;
   folder_id: string | null;
+  is_shared: boolean;
   created_by: string | null;
   claimed_by: string | null;
   created_at: string;
@@ -86,12 +89,15 @@ export default function AdminPrayerTasks() {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   
   const [createTaskDialogOpen, setCreateTaskDialogOpen] = useState(false);
+  const [editTaskDialogOpen, setEditTaskDialogOpen] = useState(false);
   const [createFolderDialogOpen, setCreateFolderDialogOpen] = useState(false);
   const [deleteTaskDialogOpen, setDeleteTaskDialogOpen] = useState(false);
   const [deleteFolderDialogOpen, setDeleteFolderDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<PrayerTask | null>(null);
+  const [editingTask, setEditingTask] = useState<PrayerTask | null>(null);
   const [selectedFolderToDelete, setSelectedFolderToDelete] = useState<PrayerFolder | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const [viewPersonDialogOpen, setViewPersonDialogOpen] = useState(false);
   const [selectedPersonTask, setSelectedPersonTask] = useState<PrayerTask | null>(null);
@@ -105,7 +111,12 @@ export default function AdminPrayerTasks() {
     date_type: "today" as "today" | "traditional",
     traditional_date: "",
     folder_id: "",
+    is_shared: false,
+    assigned_user_ids: [] as string[],
   });
+
+  const [users, setUsers] = useState<Array<{ user_id: string; full_name: string | null; email?: string }>>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
 
   const [folderFormData, setFolderFormData] = useState({
     name: "",
@@ -118,7 +129,7 @@ export default function AdminPrayerTasks() {
     // Fetch data with error handling
     const loadData = async () => {
       try {
-        await Promise.all([fetchFolders(), fetchTasks()]);
+        await Promise.all([fetchFolders(), fetchTasks(), fetchUsers()]);
       } catch (error) {
         console.error('Error loading initial data:', error);
         // Don't show toast here as individual functions handle their own errors
@@ -192,7 +203,7 @@ export default function AdminPrayerTasks() {
         if (error.message?.includes('does not exist') || error.code === '42P01' || error.message?.includes('relation') || error.message?.includes('permission denied')) {
           toast({
             title: "Database Setup Required",
-            description: "The prayer_folders table doesn't exist or you don't have permission. Please run the database migrations. Check DEBUG_PRAYER_TASKS.md for instructions.",
+            description: "The prayer_folders table doesn't exist or you don't have permission. Please run the database migrations. Check MIGRATION_INSTRUCTIONS.md for instructions.",
             variant: "destructive",
           });
           setFolders([]); // Set empty array to prevent crashes
@@ -258,7 +269,7 @@ export default function AdminPrayerTasks() {
         if (error.message?.includes('does not exist') || error.code === '42P01' || error.message?.includes('relation') || error.message?.includes('permission denied')) {
           toast({
             title: "Database Setup Required",
-            description: "The prayer_tasks table doesn't exist or you don't have permission. Please run the database migrations. Check DEBUG_PRAYER_TASKS.md for instructions.",
+            description: "The prayer_tasks table doesn't exist or you don't have permission. Please run the database migrations. Check MIGRATION_INSTRUCTIONS.md for instructions.",
             variant: "destructive",
           });
           setTasks([]); // Set empty array to prevent crashes
@@ -282,6 +293,27 @@ export default function AdminPrayerTasks() {
       setInitialLoad(false);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      setLoadingUsers(true);
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('user_id, full_name')
+        .order('full_name', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching users:', error);
+        return;
+      }
+
+      setUsers(data || []);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    } finally {
+      setLoadingUsers(false);
     }
   };
 
@@ -343,6 +375,7 @@ export default function AdminPrayerTasks() {
         start_date: startDate,
         start_time: taskFormData.start_time,
         status: 'TODO',
+        is_shared: taskFormData.is_shared,
         created_by: user?.id,
       };
 
@@ -351,13 +384,33 @@ export default function AdminPrayerTasks() {
         insertData.folder_id = taskFormData.folder_id;
       }
 
-      const { error } = await supabase
+      const { data: newTask, error } = await supabase
         .from('prayer_tasks')
-        .insert(insertData);
+        .insert(insertData)
+        .select()
+        .single();
 
       if (error) {
         console.error('Error creating task:', error);
         throw error;
+      }
+
+      // Create user assignments if any users are selected
+      if (taskFormData.assigned_user_ids.length > 0 && newTask) {
+        const assignments = taskFormData.assigned_user_ids.map(userId => ({
+          task_id: newTask.id,
+          user_id: userId,
+          assigned_by: user?.id,
+        }));
+
+        const { error: assignmentError } = await supabase
+          .from('prayer_task_assignments')
+          .insert(assignments);
+
+        if (assignmentError) {
+          console.error('Error creating assignments:', assignmentError);
+          // Don't fail the whole operation, just log the error
+        }
       }
 
       toast({
@@ -375,6 +428,8 @@ export default function AdminPrayerTasks() {
         date_type: "today",
         traditional_date: "",
         folder_id: "",
+        is_shared: false,
+        assigned_user_ids: [],
       });
       fetchTasks();
       fetchFolders();
@@ -386,6 +441,156 @@ export default function AdminPrayerTasks() {
         description: errorMessage,
         variant: "destructive",
       });
+    }
+  };
+
+  const handleEditTask = async (task: PrayerTask) => {
+    setEditingTask(task);
+    // Determine date type
+    const today = new Date().toISOString().split('T')[0];
+    const isToday = task.start_date === today;
+    
+    // Fetch assigned users for this task
+    let assignedUserIds: string[] = [];
+    try {
+      const { data: assignments } = await supabase
+        .from('prayer_task_assignments')
+        .select('user_id')
+        .eq('task_id', task.id);
+      
+      assignedUserIds = assignments?.map(a => a.user_id) || [];
+    } catch (error) {
+      console.error('Error fetching assignments:', error);
+    }
+    
+    setTaskFormData({
+      name: task.name,
+      link_or_video: task.link_or_video || "",
+      number_of_days: task.number_of_days,
+      start_date: task.start_date,
+      start_time: task.start_time,
+      date_type: isToday ? "today" : "traditional",
+      traditional_date: isToday ? "" : task.start_date,
+      folder_id: task.folder_id || "",
+      is_shared: task.is_shared || false,
+      assigned_user_ids: assignedUserIds,
+    });
+    setEditTaskDialogOpen(true);
+  };
+
+  const handleUpdateTask = async () => {
+    if (!editingTask) return;
+
+    try {
+      if (!taskFormData.name.trim()) {
+        toast({
+          title: "Error",
+          description: "Task name is required.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setSaving(true);
+
+      let startDate: string;
+      if (taskFormData.date_type === "today") {
+        startDate = new Date().toISOString().split('T')[0];
+      } else {
+        if (!taskFormData.traditional_date) {
+          toast({
+            title: "Error",
+            description: "Please select a traditional date.",
+            variant: "destructive",
+          });
+          setSaving(false);
+          return;
+        }
+        startDate = taskFormData.traditional_date;
+      }
+
+      const updateData: any = {
+        name: taskFormData.name,
+        link_or_video: taskFormData.link_or_video || null,
+        number_of_days: taskFormData.number_of_days,
+        start_date: startDate,
+        start_time: taskFormData.start_time,
+        is_shared: taskFormData.is_shared,
+      };
+
+      // Handle folder_id
+      if (taskFormData.folder_id && taskFormData.folder_id.trim() !== '' && taskFormData.folder_id !== 'unassigned') {
+        updateData.folder_id = taskFormData.folder_id;
+      } else {
+        updateData.folder_id = null;
+      }
+
+      const { error } = await supabase
+        .from('prayer_tasks')
+        .update(updateData)
+        .eq('id', editingTask.id);
+
+      if (error) {
+        console.error('Error updating task:', error);
+        throw error;
+      }
+
+      // Update user assignments
+      // First, delete all existing assignments
+      await supabase
+        .from('prayer_task_assignments')
+        .delete()
+        .eq('task_id', editingTask.id);
+
+      // Then, create new assignments if any users are selected
+      if (taskFormData.assigned_user_ids.length > 0) {
+        const assignments = taskFormData.assigned_user_ids.map(userId => ({
+          task_id: editingTask.id,
+          user_id: userId,
+          assigned_by: user?.id,
+        }));
+
+        const { error: assignmentError } = await supabase
+          .from('prayer_task_assignments')
+          .insert(assignments);
+
+        if (assignmentError) {
+          console.error('Error updating assignments:', assignmentError);
+          // Don't fail the whole operation
+        }
+      }
+
+      toast({
+        title: "Success",
+        description: "Prayer task updated successfully.",
+      });
+
+      setEditTaskDialogOpen(false);
+      setEditingTask(null);
+      setTaskFormData({
+        name: "",
+        link_or_video: "",
+        number_of_days: 1,
+        start_date: new Date().toISOString().split('T')[0],
+        start_time: "06:00",
+        date_type: "today",
+        traditional_date: "",
+        folder_id: "",
+        is_shared: false,
+        assigned_user_ids: [],
+      });
+      fetchTasks();
+      fetchFolders();
+    } catch (error: any) {
+      console.error('Error updating task:', error);
+      const errorMessage = error?.message || 'Failed to update prayer task.';
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -820,6 +1025,7 @@ export default function AdminPrayerTasks() {
                       <TableHead className="text-white">Name</TableHead>
                       <TableHead className="text-white">Folder</TableHead>
                       <TableHead className="text-white">Status</TableHead>
+                      <TableHead className="text-white">Visibility</TableHead>
                       <TableHead className="text-white">Person Needs Help</TableHead>
                       <TableHead className="text-white">Days</TableHead>
                       <TableHead className="text-white">Start Date & Time</TableHead>
@@ -868,6 +1074,17 @@ export default function AdminPrayerTasks() {
                           </Select>
                         </TableCell>
                         <TableCell>
+                          {task.is_shared ? (
+                            <Badge variant="secondary" className="bg-green-600 text-white">
+                              Shared
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-white border-white/30">
+                              Private
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
                           {task.person_needs_help ? (
                             <Button
                               variant="link"
@@ -890,17 +1107,27 @@ export default function AdminPrayerTasks() {
                           <span className="text-white">{formatDateTime(task.start_date, task.start_time)}</span>
                         </TableCell>
                         <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="rounded-[8px] border-0 bg-red-600 hover:bg-red-700"
-                            onClick={() => {
-                              setSelectedTask(task);
-                              setDeleteTaskDialogOpen(true);
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4 text-white" />
-                          </Button>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="rounded-[8px] border-0 bg-blue-600 hover:bg-blue-700"
+                              onClick={() => handleEditTask(task)}
+                            >
+                              <Pencil className="h-4 w-4 text-white" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="rounded-[8px] border-0 bg-red-600 hover:bg-red-700"
+                              onClick={() => {
+                                setSelectedTask(task);
+                                setDeleteTaskDialogOpen(true);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4 text-white" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -1007,12 +1234,257 @@ export default function AdminPrayerTasks() {
                 className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
               />
             </div>
+            <div className="flex items-center space-x-2 pt-2">
+              <Checkbox
+                id="is_shared"
+                checked={taskFormData.is_shared}
+                onCheckedChange={(checked) => setTaskFormData({ ...taskFormData, is_shared: checked === true })}
+              />
+              <Label htmlFor="is_shared" className="cursor-pointer text-sm">
+                Make this prayer task <strong>shared/public</strong> (others can see and join)
+              </Label>
+            </div>
+            <div className="text-xs text-muted-foreground pl-6 pb-2">
+              <p>• <strong>Private (unchecked):</strong> Only assigned users and you can see this task</p>
+              <p>• <strong>Shared (checked):</strong> All users can see and join this prayer</p>
+              <p>• Each user gets their own progress tracking (never shared)</p>
+            </div>
+            <div>
+              <Label>Assign to Specific Users (Optional)</Label>
+              <p className="text-xs text-muted-foreground mb-2">
+                Select users who should see this task. If no users are selected and task is not shared, only you (admin) can see it.
+              </p>
+              <div className="border rounded-md p-4 max-h-[200px] overflow-y-auto space-y-2">
+                {loadingUsers ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="ml-2 text-sm text-muted-foreground">Loading users...</span>
+                  </div>
+                ) : users.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No users found</p>
+                ) : (
+                  users.map((user) => (
+                    <div key={user.user_id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`create-user-${user.user_id}`}
+                        checked={taskFormData.assigned_user_ids.includes(user.user_id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setTaskFormData({
+                              ...taskFormData,
+                              assigned_user_ids: [...taskFormData.assigned_user_ids, user.user_id],
+                            });
+                          } else {
+                            setTaskFormData({
+                              ...taskFormData,
+                              assigned_user_ids: taskFormData.assigned_user_ids.filter(id => id !== user.user_id),
+                            });
+                          }
+                        }}
+                      />
+                      <Label
+                        htmlFor={`create-user-${user.user_id}`}
+                        className="text-sm font-normal cursor-pointer flex-1"
+                      >
+                        {user.full_name || user.user_id}
+                      </Label>
+                    </div>
+                  ))
+                )}
+              </div>
+              {taskFormData.assigned_user_ids.length > 0 && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  {taskFormData.assigned_user_ids.length} user{taskFormData.assigned_user_ids.length !== 1 ? 's' : ''} selected
+                </p>
+              )}
+            </div>
             <div className="flex justify-end gap-2 pt-4">
               <Button className="rounded-[8px] hover:bg-muted/20 border-0" variant="outline" onClick={() => setCreateTaskDialogOpen(false)}>
                 Cancel
               </Button>
               <Button className="rounded-[8px] border-0 hover:bg-primary/80 bg-primary" onClick={handleCreateTask}>
                 Create Task
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Task Dialog */}
+      <Dialog open={editTaskDialogOpen} onOpenChange={setEditTaskDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Prayer Task</DialogTitle>
+            <DialogDescription>
+              Update the prayer task details
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="edit-name">Task Name *</Label>
+              <Input
+                id="edit-name"
+                className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
+                value={taskFormData.name}
+                onChange={(e) => setTaskFormData({ ...taskFormData, name: e.target.value })}
+                placeholder="e.g., Peaceful Investment"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-link_or_video">Link or Video</Label>
+              <Input
+                id="edit-link_or_video"
+                value={taskFormData.link_or_video}
+                onChange={(e) => setTaskFormData({ ...taskFormData, link_or_video: e.target.value })}
+                placeholder="https://..."
+                className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-folder">Folder</Label>
+              <Select
+                value={taskFormData.folder_id || "unassigned"}
+                onValueChange={(value) => setTaskFormData({ ...taskFormData, folder_id: value === "unassigned" ? "" : value })}
+              >
+                <SelectTrigger className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }>
+                  <SelectValue placeholder="Select a folder (optional)" />
+                </SelectTrigger>
+                <SelectContent className="border-secondary-foreground bg-black/90 text-white">
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                  {folders.map(folder => (
+                    <SelectItem key={folder.id} value={folder.id}>
+                      {folder.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="edit-number_of_days">Number of Days *</Label>
+              <Input
+                id="edit-number_of_days"
+                type="number"
+                min="1"
+                value={taskFormData.number_of_days}
+                onChange={(e) => setTaskFormData({ ...taskFormData, number_of_days: parseInt(e.target.value) || 1 })}
+                className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
+              />
+            </div>
+            <div>
+              <Label>Start Date *</Label>
+              <Select
+                value={taskFormData.date_type}
+                onValueChange={(value: "today" | "traditional") =>
+                  setTaskFormData({ ...taskFormData, date_type: value })
+                }
+              >
+                <SelectTrigger className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="border-secondary-foreground bg-black/90 text-white">
+                  <SelectItem value="today">Today</SelectItem>
+                  <SelectItem value="traditional">Traditional Date</SelectItem>
+                </SelectContent>
+              </Select>
+              {taskFormData.date_type === "traditional" && (
+                <Input
+                  type="date"
+                  value={taskFormData.traditional_date}
+                  onChange={(e) => setTaskFormData({ ...taskFormData, traditional_date: e.target.value })}
+                  className="mt-2 rounded-[8px] shadow-none border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none" style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
+                />
+              )}
+            </div>
+            <div>
+              <Label htmlFor="edit-start_time">Start Time *</Label>
+              <Input
+                id="edit-start_time"
+                type="time"
+                value={taskFormData.start_time}
+                onChange={(e) => setTaskFormData({ ...taskFormData, start_time: e.target.value })}
+                className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
+              />
+            </div>
+            <div className="flex items-center space-x-2 pt-2">
+              <Checkbox
+                id="edit-is_shared"
+                checked={taskFormData.is_shared}
+                onCheckedChange={(checked) => setTaskFormData({ ...taskFormData, is_shared: checked === true })}
+              />
+              <Label htmlFor="edit-is_shared" className="cursor-pointer text-sm">
+                Make this prayer task <strong>shared/public</strong> (others can see and join)
+              </Label>
+            </div>
+            <div className="text-xs text-muted-foreground pl-6 pb-2">
+              <p>• <strong>Private (unchecked):</strong> Only assigned users and you can see this task</p>
+              <p>• <strong>Shared (checked):</strong> All users can see and join this prayer</p>
+              <p>• Each user gets their own progress tracking (never shared)</p>
+            </div>
+            <div>
+              <Label>Assign to Specific Users (Optional)</Label>
+              <p className="text-xs text-muted-foreground mb-2">
+                Select users who should see this task. If no users are selected and task is not shared, only you (admin) can see it.
+              </p>
+              <div className="border rounded-md p-4 max-h-[200px] overflow-y-auto space-y-2">
+                {loadingUsers ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="ml-2 text-sm text-muted-foreground">Loading users...</span>
+                  </div>
+                ) : users.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No users found</p>
+                ) : (
+                  users.map((user) => (
+                    <div key={user.user_id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`edit-user-${user.user_id}`}
+                        checked={taskFormData.assigned_user_ids.includes(user.user_id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setTaskFormData({
+                              ...taskFormData,
+                              assigned_user_ids: [...taskFormData.assigned_user_ids, user.user_id],
+                            });
+                          } else {
+                            setTaskFormData({
+                              ...taskFormData,
+                              assigned_user_ids: taskFormData.assigned_user_ids.filter(id => id !== user.user_id),
+                            });
+                          }
+                        }}
+                      />
+                      <Label
+                        htmlFor={`edit-user-${user.user_id}`}
+                        className="text-sm font-normal cursor-pointer flex-1"
+                      >
+                        {user.full_name || user.user_id}
+                      </Label>
+                    </div>
+                  ))
+                )}
+              </div>
+              {taskFormData.assigned_user_ids.length > 0 && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  {taskFormData.assigned_user_ids.length} user{taskFormData.assigned_user_ids.length !== 1 ? 's' : ''} selected
+                </p>
+              )}
+            </div>
+            <div className="flex justify-end gap-2 pt-4">
+              <Button className="rounded-[8px] hover:bg-muted/20 border-0" variant="outline" onClick={() => {
+                setEditTaskDialogOpen(false);
+                setEditingTask(null);
+              }}>
+                Cancel
+              </Button>
+              <Button className="rounded-[8px] border-0 hover:bg-primary/80 bg-primary" onClick={handleUpdateTask} disabled={saving}>
+                {saving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Update Task"
+                )}
               </Button>
             </div>
           </div>
