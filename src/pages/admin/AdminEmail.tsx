@@ -29,6 +29,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 
 /* ================= TYPES ================= */
 
@@ -68,7 +69,7 @@ interface EmailMessage {
 /* ================= COMPONENT ================= */
 
 export default function AdminEmail() {
-  const backendUrl = import.meta.env.NODE_BACKEND_URL || 'https://m8okk0c4w8oskkk4gkgkg0kw.peacefulinvestment.com';
+  const backendUrl = import.meta.env.NODE_BACKEND_URL || 'http://localhost:3000';
   console.log('Backend URL:', backendUrl);
   const { toast } = useToast();
 
@@ -110,6 +111,16 @@ export default function AdminEmail() {
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const requestIdRef = useRef(0);
+
+  /* ===== COMPOSE EMAIL STATE ===== */
+  const [composeOpen, setComposeOpen] = useState(false);
+  const [composeLoading, setComposeLoading] = useState(false);
+
+  const [composeForm, setComposeForm] = useState({
+    to: "",
+    subject: "",
+    body: "",
+  });
 
   const emptyAccount = {
     email: "",
@@ -375,6 +386,59 @@ export default function AdminEmail() {
     }
   }
 
+  /* ===== Compose Mail ===== */
+  const handleSendComposeEmail = async () => {
+    if (!composeForm.to || !composeForm.body) {
+      toast({
+        title: "Validation error",
+        description: "Recipient and message are required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (selectedAccount === "all") {
+      toast({
+        title: "Select an account",
+        description: "Please select an email account to send from",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setComposeLoading(true);
+
+      await fetch(backendUrl + "/api/emails/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email_account_id: selectedAccount,
+          to_email: composeForm.to,
+          subject: composeForm.subject,
+          body: composeForm.body,
+        }),
+      });
+
+      toast({
+        title: "Sent",
+        description: "Email sent successfully",
+      });
+
+      setComposeForm({ to: "", subject: "", body: "" });
+      setComposeOpen(false);
+
+    } catch {
+      toast({
+        title: "Error",
+        description: "Failed to send email",
+        variant: "destructive",
+      });
+    } finally {
+      setComposeLoading(false);
+    }
+  };
+
     /* ===== NEW: MARK AS READ ===== */
   const markAsRead = async (message: EmailMessage) => {
     if (message.is_read) return;
@@ -553,6 +617,14 @@ export default function AdminEmail() {
             Refresh
           </Button>
 
+          <Button
+            className="rounded-[8px] gap-0"
+            onClick={() => setComposeOpen(true)}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Compose
+          </Button>
+
           <Dialog
               open={addOpen}
               onOpenChange={(open) => {
@@ -657,14 +729,15 @@ export default function AdminEmail() {
               <TableHeader>
                 <TableRow className="border-b border-muted/20 hover:bg-white/15 bg-white/15 text-white">
                   <TableHead className="w-[40px]">
-                    <input
-                      type="checkbox"
+                    <Checkbox className="rounded-[4px]"
                       checked={isAllSelected}
                       onChange={(e) => {
                         e.stopPropagation();
                         isAllSelected ? unselectAllEmails() : selectAllVisibleEmails();
                       }}
                     />
+ 
+                    
                   </TableHead>
                   <TableHead className="text-white">From</TableHead>
                   <TableHead className="text-white">Subject</TableHead>
@@ -686,15 +759,16 @@ export default function AdminEmail() {
                             !m.is_read ? "font-bold bg-white/15" : ""
                           }`}
                           onClick={() => {
-                            if (!m.is_read && !selectedEmailIds.has(m.id)) {
+                            if (!selectedEmailIds.has(m.id)) {
                               setViewMessage(m);
                               markAsRead(m);
                             }
                           }}
                         >
                         <TableCell onClick={(e) => e.stopPropagation()}>
-                          <input
-                            type="checkbox"
+
+                          <Checkbox
+                            className="rounded-[4px]"
                             checked={selectedEmailIds.has(m.id)}
                             onChange={() => toggleSelectEmail(m.id)}
                           />
@@ -726,7 +800,7 @@ export default function AdminEmail() {
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-2">
-                            <Button
+                            {/* <Button
                               variant="ghost"
                               size="sm"
                               className="bg-muted/20 hover:bg-muted/40 rounded-[8px] border-0"
@@ -737,7 +811,7 @@ export default function AdminEmail() {
                               }}
                             >
                               <Eye className="h-4 w-4 text-white " />
-                            </Button>
+                            </Button> */}
 
                             <Button
                               variant="ghost"
@@ -1144,6 +1218,73 @@ export default function AdminEmail() {
               }}
             >
               {deleting ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ================= COMPOSE EMAIL ================= */}
+      <Dialog open={composeOpen} onOpenChange={setComposeOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Compose Email</DialogTitle>
+            <DialogDescription className="pt-2 text-gray-600">
+              Send a new email
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <Label>To</Label>
+              <Input
+                type="email"
+                placeholder="recipient@example.com"
+                value={composeForm.to}
+                onChange={(e) =>
+                  setComposeForm({ ...composeForm, to: e.target.value })
+                }
+              />
+            </div>
+
+            <div>
+              <Label>Subject</Label>
+              <Input
+                placeholder="Subject"
+                value={composeForm.subject}
+                onChange={(e) =>
+                  setComposeForm({ ...composeForm, subject: e.target.value })
+                }
+              />
+            </div>
+
+            <div>
+              <Label>Message</Label>
+              <Textarea
+                rows={6}
+                placeholder="Write your message..."
+                value={composeForm.body}
+                onChange={(e) =>
+                  setComposeForm({ ...composeForm, body: e.target.value })
+                }
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              className="rounded-[8px]"
+              onClick={() => setComposeOpen(false)}
+            >
+              Cancel
+            </Button>
+
+            <Button
+              className="rounded-[8px]"
+              disabled={composeLoading}
+              onClick={handleSendComposeEmail}
+            >
+              {composeLoading ? "Sending..." : "Send Email"}
             </Button>
           </DialogFooter>
         </DialogContent>

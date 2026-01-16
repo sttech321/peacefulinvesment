@@ -375,7 +375,7 @@ const Referrals = () => {
                     </h3>
                     {ownerInfoBadge}
                     <div className="text-muted-foreground">
-                      Share this link with friends to earn 5% commission on their deposits.
+                      Share this link with friends to earn 5% commission on their trading account.
                     </div>
                   </div>
                   <div className="space-y-4">
