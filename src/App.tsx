@@ -50,8 +50,8 @@ import AdminEmailTest from "./pages/admin/AdminEmailTest";
 import AdminPrayerTasks from "./pages/admin/AdminPrayerTasks";
 import CreateAdminUser from "./pages/CreateAdminUser";
 import PrayerTasks from "./pages/PrayerTasks";
-import LoadingScreen from "@/components/ui/loading-screen";
 import ScrollToTop from './ScrollToTop';
+import IntroManager from '@/components/IntroManager';
 
 const queryClient = new QueryClient();
 
@@ -216,17 +216,6 @@ function AppContent() {
 }
 
 function App() {
-  const [showSplash, setShowSplash] = React.useState(true);
-
-  if (showSplash) {
-    return (
-      <LoadingScreen
-        timeoutMs={13000}
-        onFinish={() => setShowSplash(false)}
-      />
-    );
-  }
-
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -239,6 +228,7 @@ function App() {
               v7_relativeSplatPath: true
             }}
           >
+            <IntroManager />
             <AppContent />
           </BrowserRouter>
         </AuthProvider>
