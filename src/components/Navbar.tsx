@@ -86,6 +86,7 @@ const Navbar = () => {
         { name: 'Referrals', href: '/referrals' },
         { name: 'Catholic', href: '/blog' },
         { name: 'Contact', href: '/contact' },
+        { name: 'Deposit & Withdrawal', href: '/requests' },
       ]
     : [
         { name: 'Home', href: '/' },
@@ -165,16 +166,16 @@ const Navbar = () => {
               <Link
                 key={link.name}
                 to={link.href}
-                className='font-inter text-xs font-semibold uppercase text-white transition-colors hover:text-primary'
+                className='font-inter text-xs font-semibold uppercase text-white transition-colors hover:text-primary outline-none'
               >
                 {link.name}
               </Link>
             ))}
 
             {/* Services Dropdown for logged-in users */}
-            {user && (
+            {/* {user && (
               <DropdownMenu>
-                <DropdownMenuTrigger className='flex items-center gap-1 font-inter text-xs font-semibold uppercase text-white transition-colors hover:text-muted-foreground'>
+                <DropdownMenuTrigger className='flex items-center gap-1 font-inter text-xs font-semibold uppercase text-white transition-colors hover:text-muted-foreground outline-none'>
                   Services
                   <ChevronDown className='h-4 w-4' />
                 </DropdownMenuTrigger>
@@ -188,7 +189,7 @@ const Navbar = () => {
                   ))}
                 </DropdownMenuContent>
               </DropdownMenu>
-            )}
+            )} */}
           </div>
 
           {/* Right Side Actions */}
@@ -317,7 +318,7 @@ const Navbar = () => {
                 {/* Services for mobile */}
                 {user && (
                   <>
-                    <div className='px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground'>
+                    {/* <div className='px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground'>
                       Services
                     </div>
                     {servicesLinks.map(link => (
@@ -329,7 +330,7 @@ const Navbar = () => {
                       >
                         {link.name}
                       </Link>
-                    ))}
+                    ))} */}
 
                     <div className='px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground'>
                       Account
