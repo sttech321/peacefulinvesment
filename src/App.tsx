@@ -50,8 +50,9 @@ import AdminEmailTest from "./pages/admin/AdminEmailTest";
 import AdminPrayerTasks from "./pages/admin/AdminPrayerTasks";
 import CreateAdminUser from "./pages/CreateAdminUser";
 import PrayerTasks from "./pages/PrayerTasks";
-import LoadingScreen from "@/components/ui/loading-screen";
 import ScrollToTop from './ScrollToTop';
+import IntroManager from '@/components/IntroManager';
+import { isIntroCompleted } from '@/utils/intro';
 
 const queryClient = new QueryClient();
 
@@ -198,7 +199,7 @@ function AppContent() {
                       </AdminRouteGuard>
                     } />
                     <Route path="/admin/prayer-tasks" element={
-                      <AdminRouteGuard>
+                      <AdminRouteGuard> 
                         <AdminLayout>
                           <AdminPrayerTasks />
                         </AdminLayout>
@@ -216,16 +217,15 @@ function AppContent() {
 }
 
 function App() {
-  const [showSplash, setShowSplash] = React.useState(true);
-
-  if (showSplash) {
-    return (
-      <LoadingScreen
-        timeoutMs={13000}
-        onFinish={() => setShowSplash(false)}
-      />
-    );
-  }
+  const [isIntroGateBlocking, setIsIntroGateBlocking] = React.useState(() => {
+    // Prevent any app UI from mounting on first visit (home route)
+    // until the intro gate completes.
+    try {
+      return !isIntroCompleted();
+    } catch {
+      return false;
+    }
+  });
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -239,7 +239,8 @@ function App() {
               v7_relativeSplatPath: true
             }}
           >
-            <AppContent />
+            <IntroManager onGateBlockingChange={setIsIntroGateBlocking} />
+            {!isIntroGateBlocking && <AppContent />}
           </BrowserRouter>
         </AuthProvider>
       </TooltipProvider>
