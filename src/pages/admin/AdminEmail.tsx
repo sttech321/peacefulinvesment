@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
   DialogDescription, DialogFooter, DialogTrigger,
@@ -28,8 +30,6 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 
 /* ================= TYPES ================= */
 
@@ -69,7 +69,7 @@ interface EmailMessage {
 /* ================= COMPONENT ================= */
 
 export default function AdminEmail() {
-  const backendUrl = import.meta.env.NODE_BACKEND_URL || 'http://localhost:3000';
+  const backendUrl = import.meta.env.NODE_BACKEND_URL || 'https://m8okk0c4w8oskkk4gkgkg0kw.peacefulinvestment.com';
   console.log('Backend URL:', backendUrl);
   const { toast } = useToast();
 
@@ -729,15 +729,17 @@ export default function AdminEmail() {
               <TableHeader>
                 <TableRow className="border-b border-muted/20 hover:bg-white/15 bg-white/15 text-white">
                   <TableHead className="w-[40px]">
-                    <Checkbox className="rounded-[4px]"
+                    <Checkbox
+                      className="rounded-[4px]"
                       checked={isAllSelected}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        isAllSelected ? unselectAllEmails() : selectAllVisibleEmails();
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          selectAllVisibleEmails();
+                        } else {
+                          unselectAllEmails();
+                        }
                       }}
                     />
- 
-                    
                   </TableHead>
                   <TableHead className="text-white">From</TableHead>
                   <TableHead className="text-white">Subject</TableHead>
@@ -770,7 +772,7 @@ export default function AdminEmail() {
                           <Checkbox
                             className="rounded-[4px]"
                             checked={selectedEmailIds.has(m.id)}
-                            onChange={() => toggleSelectEmail(m.id)}
+                            onCheckedChange={() => toggleSelectEmail(m.id)}
                           />
                         </TableCell>
                         <TableCell className="text-white">
