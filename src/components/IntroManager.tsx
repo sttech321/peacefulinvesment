@@ -24,13 +24,10 @@ export default function IntroManager({ onGateBlockingChange }: IntroManagerProps
   const location = useLocation();
   const { user, loading } = useAuth();
 
-  const isHome = location.pathname === '/';
-
   const [introCompleted, setIntroCompleted] = React.useState(() => isIntroCompleted());
   const [activeIntro, setActiveIntro] = React.useState<ActiveIntro>(() => {
     // On first page load, ensure the gate intro can appear immediately
     // (before any effects run), so the app UI doesn't mount behind it.
-    if (!isHome) return null;
     if (isIntroCompleted()) return null;
     // If auth hasn't resolved yet, we still default to showing the gate.
     // If the user is actually authenticated, we'll cancel the gate once `user` is known.
@@ -47,18 +44,14 @@ export default function IntroManager({ onGateBlockingChange }: IntroManagerProps
     if (activeIntro === 'gate') setActiveIntro(null);
   }, [user, introCompleted, activeIntro]);
 
-  // Show the big "first visit" gate only on the home page, and only when logged out.
+  // Show the big "first visit" gate on any page, and only when logged out.
   React.useEffect(() => {
-    if (!isHome) {
-      if (activeIntro === 'gate') setActiveIntro(null);
-      return;
-    }
-
+    if (loading) return;
     if (user) return;
     if (introCompleted) return;
 
     if (activeIntro === null) setActiveIntro('gate');
-  }, [activeIntro, introCompleted, isHome, user]);
+  }, [activeIntro, introCompleted, loading, user]);
 
   // Listen for "replay" requests (from the small button on the home page).
   React.useEffect(() => {
@@ -79,7 +72,7 @@ export default function IntroManager({ onGateBlockingChange }: IntroManagerProps
 
   // Block mounting of the app UI whenever the first-visit gate is applicable.
   // This ensures content doesn't mount/load behind the big Play button.
-  const shouldBlockApp = isHome && !introCompleted && !user;
+  const shouldBlockApp = !introCompleted && !user;
 
   React.useEffect(() => {
     onGateBlockingChange?.(shouldBlockApp);

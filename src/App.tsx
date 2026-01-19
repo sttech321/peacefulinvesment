@@ -221,7 +221,7 @@ function App() {
     // Prevent any app UI from mounting on first visit (home route)
     // until the intro gate completes.
     try {
-      return window.location.pathname === '/' && !isIntroCompleted();
+      return !isIntroCompleted();
     } catch {
       return false;
     }
