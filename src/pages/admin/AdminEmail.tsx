@@ -76,8 +76,8 @@ interface EmailMessage {
 /* ================= COMPONENT ================= */
 
 export default function AdminEmail() {
-  // const backendUrl = import.meta.env.NODE_BACKEND_URL || 'https://m8okk0c4w8oskkk4gkgkg0kw.peacefulinvestment.com';
-  const backendUrl = import.meta.env.NODE_BACKEND_URL || 'http://localhost:3000';
+  const backendUrl = import.meta.env.NODE_BACKEND_URL || 'https://m8okk0c4w8oskkk4gkgkg0kw.peacefulinvestment.com';
+  // const backendUrl = import.meta.env.NODE_BACKEND_URL || 'http://localhost:3000';
   console.log('Backend URL:', backendUrl);
   const { toast } = useToast();
 
