@@ -52,6 +52,7 @@ import CreateAdminUser from "./pages/CreateAdminUser";
 import PrayerTasks from "./pages/PrayerTasks";
 import ScrollToTop from './ScrollToTop';
 import IntroManager from '@/components/IntroManager';
+import { isIntroCompleted } from '@/utils/intro';
 
 const queryClient = new QueryClient();
 
@@ -216,6 +217,16 @@ function AppContent() {
 }
 
 function App() {
+  const [isIntroGateBlocking, setIsIntroGateBlocking] = React.useState(() => {
+    // Prevent any app UI from mounting on first visit (home route)
+    // until the intro gate completes.
+    try {
+      return window.location.pathname === '/' && !isIntroCompleted();
+    } catch {
+      return false;
+    }
+  });
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -228,8 +239,8 @@ function App() {
               v7_relativeSplatPath: true
             }}
           >
-            <IntroManager />
-            <AppContent />
+            <IntroManager onGateBlockingChange={setIsIntroGateBlocking} />
+            {!isIntroGateBlocking && <AppContent />}
           </BrowserRouter>
         </AuthProvider>
       </TooltipProvider>
