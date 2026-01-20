@@ -1120,6 +1120,25 @@ export default function AdminUsers() {
     setSelectedUsers([]);
   };
 
+  const CompactItem = ({
+    label,
+    value,
+  }: {
+    label: string;
+    value?: React.ReactNode;
+  }) => {
+    if (!value) return null;
+
+    return (
+      <div className="flex flex-col text-sm">
+        <span className="text-[11px] text-muted-foreground leading-none">
+          {label}
+        </span>
+        <span className="font-medium truncate">{value}</span>
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -1598,6 +1617,7 @@ export default function AdminUsers() {
             </Card>
           </>
       )}
+      
 
       {/* User Details Dialog */}
       <Dialog open={userDetailsOpen} onOpenChange={setUserDetailsOpen}>
@@ -1619,54 +1639,65 @@ export default function AdminUsers() {
                   <p className="text-sm text-muted-foreground">ID: {selectedUser.user_id}</p>
                 </div>
               </div>
-              
               <div className="grid grid-cols-1 gap-4">
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <Shield className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">User ID: {selectedUser.user_id}</span>
-                  </div>
-                  {selectedUser.phone && (
-                    <div className="flex items-center space-x-2">
-                      <Phone className="h-5 w-5 text-muted-foreground" />
-                      <span className="text-sm">{selectedUser.phone}</span>
-                    </div>
-                  )}
-                  <div className="flex items-center space-x-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">Joined: {formatDate(selectedUser.created_at)}</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Shield className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">Role: {selectedUser.role || 'user'}</span>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  {selectedUser.address && (
-                    <div className="flex items-center space-x-2">
-                      <MapPin className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">{selectedUser.address}</span>
-                    </div>
-                  )}
-                  {selectedUser.annual_income && (
-                    <div className="flex items-center space-x-2">
-                      <DollarSign className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">Income: ${selectedUser.annual_income.toLocaleString()}</span>
-                    </div>
-                  )}
-                  {selectedUser.employment_status && (
-                    <div className="flex items-center space-x-2">
-                      <UserCheck className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">Employment: {selectedUser.employment_status}</span>
-                    </div>
-                  )}
-                  {selectedUser.investment_experience && (
-                    <div className="flex items-center space-x-2">
-                      <Star className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">Experience: {selectedUser.investment_experience}</span>
-                    </div>
-                  )}
-                </div>
+              <h3 className="text-sm font-semibold border-b pb-1">Personal Information</h3>
+
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                <CompactItem label="Full Name" value={selectedUser.full_name} />
+                <CompactItem label="Phone" value={selectedUser.phone} />
+                <CompactItem label="Address" value={selectedUser.address} />
+                <CompactItem label="City" value={selectedUser.city} />
+                <CompactItem label="State" value={selectedUser.state} />
+                <CompactItem label="ZIP" value={selectedUser.zip_code} />
+              </div>
+
+              <h3 className="text-sm font-semibold border-b pb-1 mt-3">
+                Employment & Financial
+              </h3>
+
+              <div className="grid grid-cols-3 gap-x-4 gap-y-2">
+                <CompactItem label="Status" value={selectedUser.employment_status} />
+                <CompactItem label="Employer" value={selectedUser.employer} />
+                <CompactItem
+                  label="Income"
+                  value={
+                    selectedUser.annual_income
+                      ? `$${selectedUser.annual_income.toLocaleString()}`
+                      : null
+                  }
+                />
+                <CompactItem label="Risk" value={selectedUser.risk_tolerance} />
+                <CompactItem label="Experience" value={selectedUser.investment_experience} />
+              </div>
+
+              <h3 className="text-sm font-semibold border-b pb-1 mt-3">
+                Investment Goals
+              </h3>
+
+              <div className="flex flex-wrap gap-1">
+                {selectedUser.investment_goals?.length ? (
+                  selectedUser.investment_goals.map((goal: string) => (
+                    <span
+                      key={goal}
+                      className="px-2 py-0.5 text-[11px] rounded-md bg-primary/10 text-primary"
+                    >
+                      {goal}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-xs text-muted-foreground">None</span>
+                )}
+              </div>
+              <h3 className="text-sm font-semibold border-b pb-1 mt-3">
+                Account Status
+              </h3>
+
+              <div className="grid grid-cols-3 gap-x-4 gap-y-2">
+                <CompactItem label="Status" value={selectedUser.status} />
+                <CompactItem label="Role" value={selectedUser.role || 'user'} />
+                <CompactItem label="Joined" value={formatDate(selectedUser.created_at)} />
+              </div>
+              
               </div>
 
               <div className="block items-center justify-between pt-4">
