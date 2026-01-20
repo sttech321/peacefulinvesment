@@ -1,39 +1,71 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Play } from 'lucide-react';
 import logoAnimation from '@/assets/preloader-animation-video.mp4';
-import audiologoAnimation from '@/assets/audio-logoAnimation.mp3';
+import logoAudio from '@/assets/audio-logoAnimation.mp3';
+import { lockPageScroll } from '@/utils/scrollLock';
+
+export type LoadingScreenVariant = 'gate' | 'replay';
+
 interface LoadingScreenProps {
+  variant?: LoadingScreenVariant;
   /**
-   * Optional maximum time (ms) to keep the splash
-   * visible in case the GIF event doesn't fire.
+   * Total time (ms) the intro is shown once started.
    */
   timeoutMs?: number;
   /**
-   * Called when loading finishes (GIF ends or timeout).
+   * Called when the intro finishes (after start).
    */
   onFinish?: () => void;
 }
-// const videoRef = useRef(null);
 
-// const enableSound = () => {
-//   videoRef.current.muted = false;
-//   videoRef.current.play();
-// };
 const LoadingScreen: React.FC<LoadingScreenProps> = ({
+  variant = 'gate',
   timeoutMs = 13000,
   onFinish,
 }) => {
   const [phase, setPhase] = useState<'full' | 'moving' | 'hidden'>('full');
-  const [audioEnabled, setAudioEnabled] = useState(false);
+  const [hasStarted, setHasStarted] = useState(() => variant === 'replay');
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
 
-  useEffect(() => {
-    // For a 2-stage effect, we spend most of the time
-    // in full-screen mode, then briefly animate to the navbar
-    // logo position before hiding completely.
-    const moveDuration = 800; // ms
-    const fullPhaseTime = Math.max(0, timeoutMs - moveDuration);
+  const moveDuration = 800; // ms
+  const fullPhaseTime = useMemo(
+    () => Math.max(0, timeoutMs - moveDuration),
+    [timeoutMs]
+  );
 
+  const startPlayback = useCallback(async () => {
+    try {
+      if (videoRef.current) {
+        videoRef.current.currentTime = 0;
+        videoRef.current.muted = true;
+        await videoRef.current.play();
+      }
+    } catch {
+      // Ignore: playback may fail on some browsers if the element isn't ready.
+    }
+
+    try {
+      if (audioRef.current) {
+        audioRef.current.currentTime = 0;
+        audioRef.current.muted = false;
+        await audioRef.current.play();
+      }
+    } catch {
+      // Ignore: if audio playback fails, we still show the logo animation.
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!hasStarted) return;
+    void startPlayback();
+  }, [hasStarted, startPlayback]);
+
+  useEffect(() => {
+    if (!hasStarted) return;
+
+    // Two-stage effect: full screen, then briefly animate to navbar position.
     const fullTimer = window.setTimeout(() => {
       setPhase('moving');
 
@@ -45,35 +77,35 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({
       return () => window.clearTimeout(hideTimer);
     }, fullPhaseTime);
 
-    return () => {
-      window.clearTimeout(fullTimer);
-    };
-  }, [timeoutMs, onFinish]);
+    return () => window.clearTimeout(fullTimer);
+  }, [hasStarted, fullPhaseTime, moveDuration, onFinish]);
+
+  useEffect(() => {
+    // If variant changes while mounted, reset appropriately.
+    setPhase('full');
+    setHasStarted(variant === 'replay');
+  }, [variant]);
+
+  const isVisible = phase !== 'hidden';
+
+  useEffect(() => {
+    if (!isVisible) return;
+    return lockPageScroll();
+  }, [isVisible]);
 
   if (phase === 'hidden') return null;
 
   const isMoving = phase === 'moving';
 
-  const handleEnableAudio = () => {
-    setAudioEnabled(true);
-
-    if (videoRef.current) {
-      videoRef.current.muted = false;
-      void videoRef.current.play();
-    }
-
-    if (audioRef.current) {
-      audioRef.current.muted = false;
-      audioRef.current.currentTime = 0;
-      void audioRef.current.play();
-    }
+  const handleStart = () => {
+    if (hasStarted) return;
+    setHasStarted(true);
   };
 
   return (
-    <div className="fixed inset-0 z-50 pointer-events-none bg-black">
-      {/* Logo layer stays on a black background during both phases */}
+    <div className="fixed inset-0 z-[60] bg-black">
       <div
-        className={`absolute inset-0 max-w-7xl mx-auto flex items-center justify-center transition-all duration-700 ease-in-out`}
+        className="absolute inset-0 max-w-7xl mx-auto flex items-center justify-center transition-all duration-700 ease-in-out"
         style={
           isMoving
             ? {
@@ -88,23 +120,26 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({
         <video
           ref={videoRef}
           src={logoAnimation}
-          autoPlay
-          muted={!audioEnabled}
-          loop
+          muted
           playsInline
+          preload="auto"
           className={`object-contain transition-all duration-700 ease-in-out ${
             isMoving ? 'w-10 h-10 rounded-full' : 'w-full h-full'
           }`}
         />
- 
-        {!audioEnabled && (
-          <button
-            type="button"
-            onClick={handleEnableAudio}
-            className="absolute bottom-8 right-8 pointer-events-auto rounded-full bg-white/10 px-4 py-2 text-sm font-medium uppercase tracking-wide text-white backdrop-blur transition hover:bg-white/20"
-          >
-            Enable sound
-          </button>
+        <audio ref={audioRef} src={logoAudio} preload="auto" />
+
+        {variant === 'gate' && !hasStarted && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <button
+              type="button"
+              onClick={handleStart}
+              className="group flex h-60 w-60 items-center justify-center rounded-full border border-white/25 bg-white/10 text-white shadow-[0_0_50px_rgba(255,255,255,0.08)] backdrop-blur transition hover:bg-white/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+              aria-label="Play intro"
+            >
+              <Play className="h-32 w-32 translate-x-0.5 transition group-hover:scale-110" />
+            </button>
+          </div>
         )}
       </div>
     </div>
@@ -112,5 +147,3 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({
 };
 
 export default LoadingScreen;
-
-// 

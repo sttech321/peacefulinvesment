@@ -54,6 +54,12 @@ interface EmailReply {
   created_at: string;
 }
 
+interface EmailAttachment {
+  part: string;
+  filename: string;
+  mimeType: string;
+  size: number;
+}
 interface EmailMessage {
   id: string;
   subject: string | null;
@@ -63,6 +69,7 @@ interface EmailMessage {
   date_received: string;
   is_read: boolean;
   email_account?: EmailAccount;
+  attachments?: EmailAttachment[];
   replies?: EmailReply[]; // 👈 ADD THIS
 }
 
@@ -70,6 +77,7 @@ interface EmailMessage {
 
 export default function AdminEmail() {
   const backendUrl = import.meta.env.NODE_BACKEND_URL || 'https://m8okk0c4w8oskkk4gkgkg0kw.peacefulinvestment.com';
+  // const backendUrl = import.meta.env.NODE_BACKEND_URL || 'http://localhost:3000';
   console.log('Backend URL:', backendUrl);
   const { toast } = useToast();
 
@@ -112,15 +120,49 @@ export default function AdminEmail() {
 
   const requestIdRef = useRef(0);
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   /* ===== COMPOSE EMAIL STATE ===== */
   const [composeOpen, setComposeOpen] = useState(false);
   const [composeLoading, setComposeLoading] = useState(false);
 
   const [composeForm, setComposeForm] = useState({
-    to: "",
-    subject: "",
-    body: "",
-  });
+      to: "",
+      subject: "",
+      body: "",
+    });
+
+  const [attachments, setAttachments] = useState<File[]>([]);
+
+  const resetComposeForm = () => {
+    setComposeForm({
+      to: "",
+      subject: "",
+      body: "",
+    });
+    setAttachments([]);
+    // 🔥 Clear native file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleAttachmentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    setAttachments(prev => [...prev, ...Array.from(e.target.files)]);
+  };
+  const removeAttachment = (index: number) => {
+    setAttachments(prev => {
+      const updated = prev.filter((_, i) => i !== index);
+
+      // 🔥 If no attachments left, clear file input
+      if (updated.length === 0 && fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+
+      return updated;
+    });
+  };
 
   const emptyAccount = {
     email: "",
@@ -345,6 +387,7 @@ export default function AdminEmail() {
         date_received: e.date,
         is_read: e.is_read,
         email_account: accounts.find(a => a.id === accountId),
+        attachments: e.attachments || [],
         replies: e.replies || [],
       }));
 
@@ -409,15 +452,19 @@ export default function AdminEmail() {
     try {
       setComposeLoading(true);
 
+      const formData = new FormData();
+      formData.append("email_account_id", selectedAccount);
+      formData.append("to_email", composeForm.to);
+      formData.append("subject", composeForm.subject);
+      formData.append("body", composeForm.body);
+
+      attachments.forEach(file => {
+        formData.append("attachments", file);
+      });
+
       await fetch(backendUrl + "/api/emails/send", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email_account_id: selectedAccount,
-          to_email: composeForm.to,
-          subject: composeForm.subject,
-          body: composeForm.body,
-        }),
+        body: formData, // ❗ no Content-Type
       });
 
       toast({
@@ -425,7 +472,7 @@ export default function AdminEmail() {
         description: "Email sent successfully",
       });
 
-      setComposeForm({ to: "", subject: "", body: "" });
+      resetComposeForm();
       setComposeOpen(false);
 
     } catch {
@@ -606,7 +653,7 @@ export default function AdminEmail() {
           <Button
             variant="outline"
             disabled={syncing || selectedAccount === "all"}
-            className="rounded-[8px] gap-0"
+            className="rounded-[8px] gap-0 border-0 shadow-none hover:bg-white/80"
             onClick={() => {
               if (selectedAccount !== "all") {
                 syncAccountEmails(selectedAccount, 1, searchTerm);
@@ -618,7 +665,8 @@ export default function AdminEmail() {
           </Button>
 
           <Button
-            className="rounded-[8px] gap-0"
+            className="rounded-[8px] gap-0 border-0 shadow-none hover:bg-primary/80"
+            disabled={selectedAccount === "all"}
             onClick={() => setComposeOpen(true)}
           >
             <Plus className="h-4 w-4 mr-2" />
@@ -635,7 +683,7 @@ export default function AdminEmail() {
               }}
             >
             <DialogTrigger asChild>
-              <Button className="rounded-[8px] gap-0">
+              <Button className="rounded-[8px] gap-0 border-0 shadow-none hover:bg-primary/80">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Email Account
               </Button>
@@ -1049,15 +1097,42 @@ export default function AdminEmail() {
       {/* VIEW MESSAGE */}
       <Dialog open={!!viewMessage} onOpenChange={() => setViewMessage(null)}>
         <DialogContent className="max-w-4xl p-0 gap-0">
-          <DialogHeader className="p-4">
+          <DialogHeader className="p-6">
             <DialogTitle>{viewMessage?.subject}</DialogTitle>
             <DialogDescription className=" text-black/80 font-inter">{viewMessage?.from_email}</DialogDescription>
           </DialogHeader>
-          <div className="px-4 mb-4 max-h-[70vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent">
+          <div className="px-6 mb-4 max-h-[70vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent">
           {viewMessage?.body_html
             ? <div dangerouslySetInnerHTML={{ __html: viewMessage.body_html }} />
             : <pre>{viewMessage?.body_text}</pre>}
             </div>
+
+          {viewMessage?.attachments?.length > 0 && (
+            <div className="p-6 border-t mt-0">
+              <div className="font-semibold mb-0">Attachments</div>
+
+              <div className="space-y-2">
+                {viewMessage.attachments.map(att => (
+                  <div
+                    key={att.part}
+                    className="flex items-center justify-between border-0 rounded p-0"
+                  >
+                    <div className="text-sm pr-4">
+                      {att.filename}
+                    </div>
+                      <a
+                        href={`${backendUrl}/api/emails/attachment?email_account_id=${viewMessage.email_account?.id}&uid=${viewMessage.id.split("-").pop()}&part=${att.part}&filename=${encodeURIComponent(att.filename)}&mimeType=${encodeURIComponent(att.mimeType)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="border-0 text-sm  bg-primary text-primary-foreground hover:bg-primary-600 shadow-sm hover:shadow-md h-10 px-5 py-2 rounded-[8px] gap-0 flex items-center justify-center" 
+                      >
+                        {att.mimeType === "application/pdf" ? "View PDF" : "Download Attachments"}
+                      </a>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
       
@@ -1226,11 +1301,19 @@ export default function AdminEmail() {
       </Dialog>
 
       {/* ================= COMPOSE EMAIL ================= */}
-      <Dialog open={composeOpen} onOpenChange={setComposeOpen}>
+      <Dialog
+        open={composeOpen}
+        onOpenChange={(open) => {
+          setComposeOpen(open);
+          if (!open) {
+            resetComposeForm(); // ✅ clears composeForm + attachments
+          }
+        }}
+      >
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Compose Email</DialogTitle>
-            <DialogDescription className="pt-2 text-gray-600">
+            <DialogDescription className="pt-1 text-gray-600">
               Send a new email
             </DialogDescription>
           </DialogHeader>
@@ -1240,6 +1323,7 @@ export default function AdminEmail() {
               <Label>To</Label>
               <Input
                 type="email"
+                className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
                 placeholder="recipient@example.com"
                 value={composeForm.to}
                 onChange={(e) =>
@@ -1252,6 +1336,7 @@ export default function AdminEmail() {
               <Label>Subject</Label>
               <Input
                 placeholder="Subject"
+                className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
                 value={composeForm.subject}
                 onChange={(e) =>
                   setComposeForm({ ...composeForm, subject: e.target.value })
@@ -1263,6 +1348,7 @@ export default function AdminEmail() {
               <Label>Message</Label>
               <Textarea
                 rows={6}
+                className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
                 placeholder="Write your message..."
                 value={composeForm.body}
                 onChange={(e) =>
@@ -1270,19 +1356,54 @@ export default function AdminEmail() {
                 }
               />
             </div>
+
+            <div>
+              <Label>Attachments</Label>
+              <Input
+                ref={fileInputRef}
+                type="file"
+                className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
+                multiple
+                onChange={handleAttachmentChange}
+              />
+
+              {attachments.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  {attachments.map((file, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center justify-between text-sm text-muted-foreground"
+                    >
+                      <span>{file.name}</span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => removeAttachment(i)}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="pt-2">
             <Button
-              variant="outline"
-              className="rounded-[8px]"
-              onClick={() => setComposeOpen(false)}
-            >
-              Cancel
-            </Button>
+            variant="outline"
+            className="rounded-[8px] border-0 hover:bg-muted/10"
+            onClick={() => {
+              resetComposeForm();
+              setComposeOpen(false);
+            }}
+          >
+            Cancel
+          </Button>
 
             <Button
-              className="rounded-[8px]"
+              className="rounded-[8px] border-0 hover:bg-primary/80"
               disabled={composeLoading}
               onClick={handleSendComposeEmail}
             >
