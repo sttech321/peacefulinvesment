@@ -653,7 +653,7 @@ export default function AdminEmail() {
           <Button
             variant="outline"
             disabled={syncing || selectedAccount === "all"}
-            className="rounded-[8px] gap-0"
+            className="rounded-[8px] gap-0 border-0 shadow-none hover:bg-white/80"
             onClick={() => {
               if (selectedAccount !== "all") {
                 syncAccountEmails(selectedAccount, 1, searchTerm);
@@ -665,7 +665,7 @@ export default function AdminEmail() {
           </Button>
 
           <Button
-            className="rounded-[8px] gap-0"
+            className="rounded-[8px] gap-0 border-0 shadow-none hover:bg-primary/80"
             disabled={selectedAccount === "all"}
             onClick={() => setComposeOpen(true)}
           >
@@ -683,7 +683,7 @@ export default function AdminEmail() {
               }}
             >
             <DialogTrigger asChild>
-              <Button className="rounded-[8px] gap-0">
+              <Button className="rounded-[8px] gap-0 border-0 shadow-none hover:bg-primary/80">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Email Account
               </Button>
@@ -1097,36 +1097,36 @@ export default function AdminEmail() {
       {/* VIEW MESSAGE */}
       <Dialog open={!!viewMessage} onOpenChange={() => setViewMessage(null)}>
         <DialogContent className="max-w-4xl p-0 gap-0">
-          <DialogHeader className="p-4">
+          <DialogHeader className="p-6">
             <DialogTitle>{viewMessage?.subject}</DialogTitle>
             <DialogDescription className=" text-black/80 font-inter">{viewMessage?.from_email}</DialogDescription>
           </DialogHeader>
-          <div className="px-4 mb-4 max-h-[70vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent">
+          <div className="px-6 mb-4 max-h-[70vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent">
           {viewMessage?.body_html
             ? <div dangerouslySetInnerHTML={{ __html: viewMessage.body_html }} />
             : <pre>{viewMessage?.body_text}</pre>}
             </div>
 
           {viewMessage?.attachments?.length > 0 && (
-            <div className="px-4 pb-4 border-t mt-4">
-              <div className="font-semibold mb-2">Attachments</div>
+            <div className="p-6 border-t mt-0">
+              <div className="font-semibold mb-0">Attachments</div>
 
               <div className="space-y-2">
                 {viewMessage.attachments.map(att => (
                   <div
                     key={att.part}
-                    className="flex items-center justify-between border rounded p-2"
+                    className="flex items-center justify-between border-0 rounded p-0"
                   >
-                    <div className="text-sm">
+                    <div className="text-sm pr-4">
                       {att.filename}
                     </div>
                       <a
                         href={`${backendUrl}/api/emails/attachment?email_account_id=${viewMessage.email_account?.id}&uid=${viewMessage.id.split("-").pop()}&part=${att.part}&filename=${encodeURIComponent(att.filename)}&mimeType=${encodeURIComponent(att.mimeType)}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-600 text-sm"
+                        className="border-0 text-sm  bg-primary text-primary-foreground hover:bg-primary-600 shadow-sm hover:shadow-md h-10 px-5 py-2 rounded-[8px] gap-0 flex items-center justify-center" 
                       >
-                        {att.mimeType === "application/pdf" ? "View PDF" : "Download"}
+                        {att.mimeType === "application/pdf" ? "View PDF" : "Download Attachments"}
                       </a>
                   </div>
                 ))}
@@ -1313,7 +1313,7 @@ export default function AdminEmail() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Compose Email</DialogTitle>
-            <DialogDescription className="pt-2 text-gray-600">
+            <DialogDescription className="pt-1 text-gray-600">
               Send a new email
             </DialogDescription>
           </DialogHeader>
@@ -1323,6 +1323,7 @@ export default function AdminEmail() {
               <Label>To</Label>
               <Input
                 type="email"
+                className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
                 placeholder="recipient@example.com"
                 value={composeForm.to}
                 onChange={(e) =>
@@ -1335,6 +1336,7 @@ export default function AdminEmail() {
               <Label>Subject</Label>
               <Input
                 placeholder="Subject"
+                className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
                 value={composeForm.subject}
                 onChange={(e) =>
                   setComposeForm({ ...composeForm, subject: e.target.value })
@@ -1346,6 +1348,7 @@ export default function AdminEmail() {
               <Label>Message</Label>
               <Textarea
                 rows={6}
+                className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
                 placeholder="Write your message..."
                 value={composeForm.body}
                 onChange={(e) =>
@@ -1359,6 +1362,7 @@ export default function AdminEmail() {
               <Input
                 ref={fileInputRef}
                 type="file"
+                className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
                 multiple
                 onChange={handleAttachmentChange}
               />
@@ -1386,10 +1390,10 @@ export default function AdminEmail() {
 
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="pt-2">
             <Button
             variant="outline"
-            className="rounded-[8px]"
+            className="rounded-[8px] border-0 hover:bg-muted/10"
             onClick={() => {
               resetComposeForm();
               setComposeOpen(false);
@@ -1399,7 +1403,7 @@ export default function AdminEmail() {
           </Button>
 
             <Button
-              className="rounded-[8px]"
+              className="rounded-[8px] border-0 hover:bg-primary/80"
               disabled={composeLoading}
               onClick={handleSendComposeEmail}
             >
