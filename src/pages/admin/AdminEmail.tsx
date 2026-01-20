@@ -1,219 +1,169 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
-  DialogDescription, DialogFooter, DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Select, SelectContent, SelectItem,
-  SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import {
-  Table, TableBody, TableCell,
-  TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
-import {
-  Tabs, TabsContent, TabsList, TabsTrigger,
-} from "@/components/ui/tabs";
-import {
-  Plus, Search, RefreshCw, Trash2,
-  Eye, Reply, Loader2, Settings,
-  ChevronDown, ChevronRight,
-  ReplyIcon,
-  CornerDownRight,
-} from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, RefreshCw, Settings, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
+import { useDebounce } from "@/hooks/useDebounce";
+import { useEmailAccounts } from "@/hooks/email/useEmailAccounts";
+import { useEmailMessages } from "@/hooks/email/useEmailMessages";
+import type { EmailAccount, EmailMessage } from "@/pages/admin/email/types";
+import { EmailToolbar } from "@/pages/admin/email/components/EmailToolbar";
+import { EmailTable } from "@/pages/admin/email/components/EmailTable";
+import { ReplyDialog } from "@/pages/admin/email/components/ReplyDialog";
+import { ComposeEmailDialog, type ComposeFormValues } from "@/pages/admin/email/components/ComposeEmailDialog";
+import { ViewEmailDialog } from "@/pages/admin/email/components/ViewEmailDialog";
+import { DeleteConfirmDialog } from "@/pages/admin/email/components/DeleteConfirmDialog";
+import { BulkDeleteDialog } from "@/pages/admin/email/components/BulkDeleteDialog";
+import { AccountForm, type EmailAccountFormValues } from "@/pages/admin/email/components/AccountForm";
 
 /* ================= TYPES ================= */
-
-interface EmailAccount {
-  id: string;
-  email: string;
-  password: string;
-  imap_host: string;
-  imap_port: number;
-  imap_secure: boolean;
-  smtp_host: string;
-  smtp_port: number;
-  smtp_secure: boolean;
-  provider: string;
-  sync_enabled: boolean;
-  last_sync_at: string | null;
-}
-
-interface EmailReply {
-  id: string;
-  body: string;
-  created_at: string;
-}
-
-interface EmailAttachment {
-  part: string;
-  filename: string;
-  mimeType: string;
-  size: number;
-}
-interface EmailMessage {
-  id: string;
-  subject: string | null;
-  from_email: string;
-  body_text: string | null;
-  body_html: string | null;
-  date_received: string;
-  is_read: boolean;
-  email_account?: EmailAccount;
-  attachments?: EmailAttachment[];
-  replies?: EmailReply[]; // 👈 ADD THIS
-}
+// moved to `src/pages/admin/email/types.ts`
 
 /* ================= COMPONENT ================= */
 
 export default function AdminEmail() {
   const backendUrl = import.meta.env.NODE_BACKEND_URL || 'https://m8okk0c4w8oskkk4gkgkg0kw.peacefulinvestment.com';
   // const backendUrl = import.meta.env.NODE_BACKEND_URL || 'http://localhost:3000';
-  console.log('Backend URL:', backendUrl);
   const { toast } = useToast();
-
-  const [accounts, setAccounts] = useState<EmailAccount[]>([]);
-  const [messages, setMessages] = useState<EmailMessage[]>([]);
   const [selectedAccount, setSelectedAccount] = useState<string | "all">("all");
-
-  const [loading, setLoading] = useState(false);
-  const [syncing, setSyncing] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
   const [addOpen, setAddOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
-  const [deleteAccount, setDeleteAccount] = useState<EmailAccount | null>(null);
   const [editingAccount, setEditingAccount] = useState<EmailAccount | null>(null);
+  const [deleteAccount, setDeleteAccount] = useState<EmailAccount | null>(null);
 
   const [viewMessage, setViewMessage] = useState<EmailMessage | null>(null);
 
   /* ===== NEW: REPLY STATE ===== */
-  const [replyOpen, setReplyOpen] = useState(false);
-  const [replyBody, setReplyBody] = useState("");
-  const [replyLoading, setReplyLoading] = useState(false);
+  const [replyState, setReplyState] = useState({ open: false, body: "", loading: false });
 
-  const [hasMoreByAccount, setHasMoreByAccount] = useState<Record<string, boolean>>({});
-  const [pageByAccount, setPageByAccount] = useState<Record<string, number>>({});
   const PAGE_LIMIT = 20;
 
   const [deleteMessage, setDeleteMessage] = useState<EmailMessage | null>(null);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-
   const [expandedThreads, setExpandedThreads] = useState<Record<string, boolean>>({});
-
-  const [selectedEmailIds, setSelectedEmailIds] = useState<Set<string>>(new Set());
-
-  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
-
-  const abortControllerRef = useRef<AbortController | null>(null);
-
-  const requestIdRef = useRef(0);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   /* ===== COMPOSE EMAIL STATE ===== */
-  const [composeOpen, setComposeOpen] = useState(false);
-  const [composeLoading, setComposeLoading] = useState(false);
+  const [composeState, setComposeState] = useState<{
+    open: boolean;
+    loading: boolean;
+    form: ComposeFormValues;
+    attachments: File[];
+  }>({
+    open: false,
+    loading: false,
+    form: { to: "", subject: "", body: "" },
+    attachments: [],
+  });
 
-  const [composeForm, setComposeForm] = useState({
-      to: "",
-      subject: "",
-      body: "",
-    });
-
-  const [attachments, setAttachments] = useState<File[]>([]);
-
-  const resetComposeForm = () => {
-    setComposeForm({
-      to: "",
-      subject: "",
-      body: "",
-    });
-    setAttachments([]);
-    // 🔥 Clear native file input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
-
-  const handleAttachmentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return;
-    setAttachments(prev => [...prev, ...Array.from(e.target.files)]);
-  };
-  const removeAttachment = (index: number) => {
-    setAttachments(prev => {
-      const updated = prev.filter((_, i) => i !== index);
-
-      // 🔥 If no attachments left, clear file input
-      if (updated.length === 0 && fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-
-      return updated;
-    });
-  };
-
-  const emptyAccount = {
-    email: "",
-    password: "",
-    imap_host: "",
-    imap_port: 993,
-    imap_secure: true,
-    smtp_host: "",
-    smtp_port: 587,
-    smtp_secure: false,
-    provider: "custom",
-    sync_enabled: true,
-  };
-
-  const [form, setForm] = useState<any>(emptyAccount);
-
-  /* ================= FETCH ACCOUNTS ================= */
-
-  const fetchAccounts = async () => {
-    const { data, error } = await supabase
-      .from("email_accounts")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-      return;
-    }
-
-    setAccounts(data || []);
-  };
-
-  useEffect(() => {
-    fetchAccounts();
+  const resetComposeForm = useCallback(() => {
+    setComposeState((prev) => ({
+      ...prev,
+      form: { to: "", subject: "", body: "" },
+      attachments: [],
+    }));
+    if (fileInputRef.current) fileInputRef.current.value = "";
   }, []);
 
+  const handleAttachmentChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    const files = Array.from(e.target.files);
+    setComposeState((prev) => ({ ...prev, attachments: [...prev.attachments, ...files] }));
+  }, []);
+
+  const removeAttachment = useCallback((index: number) => {
+    setComposeState((prev) => {
+      const updated = prev.attachments.filter((_, i) => i !== index);
+      if (updated.length === 0 && fileInputRef.current) fileInputRef.current.value = "";
+      return { ...prev, attachments: updated };
+    });
+  }, []);
+
+  const emptyAccount: EmailAccountFormValues = useMemo(
+    () => ({
+      email: "",
+      password: "",
+      imap_host: "",
+      imap_port: 993,
+      imap_secure: true,
+      smtp_host: "",
+      smtp_port: 587,
+      smtp_secure: false,
+      provider: "custom",
+      sync_enabled: true,
+    }),
+    []
+  );
+
+  const [form, setForm] = useState<EmailAccountFormValues>(emptyAccount);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  const { accounts, addAccount, updateAccount, deleteAccount: deleteEmailAccount } = useEmailAccounts({ toast });
+
+  const accountById = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);
+
+  const {
+    messages,
+    loading,
+    syncing,
+    unreadCount,
+    pageByAccount,
+    hasMoreByAccount,
+    syncEmails,
+    markAsRead,
+    deleteMessage: deleteEmailMessage,
+    bulkDelete,
+    sendReply,
+    sendEmail,
+  } = useEmailMessages({ backendUrl, pageLimit: PAGE_LIMIT, toast, accountById });
+
+  // preserve existing behavior: when accounts first load and "all" is selected, auto-select the first account
   useEffect(() => {
     if (accounts.length > 0 && selectedAccount === "all") {
       setSelectedAccount(accounts[0].id);
     }
   }, [accounts.length]);
 
+  // Debounced sync for BOTH account switching and search (matches the previous inline setTimeout behavior)
+  const debouncedSyncKey = useDebounce(JSON.stringify([selectedAccount, searchTerm]), 400);
   useEffect(() => {
-    if (selectedAccount === "all") return;
+    const [accountId, search] = JSON.parse(debouncedSyncKey) as [string | "all", string];
+    if (accountId === "all") return;
+    syncEmails(accountId, 1, search);
+  }, [debouncedSyncKey, syncEmails]);
 
-    const timeout = setTimeout(() => {
-      syncAccountEmails(selectedAccount, 1, searchTerm);
-    }, 400);
+  /* ================= SELECTION (REDUCER) ================= */
+  type SelectionAction =
+    | { type: "toggle"; id: string }
+    | { type: "select_all"; ids: string[] }
+    | { type: "clear" };
 
-    return () => clearTimeout(timeout);
-  }, [searchTerm, selectedAccount]);
+  const [selectedEmailIds, dispatchSelectedEmailIds] = useReducer((state: Set<string>, action: SelectionAction) => {
+    switch (action.type) {
+      case "toggle": {
+        const next = new Set(state);
+        next.has(action.id) ? next.delete(action.id) : next.add(action.id);
+        return next;
+      }
+      case "select_all": {
+        const next = new Set(state);
+        action.ids.forEach((id) => next.add(id));
+        return next;
+      }
+      case "clear":
+        return new Set();
+      default:
+        return state;
+    }
+  }, new Set<string>());
 
 
   /* ================= VALIDATE ACCOUNT FORM ================= */
@@ -253,7 +203,7 @@ export default function AdminEmail() {
 
   /* ================= ADD ACCOUNT ================= */
 
-  const handleAddAccount = async () => {
+  const handleAddAccount = useCallback(async () => {
     if (!validateAccountForm()) {
       toast({
         title: "Validation error",
@@ -263,29 +213,17 @@ export default function AdminEmail() {
       return;
     }
 
-    const { error } = await supabase
-      .from("email_accounts")
-      .insert(form);
+    const ok = await addAccount(form as any);
+    if (!ok) return;
 
-    if (error) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    toast({ title: "Success", description: "Email account added" });
     setAddOpen(false);
     setForm(emptyAccount);
     setFormErrors({});
-    fetchAccounts();
-  };
+  }, [addAccount, emptyAccount, form, toast]);
 
   /* ================= EDIT ACCOUNT ================= */
 
-  const openEdit = (acc: EmailAccount) => {
+  const openEdit = useCallback((acc: EmailAccount) => {
     setEditingAccount(acc);
      setForm({
       email: acc.email,
@@ -300,138 +238,107 @@ export default function AdminEmail() {
       sync_enabled: acc.sync_enabled,
     });
     setEditOpen(true);
-  };
+  }, []);
 
-  const handleUpdateAccount = async () => {
+  const handleUpdateAccount = useCallback(async () => {
     if (!editingAccount) return;
 
     const payload: any = { ...form };
     if (!payload.password) delete payload.password;
 
-    const { error } = await supabase
-      .from("email_accounts")
-      .update(payload)
-      .eq("id", editingAccount.id);
+    const ok = await updateAccount(editingAccount.id, payload);
+    if (!ok) return;
 
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-      return;
-    }
-
-    toast({ title: "Updated", description: "Email account updated" });
     setEditOpen(false);
     setEditingAccount(null);
     setForm(emptyAccount);
-    fetchAccounts();
-  };
+  }, [editingAccount, emptyAccount, form, updateAccount]);
 
   /* ================= DELETE ACCOUNT ================= */
 
-  const handleDeleteAccount = async () => {
+  const handleDeleteAccount = useCallback(async () => {
     if (!deleteAccount) return;
 
-    const { error } = await supabase
-      .from("email_accounts")
-      .delete()
-      .eq("id", deleteAccount.id);
-
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-      return;
-    }
-
-    toast({ title: "Deleted", description: "Email account removed" });
+    const ok = await deleteEmailAccount(deleteAccount.id);
+    if (!ok) return;
     setDeleteAccount(null);
-    fetchAccounts();
-  };
+  }, [deleteAccount, deleteEmailAccount]);
 
-  /* ================= EMAIL SYNC ================= */
+  const isAllSelected = useMemo(
+    () => messages.length > 0 && messages.every((m) => selectedEmailIds.has(m.id)),
+    [messages, selectedEmailIds]
+  );
 
-  const syncAccountEmails = async (
-    accountId: string,
-    page = 1,
-    search = ""
-  ) => {
+  const toggleSelectEmail = useCallback((id: string) => dispatchSelectedEmailIds({ type: "toggle", id }), []);
 
-      // Increment request ID
-      const requestId = ++requestIdRef.current;
-      // Abort previous request
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
+  const selectAllVisibleEmails = useCallback(
+    () => dispatchSelectedEmailIds({ type: "select_all", ids: messages.map((m) => m.id) }),
+    [messages]
+  );
 
-      const controller = new AbortController();
-      abortControllerRef.current = controller;
+  const unselectAllEmails = useCallback(() => dispatchSelectedEmailIds({ type: "clear" }), []);
+
+  const onToggleSelectAll = useCallback(
+    (checked: boolean) => {
+      if (checked) selectAllVisibleEmails();
+      else unselectAllEmails();
+    },
+    [selectAllVisibleEmails, unselectAllEmails]
+  );
+
+  const toggleThread = useCallback((messageId: string) => {
+    setExpandedThreads((prev) => ({ ...prev, [messageId]: !(prev[messageId] ?? true) }));
+  }, []);
+
+  const openMessage = useCallback(
+    (m: EmailMessage) => {
+      setViewMessage(m);
+      markAsRead(m);
+    },
+    [markAsRead]
+  );
+
+  const openReply = useCallback(
+    (m: EmailMessage) => {
+      setViewMessage(m);
+      setReplyState((prev) => ({ ...prev, open: true }));
+      markAsRead(m);
+    },
+    [markAsRead]
+  );
+
+  const handleDeleteEmail = useCallback((m: EmailMessage) => {
+    setDeleteMessage(m);
+  }, []);
+
+  const confirmDeleteEmail = useCallback(async () => {
+    if (!deleteMessage) return;
+
     try {
-      setSyncing(true);
-      setLoading(true);
-
-      const res = await fetch(
-        `${backendUrl}/api/emails?email_account_id=${accountId}&page=${page}&limit=${PAGE_LIMIT}&search=${encodeURIComponent(search)}`,
-         { signal: controller.signal }
-      );
-
-      if (!res.ok) throw new Error("Failed to fetch emails");
-
-      const json = await res.json();
-
-       // ❌ Ignore stale responses
-      if (requestId !== requestIdRef.current) return;
-
-      const mapped: EmailMessage[] = (json.data || []).map((e: any) => ({
-        id: `${accountId}-${e.uid}`,
-        subject: e.subject,
-        from_email: e.from,
-        body_text: e.text,
-        body_html: e.html,
-        date_received: e.date,
-        is_read: e.is_read,
-        email_account: accounts.find(a => a.id === accountId),
-        attachments: e.attachments || [],
-        replies: e.replies || [],
-      }));
-
-      // ✅ SORT HERE — newest first (Gmail-safe)
-      mapped.sort(
-        (a, b) =>
-          new Date(b.date_received).getTime() -
-          new Date(a.date_received).getTime()
-      );
-
-      // 🔒 HARD REPLACE FOR THIS ACCOUNT (PAGE-BASED)
-      setMessages(mapped);
-
-      setPageByAccount(prev => ({
-        ...prev,
-        [accountId]: page,
-      }));
-
-      setHasMoreByAccount(prev => ({
-        ...prev,
-        [accountId]: json.pagination?.hasMore ?? false,
-      }));
-
-    } catch (e: any) {
-      if (e.name === "AbortError") return;
-      // ❌ Ignore errors from stale requests
-      if (requestId !== requestIdRef.current) return;
-      toast({
-        title: "Error",
-        description: e.message,
-        variant: "destructive",
-      });
+      setDeleting(true);
+      const ok = await deleteEmailMessage(deleteMessage);
+      if (ok) setDeleteMessage(null);
     } finally {
-      if (requestId === requestIdRef.current) {
-        setLoading(false);
-        setSyncing(false);
-        abortControllerRef.current = null;
-      }
+      setDeleting(false);
     }
-  }
+  }, [deleteEmailMessage, deleteMessage]);
 
-  /* ===== Compose Mail ===== */
-  const handleSendComposeEmail = async () => {
-    if (!composeForm.to || !composeForm.body) {
+  const confirmBulkDelete = useCallback(async () => {
+    try {
+      setDeleting(true);
+
+      const emailsToDelete = messages.filter((m) => selectedEmailIds.has(m.id));
+      // preserve behavior: clear selection before request completes
+      dispatchSelectedEmailIds({ type: "clear" });
+
+      await bulkDelete(emailsToDelete);
+    } finally {
+      setDeleting(false);
+    }
+  }, [bulkDelete, messages, selectedEmailIds]);
+
+  const handleSendComposeEmail = useCallback(async () => {
+    if (!composeState.form.to || !composeState.form.body) {
       toast({
         title: "Validation error",
         description: "Recipient and message are required",
@@ -450,198 +357,38 @@ export default function AdminEmail() {
     }
 
     try {
-      setComposeLoading(true);
+      setComposeState((prev) => ({ ...prev, loading: true }));
 
-      const formData = new FormData();
-      formData.append("email_account_id", selectedAccount);
-      formData.append("to_email", composeForm.to);
-      formData.append("subject", composeForm.subject);
-      formData.append("body", composeForm.body);
-
-      attachments.forEach(file => {
-        formData.append("attachments", file);
+      const ok = await sendEmail({
+        emailAccountId: selectedAccount,
+        to: composeState.form.to,
+        subject: composeState.form.subject,
+        body: composeState.form.body,
+        attachments: composeState.attachments,
       });
 
-      await fetch(backendUrl + "/api/emails/send", {
-        method: "POST",
-        body: formData, // ❗ no Content-Type
-      });
-
-      toast({
-        title: "Sent",
-        description: "Email sent successfully",
-      });
+      if (!ok) return;
 
       resetComposeForm();
-      setComposeOpen(false);
-
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to send email",
-        variant: "destructive",
-      });
+      setComposeState((prev) => ({ ...prev, open: false }));
     } finally {
-      setComposeLoading(false);
+      setComposeState((prev) => ({ ...prev, loading: false }));
     }
-  };
+  }, [composeState.attachments, composeState.form, resetComposeForm, selectedAccount, sendEmail, toast]);
 
-    /* ===== NEW: MARK AS READ ===== */
-  const markAsRead = async (message: EmailMessage) => {
-    if (message.is_read) return;
+  const handleSendReply = useCallback(async () => {
+    if (!viewMessage) return;
 
     try {
-      await fetch(backendUrl + "/api/emails/read", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email_account_id: message.email_account?.id,
-          mailbox: "INBOX",
-          uid: message.id.split("-").pop(),
-        }),
-      });
+      setReplyState((prev) => ({ ...prev, loading: true }));
+      const ok = await sendReply({ message: viewMessage, body: replyState.body });
+      if (!ok) return;
 
-      setMessages(prev =>
-        prev.map(m =>
-          m.id === message.id ? { ...m, is_read: true } : m
-        )
-      );
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to mark email as read",
-        variant: "destructive",
-      });
-    }
-  };
-
-  /* ================= FILTER ================= */
-
-  const unreadCount = messages.filter(m => !m.is_read).length;
-  
-  const toggleSelectEmail = (id: string) => {
-    setSelectedEmailIds(prev => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  };
-
-  const selectAllVisibleEmails = () => {
-    setSelectedEmailIds(prev => {
-      const next = new Set(prev);
-      messages.forEach(m => next.add(m.id));
-      return next;
-    });
-  };
-
-  const unselectAllEmails = () => {
-    setSelectedEmailIds(new Set());
-  };
-
-  const isAllSelected =
-    messages.length > 0 &&
-    messages.every(m => selectedEmailIds.has(m.id));
-
-  /* ================= UI ================= */
-
-  /* ================= DELETE Email ================= */
-  const handleDeleteEmail = (message: EmailMessage) => {
-    setDeleteMessage(message); // just open dialog
-  };
-
-  const toggleThread = (messageId: string) => {
-    setExpandedThreads(prev => ({
-      ...prev,
-      [messageId]: !(prev[messageId] ?? true),
-    }));
-  };
-
-  const confirmDeleteEmail = async () => {
-    if (!deleteMessage) return;
-
-    try {
-      setDeleting(true);
-
-      const uid = deleteMessage.id.split("-").pop();
-
-      // 🔥 OPTIMISTIC UI UPDATE
-      setMessages(prev =>
-        prev.filter(m => m.id !== deleteMessage.id)
-      );
-
-      await fetch(backendUrl + "/api/emails/delete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email_account_id: deleteMessage.email_account?.id,
-          uid,
-          mailbox: "INBOX",
-        }),
-      });
-
-      toast({
-        title: "Deleted",
-        description: "Email deleted successfully",
-      });
-
-      setDeleteMessage(null);
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to delete email",
-        variant: "destructive",
-      });
+      setReplyState({ open: false, body: "", loading: false });
     } finally {
-      setDeleting(false);
+      setReplyState((prev) => ({ ...prev, loading: false }));
     }
-  };
-
-  const confirmBulkDelete = async () => {
-    try {
-      setDeleting(true);
-
-      const emailsToDelete = messages.filter(m =>
-        selectedEmailIds.has(m.id)
-      );
-
-      // Optimistic UI update
-      setMessages(prev =>
-        prev.filter(m => !selectedEmailIds.has(m.id))
-      );
-
-      setSelectedEmailIds(new Set());
-
-      await Promise.all(
-        emailsToDelete.map(m => {
-          const uid = m.id.split("-").pop();
-          return fetch(backendUrl + "/api/emails/delete", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              email_account_id: m.email_account?.id,
-              uid,
-              mailbox: "INBOX",
-            }),
-          });
-        })
-      );
-
-      toast({
-        title: "Deleted",
-        description: "Selected emails deleted successfully",
-      });
-
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to delete selected emails",
-        variant: "destructive",
-      });
-    } finally {
-      setDeleting(false);
-    }
-  };
+  }, [replyState.body, sendReply, viewMessage]);
 
   return (
     <div className="space-y-6">
@@ -656,7 +403,7 @@ export default function AdminEmail() {
             className="rounded-[8px] gap-0 border-0 shadow-none hover:bg-white/80"
             onClick={() => {
               if (selectedAccount !== "all") {
-                syncAccountEmails(selectedAccount, 1, searchTerm);
+                syncEmails(selectedAccount, 1, searchTerm);
               }
             }}
           >
@@ -667,7 +414,7 @@ export default function AdminEmail() {
           <Button
             className="rounded-[8px] gap-0 border-0 shadow-none hover:bg-primary/80"
             disabled={selectedAccount === "all"}
-            onClick={() => setComposeOpen(true)}
+            onClick={() => setComposeState((prev) => ({ ...prev, open: true }))}
           >
             <Plus className="h-4 w-4 mr-2" />
             Compose
@@ -713,38 +460,15 @@ export default function AdminEmail() {
 
         {/* MESSAGES */}
         <TabsContent value="messages">
-          <div className="flex gap-2 mb-4">
-            <Select value={selectedAccount} onValueChange={setSelectedAccount}>
-              <SelectTrigger className="w-100 min-w-96 max-w-lg rounded-[8px] border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400 h-10" style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
-                <SelectValue placeholder="All Accounts" />
-              </SelectTrigger>
-              <SelectContent className="border-secondary-foreground bg-black/90 text-white">
-                <SelectItem value="all">All Accounts</SelectItem>
-                {accounts.map(acc => (
-                  <SelectItem key={acc.id} value={acc.id}>
-                    {acc.email}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Input
-              placeholder="Search..."
-              className='w-100 min-w-96 max-w-lg rounded-[8px] shadow-none mt-0 focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 h-10 border-0' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-            />
-
-            {selectedEmailIds.size > 0 && (
-              <Button
-                variant="destructive"
-                className="rounded-[8px]"
-                onClick={() => setBulkDeleteOpen(true)}
-              >
-                Delete Selected ({selectedEmailIds.size})
-              </Button>
-            )}
-          </div>
+          <EmailToolbar
+            accounts={accounts}
+            selectedAccount={selectedAccount}
+            onChangeSelectedAccount={setSelectedAccount}
+            searchTerm={searchTerm}
+            onChangeSearchTerm={setSearchTerm}
+            selectedCount={selectedEmailIds.size}
+            onOpenBulkDelete={() => setBulkDeleteOpen(true)}
+          />
 
             {loading ? (
               <div className="flex items-center justify-center min-h-[400px]">
@@ -772,165 +496,19 @@ export default function AdminEmail() {
               </div>
             ) : (
             
-            <div className="rounded-md border border-muted/20 overflow-x-auto">
-            <Table className="border-none p-0 rounded-lg bg-white/5">
-              <TableHeader>
-                <TableRow className="border-b border-muted/20 hover:bg-white/15 bg-white/15 text-white">
-                  <TableHead className="w-[40px]">
-                    <Checkbox
-                      className="rounded-[4px] mt-0.5"
-                      checked={isAllSelected}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          selectAllVisibleEmails();
-                        } else {
-                          unselectAllEmails();
-                        }
-                      }}
-                    />
-                  </TableHead>
-                  <TableHead className="text-white pl-16">From</TableHead>
-                  <TableHead className="text-white">Subject</TableHead>
-                  <TableHead className="text-white">Date</TableHead>
-                  <TableHead className="text-white w-[150px]">Actions</TableHead>
-                 
-                </TableRow>
-              </TableHeader>
-              <TableBody key={selectedAccount}>
-                {messages.map(m => {
-                  const replies = m.replies ?? [];
-                  const hasReplies = replies.length > 0;
-                  const isExpanded = expandedThreads[m.id] ?? true;
-
-                  return (
-                    <React.Fragment key={m.id}>
-                      {/* MAIN EMAIL ROW */}
-                      <TableRow
-                          className={`border-b border-muted/20 hover:bg-white/10 cursor-pointer ${
-                            !m.is_read ? "font-bold bg-white/15" : ""
-                          }`}
-                          onClick={() => {
-                            if (!selectedEmailIds.has(m.id)) {
-                              setViewMessage(m);
-                              markAsRead(m);
-                            }
-                          }}
-                        >
-                        <TableCell onClick={(e) => e.stopPropagation()}>
-
-                          <Checkbox
-                            className="rounded-[4px] mt-0.5"
-                            checked={selectedEmailIds.has(m.id)}
-                            onCheckedChange={() => toggleSelectEmail(m.id)}
-                          />
-                        </TableCell>
-                        <TableCell className="text-white">
-                          <div className="flex items-center gap-4">
-                            {hasReplies ? (
-                              <button
-                                type="button"
-                                aria-label={isExpanded ? "Collapse replies" : "Expand replies"}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  toggleThread(m.id);
-                                }}
-                                className="flex h-6 w-6 items-center justify-center rounded-full border border-muted/30 bg-transparent text-muted-foreground transition-colors hover:bg-white/10 ttttttttttttt"
-                              >
-                                {isExpanded ? (
-                                  <ChevronDown className="h-3.5 w-3.5" />
-                                ) : (
-                                  <ChevronRight className="h-3.5 w-3.5" />
-                                )}
-                              </button>
-                            ) : (
-                              <span className="h-6 w-6" />
-                            )}
-                            <span>{m.from_email}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-white">{m.subject}</TableCell>
-                        <TableCell className="text-white whitespace-nowrap">
-                          {format(new Date(m.date_received), "MMM d yyyy HH:mm")}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            {/* <Button
-                              variant="ghost"
-                              size="sm"
-                              className="bg-muted/20 hover:bg-muted/40 rounded-[8px] border-0"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setViewMessage(m);
-                                markAsRead(m);
-                              }}
-                            >
-                              <Eye className="h-4 w-4 text-white " />
-                            </Button> */}
-
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="bg-muted/20 hover:bg-muted/40 rounded-[8px] border-0"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setViewMessage(m);
-                                setReplyOpen(true);
-                                markAsRead(m);
-                              }}
-                            >
-                              <Reply className="h-4 w-4 text-white" />
-                            </Button>
-
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="bg-red-600 hover:bg-red-700 rounded-[8px] border-0"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteEmail(m);
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4 text-white" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-
-                      {/* REPLIES THREAD */}
-                      {hasReplies && isExpanded && (
-                        <TableRow className="border-b border-muted/20 bg-transparent hover:bg-white/10">
-                          <TableCell colSpan={5} className="bg-transparent pt-0 pb-4">
-                            <div className="pl-10 pr-6 pt-6">
-                              <div className="space-y-3">
-                                {replies.map((reply, idx) => (
-                                  <div key={reply.id} className="flex gap-4 border-b border-muted/20 pb-3 last:border-0 last:pb-0">
-                                    
-                                    <div className="flex-1">
-                                      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                        <Badge variant="outline" className="rounded-full px-2 py-0 text-[0.65rem] leading-5 border-muted-foreground/50">
-                                          <CornerDownRight className="h-4 w-4 mr-2 text-white" /> Reply
-                                        </Badge>
-                                        <span className="font-normal normal-case tracking-normal">
-                                          {format(new Date(reply.created_at), "MMM d yyyy HH:mm")}
-                                        </span>
-                                      </div>
-                                      <p className="mt-2 text-sm text-white">
-                                        {reply.body}
-                                      </p>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </React.Fragment>
-                  );
-                })}
-              </TableBody>
-            </Table>
-</div>
+            <EmailTable
+              tableBodyKey={selectedAccount}
+              messages={messages}
+              isAllSelected={isAllSelected}
+              isSelected={(id) => selectedEmailIds.has(id)}
+              isExpanded={(id) => expandedThreads[id] ?? true}
+              onToggleSelectAll={onToggleSelectAll}
+              onToggleSelectEmail={toggleSelectEmail}
+              onToggleThread={toggleThread}
+              onOpenMessage={openMessage}
+              onReply={openReply}
+              onDelete={handleDeleteEmail}
+            />
           )}
 
           {selectedAccount !== "all" && (
@@ -944,7 +522,7 @@ export default function AdminEmail() {
                   (pageByAccount[selectedAccount] || 1) === 1
                 }
                 onClick={() =>
-                  syncAccountEmails(
+                  syncEmails(
                     selectedAccount,
                     (pageByAccount[selectedAccount] || 1) - 1,
                     searchTerm
@@ -965,7 +543,7 @@ export default function AdminEmail() {
                   disabled={syncing}
                   className="rounded-[8px] hover:bg-white/90 border-0"
                   onClick={() =>
-                    syncAccountEmails(
+                    syncEmails(
                       selectedAccount,
                       (pageByAccount[selectedAccount] || 1) + 1,
                       searchTerm
@@ -1009,7 +587,7 @@ export default function AdminEmail() {
                       size="sm"
                       variant="ghost"
                       className="bg-muted/20 hover:bg-muted/40 rounded-[8px] border-0"
-                      onClick={() => syncAccountEmails(acc.id)}
+                      onClick={() => syncEmails(acc.id)}
                       disabled={syncing}
                     >
                       <RefreshCw className="h-4 w-4 text-white" />
@@ -1067,408 +645,79 @@ export default function AdminEmail() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={!!deleteAccount} onOpenChange={() => setDeleteAccount(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Email Account</DialogTitle>
-            <DialogDescription className="pt-4 text-black">
-              Are you sure you want to delete this email account?
-              This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              className="rounded-[8px] hover:bg-muted border-0"
-              onClick={() => setDeleteAccount(null)}
-            >
-              Cancel
-            </Button>
-
-            <Button
-              variant="destructive"
-              className="rounded-[8px]"
-              onClick={handleDeleteAccount}
-            >
-              Delete
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DeleteConfirmDialog
+        open={!!deleteAccount}
+        onOpenChange={() => setDeleteAccount(null)}
+        title="Delete Email Account"
+        description={
+          <>
+            Are you sure you want to delete this email account? This action cannot be undone.
+          </>
+        }
+        onCancel={() => setDeleteAccount(null)}
+        onConfirm={handleDeleteAccount}
+        confirmLabel="Delete"
+      />
 
       {/* VIEW MESSAGE */}
-      <Dialog open={!!viewMessage} onOpenChange={() => setViewMessage(null)}>
-        <DialogContent className="max-w-4xl p-0 gap-0">
-          <DialogHeader className="p-6">
-            <DialogTitle>{viewMessage?.subject}</DialogTitle>
-            <DialogDescription className=" text-black/80 font-inter">{viewMessage?.from_email}</DialogDescription>
-          </DialogHeader>
-          <div className="px-6 mb-4 max-h-[70vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent">
-          {viewMessage?.body_html
-            ? <div dangerouslySetInnerHTML={{ __html: viewMessage.body_html }} />
-            : <pre>{viewMessage?.body_text}</pre>}
-            </div>
-
-          {viewMessage?.attachments?.length > 0 && (
-            <div className="p-6 border-t mt-0">
-              <div className="font-semibold mb-0">Attachments</div>
-
-              <div className="space-y-2">
-                {viewMessage.attachments.map(att => (
-                  <div
-                    key={att.part}
-                    className="flex items-center justify-between border-0 rounded p-0"
-                  >
-                    <div className="text-sm pr-4">
-                      {att.filename}
-                    </div>
-                      <a
-                        href={`${backendUrl}/api/emails/attachment?email_account_id=${viewMessage.email_account?.id}&uid=${viewMessage.id.split("-").pop()}&part=${att.part}&filename=${encodeURIComponent(att.filename)}&mimeType=${encodeURIComponent(att.mimeType)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="border-0 text-sm  bg-primary text-primary-foreground hover:bg-primary-600 shadow-sm hover:shadow-md h-10 px-5 py-2 rounded-[8px] gap-0 flex items-center justify-center" 
-                      >
-                        {att.mimeType === "application/pdf" ? "View PDF" : "Download Attachments"}
-                      </a>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <ViewEmailDialog
+        open={!!viewMessage}
+        onOpenChange={() => setViewMessage(null)}
+        message={viewMessage}
+        backendUrl={backendUrl}
+      />
       
       {/* REPLY DIALOG */}
-      <Dialog open={replyOpen} onOpenChange={setReplyOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Reply</DialogTitle>
-            <DialogDescription className="pt-2 text-gray-600 font-inter">
-              To: {viewMessage?.from_email}
-            </DialogDescription>
-          </DialogHeader>
- 
-          <Textarea
-            className="rounded-[8px] shadow-none mt-1 boder-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none resize-none" 
-            style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
-            placeholder="Write your reply..."
-             rows={6}
-            value={replyBody}
-            onChange={e => setReplyBody(e.target.value)}
-          />
+      <ReplyDialog
+        open={replyState.open}
+        onOpenChange={(open) => setReplyState((prev) => ({ ...prev, open }))}
+        toEmail={viewMessage?.from_email}
+        replyBody={replyState.body}
+        onChangeReplyBody={(value) => setReplyState((prev) => ({ ...prev, body: value }))}
+        replyLoading={replyState.loading}
+        onCancel={() => setReplyState((prev) => ({ ...prev, open: false }))}
+        onSend={handleSendReply}
+      />
 
-          <DialogFooter>
-            <Button
-              variant="outline"
-              className="rounded-[8px] hover:bg-muted/20 border-0"
-              onClick={() => setReplyOpen(false)}
-            >
-              Cancel
-            </Button>
-
-            <Button
-            className="rounded-[8px] border-0 hover:bg-primary/80 bg-primary"
-              disabled={replyLoading}
-              onClick={async () => {
-                if (!viewMessage) return;
-
-                try {
-                  setReplyLoading(true);
-                  const messageUid = viewMessage.id.split("-").pop();
-                  await fetch(backendUrl + "/api/emails/reply", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      email_account_id: viewMessage.email_account?.id,
-                      message_uid: messageUid,            // ✅ REQUIRED
-                      to_email: viewMessage.from_email,   // ✅ REQUIRED (correct key)
-                      subject: viewMessage.subject,
-                      body: replyBody,
-                    }),
-                  });
-
-                  toast({
-                    title: "Sent",
-                    description: "Reply sent successfully",
-                  });
-
-                  const newReply = {
-                    id: `temp-${Date.now()}`,          // temporary ID
-                    body: replyBody,
-                    created_at: new Date().toISOString(),
-                  };
-
-                  setMessages(prev =>
-                    prev.map(m =>
-                      m.id === viewMessage.id
-                        ? {
-                            ...m,
-                            replies: [...(m.replies || []), newReply],
-                          }
-                        : m
-                    )
-                  );
-
-                  setReplyBody("");
-                  setReplyOpen(false);
-
-                } catch {
-                  toast({
-                    title: "Error",
-                    description: "Failed to send reply",
-                    variant: "destructive",
-                  });
-                } finally {
-                  setReplyLoading(false);
-                }
-              }}
-            >
-              {replyLoading ? "Sending..." : "Send Reply"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
+      <DeleteConfirmDialog
         open={!!deleteMessage}
         onOpenChange={() => setDeleteMessage(null)}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Email</DialogTitle>
-            <DialogDescription className="pt-4 text-black">
-              Are you sure you want to delete this email?
-              This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
+        title="Delete Email"
+        description={<>Are you sure you want to delete this email? This action cannot be undone.</>}
+        deleting={deleting}
+        onCancel={() => setDeleteMessage(null)}
+        onConfirm={confirmDeleteEmail}
+        confirmLabel="Delete"
+      />
 
-          <DialogFooter>
-            <Button
-              variant="outline"
-              className="rounded-[8px] hover:bg-muted/10 border-0"
-              onClick={() => setDeleteMessage(null)}
-              disabled={deleting}
-            >
-              Cancel
-            </Button>
+      <BulkDeleteDialog
+        open={bulkDeleteOpen}
+        onOpenChange={setBulkDeleteOpen}
+        count={selectedEmailIds.size}
+        deleting={deleting}
+        onConfirm={confirmBulkDelete}
+      />
 
-            <Button
-              variant="destructive"
-              className="rounded-[8px]"
-              disabled={deleting}
-              onClick={confirmDeleteEmail}
-            >
-              {deleting ? "Deleting..." : "Delete"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-
-      {/* ================= BULK DELETE DIALOG ================= */}
-      <Dialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Emails</DialogTitle>
-            <DialogDescription className="pt-4 text-black">
-              Are you sure you want to delete{" "}
-              <strong>{selectedEmailIds.size}</strong> selected emails?
-              This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              className="rounded-[8px]"
-              onClick={() => setBulkDeleteOpen(false)}
-              disabled={deleting}
-            >
-              Cancel
-            </Button>
-
-            <Button
-              variant="destructive"
-              className="rounded-[8px]"
-              disabled={deleting}
-              onClick={async () => {
-                await confirmBulkDelete();
-                setBulkDeleteOpen(false);
-              }}
-            >
-              {deleting ? "Deleting..." : "Delete"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* ================= COMPOSE EMAIL ================= */}
-      <Dialog
-        open={composeOpen}
+      <ComposeEmailDialog
+        open={composeState.open}
         onOpenChange={(open) => {
-          setComposeOpen(open);
-          if (!open) {
-            resetComposeForm(); // ✅ clears composeForm + attachments
-          }
+          setComposeState((prev) => ({ ...prev, open }));
+          if (!open) resetComposeForm();
         }}
-      >
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Compose Email</DialogTitle>
-            <DialogDescription className="pt-1 text-gray-600">
-              Send a new email
-            </DialogDescription>
-          </DialogHeader>
+        composeForm={composeState.form}
+        onChangeComposeForm={(next) => setComposeState((prev) => ({ ...prev, form: next }))}
+        attachments={composeState.attachments}
+        fileInputRef={fileInputRef}
+        onAttachmentChange={handleAttachmentChange}
+        onRemoveAttachment={removeAttachment}
+        composeLoading={composeState.loading}
+        onCancel={() => {
+          resetComposeForm();
+          setComposeState((prev) => ({ ...prev, open: false }));
+        }}
+        onSend={handleSendComposeEmail}
+      />
 
-          <div className="space-y-4">
-            <div>
-              <Label>To</Label>
-              <Input
-                type="email"
-                className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
-                placeholder="recipient@example.com"
-                value={composeForm.to}
-                onChange={(e) =>
-                  setComposeForm({ ...composeForm, to: e.target.value })
-                }
-              />
-            </div>
-
-            <div>
-              <Label>Subject</Label>
-              <Input
-                placeholder="Subject"
-                className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
-                value={composeForm.subject}
-                onChange={(e) =>
-                  setComposeForm({ ...composeForm, subject: e.target.value })
-                }
-              />
-            </div>
-
-            <div>
-              <Label>Message</Label>
-              <Textarea
-                rows={6}
-                className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
-                placeholder="Write your message..."
-                value={composeForm.body}
-                onChange={(e) =>
-                  setComposeForm({ ...composeForm, body: e.target.value })
-                }
-              />
-            </div>
-
-            <div>
-              <Label>Attachments</Label>
-              <Input
-                ref={fileInputRef}
-                type="file"
-                className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
-                multiple
-                onChange={handleAttachmentChange}
-              />
-
-              {attachments.length > 0 && (
-                <div className="mt-2 space-y-1">
-                  {attachments.map((file, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center justify-between text-sm text-muted-foreground"
-                    >
-                      <span>{file.name}</span>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => removeAttachment(i)}
-                      >
-                        Remove
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-          </div>
-
-          <DialogFooter className="pt-2">
-            <Button
-            variant="outline"
-            className="rounded-[8px] border-0 hover:bg-muted/10"
-            onClick={() => {
-              resetComposeForm();
-              setComposeOpen(false);
-            }}
-          >
-            Cancel
-          </Button>
-
-            <Button
-              className="rounded-[8px] border-0 hover:bg-primary/80"
-              disabled={composeLoading}
-              onClick={handleSendComposeEmail}
-            >
-              {composeLoading ? "Sending..." : "Send Email"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-    </div>
-  );
-}
-
-/* ================= ACCOUNT FORM ================= */
-
-function AccountForm({ form, setForm, isEdit = false }: any) {
-  return (
-    <div className="grid grid-cols-2 gap-4 pt-4">
-      <div>
-        <Label>Email</Label>
-        <Input required type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties } />
-      </div>
-
-      <div>
-        <Label>Password {isEdit && "(leave blank to keep)"}</Label>
-        <Input required type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties } />
-      </div>
-
-      <div>
-        <Label>IMAP Host</Label>
-        <Input required value={form.imap_host} onChange={e => setForm({ ...form, imap_host: e.target.value })} className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties } />
-      </div>
-
-      <div>
-        <Label>IMAP Port</Label>
-        <Input required type="number" value={form.imap_port} onChange={e => setForm({ ...form, imap_port: Number(e.target.value) })} className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties } />
-      </div>
-
-      <div>
-        <Label>SMTP Host</Label>
-        <Input required value={form.smtp_host} onChange={e => setForm({ ...form, smtp_host: e.target.value })} 
-        className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties } />
-      </div>
-
-      <div>
-        <Label>SMTP Port</Label>
-        <Input required type="number" value={form.smtp_port} onChange={e => setForm({ ...form, smtp_port: Number(e.target.value) })}  className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none' style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties } />
-      </div>
-
-      <div>
-        <Label>Provider</Label>
-        <Select required value={form.provider} onValueChange={v => setForm({ ...form, provider: v })}>
-          <SelectTrigger className="rounded-[8px] border-muted-foreground/60 hover:border-muted-foreground shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400 h-[40px]" style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
-            <SelectValue />
-            </SelectTrigger>
-          <SelectContent className="border-secondary-foreground bg-black/90 text-white">
-            <SelectItem value="custom">Custom</SelectItem>
-            <SelectItem value="gmail">Gmail</SelectItem> 
-          </SelectContent>
-        </Select>
-      </div>
     </div>
   );
 }
