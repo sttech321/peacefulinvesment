@@ -778,7 +778,7 @@ export default function AdminEmail() {
                 <TableRow className="border-b border-muted/20 hover:bg-white/15 bg-white/15 text-white">
                   <TableHead className="w-[40px]">
                     <Checkbox
-                      className="rounded-[4px]"
+                      className="rounded-[4px] mt-0.5"
                       checked={isAllSelected}
                       onCheckedChange={(checked) => {
                         if (checked) {
@@ -789,10 +789,11 @@ export default function AdminEmail() {
                       }}
                     />
                   </TableHead>
-                  <TableHead className="text-white">From</TableHead>
+                  <TableHead className="text-white pl-16">From</TableHead>
                   <TableHead className="text-white">Subject</TableHead>
                   <TableHead className="text-white">Date</TableHead>
-                  <TableHead />
+                  <TableHead className="text-white w-[150px]">Actions</TableHead>
+                 
                 </TableRow>
               </TableHeader>
               <TableBody key={selectedAccount}>
@@ -818,19 +819,22 @@ export default function AdminEmail() {
                         <TableCell onClick={(e) => e.stopPropagation()}>
 
                           <Checkbox
-                            className="rounded-[4px]"
+                            className="rounded-[4px] mt-0.5"
                             checked={selectedEmailIds.has(m.id)}
                             onCheckedChange={() => toggleSelectEmail(m.id)}
                           />
                         </TableCell>
                         <TableCell className="text-white">
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-4">
                             {hasReplies ? (
                               <button
                                 type="button"
                                 aria-label={isExpanded ? "Collapse replies" : "Expand replies"}
-                                onClick={() => toggleThread(m.id)}
-                                className="flex h-6 w-6 items-center justify-center rounded-full border border-muted/30 bg-transparent text-muted-foreground transition-colors hover:bg-white/10"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleThread(m.id);
+                                }}
+                                className="flex h-6 w-6 items-center justify-center rounded-full border border-muted/30 bg-transparent text-muted-foreground transition-colors hover:bg-white/10 ttttttttttttt"
                               >
                                 {isExpanded ? (
                                   <ChevronDown className="h-3.5 w-3.5" />
@@ -895,7 +899,7 @@ export default function AdminEmail() {
                       {/* REPLIES THREAD */}
                       {hasReplies && isExpanded && (
                         <TableRow className="border-b border-muted/20 bg-transparent hover:bg-white/10">
-                          <TableCell colSpan={4} className="bg-transparent pt-0 pb-4">
+                          <TableCell colSpan={5} className="bg-transparent pt-0 pb-4">
                             <div className="pl-10 pr-6 pt-6">
                               <div className="space-y-3">
                                 {replies.map((reply, idx) => (
