@@ -1,10 +1,9 @@
-import { useState, useMemo } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Calendar, Clock, Eye, Heart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useBlog, BlogPost, BlogCategory } from "@/hooks/useBlog";
 import Footer from "@/components/Footer";
 
@@ -15,6 +14,8 @@ import Left03 from "@/assets/left-03.jpg";
 import Right01 from "@/assets/right-01.jpg";
 import Right02 from "@/assets/right-02.jpg";
 import Right03 from "@/assets/right-03.jpg";
+
+const POSTS_PER_BATCH = 9;
 
 /**
  * Blog.tsx — Parent badges with single expandable children row
@@ -34,6 +35,7 @@ const Blog = () => {
 
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [openParentId, setOpenParentId] = useState<string | null>(null);
+  const [visibleCount, setVisibleCount] = useState<number>(POSTS_PER_BATCH);
   // Build maps and parents list
   const { parents, childrenMap, idMap, slugMap } = useMemo(() => {
     const idMap = new Map<string, BlogCategory>();
@@ -73,29 +75,40 @@ const Blog = () => {
     return "slug";
   }, [posts]);
 
-  // Collect all descendants (ids & slugs) for a root id (recursive)
-  const collectDescendants = (rootId: string) => {
-    const ids = new Set<string>();
-    const slugs = new Set<string>();
-    const stack = [rootId];
+  // Cache descendant lookups per root category id (invalidates when category tree changes)
+  const getDescendants = useMemo(() => {
+    const cache = new Map<string, { ids: Set<string>; slugs: Set<string> }>();
 
-    while (stack.length) {
-      const id = stack.pop()!;
-      if (ids.has(id)) continue;
-      ids.add(id);
-      const cat = idMap.get(id);
-      if (cat) {
-        slugs.add(cat.slug);
-        // Also add slug variations (lowercase, trimmed)
-        slugs.add(cat.slug.toLowerCase().trim());
+    return (rootId: string) => {
+      const cached = cache.get(rootId);
+      if (cached) return cached;
+
+      const ids = new Set<string>();
+      const slugs = new Set<string>();
+      const stack = [rootId];
+
+      while (stack.length) {
+        const id = stack.pop()!;
+        if (ids.has(id)) continue;
+        ids.add(id);
+        const cat = idMap.get(id);
+        if (cat?.slug) {
+          const normalized = cat.slug.toLowerCase().trim();
+          slugs.add(cat.slug);
+          slugs.add(normalized);
+        }
+
+        const children = childrenMap.get(id);
+        if (children?.length) {
+          for (const child of children) stack.push(child.id);
+        }
       }
 
-      const children = childrenMap.get(id) ?? [];
-      children.forEach((c) => stack.push(c.id));
-    }
-
-    return { ids, slugs };
-  };
+      const result = { ids, slugs };
+      cache.set(rootId, result);
+      return result;
+    };
+  }, [childrenMap, idMap]);
 
   // Robust filteredPosts — includes selected category + all descendants
   const filteredPosts = useMemo(() => {
@@ -140,8 +153,7 @@ const Blog = () => {
     }
 
     // Collect all descendant IDs and slugs (includes the selected category itself)
-    const { ids, slugs } = collectDescendants(selectedId);
-    ids.add(selectedId);
+    const { ids, slugs } = getDescendants(selectedId);
     
     // Ensure the selected category's slug is in the set
     if (selectedSlug) {
@@ -165,50 +177,32 @@ const Blog = () => {
     }
     
     // Posts store slugs - match against collected slugs (case-insensitive)
-    // Convert slugs set to array for easier comparison
-    const slugArray = Array.from(slugs).map(s => s.toLowerCase().trim());
-    
-    // Debug logging (remove in production if needed)
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[Blog Filter] Selected category:', selectedCategory);
-      console.log('[Blog Filter] Selected ID:', selectedId);
-      console.log('[Blog Filter] Selected Slug:', selectedSlug);
-      console.log('[Blog Filter] Matching slugs:', slugArray);
-      console.log('[Blog Filter] Post categories:', posts.map(p => p.category));
-      console.log('[Blog Filter] Post category type:', postCategoryType);
-    }
-    
-    const filtered = posts.filter((p) => {
+    const normalizedSlugSet = new Set(Array.from(slugs, (s) => s.toLowerCase().trim()));
+
+    return posts.filter((p) => {
       if (!p.category) return false;
-      const postCategory = typeof p.category === 'string' ? p.category.toLowerCase().trim() : '';
-      const matches = slugArray.includes(postCategory);
-      
-      if (process.env.NODE_ENV === 'development' && selectedCategory !== 'all') {
-        console.log(`[Blog Filter] Post "${p.title}": category="${p.category}" (normalized: "${postCategory}") matches=${matches}`);
-      }
-      
-      return matches;
+      const postCategory = typeof p.category === "string" ? p.category.toLowerCase().trim() : "";
+      return normalizedSlugSet.has(postCategory);
     });
-    
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[Blog Filter] Filtered posts count:', filtered.length);
-    }
-    
-    return filtered;
-  }, [posts, selectedCategory, idMap, slugMap, childrenMap, postCategoryType]);
+  }, [posts, selectedCategory, idMap, slugMap, postCategoryType, getDescendants]);
 
   // Toggle single open parent (only one open at a time)
-  const toggleOpenParent = (parentId: string) => {
-    setOpenParentId((prev) => (prev === parentId ? null : prev === parentId ? null : parentId));
-  };
+  const toggleOpenParent = useCallback((parentId: string) => {
+    setOpenParentId((prev) => (prev === parentId ? null : parentId));
+  }, []);
 
-  const showAll = () => {
-    setSelectedCategory("all");
-    setOpenParentId(null);
-  };
+  const showAll = useCallback(() => {
+    setSelectedCategory((prev) => (prev === "all" ? prev : "all"));
+    setOpenParentId((prev) => (prev === null ? prev : null));
+  }, []);
+
+  // Reset batch rendering when the filter changes (keeps switching snappy)
+  useEffect(() => {
+    setVisibleCount(POSTS_PER_BATCH);
+  }, [selectedCategory]);
 
   // Render children flattened in order with indentation for multi-level
-  const buildFlattenedChildren = (rootId: string) => {
+  const buildFlattenedChildren = useCallback((rootId: string) => {
     const result: { node: BlogCategory; depth: number }[] = [];
     const visit = (id: string, depth: number) => {
       const children = childrenMap.get(id) ?? [];
@@ -219,13 +213,26 @@ const Blog = () => {
     };
     visit(rootId, 1);
     return result;
-  };
+  }, [childrenMap]);
 
   // compute children to show when a parent is open
   const openChildren = useMemo(() => {
     if (!openParentId) return [];
     return buildFlattenedChildren(openParentId);
-  }, [openParentId, childrenMap]);
+  }, [openParentId, buildFlattenedChildren]);
+
+  const categoryDisplayMap = useMemo(() => {
+    const map = new Map<string, { name: string; color: string }>();
+    for (const cat of categories) {
+      const display = { name: cat.name, color: cat.color };
+      map.set(cat.id, display);
+      map.set(cat.slug, display);
+      map.set(cat.slug.toLowerCase().trim(), display);
+    }
+    return map;
+  }, [categories]);
+
+  const visiblePosts = useMemo(() => filteredPosts.slice(0, visibleCount), [filteredPosts, visibleCount]);
 
   // Keep loader visible until we have either posts or categories to render.
   if (initializing || loading || (!posts.length && !categories.length)) {
@@ -335,7 +342,7 @@ const Blog = () => {
                         color: isActive ? "white" : parent.color,
                       }}
                       onClick={() => {
-                        setSelectedCategory(parent.slug);
+                        setSelectedCategory((prev) => (prev === parent.slug ? prev : parent.slug));
                         toggleOpenParent(parent.id);
                       }}
                       title={parent.description ?? parent.name}
@@ -376,7 +383,7 @@ const Blog = () => {
                           color: isActive ? "white" : node.color,
                         }}
                         onClick={() => {
-                          setSelectedCategory(node.slug);
+                          setSelectedCategory((prev) => (prev === node.slug ? prev : node.slug));
                         }}
                       >
                         {node.name}
@@ -389,10 +396,22 @@ const Blog = () => {
 
             {/* Blog Posts Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredPosts.map((post) => (
-                <BlogPostCard key={post.id} post={post} categories={categories} />
+              {visiblePosts.map((post) => (
+                <BlogPostCard key={post.id} post={post} categoryDisplayMap={categoryDisplayMap} postCategoryType={postCategoryType} />
               ))}
             </div>
+
+            {visibleCount < filteredPosts.length && (
+              <div className="flex justify-center mt-10">
+                <Button
+                  variant="outline"
+                  className="border-white text-white bg-transparent hover:bg-white/10"
+                  onClick={() => setVisibleCount((c) => Math.min(c + POSTS_PER_BATCH, filteredPosts.length))}
+                >
+                  Load More
+                </Button>
+              </div>
+            )}
 
             {!loading && (posts.length > 0 || categories.length > 0) && filteredPosts.length === 0 && (
               <div className="text-center py-16">
@@ -421,64 +440,92 @@ const Blog = () => {
   );
 };
 
-const BlogPostCard = ({ post, categories }: { post: BlogPost; categories: BlogCategory[] }) => {
-  const categoryData = categories.find((cat) => cat.slug === post.category) || {
-    name: "General",
-    color: "#6B7280",
-  };
+const BlogPostCard = memo(
+  ({
+    post,
+    categoryDisplayMap,
+    postCategoryType,
+  }: {
+    post: BlogPost;
+    categoryDisplayMap: Map<string, { name: string; color: string }>;
+    postCategoryType: "id" | "slug";
+  }) => {
+    const rawCategory = typeof post.category === "string" ? post.category : "";
+    const normalizedCategory = rawCategory.toLowerCase().trim();
+    const categoryData =
+      categoryDisplayMap.get(postCategoryType === "id" ? rawCategory : normalizedCategory) ??
+      categoryDisplayMap.get(rawCategory) ??
+      categoryDisplayMap.get(normalizedCategory) ?? {
+      name: "General",
+      color: "#6B7280",
+    };
 
-  return (
-    <Card className="group hover:scale-105 hover:glow-primary transition-all duration-300 cursor-pointer border-0 shadow-none bg-gradient-pink-to-yellow rounded-sm p-[2px]">
-      <div className="bg-black rounded-sm p-0 h-full">
-        <Link to={`/blog/${post.slug}`}>
-          {post.featured_image && (
-            <img src={post.featured_image} alt={post.title} className="w-full h-40 object-cover rounded-t-sm mb-2" />
-          )}
-
-          <CardHeader className="p-4 pb-0 space-y-0">
-            <div className="flex items-center gap-2 mb-3">
-              <Badge style={{ backgroundColor: categoryData.color, color: "white" }} className="text-xs border-0">
-                {categoryData.name}
-              </Badge>
-              <div className="flex items-center gap-1 text-xs text-white">
-                <Eye className="w-3 h-3" />
-                {post.view_count}
-              </div>
-            </div>
-
-            <h3 className="text-lg font-inter font-semibold text-white line-clamp-2 pb-2">{post.title}</h3>
-
-            {post.excerpt && (
-              <p className="text-white font-open-sans font-normal text-sm line-clamp-3 mt-2" dangerouslySetInnerHTML={{ __html: post.excerpt }}></p>
+    return (
+      <Card className="group hover:scale-105 hover:glow-primary transition-all duration-300 cursor-pointer border-0 shadow-none bg-gradient-pink-to-yellow rounded-sm p-[2px]">
+        <div className="bg-black rounded-sm p-0 h-full">
+          <Link to={`/blog/${post.slug}`}>
+            {post.featured_image && (
+              <img
+                src={post.featured_image}
+                alt={post.title}
+                loading="lazy"
+                decoding="async"
+                className="w-full h-40 object-cover rounded-t-sm mb-2"
+              />
             )}
-          </CardHeader>
 
-          <CardContent className="p-4 pt-0">
-            <div className="flex items-center justify-between text-xs text-muted-foreground pt-4">
-              <div className="flex items-center gap-1">
-                <Calendar className="w-3 h-3" />
-                {new Date(post.published_at || post.created_at).toLocaleDateString()}
+            <CardHeader className="p-4 pb-0 space-y-0">
+              <div className="flex items-center gap-2 mb-3">
+                <Badge style={{ backgroundColor: categoryData.color, color: "white" }} className="text-xs border-0">
+                  {categoryData.name}
+                </Badge>
+                <div className="flex items-center gap-1 text-xs text-white">
+                  <Eye className="w-3 h-3" />
+                  {post.view_count}
+                </div>
               </div>
-              <div className="flex items-center gap-1">
-                <Clock className="w-3 h-3" />
-                {Math.ceil(post.content.length / 200)} min read
-              </div>
-            </div>
 
-            {post.tags.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-4">
-                {post.tags.slice(0, 3).map((tag) => (
-                  <Badge key={tag} variant="outline" className="text-xs text-white bg-transparent">
-                    {tag}
-                  </Badge>
-                ))}
+              <h3 className="text-lg font-inter font-semibold text-white line-clamp-2 pb-2">{post.title}</h3>
+
+              {post.excerpt && (
+                <p
+                  className="text-white font-open-sans font-normal text-sm line-clamp-3 mt-2"
+                  dangerouslySetInnerHTML={{ __html: post.excerpt }}
+                ></p>
+              )}
+            </CardHeader>
+
+            <CardContent className="p-4 pt-0">
+              <div className="flex items-center justify-between text-xs text-muted-foreground pt-4">
+                <div className="flex items-center gap-1">
+                  <Calendar className="w-3 h-3" />
+                  {new Date(post.published_at || post.created_at).toLocaleDateString()}
+                </div>
+                <div className="flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  {Math.ceil(post.content.length / 200)} min read
+                </div>
               </div>
-            )}
-          </CardContent>
-        </Link>
-      </div>
-    </Card>
-  );
-};
+
+              {post.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-4">
+                  {post.tags.slice(0, 3).map((tag) => (
+                    <Badge key={tag} variant="outline" className="text-xs text-white bg-transparent">
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Link>
+        </div>
+      </Card>
+    );
+  },
+  (prev, next) =>
+    prev.post === next.post &&
+    prev.postCategoryType === next.postCategoryType &&
+    prev.categoryDisplayMap === next.categoryDisplayMap
+);
 
 export default Blog;

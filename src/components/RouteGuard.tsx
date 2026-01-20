@@ -30,8 +30,8 @@ const RouteGuard = ({ children }: RouteGuardProps) => {
 
     // From here: user is authenticated
 
-    // 2️⃣ Authenticated but on /auth → send home
-    if (path === "/auth") {
+    // 2️⃣ Authenticated but on auth screens → send home
+    if (path === "/auth" || path === "/login") {
       navigate("/");
       return;
     }

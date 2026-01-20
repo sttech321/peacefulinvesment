@@ -25,6 +25,7 @@ const ProfileCompletionGuard = ({ children }: ProfileCompletionGuardProps) => {
     "/create-account",
     "/overseas-company",
     "/auth",
+    "/login",
     "/",
     "/blog",
     "/contact",
@@ -34,7 +35,7 @@ const ProfileCompletionGuard = ({ children }: ProfileCompletionGuardProps) => {
 
   // Check if current path is allowed - bypass ALL checks including loading
   const isAllowedPath = allowedPaths.some(path => 
-    location.pathname === path || location.pathname.startsWith("/auth")
+    location.pathname === path || location.pathname.startsWith("/auth") || location.pathname.startsWith("/login")
   );
 
   // Refetch profile and overseas company requests when navigating to ensure we have latest data

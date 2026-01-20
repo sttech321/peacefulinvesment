@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
+import { useAutoLogout } from "@/hooks/useAutoLogout";
 import { useReferralProcessor } from "@/hooks/useReferralProcessor";
 import Navbar from "@/components/Navbar";
 import RouteGuard from "@/components/RouteGuard";
@@ -58,6 +59,7 @@ const queryClient = new QueryClient();
 
 function AppContent() {
   useReferralProcessor(); // Process any pending referrals
+  useAutoLogout();
 
   return (
     <RouteGuard>
@@ -71,6 +73,7 @@ function AppContent() {
                   <Route path="/blog" element={<Blog />} />
                   <Route path="/blog/:slug" element={<BlogPost />} />
                   <Route path="/auth" element={<Auth />} />
+                  <Route path="/login" element={<Auth />} />
                   <Route path="/create-account" element={<CreateAccount />} />
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/verification" element={<VerificationCenter />} />

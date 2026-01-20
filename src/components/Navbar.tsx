@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
@@ -31,6 +31,30 @@ interface LinkItem {
   to: string;
   order?: number;
 }
+
+type NavLink = {
+  name: string;
+  href: string;
+};
+
+const DEFAULT_NAV_LINKS_AUTH: NavLink[] = [
+  { name: 'Home', href: '/' },
+  { name: 'Dashboard', href: '/dashboard' },
+  { name: 'Accounts', href: '/meta-trader-accounts' },
+  { name: 'Referrals', href: '/referrals' },
+  { name: 'Catholic', href: '/blog' },
+  { name: 'Contact', href: '/contact' },
+  { name: 'Deposit & Withdrawal', href: '/requests' },
+];
+
+const DEFAULT_NAV_LINKS_GUEST: NavLink[] = [
+  { name: 'Home', href: '/' },
+  { name: 'Downloads', href: '/downloads' },
+  { name: 'Catholic', href: '/blog' },
+  { name: 'Contact', href: '/contact' },
+  { name: 'About', href: '/about' },
+  { name: 'Features', href: '/#features' },
+];
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -76,31 +100,21 @@ const Navbar = () => {
     navigate('/');
   };
 
-  // Simplified main navigation for logged-in users
-  // Use configured links if available, otherwise use defaults
-  const defaultNavLinks = user
-    ? [
-        { name: 'Home', href: '/' },
-        { name: 'Dashboard', href: '/dashboard' },
-        { name: 'Accounts', href: '/meta-trader-accounts' },
-        { name: 'Referrals', href: '/referrals' },
-        { name: 'Catholic', href: '/blog' },
-        { name: 'Contact', href: '/contact' },
-        { name: 'Deposit & Withdrawal', href: '/requests' },
-      ]
-    : [
-        { name: 'Home', href: '/' },
-        { name: 'Downloads', href: '/downloads' },
-        { name: 'Catholic', href: '/blog' },
-        { name: 'Contact', href: '/contact' },
-        { name: 'About', href: '/about' },
-        { name: 'Features', href: '/#features' },
-      ];
+  const isAuthenticated = Boolean(user);
 
-  // Convert headerLinks to nav format, or use defaults
-  const mainNavLinks = (headerLinks.length > 0 && user
-    ? headerLinks.map(link => ({ name: link.label, href: link.to }))
-    : defaultNavLinks);
+  // Prefer configured header links for authenticated users; otherwise use defaults.
+  const mainNavLinks: NavLink[] = useMemo(() => {
+    if (isAuthenticated && headerLinks.length > 0) {
+      return headerLinks
+        .map((link) => ({
+          name: link.label.trim(),
+          href: link.to.trim(),
+        }))
+        .filter((l) => l.name.length > 0 && l.href.length > 0);
+    }
+
+    return isAuthenticated ? DEFAULT_NAV_LINKS_AUTH : DEFAULT_NAV_LINKS_GUEST;
+  }, [headerLinks, isAuthenticated]);
 
   // Services dropdown for logged-in users
   // Show "Overseas Company" only for USA users who have completed their profile
