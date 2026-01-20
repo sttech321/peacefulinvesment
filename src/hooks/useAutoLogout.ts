@@ -207,22 +207,26 @@ export function useAutoLogout(options: UseAutoLogoutOptions = {}) {
     // Initialize timer immediately when the user is authenticated.
     startOrResetTimer();
 
-    const events: Array<keyof WindowEventMap> = [
+    // Use capture-mode listeners on document so activity is detected reliably
+    // across scrollable containers, inputs, and touch/pointer devices.
+    const events: Array<keyof DocumentEventMap> = [
+      "pointerdown",
+      "pointermove",
+      "touchstart",
+      "touchmove",
+      "mousedown",
       "mousemove",
       "keydown",
       "click",
+      "wheel",
       "scroll",
     ];
 
-    const listenerOptions: AddEventListenerOptions = { passive: true };
-    events.forEach((evt) =>
-      window.addEventListener(evt, onActivity, listenerOptions)
-    );
+    const listenerOptions: AddEventListenerOptions = { passive: true, capture: true };
+    events.forEach((evt) => document.addEventListener(evt, onActivity, listenerOptions));
 
     return () => {
-      events.forEach((evt) =>
-        window.removeEventListener(evt, onActivity, listenerOptions)
-      );
+      events.forEach((evt) => document.removeEventListener(evt, onActivity, listenerOptions));
       stopTimer();
       stopCountdown();
       deadlineMsRef.current = null;
