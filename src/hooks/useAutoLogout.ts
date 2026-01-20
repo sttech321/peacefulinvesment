@@ -20,7 +20,7 @@ type UseAutoLogoutOptions = {
   debug?: boolean;
 };
 
-const DEFAULT_INACTIVITY_MINUTES = 1;
+const DEFAULT_INACTIVITY_MINUTES = 15;
 const ACTIVITY_THROTTLE_MS = 250;
 
 function parseInactivityMinutes(raw: unknown): number | null {
@@ -138,7 +138,7 @@ export function useAutoLogout(options: UseAutoLogoutOptions = {}) {
       }
 
       const remainingSeconds = Math.ceil(remainingMs / 1000);
-      //console.info(`[AutoLogout] No activity. Auto-logout in ${remainingSeconds}s`);
+      console.info(`[AutoLogout] No activity. Auto-logout in ${remainingSeconds}s`);
     }, 1000);
   }, [debug, stopCountdown]);
 

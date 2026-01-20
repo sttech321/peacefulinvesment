@@ -25,6 +25,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useBlog, BlogPost, BlogCategory, BlogMedia } from "@/hooks/useBlog";
 import { useUserRole } from "@/hooks/useUserRole";
+import { supabase } from "@/integrations/supabase/client";
 
 const AdminBlog = () => {
   const navigate = useNavigate();
@@ -67,6 +68,16 @@ const AdminBlog = () => {
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [pendingMediaFiles, setPendingMediaFiles] = useState<File[]>([]);
   const [featuredImageError, setFeaturedImageError] = useState<string>("");
+  const [featuredPreviewObjectUrl, setFeaturedPreviewObjectUrl] = useState<string | null>(null);
+
+  // Cleanup object URL previews (preview only; never persisted)
+  useEffect(() => {
+    return () => {
+      if (featuredPreviewObjectUrl) {
+        URL.revokeObjectURL(featuredPreviewObjectUrl);
+      }
+    };
+  }, [featuredPreviewObjectUrl]);
 
   // build hierarchical options from flat categories (parent_id)
   const categoryOptions = useMemo(() => {
@@ -156,15 +167,31 @@ const AdminBlog = () => {
     setPostMedia([]);
     setPendingMediaFiles([]);
     setFeaturedImageError("");
+    setFeaturedPreviewObjectUrl(null);
   };
 
-  const fileToBase64 = (file: File): Promise<string> =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
+  const sanitizeFilename = (filename: string) => filename.replace(/[^a-zA-Z0-9._-]/g, "_");
+
+  const tryGetStoragePathFromPublicUrl = (publicUrl: string) => {
+    // Expected shape: .../storage/v1/object/public/{bucket}/{path}
+    const marker = "/storage/v1/object/public/blog-media/";
+    const idx = publicUrl.indexOf(marker);
+    if (idx === -1) return null;
+    return publicUrl.slice(idx + marker.length);
+  };
+
+  const uploadFeaturedImageToStorage = async (postId: string, file: File) => {
+    const safeName = sanitizeFilename(file.name);
+    const filePath = `blog/featured/${postId}/${safeName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("blog-media")
+      .upload(filePath, file, { upsert: true, contentType: file.type });
+    if (uploadError) throw uploadError;
+
+    const { data: urlData } = supabase.storage.from("blog-media").getPublicUrl(filePath);
+    return { publicUrl: urlData.publicUrl, filePath };
+  };
 
   const generateSlug = (title: string) =>
     title
@@ -177,12 +204,8 @@ const AdminBlog = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    let base64Image: string | null = null;
-    if (formData.featured_image instanceof File) {
-      base64Image = await fileToBase64(formData.featured_image);
-    }
-
     const { previewUrl, featured_image, ...cleanForm } = formData;
+    const featuredFile = featured_image instanceof File ? (featured_image as File) : null;
     const basePostData = {
       ...cleanForm,
       tags: cleanForm.tags
@@ -192,25 +215,65 @@ const AdminBlog = () => {
       published_at: cleanForm.status === "published" ? new Date().toISOString() : null,
     };
 
-    const payload = editingPost
-      ? { ...basePostData, ...(base64Image !== null ? { featured_image: base64Image } : {}) }
-      : { ...basePostData, featured_image: base64Image };
-
     try {
       let postId: string;
       let updatedPost: BlogPost;
       
       if (editingPost) {
-        const { data, error } = await updatePost(editingPost.id, payload);
+        // Update post fields first (do NOT send featured_image blobs/base64)
+        const { data, error } = await updatePost(editingPost.id, basePostData);
         if (error) throw error;
         postId = editingPost.id;
         updatedPost = data!;
+
+        // If featured image was changed, upload to Supabase Storage and store ONLY public URL
+        if (featuredFile) {
+          const previousFeatured = editingPost.featured_image;
+          const { publicUrl, filePath: newFilePath } = await uploadFeaturedImageToStorage(postId, featuredFile);
+
+          const { data: updatedWithImage, error: updateImageError } = await updatePost(postId, { featured_image: publicUrl });
+          if (updateImageError) throw updateImageError;
+          updatedPost = updatedWithImage!;
+
+          // Optionally delete old storage file (best-effort)
+          // TODO: Confirm if old featured_image URLs always use the `blog-media` bucket. If not, skip deletion.
+          if (previousFeatured && typeof previousFeatured === "string") {
+            const oldPath = tryGetStoragePathFromPublicUrl(previousFeatured);
+            if (oldPath && oldPath !== newFilePath) {
+              try {
+                await supabase.storage.from("blog-media").remove([oldPath]);
+              } catch {
+                // best-effort cleanup only
+              }
+            }
+          }
+        }
+
         toast({ title: "Post Updated", description: "Blog post has been updated successfully." });
       } else {
-        const { data, error } = await createPost(payload);
+        // Create post first WITHOUT featured_image (no blobs/base64 in DB)
+        const { data, error } = await createPost({ ...basePostData, featured_image: null });
         if (error) throw error;
         postId = data!.id;
         updatedPost = data!;
+
+        // Upload featured image AFTER post exists (required order)
+        if (featuredFile) {
+          try {
+            const { publicUrl } = await uploadFeaturedImageToStorage(postId, featuredFile);
+            const { data: updatedWithImage, error: updateImageError } = await updatePost(postId, { featured_image: publicUrl });
+            if (updateImageError) throw updateImageError;
+            updatedPost = updatedWithImage!;
+          } catch (err) {
+            // Post was created successfully; only the featured image upload failed.
+            toast({
+              title: "Warning",
+              description: "Post created but featured image failed to upload. You can retry by editing the post.",
+              variant: "destructive",
+            });
+          }
+        }
+
         toast({ title: "Post Created", description: "Blog post has been created successfully." });
       }
 
@@ -258,6 +321,7 @@ const AdminBlog = () => {
 
   const handleEdit = async (post: BlogPost) => {
     setEditingPost(post);
+    setFeaturedPreviewObjectUrl(null);
     setFormData({
       title: post.title,
       slug: post.slug,
@@ -434,10 +498,14 @@ const AdminBlog = () => {
                       setFeaturedImageError("");
                       
                       // Set the file and create preview
+                      // Preview is frontend-only using object URLs (no base64 / FileReader)
                       setFormData((prev: any) => ({ ...prev, featured_image: file }));
-                      const reader = new FileReader();
-                      reader.onload = () => setFormData((prev: any) => ({ ...prev, previewUrl: reader.result as string }));
-                      reader.readAsDataURL(file);
+                      const objectUrl = URL.createObjectURL(file);
+                      setFeaturedPreviewObjectUrl((prev) => {
+                        if (prev) URL.revokeObjectURL(prev);
+                        return objectUrl;
+                      });
+                      setFormData((prev: any) => ({ ...prev, previewUrl: objectUrl }));
                     }}
                   />
                   {featuredImageError && (
