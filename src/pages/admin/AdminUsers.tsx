@@ -1206,7 +1206,7 @@ export default function AdminUsers() {
         <CardContent>
           <div className="space-y-4">
             <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-4 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search users..."
                 value={searchTerm}
