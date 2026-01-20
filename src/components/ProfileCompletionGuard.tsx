@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useRef } from "react";
+import { ReactNode, useEffect, useMemo, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
@@ -12,45 +12,65 @@ interface ProfileCompletionGuardProps {
 }
 
 const ProfileCompletionGuard = ({ children }: ProfileCompletionGuardProps) => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { profile, loading: profileLoading, refetchProfile } = useProfile();
   const { requests, loading: requestsLoading, refetch: refetchOverseasCompany } = useOverseasCompany();
   const location = useLocation();
   const navigate = useNavigate();
   const lastPathRef = useRef<string>("");
 
-  // Always allow access to these pages - check FIRST before any other logic
-  const allowedPaths = [
-    "/profile",
-    "/create-account",
-    "/overseas-company",
-    "/auth",
-    "/login",
-    "/",
-    "/blog",
-    "/contact",
-    "/about",
-    "/downloads",
-  ];
+  /**
+   * Route policy
+   * - Public/auth pages: accessible without login (no profile checks)
+   * - Bypass pages: require login but bypass profile-completion gating (e.g. onboarding/profile pages)
+   * - Everything else: requires login + subject to profile completion rules below
+   */
+  const routePolicy = useMemo(() => {
+    const path = location.pathname;
 
-  // Check if current path is allowed - bypass ALL checks including loading
-  const isAllowedPath = allowedPaths.some(path => 
-    location.pathname === path || location.pathname.startsWith("/auth") || location.pathname.startsWith("/login")
-  );
+    const isAuthRoute =
+      path === "/auth" || path === "/login" || path.startsWith("/auth") || path.startsWith("/login");
+
+    const isPublicRoute =
+      path === "/" ||
+      path === "/blog" ||
+      path.startsWith("/blog/") ||
+      path === "/contact" ||
+      path === "/about" ||
+      path === "/downloads" ||
+      // Password/username recovery flows must be accessible without login
+      path === "/forgot-password" ||
+      path === "/forgot-username" ||
+      path === "/reset-password";
+
+    // Pages that should not be blocked by profile completion checks, but SHOULD still require login
+    const isBypassProfileCheckRoute =
+      path === "/profile" || path === "/create-account" || path === "/overseas-company";
+
+    return { isAuthRoute, isPublicRoute, isBypassProfileCheckRoute };
+  }, [location.pathname]);
+
+  const isAllowedWithoutLogin = routePolicy.isAuthRoute || routePolicy.isPublicRoute;
+  const shouldBypassProfileChecks = isAllowedWithoutLogin || routePolicy.isBypassProfileCheckRoute;
+
+  // Redirect unauthenticated users away from protected pages
+  useEffect(() => {
+    if (authLoading) return;
+    if (isAllowedWithoutLogin) return;
+    if (!user) {
+      navigate("/auth", { replace: true, state: { from: location.pathname } });
+    }
+  }, [authLoading, isAllowedWithoutLogin, location.pathname, navigate, user]);
 
   // Refetch profile and overseas company requests when navigating to ensure we have latest data
   // This prevents stale data issues when profile/requests are updated on other pages (like /profile, /overseas-company)
   // IMPORTANT: This hook must be called before any conditional returns (Rules of Hooks)
   useEffect(() => {
-    if (user && !profileLoading && !requestsLoading && !isAllowedPath) {
+    if (user && !profileLoading && !requestsLoading && !shouldBypassProfileChecks) {
       // Refetch if path changed or on initial mount (when lastPathRef is empty)
       const shouldRefetch = lastPathRef.current === "" || lastPathRef.current !== location.pathname;
       
       if (shouldRefetch) {
-        console.log('[ProfileCompletionGuard] Refetching profile and overseas company requests to ensure latest data', { 
-          pathname: location.pathname,
-          previousPath: lastPathRef.current || '(initial mount)'
-        });
         refetchProfile();
         // Also refetch overseas company requests to ensure we have the latest status
         if (refetchOverseasCompany) {
@@ -58,11 +78,11 @@ const ProfileCompletionGuard = ({ children }: ProfileCompletionGuardProps) => {
         }
         lastPathRef.current = location.pathname;
       }
-    } else if (isAllowedPath) {
+    } else if (shouldBypassProfileChecks) {
       // Reset last path when on allowed path so we refetch when leaving
       lastPathRef.current = "";
     }
-  }, [user, location.pathname, profileLoading, requestsLoading, refetchProfile, refetchOverseasCompany, isAllowedPath]);
+  }, [user, location.pathname, profileLoading, requestsLoading, refetchProfile, refetchOverseasCompany, shouldBypassProfileChecks]);
 
   // Watch for profile changes - monitor key fields that indicate profile completion
   // This ensures the guard reacts when profile is updated from other components
@@ -79,24 +99,29 @@ const ProfileCompletionGuard = ({ children }: ProfileCompletionGuardProps) => {
   useEffect(() => {
     // This effect will trigger when profile completion-related fields change
     // The component will automatically re-render and re-evaluate completion status
-    if (profile && !isAllowedPath) {
-      console.log('[ProfileCompletionGuard] Profile completion data changed, re-evaluating', {
-        has_completed_profile: profile.has_completed_profile,
-        updated_at: profile.updated_at
-      });
-    }
-  }, [profileCompletionKey, profile, isAllowedPath]);
+    // Intentionally no console logging in production guard
+  }, [profileCompletionKey, profile, shouldBypassProfileChecks]);
 
-  // If on allowed path, show children immediately (no profile checks, no loading checks)
-  if (isAllowedPath) {
-    return <>{children}</>;
+  // Public/auth pages: always accessible
+  if (isAllowedWithoutLogin) return <>{children}</>;
+
+  // Wait for auth to resolve on protected pages (prevents flash)
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center pink-yellow-shadow">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
   }
 
-  // If user is not authenticated, let RouteGuard handle it
-  // Only check profile completion for authenticated users
-  if (!user) {
-    return <>{children}</>;
-  }
+  // Not authenticated on protected route: redirect handled by effect above
+  if (!user) return null;
+
+  // Logged-in but bypass routes (onboarding/profile): no profile completion gating
+  if (routePolicy.isBypassProfileCheckRoute) return <>{children}</>;
 
   // Show loading state
   if (profileLoading || requestsLoading) {
@@ -254,19 +279,7 @@ const ProfileCompletionGuard = ({ children }: ProfileCompletionGuardProps) => {
     hasInvestmentInfo: !!(profile.investment_experience && profile.risk_tolerance && Array.isArray((profile as any)?.investment_goals) && (profile as any).investment_goals.length > 0)
   } : null;
 
-  console.log('[ProfileCompletionGuard] Profile completion check:', {
-    isProfileComplete,
-    isUSAClient,
-    overseasCompanyRequired,
-    overseasCompanyCompleted,
-    hasSubmittedRequest,
-    requestStatus,
-    overseasCompanySatisfied,
-    requestsCount: requests?.length || 0,
-    currentRequestId: currentRequest?.id,
-    profileData,
-    willGrantAccess: isProfileComplete && isUSAClient && (!overseasCompanyRequired || overseasCompanySatisfied)
-  });
+  // Intentionally no console logging in production guard
 
   // For USA users: Once profile is complete AND overseas company requirement is satisfied, grant immediate access
   if (isProfileComplete && isUSAClient && (!overseasCompanyRequired || overseasCompanySatisfied)) {
