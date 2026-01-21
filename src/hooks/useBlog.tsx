@@ -44,6 +44,7 @@ export interface BlogCategory {
   slug: string;
   description?: string;
   color: string;
+  image_url?: string | null;
   parent_id?: string | null;
   created_at: string;
   updated_at: string;

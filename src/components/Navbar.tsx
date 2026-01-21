@@ -50,7 +50,7 @@ const DEFAULT_NAV_LINKS_AUTH: NavLink[] = [
 const DEFAULT_NAV_LINKS_GUEST: NavLink[] = [
   { name: 'Home', href: '/' },
   { name: 'Downloads', href: '/downloads' },
-  { name: 'Catholic', href: '/blog' },
+  // Catholic section is restricted to logged-in users only (do not show to guests)
   { name: 'Contact', href: '/contact' },
   { name: 'About', href: '/about' },
   { name: 'Features', href: '/#features' },

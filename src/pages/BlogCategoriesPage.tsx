@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useCategories, BlogCategory } from "@/hooks/useCategories";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Plus, Edit2, Trash2, AlertCircle, GripVertical } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { supabase } from "@/integrations/supabase/client";
 
 const emptyForm = {
   name: "",
@@ -21,6 +22,7 @@ const emptyForm = {
   description: "",
   color: "#6B7280",
   parent_id: null as string | null,
+  image_url: null as string | null,
 };
 
 type TreeNode = BlogCategory & {
@@ -38,6 +40,8 @@ export default function AdminBlogCategories() {
   const [saving, setSaving] = useState(false);
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
 
   // state for tree UI: which nodes are expanded
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -63,6 +67,8 @@ export default function AdminBlogCategories() {
     setForm({ ...emptyForm });
     setExpanded({}); // reset expansion
     setError(null); // clear any previous errors
+    setImageFile(null);
+    setImagePreviewUrl(null);
     setOpen(true);
   };
 
@@ -74,10 +80,13 @@ export default function AdminBlogCategories() {
       description: cat.description ?? "",
       color: cat.color ?? "#6B7280",
       parent_id: (cat as any).parent_id ?? null,
+      image_url: (cat as any).image_url ?? null,
     });
     // optionally expand the parent chain so the current parent is visible
     setExpanded({});
     setError(null); // clear any previous errors
+    setImageFile(null);
+    setImagePreviewUrl((cat as any).image_url ?? null);
     setOpen(true);
   };
 
@@ -85,6 +94,32 @@ export default function AdminBlogCategories() {
     setEditingId(null);
     setForm({ ...emptyForm });
     setError(null);
+    setImageFile(null);
+    setImagePreviewUrl(null);
+  };
+
+  // Preview cleanup (object URLs only)
+  useEffect(() => {
+    return () => {
+      if (imagePreviewUrl && imagePreviewUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(imagePreviewUrl);
+      }
+    };
+  }, [imagePreviewUrl]);
+
+  const sanitizeFilename = (filename: string) => filename.replace(/[^a-zA-Z0-9._-]/g, "_");
+
+  const uploadCategoryImage = async (categoryId: string, file: File) => {
+    const safeName = sanitizeFilename(file.name);
+    const path = `blog/categories/${categoryId}/${Date.now()}-${safeName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("blog-media")
+      .upload(path, file, { upsert: true, contentType: file.type });
+    if (uploadError) throw uploadError;
+
+    const { data } = supabase.storage.from("blog-media").getPublicUrl(path);
+    return { publicUrl: data.publicUrl, filePath: path };
   };
 
   const getErrorMessage = (error: any): string => {
@@ -138,6 +173,27 @@ export default function AdminBlogCategories() {
       }
 
       // Success - close modal and show success message
+      const savedCategoryId = (result.data as any)?.id || editingId;
+      if (!savedCategoryId) {
+        // TODO: Should never happen, but avoid guessing
+        throw new Error("Missing category id after save");
+      }
+
+      // If an image was selected, upload to storage and store ONLY the public URL
+      if (imageFile) {
+        const { publicUrl } = await uploadCategoryImage(savedCategoryId, imageFile);
+        const updateRes = await updateCategory(savedCategoryId, { image_url: publicUrl });
+        if (updateRes.error) {
+          toast({
+            title: "Warning",
+            description: "Category saved but image upload failed. You can retry by editing the category.",
+            variant: "destructive",
+          });
+        } else {
+          setForm((f) => ({ ...f, image_url: publicUrl }));
+        }
+      }
+
       resetForm();
       setOpen(false);
       toast({
@@ -181,10 +237,7 @@ export default function AdminBlogCategories() {
     setDraggedId(categoryId);
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/plain", categoryId);
-    // Use a transparent image for cleaner drag
-    const img = new Image();
-    img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs=';
-    e.dataTransfer.setDragImage(img, 0, 0);
+    // Do not use base64 images; default drag preview is sufficient
   };
 
   const handleDragOver = (e: React.DragEvent, categoryId: string) => {
@@ -296,6 +349,8 @@ export default function AdminBlogCategories() {
   });
 
   const roots: TreeNode[] = Array.from(nodeMap.values()).filter((n) => !n.parent_id || !nodeMap.has(n.parent_id));
+
+  const placeholderImage = "/placeholder.svg";
 
   const sortRec = (nodes: TreeNode[]) => {
     // Sort by sort_order first, then by name as fallback
@@ -605,6 +660,42 @@ export default function AdminBlogCategories() {
                   className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none"
                                       style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
                 />
+              </div>
+            </div>
+
+            {/* ---------- Optional category image ---------- */}
+            <div>
+              <label className="block text-sm font-medium mb-1">Category Image (optional)</label>
+              <Input
+                type="file"
+                accept="image/*"
+                className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none"
+                style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as React.CSSProperties}
+                onChange={(e) => {
+                  const file = e.target.files?.[0] || null;
+                  setImageFile(file);
+                  if (!file) {
+                    setImagePreviewUrl(form.image_url ?? null);
+                    return;
+                  }
+                  const url = URL.createObjectURL(file);
+                  setImagePreviewUrl((prev) => {
+                    if (prev && prev.startsWith("blob:")) URL.revokeObjectURL(prev);
+                    return url;
+                  });
+                }}
+              />
+              <div className="mt-2">
+                <img
+                  src={imagePreviewUrl || form.image_url || placeholderImage}
+                  alt="Category preview"
+                  loading="lazy"
+                  decoding="async"
+                  className="w-full max-h-48 object-cover rounded-lg border border-muted/20"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  If you don’t upload an image, the Catholic section will show a placeholder image.
+                </p>
               </div>
             </div>
 
