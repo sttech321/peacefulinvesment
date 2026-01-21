@@ -192,6 +192,10 @@ const ReviewSubmit = ({ formData }: ReviewSubmitProps) => {
               {(() => {
                 const totalDocs = Object.values(formData.documentsByType || {}).flat().length;
                 const documentTypes = Object.entries(formData.documentsByType || {}).filter(([_, files]) => files.length > 0);
+                const getFileNameFromPath = (p: string) => {
+                  const last = p.split("/").pop() || p;
+                  return last || "Document";
+                };
                 
                 return (
                   <>
@@ -204,15 +208,19 @@ const ReviewSubmit = ({ formData }: ReviewSubmitProps) => {
                               {docType.replace(/_/g, ' ').replace('front', 'Front').replace('back', 'Back')}
                             </h4>
                             <div className="">
-                              {files.filter(Boolean).map((file, index) => {
+                              {files.filter(Boolean).map((file: any, index) => {
                                 
-                                // Handle both File objects and plain objects from localStorage
-                                const fileName = file.name || file.fileName || 'Document';
-                                const fileType = file.type || (fileName ? fileName.split('.').pop()?.toLowerCase() : '');
-                                const fileUrl = file.url || (file instanceof File ? URL.createObjectURL(file) : null);
-                                const isImage = fileType && (
-                                  fileType.startsWith('image/') || 
-                                  ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(fileType)
+                                // `documentsByType` now stores ONLY Supabase Storage paths (strings).
+                                // Keep UI resilient for legacy shapes.
+                                const isPath = typeof file === "string";
+                                const fileName =
+                                  (isPath ? getFileNameFromPath(file) : (file?.name || file?.fileName || "Document")) as string;
+                                const ext = fileName.includes(".") ? fileName.split(".").pop()?.toLowerCase() : "";
+                                const fileType = (isPath ? ext : (file?.type || ext)) as string;
+                                const fileUrl = !isPath && file?.url ? file.url : (!isPath && file instanceof File ? URL.createObjectURL(file) : null);
+                                const isImage = Boolean(fileType) && (
+                                  String(fileType).startsWith("image/") ||
+                                  ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(String(fileType))
                                 );
                                 
                                 return (
