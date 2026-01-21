@@ -11,8 +11,11 @@ export interface VerificationRequest {
   reason: string | null;
   documents: Array<{
     type: string;
-    fileUrl: string;
-    status: string;
+    fileUrl: string;      // storage path in Supabase Storage
+    status: string;       // e.g. "submitted", "accepted", "rejected"
+    filename?: string;    // original filename
+    size?: number;        // file size in bytes
+    mimeType?: string;    // MIME type
   }>;
   submitted_at: string;
   reviewed_by: string | null;
@@ -87,19 +90,53 @@ function useVerification() {
 
     setLoading(true);
     try {
-      // Convert files to document objects for storage
-      const documentData = documents.map((file, index) => ({
-        type: getDocumentType(file.name),
-        fileUrl: `temp_${Date.now()}_${index}`, // In real implementation, upload to storage first
-        status: 'submitted'
-      }));
+      // Upload each file to Supabase Storage first
+      const uploadedDocuments: VerificationRequest['documents'] = [];
+
+      for (let index = 0; index < documents.length; index++) {
+        const file = documents[index];
+
+        // Defensive validation (UI already restricts)
+        if (file.size > 10 * 1024 * 1024) {
+          throw new Error(`${file.name}: File size must be less than 10MB`);
+        }
+
+        const safeName = sanitizeFilename(file.name);
+        const ext = safeName.includes('.') ? '' : getExtensionFromMime(file.type);
+        const finalName = ext && !safeName.endsWith(ext) ? `${safeName}${ext}` : safeName;
+
+        // Store under user-specific folder to match storage RLS policies
+        const path = `${user.id}/verification/${Date.now()}_${index}_${finalName}`;
+
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('request-documents')
+          .upload(path, file, {
+            cacheControl: '3600',
+            upsert: false,
+            contentType: file.type || undefined,
+          });
+
+        if (uploadError || !uploadData) {
+          console.error('Error uploading verification document to storage:', uploadError);
+          throw uploadError || new Error('Failed to upload verification document');
+        }
+
+        uploadedDocuments.push({
+          type: getDocumentType(file.name),
+          fileUrl: uploadData.path, // storage path; server/admin can turn into signed URL
+          status: 'submitted',
+          filename: file.name,
+          size: file.size,
+          mimeType: file.type,
+        });
+      }
 
       const { data, error } = await supabase
         .from('verification_requests')
         .insert({
           user_id: user.id,
           status: 'pending',
-          documents: documentData
+          documents: uploadedDocuments,
         })
         .select()
         .single();
@@ -124,6 +161,20 @@ function useVerification() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const sanitizeFilename = (filename: string): string => {
+    return filename.replace(/[^a-zA-Z0-9._-]/g, '_');
+  };
+
+  const getExtensionFromMime = (mimeType: string): string => {
+    if (!mimeType) return '';
+    const map: Record<string, string> = {
+      'image/jpeg': '.jpg',
+      'image/png': '.png',
+      'application/pdf': '.pdf',
+    };
+    return map[mimeType] || '';
   };
 
   const getDocumentType = (filename: string): string => {
