@@ -114,6 +114,18 @@ interface VerificationRequest {
   updated_at: string;
 }
 
+interface KYCDocument {
+  id: string;
+  document_type: string;
+  file_name: string;
+  file_path: string;
+  mime_type: string;
+  file_size: number;
+  created_at: string;
+}
+
+
+
 export default function AdminUsers() {
   const { user } = useAuth();
   const { isAdmin } = useUserRole();
@@ -124,6 +136,9 @@ export default function AdminUsers() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
+
+  const [kycDocuments, setKycDocuments] = useState<KYCDocument[]>([]);
+  const [loadingKycDocs, setLoadingKycDocs] = useState(false);
   
   // Folder view state (sub-menu structure)
   // Initialize based on URL - if no status param, show folder view
@@ -169,6 +184,8 @@ export default function AdminUsers() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [deleteReason, setDeleteReason] = useState("");
+
+  const [documentUrls, setDocumentUrls] = useState<Record<string, string>>({});
 
   // Read status from URL query parameter - this is the primary source of truth
   useEffect(() => {
@@ -466,30 +483,63 @@ export default function AdminUsers() {
     setEditDialogOpen(true);
   };
 
+  const getSignedDocumentUrl = async (filePath: string): Promise<string> => {
+    const { data, error } = await supabase.storage
+      .from("kyc-documents") // ✅ your bucket name
+      .createSignedUrl(filePath, 60 * 10); // 10 minutes expiry
+
+    if (error) {
+      console.error("Error creating signed URL:", error);
+      throw new Error("Unable to generate document link");
+    }
+
+    return data.signedUrl;
+  };
+
+  const loadSignedUrls = async (docs: KYCDocument[]) => {
+    const urlMap: Record<string, string> = {};
+
+    for (const doc of docs) {
+      try {
+        const signedUrl = await getSignedDocumentUrl(doc.file_path);
+        urlMap[doc.id] = signedUrl;
+      } catch (err) {
+        console.error("Failed to load signed URL for:", doc.file_path);
+      }
+    }
+
+    setDocumentUrls(urlMap);
+  };
+
   const handleViewDocuments = async (user: User) => {
     setSelectedUserForDocs(user);
-    setLoadingDocuments(true);
     setDocumentsDialogOpen(true);
+    setLoadingKycDocs(true);
 
     try {
-      const { data: requests, error } = await supabase
-        .from('verification_requests')
-        .select('*')
-        .eq('user_id', user.user_id)
-        .order('created_at', { ascending: false });
+      const { data, error } = await supabase
+        .from("kyc_documents")
+        .select("*")
+        .eq("user_id", user.user_id)
+        .order("created_at", { ascending: false });
+
+      if (!error && data) {
+        setKycDocuments(data);
+        await loadSignedUrls(data);
+      }
 
       if (error) throw error;
 
-      setVerificationRequests((requests || []) as VerificationRequest[]);
-    } catch (error) {
-      console.error('Error fetching verification requests:', error);
+      setKycDocuments(data || []);
+    } catch (err) {
+      console.error("Failed to fetch KYC documents:", err);
       toast({
         title: "Error",
-        description: "Failed to fetch verification documents",
+        description: "Failed to load KYC documents",
         variant: "destructive",
       });
     } finally {
-      setLoadingDocuments(false);
+      setLoadingKycDocs(false);
     }
   };
 
@@ -2142,121 +2192,57 @@ export default function AdminUsers() {
             </DialogDescription>
           </DialogHeader>
 
-          {loadingDocuments ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin" />
-              <span className="ml-2">Loading documents...</span>
-            </div>
-          ) : verificationRequests.length === 0 ? (
-            <div className="text-center py-8">
-              <FileText className="h-12 w-12 mx-auto text-primary mb-4" />
-              <p className="text-muted-foreground">No verification documents found for this user.</p>
+          {kycDocuments.length === 0 ? (
+            <div className="text-center py-8 col-span-full">
+              <FileText className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
+              <p className="text-muted-foreground text-sm">
+                No document found
+              </p>
             </div>
           ) : (
-            <div className="space-y-6">
-              {verificationRequests.map((request) => (
-                <div key={request.id} className="border rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <h3 className="font-semibold">Verification Request</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Submitted: {new Date(request.submitted_at).toLocaleDateString()}
-                      </p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge 
-                          variant={
-                            request.status === 'approved' ? 'default' :
-                            request.status === 'rejected' ? 'destructive' :
-                            request.status === 'requested_more_info' ? 'secondary' : 'outline'
-                          }
-                        >
-                          {request.status.replace('_', ' ').toUpperCase()}
-                        </Badge>
-                        {request.reason && (
-                          <span className="text-sm text-muted-foreground">
-                            Reason: {request.reason}
-                          </span>
-                        )}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {kycDocuments.map((doc) => {
+                const url = documentUrls[doc.id];
+
+                return (
+                  <div
+                    key={doc.id}
+                    className="border rounded-lg p-3 bg-muted/20"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium text-sm capitalize">
+                        {doc.document_type.replace(/_/g, " ")}
+                      </h4>
+
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        disabled={!url}
+                        onClick={() => window.open(url, "_blank")}
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <File className="h-4 w-4" />
+                        <span className="truncate">{doc.file_name}</span>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <FileImage className="h-4 w-4" />
+                        <span>{doc.mime_type}</span>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <FileText className="h-4 w-4" />
+                        <span>{(doc.file_size / 1024 / 1024).toFixed(2)} MB</span>
                       </div>
                     </div>
-                    
-                    {request.status === 'pending' && (
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="rounded-[8px] border-0"
-                          onClick={() => setVerificationAction('request_more_info')}
-                        >
-                          <MessageSquare className="h-4 w-4 mr-1" />
-                          Request More Info
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          className="rounded-[8px] border-0"
-                          onClick={() => setVerificationAction('reject')}
-                        >
-                          <X className="h-4 w-4 mr-1" />
-                          Reject
-                        </Button>
-                        <Button
-                          size="sm"
-                          className="rounded-[8px] border-0"
-                          onClick={() => setVerificationAction('approve')}
-                        >
-                          <Check className="h-4 w-4 mr-1" />
-                          Approve
-                        </Button>
-                      </div>
-                    )}
                   </div>
-
-                  {/* Documents Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {Object.entries(request.documents || {}).map(([docType, doc]: [string, Record<string, unknown>]) => (
-                      <div key={docType} className="border rounded-lg p-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-medium text-sm capitalize">
-                            {docType.replace('_', ' ')}
-                          </h4>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => {
-                              const url = doc.url as string;
-                              if (url) window.open(url, '_blank');
-                            }}
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <File className="h-4 w-4" />
-                            <span className="truncate">{doc.filename as string}</span>
-                          </div>
-                          
-                          {doc.type && (
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <FileImage className="h-4 w-4" />
-                              <span>{doc.type as string}</span>
-                            </div>
-                          )}
-                          
-                          {doc.size && (
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <FileText className="h-4 w-4" />
-                              <span>{((doc.size as number) / 1024 / 1024).toFixed(2)} MB</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
