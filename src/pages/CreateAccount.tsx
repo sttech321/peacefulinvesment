@@ -59,8 +59,10 @@ export interface FormData {
   securityQuestions: Array<{ question: string; answer: string }>;
 
   // Document Upload
-  documents: File[];
-  documentsByType: Record<string, File[]>;
+  // IMPORTANT: must remain compatible with `profiles.documents_by_type` (jsonb).
+  // We store ONLY Supabase Storage paths (no local paths, no File objects).
+  documents: string[];
+  documentsByType: Record<string, string[]>;
 
   // Investment Experience
   investmentExperience: string;
