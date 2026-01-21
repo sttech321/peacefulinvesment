@@ -27,6 +27,22 @@ import { useBlog, BlogPost, BlogCategory, BlogMedia } from "@/hooks/useBlog";
 import { useUserRole } from "@/hooks/useUserRole";
 import { supabase } from "@/integrations/supabase/client";
 
+type PrayerTaskOption = { id: string; name: string };
+
+function extractPrayerTaskIdFromPostTags(tags: unknown): string | null {
+  if (!Array.isArray(tags)) return null;
+  for (const t of tags) {
+    if (typeof t !== "string") continue;
+    const m = t.trim().match(/^prayer_task:(?<id>[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i);
+    if (m?.groups?.id) return m.groups.id;
+  }
+  return null;
+}
+
+function stripPrayerTaskTags(tags: string[]) {
+  return tags.filter((t) => !/^prayer_task:[0-9a-f-]{36}$/i.test(t.trim()));
+}
+
 const AdminBlog = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -69,6 +85,9 @@ const AdminBlog = () => {
   const [pendingMediaFiles, setPendingMediaFiles] = useState<File[]>([]);
   const [featuredImageError, setFeaturedImageError] = useState<string>("");
   const [featuredPreviewObjectUrl, setFeaturedPreviewObjectUrl] = useState<string | null>(null);
+  const [prayerTasks, setPrayerTasks] = useState<PrayerTaskOption[]>([]);
+  const [loadingPrayerTasks, setLoadingPrayerTasks] = useState(false);
+  const [selectedPrayerTaskId, setSelectedPrayerTaskId] = useState<string>("none");
 
   // Cleanup object URL previews (preview only; never persisted)
   useEffect(() => {
@@ -146,6 +165,27 @@ const AdminBlog = () => {
     fetchPosts("all");
   }, [fetchPosts]);
 
+  // Load prayer tasks so admins can map blog posts to prayer_tasks via tag: `prayer_task:<uuid>`
+  useEffect(() => {
+    const loadPrayerTasks = async () => {
+      try {
+        setLoadingPrayerTasks(true);
+        const { data, error } = await (supabase as any)
+          .from("prayer_tasks")
+          .select("id,name")
+          .order("name", { ascending: true });
+        if (error) throw error;
+        setPrayerTasks((data || []) as PrayerTaskOption[]);
+      } catch (e) {
+        console.warn("[AdminBlog] Failed to load prayer tasks for mapping:", e);
+        setPrayerTasks([]);
+      } finally {
+        setLoadingPrayerTasks(false);
+      }
+    };
+    void loadPrayerTasks();
+  }, []);
+
   // -------------------------
   // Non-hook helpers
   // -------------------------
@@ -168,6 +208,7 @@ const AdminBlog = () => {
     setPendingMediaFiles([]);
     setFeaturedImageError("");
     setFeaturedPreviewObjectUrl(null);
+    setSelectedPrayerTaskId("none");
   };
 
   const sanitizeFilename = (filename: string) => filename.replace(/[^a-zA-Z0-9._-]/g, "_");
@@ -206,12 +247,24 @@ const AdminBlog = () => {
 
     const { previewUrl, featured_image, ...cleanForm } = formData;
     const featuredFile = featured_image instanceof File ? (featured_image as File) : null;
+
+    // Human-entered tags (comma-separated)
+    const baseTags: string[] = cleanForm.tags
+      .split(",")
+      .map((tag: string) => tag.trim())
+      .filter(Boolean);
+
+    // Mapping tag (Option A): stored in DB as a normal tag, but hidden from the tags input.
+    const tagsWithoutMapping = stripPrayerTaskTags(baseTags);
+    const mappingTag =
+      selectedPrayerTaskId && selectedPrayerTaskId !== "none"
+        ? `prayer_task:${selectedPrayerTaskId}`
+        : null;
+    const finalTags = mappingTag ? [...tagsWithoutMapping, mappingTag] : tagsWithoutMapping;
+
     const basePostData = {
       ...cleanForm,
-      tags: cleanForm.tags
-        .split(",")
-        .map((tag: string) => tag.trim())
-        .filter(Boolean),
+      tags: finalTags,
       published_at: cleanForm.status === "published" ? new Date().toISOString() : null,
     };
 
@@ -322,13 +375,15 @@ const AdminBlog = () => {
   const handleEdit = async (post: BlogPost) => {
     setEditingPost(post);
     setFeaturedPreviewObjectUrl(null);
+    const mappedPrayerTaskId = extractPrayerTaskIdFromPostTags((post as any).tags);
+    setSelectedPrayerTaskId(mappedPrayerTaskId ?? "none");
     setFormData({
       title: post.title,
       slug: post.slug,
       content: post.content,
       excerpt: post.excerpt || "",
       category: post.category,
-      tags: post.tags.join(", "),
+      tags: stripPrayerTaskTags(post.tags).join(", "),
       status: post.status,
       meta_title: post.meta_title || "",
       meta_description: post.meta_description || "",
@@ -771,6 +826,36 @@ const AdminBlog = () => {
                   <div>
                     <Label htmlFor="tags">Tags (comma-separated)</Label>
                     <Input id="tags" className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none" style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties } value={formData.tags} onChange={(e) => setFormData({ ...formData, tags: e.target.value })} placeholder="prayer, morning, catholic" />
+                  </div>
+                </div>
+
+                <div>
+                  <Label>Prayer Task Mapping (optional)</Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Links this post to a prayer task by saving the tag <strong>prayer_task:&lt;uuid&gt;</strong>. Users can then Join/Save reminders from the card.
+                  </p>
+                  <Select value={selectedPrayerTaskId} onValueChange={setSelectedPrayerTaskId}>
+                    <SelectTrigger className="mt-2 rounded-[8px] shadow-none border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400" style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
+                      <SelectValue placeholder={loadingPrayerTasks ? "Loading prayer tasks..." : "Select a prayer task (optional)"} />
+                    </SelectTrigger>
+                    <SelectContent className="border-secondary-foreground bg-black/90 text-white">
+                      <SelectItem value="none">None</SelectItem>
+                      {prayerTasks.map((t) => (
+                        <SelectItem key={t.id} value={t.id}>
+                          {t.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <div className="mt-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="rounded-[8px] border-0 hover:bg-white/80"
+                      onClick={() => navigate("/admin/prayer-tasks")}
+                    >
+                      Create Prayer Task
+                    </Button>
                   </div>
                 </div>
 

@@ -33,8 +33,6 @@ const ProfileCompletionGuard = ({ children }: ProfileCompletionGuardProps) => {
 
     const isPublicRoute =
       path === "/" ||
-      path === "/blog" ||
-      path.startsWith("/blog/") ||
       path === "/contact" ||
       path === "/about" ||
       path === "/downloads" ||

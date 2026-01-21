@@ -1,241 +1,572 @@
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Calendar, Clock, Eye, Heart } from "lucide-react";
+import { Calendar, Clock, Eye, Heart, ArrowLeft, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { useBlog, BlogPost, BlogCategory } from "@/hooks/useBlog";
+import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import Footer from "@/components/Footer";
 
 // Side images
 import Left01 from "@/assets/left-01.jpg";
 import Left02 from "@/assets/left-02.jpg";
-import Left03 from "@/assets/left-03.jpg";
 import Right01 from "@/assets/right-01.jpg";
 import Right02 from "@/assets/right-02.jpg";
-import Right03 from "@/assets/right-03.jpg";
 
 const POSTS_PER_BATCH = 9;
+const PLACEHOLDER_CATEGORY_IMAGE = "/placeholder.svg";
 
-/**
- * Blog.tsx — Parent badges with single expandable children row
- *
- * Behavior:
- * - Parent badges shown in first row.
- * - Clicking a parent toggles expansion (only one parent open at a time).
- * - If open, the next row shows that parent's children (multi-level flattened, indented).
- * - Caret/chevron only appears for parents that have children.
- * - Filter posts by selected category (parent or child) including all descendants.
- * - Works whether post.category stores slug or id.
- */
+type PrayerTaskLite = {
+  id: string;
+  name: string;
+  number_of_days: number;
+  duration_days?: number | null;
+};
+
+function parsePrayerTaskIdFromTags(tags: unknown): string | null {
+  if (!Array.isArray(tags)) return null;
+  for (const t of tags) {
+    if (typeof t !== "string") continue;
+    const m = t.trim().match(/^prayer_task:(?<id>[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i);
+    if (m?.groups?.id) return m.groups.id;
+  }
+  return null;
+}
 
 const Blog = () => {
   const { posts, categories, loading, initializing } = useBlog();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { profile } = useProfile();
+  const { toast } = useToast();
 
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [openParentId, setOpenParentId] = useState<string | null>(null);
+  // Folder navigation (blog_categories with parent_id)
+  const [categoryStack, setCategoryStack] = useState<string[]>([]);
+  const currentCategoryId = categoryStack.length ? categoryStack[categoryStack.length - 1] : null;
+  const parentCategoryId = categoryStack.length >= 2 ? categoryStack[categoryStack.length - 2] : null;
+
   const [visibleCount, setVisibleCount] = useState<number>(POSTS_PER_BATCH);
-  // Build maps and parents list
-  const { parents, childrenMap, idMap, slugMap } = useMemo(() => {
-    const idMap = new Map<string, BlogCategory>();
-    const slugMap = new Map<string, BlogCategory>();
-    categories.forEach((c) => {
-      idMap.set(c.id, c);
-      slugMap.set(c.slug, c);
-    });
 
-    const map = new Map<string, BlogCategory[]>();
-    const parentsArr: BlogCategory[] = [];
-
-    categories.forEach((c) => {
-      const parentId = (c as any).parent_id ?? null;
-      if (parentId === null) parentsArr.push(c);
-      else {
-        if (!map.has(parentId)) map.set(parentId, []);
-        map.get(parentId)!.push(c);
-      }
-    });
-
-    parentsArr.sort((a, b) => a.name.localeCompare(b.name));
-    map.forEach((arr) => arr.sort((a, b) => a.name.localeCompare(b.name)));
-
-    return { parents: parentsArr, childrenMap: map, idMap, slugMap };
+  const categoriesByParent = useMemo(() => {
+    const map = new Map<string | null, BlogCategory[]>();
+    for (const c of categories) {
+      const pid = (c as any).parent_id ?? null;
+      if (!map.has(pid)) map.set(pid, []);
+      map.get(pid)!.push(c);
+    }
+    for (const [pid, arr] of map) {
+      arr.sort((a, b) => a.name.localeCompare(b.name));
+      map.set(pid, arr);
+    }
+    return map;
   }, [categories]);
 
-  // detect whether posts store slug or id
+  const currentChildren = useMemo(
+    () => categoriesByParent.get(currentCategoryId) ?? [],
+    [categoriesByParent, currentCategoryId]
+  );
+
+  const isLeafCategory = currentCategoryId !== null && currentChildren.length === 0;
+  const currentCategoriesToShow = useMemo(
+    () => (currentCategoryId ? currentChildren : categoriesByParent.get(null) ?? []),
+    [categoriesByParent, currentCategoryId, currentChildren]
+  );
+
+  const siblings = useMemo(() => categoriesByParent.get(parentCategoryId) ?? [], [categoriesByParent, parentCategoryId]);
+  const siblingIndex = useMemo(
+    () => (currentCategoryId ? siblings.findIndex((s) => s.id === currentCategoryId) : -1),
+    [currentCategoryId, siblings]
+  );
+  const prevSiblingId = siblingIndex > 0 ? siblings[siblingIndex - 1].id : null;
+  const nextSiblingId = siblingIndex >= 0 && siblingIndex < siblings.length - 1 ? siblings[siblingIndex + 1].id : null;
+
+  const openCategory = useCallback((id: string) => setCategoryStack((prev) => [...prev, id]), []);
+  const goBack = useCallback(() => setCategoryStack((prev) => prev.slice(0, -1)), []);
+  const goToSibling = useCallback((id: string) => setCategoryStack((prev) => (prev.length ? [...prev.slice(0, -1), id] : prev)), []);
+
+  // Reset batch rendering when changing category level
+  useEffect(() => {
+    setVisibleCount(POSTS_PER_BATCH);
+  }, [currentCategoryId]);
+
+  // Detect whether posts store category as slug or id
   const postCategoryType = useMemo(() => {
     const sample = posts.find(Boolean);
     if (!sample || !sample.category) return "slug";
     const val = sample.category;
-    // Check if it looks like a UUID (typical format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
     if (typeof val === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val)) {
       return "id";
     }
     return "slug";
   }, [posts]);
 
-  // Cache descendant lookups per root category id (invalidates when category tree changes)
-  const getDescendants = useMemo(() => {
-    const cache = new Map<string, { ids: Set<string>; slugs: Set<string> }>();
+  const idMap = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
 
-    return (rootId: string) => {
-      const cached = cache.get(rootId);
-      if (cached) return cached;
+  const leafPosts = useMemo(() => {
+    if (!isLeafCategory || !currentCategoryId) return [];
+    const cat = idMap.get(currentCategoryId);
+    if (!cat) return [];
 
-      const ids = new Set<string>();
-      const slugs = new Set<string>();
-      const stack = [rootId];
-
-      while (stack.length) {
-        const id = stack.pop()!;
-        if (ids.has(id)) continue;
-        ids.add(id);
-        const cat = idMap.get(id);
-        if (cat?.slug) {
-          const normalized = cat.slug.toLowerCase().trim();
-          slugs.add(cat.slug);
-          slugs.add(normalized);
-        }
-
-        const children = childrenMap.get(id);
-        if (children?.length) {
-          for (const child of children) stack.push(child.id);
-        }
-      }
-
-      const result = { ids, slugs };
-      cache.set(rootId, result);
-      return result;
-    };
-  }, [childrenMap, idMap]);
-
-  // Robust filteredPosts — includes selected category + all descendants
-  const filteredPosts = useMemo(() => {
-    if (selectedCategory === "all") return posts;
-
-    // resolve selected to id (selectedCategory could be slug or id)
-    let selectedId: string | null = null;
-    let selectedSlug: string | null = null;
-    
-    if (idMap.has(selectedCategory)) {
-      selectedId = selectedCategory;
-      const cat = idMap.get(selectedCategory);
-      if (cat) selectedSlug = cat.slug;
-    } else {
-      const bySlug = slugMap.get(selectedCategory);
-      if (bySlug) {
-        selectedId = bySlug.id;
-        selectedSlug = bySlug.slug;
-      }
-    }
-
-    // If we couldn't resolve, try direct slug matching (case-insensitive)
-    if (!selectedId && !selectedSlug) {
-      const normalizedSelected = selectedCategory.toLowerCase().trim();
-      for (const cat of slugMap.values()) {
-        if (cat.slug.toLowerCase().trim() === normalizedSelected) {
-          selectedId = cat.id;
-          selectedSlug = cat.slug;
-          break;
-        }
-      }
-    }
-
-    // If still not found, try direct match on posts (fallback)
-    if (!selectedId) {
-      const normalizedSelected = selectedCategory.toLowerCase().trim();
-      return posts.filter((p) => {
-        if (!p.category) return false;
-        const postCategory = typeof p.category === 'string' ? p.category.toLowerCase().trim() : '';
-        return postCategory === normalizedSelected;
-      });
-    }
-
-    // Collect all descendant IDs and slugs (includes the selected category itself)
-    const { ids, slugs } = getDescendants(selectedId);
-    
-    // Ensure the selected category's slug is in the set
-    if (selectedSlug) {
-      slugs.add(selectedSlug);
-      slugs.add(selectedSlug.toLowerCase().trim());
-    }
-    
-    // Also add from idMap in case it wasn't in collectDescendants
-    const rootCat = idMap.get(selectedId);
-    if (rootCat && rootCat.slug) {
-      slugs.add(rootCat.slug);
-      slugs.add(rootCat.slug.toLowerCase().trim());
-    }
-
-    // Filter posts based on whether they store ID or slug
-    if (postCategoryType === "id") {
-      return posts.filter((p) => {
-        if (!p.category) return false;
-        return ids.has(p.category);
-      });
-    }
-    
-    // Posts store slugs - match against collected slugs (case-insensitive)
-    const normalizedSlugSet = new Set(Array.from(slugs, (s) => s.toLowerCase().trim()));
+    const catId = cat.id;
+    const catSlug = (cat.slug || "").toLowerCase().trim();
 
     return posts.filter((p) => {
       if (!p.category) return false;
-      const postCategory = typeof p.category === "string" ? p.category.toLowerCase().trim() : "";
-      return normalizedSlugSet.has(postCategory);
+      if (postCategoryType === "id") return p.category === catId;
+      const postCat = typeof p.category === "string" ? p.category.toLowerCase().trim() : "";
+      return postCat === catSlug;
     });
-  }, [posts, selectedCategory, idMap, slugMap, postCategoryType, getDescendants]);
+  }, [currentCategoryId, idMap, isLeafCategory, postCategoryType, posts]);
 
-  // Toggle single open parent (only one open at a time)
-  const toggleOpenParent = useCallback((parentId: string) => {
-    setOpenParentId((prev) => (prev === parentId ? null : parentId));
-  }, []);
+  const visiblePosts = useMemo(() => leafPosts.slice(0, visibleCount), [leafPosts, visibleCount]);
 
-  const showAll = useCallback(() => {
-    setSelectedCategory((prev) => (prev === "all" ? prev : "all"));
-    setOpenParentId((prev) => (prev === null ? prev : null));
-  }, []);
+  // ---------- Prayer actions (Join / Save reminder) ----------
+  const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const [actionOpen, setActionOpen] = useState(false);
+  const [actionMode, setActionMode] = useState<"join" | "save">("join");
+  const [actionPost, setActionPost] = useState<BlogPost | null>(null);
+  const [resolvedPrayerTask, setResolvedPrayerTask] = useState<PrayerTaskLite | null>(null);
+  const [resolvingPrayerTask, setResolvingPrayerTask] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [joinedTaskIds, setJoinedTaskIds] = useState<Set<string>>(new Set());
 
-  // Reset batch rendering when the filter changes (keeps switching snappy)
-  useEffect(() => {
-    setVisibleCount(POSTS_PER_BATCH);
-  }, [selectedCategory]);
+  const [contactEmail, setContactEmail] = useState<string>("");
+  const [contactCountryCode, setContactCountryCode] = useState<string>("");
+  const [contactPhoneNumber, setContactPhoneNumber] = useState<string>("");
+  const [timezone, setTimezone] = useState<string>(userTimezone);
 
-  // Render children flattened in order with indentation for multi-level
-  const buildFlattenedChildren = useCallback((rootId: string) => {
-    const result: { node: BlogCategory; depth: number }[] = [];
-    const visit = (id: string, depth: number) => {
-      const children = childrenMap.get(id) ?? [];
-      children.forEach((child) => {
-        result.push({ node: child, depth });
-        visit(child.id, depth + 1);
-      });
-    };
-    visit(rootId, 1);
-    return result;
-  }, [childrenMap]);
+  const [personName, setPersonName] = useState("");
+  const [prayerTime, setPrayerTime] = useState("07:00");
+  const [reminderType, setReminderType] = useState<"date" | "days" | "weeks">("days");
+  const [reminderDate, setReminderDate] = useState<string>(new Date().toISOString().split("T")[0]);
+  const [reminderDays, setReminderDays] = useState<number>(1);
+  const [reminderWeeks, setReminderWeeks] = useState<number>(1);
 
-  // compute children to show when a parent is open
-  const openChildren = useMemo(() => {
-    if (!openParentId) return [];
-    return buildFlattenedChildren(openParentId);
-  }, [openParentId, buildFlattenedChildren]);
+  // ---------- Blog / Prayer request modal ----------
+  const [requestOpen, setRequestOpen] = useState(false);
+  const [requestSubmitting, setRequestSubmitting] = useState(false);
+  const [requestType, setRequestType] = useState<"blog" | "prayer" | "">("");
+  const [requestTitle, setRequestTitle] = useState("");
+  const [requestContent, setRequestContent] = useState("");
+  const [requestName, setRequestName] = useState("");
+  const [requestEmail, setRequestEmail] = useState("");
 
-  const categoryDisplayMap = useMemo(() => {
-    const map = new Map<string, { name: string; color: string }>();
-    for (const cat of categories) {
-      const display = { name: cat.name, color: cat.color };
-      map.set(cat.id, display);
-      map.set(cat.slug, display);
-      map.set(cat.slug.toLowerCase().trim(), display);
+  const openRequestModal = useCallback(() => {
+    const nameFromProfile = (profile as any)?.full_name || (profile as any)?.name || "";
+    const emailFromProfile = (profile as any)?.email || user?.email || "";
+    const fallbackName = user?.email ? user.email.split("@")[0] : "";
+
+    setRequestType("");
+    setRequestTitle("");
+    setRequestContent("");
+    setRequestName(String(nameFromProfile || fallbackName || ""));
+    setRequestEmail(String(emailFromProfile || ""));
+    setRequestOpen(true);
+  }, [profile, user?.email]);
+
+  const submitRequest = useCallback(async () => {
+    if (!requestType) {
+      toast({ title: "Missing Type", description: "Please select Blog or Prayer.", variant: "destructive" });
+      return;
     }
-    return map;
-  }, [categories]);
+    if (!requestTitle.trim()) {
+      toast({ title: "Missing Title", description: "Please enter a title.", variant: "destructive" });
+      return;
+    }
+    if (!requestContent.trim()) {
+      toast({ title: "Missing Content", description: "Please enter a description.", variant: "destructive" });
+      return;
+    }
+    if (!requestName.trim()) {
+      toast({ title: "Missing Name", description: "Please enter your name.", variant: "destructive" });
+      return;
+    }
+    const email = requestEmail.trim();
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    if (!emailOk) {
+      toast({ title: "Invalid Email", description: "Please enter a valid email address.", variant: "destructive" });
+      return;
+    }
 
-  const visiblePosts = useMemo(() => filteredPosts.slice(0, visibleCount), [filteredPosts, visibleCount]);
+    try {
+      setRequestSubmitting(true);
 
-  // Keep loader visible until we have either posts or categories to render.
-  if (initializing || loading || (!posts.length && !categories.length)) {
+      const typeLabel = requestType === "blog" ? "Blog" : "Prayer";
+      const subject = `Blog/Prayer Request: ${typeLabel} — ${requestTitle.trim()}`;
+      const message = [
+        `Request Type: ${typeLabel}`,
+        `Title: ${requestTitle.trim()}`,
+        "",
+        "Content / Description:",
+        requestContent.trim(),
+        "",
+        "Submitted from: Blog page (Catholic Faith & Prayer)",
+      ].join("\n");
+
+      // 1) Email admin/support via Edge Function (required)
+      const { error: functionError } = await supabase.functions.invoke("send-contact-notification", {
+        body: {
+          contactData: {
+            full_name: requestName.trim(),
+            email,
+            phone: null,
+            subject,
+            priority: "medium",
+            message,
+            contact_method: "email",
+          },
+        },
+      });
+      if (functionError) throw functionError;
+
+      // 2) Optional: save in DB as a pending request (best-effort; admin-only visibility)
+      try {
+        await supabase.from("contact_requests" as any).insert([
+          {
+            full_name: requestName.trim(),
+            email,
+            phone: null,
+            subject,
+            priority: "medium",
+            message,
+            contact_method: "email",
+            status: "pending",
+          },
+        ]);
+      } catch {
+        // non-critical
+      }
+
+      toast({
+        title: "Request Sent",
+        description: "Thank you for your request. It has been sent for review.",
+      });
+
+      setRequestOpen(false);
+    } catch (e: any) {
+      toast({
+        title: "Error",
+        description: e?.message || "Failed to send your request. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setRequestSubmitting(false);
+    }
+  }, [requestContent, requestEmail, requestName, requestTitle, requestType, toast]);
+
+  // Common timezones (same list used in PrayerTasks.tsx)
+  const commonTimezones = useMemo(
+    () => [
+      { value: "America/New_York", label: "Eastern Time (ET)" },
+      { value: "America/Chicago", label: "Central Time (CT)" },
+      { value: "America/Denver", label: "Mountain Time (MT)" },
+      { value: "America/Los_Angeles", label: "Pacific Time (PT)" },
+      { value: "America/Phoenix", label: "Arizona Time" },
+      { value: "America/Anchorage", label: "Alaska Time" },
+      { value: "Pacific/Honolulu", label: "Hawaii Time" },
+      { value: "UTC", label: "UTC" },
+      { value: "Europe/London", label: "London (GMT)" },
+      { value: "Europe/Paris", label: "Paris (CET)" },
+      { value: "Asia/Dubai", label: "Dubai (GST)" },
+      { value: "Asia/Tokyo", label: "Tokyo (JST)" },
+      { value: "Asia/Shanghai", label: "Shanghai (CST)" },
+      { value: "Australia/Sydney", label: "Sydney (AEDT)" },
+    ],
+    []
+  );
+
+  const personOptions = useMemo(() => {
+    const raw = (profile as any)?.metadata?.prayer_people;
+    return Array.isArray(raw) ? raw.filter((x) => typeof x === "string" && x.trim()) : [];
+  }, [profile]);
+
+  // Load active joined prayer task ids for the logged-in user (used to disable "Join Prayer" on cards)
+  useEffect(() => {
+    const loadJoined = async () => {
+      if (!user) {
+        setJoinedTaskIds(new Set());
+        return;
+      }
+      try {
+        const { data, error } = await (supabase as any)
+          .from("prayer_user_tasks")
+          .select("task_id")
+          .eq("is_active", true)
+          .eq("user_id", user.id);
+        if (error) throw error;
+        const ids = new Set<string>((data || []).map((r: any) => r.task_id).filter(Boolean));
+        setJoinedTaskIds(ids);
+      } catch {
+        // best-effort: don't break UI if this fails
+        setJoinedTaskIds(new Set());
+      }
+    };
+    void loadJoined();
+  }, [user]);
+
+  const ensurePersonSaved = useCallback(
+    async (name: string) => {
+      if (!user) return;
+      const trimmed = name.trim();
+      if (!trimmed) return;
+
+      const current = new Set<string>(personOptions.map((x: string) => x.trim()).filter(Boolean));
+      if (current.has(trimmed)) return;
+      current.add(trimmed);
+
+      const existingMetadata = (profile as any)?.metadata || {};
+      const nextMetadata = { ...existingMetadata, prayer_people: Array.from(current) };
+
+      // NOTE: This assumes profiles table has a `metadata` jsonb column (already used elsewhere in the app)
+      // TODO: If RLS prevents this update in production, store the list in an existing per-user table instead (no schema guessing here).
+      await (supabase as any).from("profiles").update({ metadata: nextMetadata }).eq("user_id", user.id);
+    },
+    [personOptions, profile, user]
+  );
+
+  const computeStartDate = useCallback(() => {
+    const today = new Date();
+    if (actionMode === "join") return today;
+    if (reminderType === "date") return new Date(reminderDate + "T00:00:00");
+    if (reminderType === "weeks") {
+      const d = new Date(today);
+      d.setDate(d.getDate() + reminderWeeks * 7);
+      return d;
+    }
+    const d = new Date(today);
+    d.setDate(d.getDate() + reminderDays);
+    return d;
+  }, [actionMode, reminderDate, reminderDays, reminderType, reminderWeeks]);
+
+  const reminderStartPreview = useMemo(() => {
+    if (actionMode === "join") return null;
+    try {
+      const d = computeStartDate();
+      return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+    } catch {
+      return null;
+    }
+  }, [actionMode, computeStartDate]);
+
+  const resolvePrayerTaskForPost = useCallback(
+    async (post: BlogPost) => {
+      /**
+       * Mapping strategy (no new APIs, no backend changes):
+       * 1) Preferred: embed the prayer_task id in the blog post tags: `prayer_task:<uuid>`
+       * 2) Next-best: set `prayer_tasks.link_or_video` to `/blog/<slug>` (or full URL containing it)
+       * 3) Fallback: exact name match (`prayer_tasks.name === blog_posts.title`)
+       *
+       * TODO: If you later add a canonical relation (e.g. blog_post_id column on prayer_tasks),
+       * switch to that and remove (2)/(3).
+       */
+
+      const taggedTaskId = parsePrayerTaskIdFromTags((post as any).tags);
+      if (taggedTaskId) {
+        const { data, error } = await (supabase as any)
+          .from("prayer_tasks")
+          .select("id,name,number_of_days,duration_days")
+          .eq("id", taggedTaskId)
+          .maybeSingle();
+        if (error) throw error;
+        return (data || null) as PrayerTaskLite | null;
+      }
+
+      // Try mapping by blog URL stored in prayer_tasks.link_or_video
+      const blogPath = `/blog/${post.slug}`;
+      try {
+        const { data, error } = await (supabase as any)
+          .from("prayer_tasks")
+          .select("id,name,number_of_days,duration_days,link_or_video")
+          .ilike("link_or_video", `%${blogPath}%`)
+          .limit(1)
+          .maybeSingle();
+        if (error) throw error;
+        if (data) {
+          const { id, name, number_of_days, duration_days } = data as any;
+          return { id, name, number_of_days, duration_days } as PrayerTaskLite;
+        }
+      } catch {
+        // ignore and fall back
+      }
+
+      // Fallback: exact name match
+      const { data, error } = await (supabase as any)
+        .from("prayer_tasks")
+        .select("id,name,number_of_days,duration_days")
+        .eq("name", post.title)
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return (data || null) as PrayerTaskLite | null;
+    },
+    []
+  );
+
+  const openPrayerAction = useCallback(
+    async (mode: "join" | "save", post: BlogPost) => {
+      if (!user) {
+        navigate("/auth");
+        return;
+      }
+      setActionMode(mode);
+      setActionPost(post);
+      setResolvedPrayerTask(null);
+      setPersonName("");
+      setContactEmail((profile as any)?.email || user.email || "");
+
+      // Auto-fill country code + phone number (still editable)
+      const profileCountryCodeRaw =
+        (profile as any)?.country_code || (profile as any)?.countryCode || (profile as any)?.dial_code || (profile as any)?.dialCode || "";
+      const profilePhoneRaw = (profile as any)?.phone || (profile as any)?.phone_number || "";
+
+      const normalizeCountryCode = (val: string) => {
+        const trimmed = (val || "").trim();
+        if (!trimmed) return "";
+        const digits = trimmed.replace(/[^\d+]/g, "");
+        if (!digits) return "";
+        return digits.startsWith("+") ? digits : `+${digits.replace(/\D/g, "")}`;
+      };
+
+      const ccFromProfile = normalizeCountryCode(String(profileCountryCodeRaw || ""));
+      const rawPhone = String(profilePhoneRaw || "").trim();
+
+      // If we have an explicit profile country code, prefer it and strip it from the phone field if present.
+      let derivedCountryCode = ccFromProfile;
+      let derivedPhoneRemainder = rawPhone;
+      if (ccFromProfile && rawPhone.startsWith(ccFromProfile)) {
+        derivedPhoneRemainder = rawPhone.slice(ccFromProfile.length).trim();
+      } else if (!ccFromProfile) {
+        // Best-effort parse only when there is a visible separator after the country code (avoids guessing for "+17723211897")
+        const m = rawPhone.match(/^\s*(\+\d{1,3})(?=[\s\-\(\.)])\s*(.*)$/);
+        if (m) {
+          derivedCountryCode = normalizeCountryCode(m[1] || "");
+          derivedPhoneRemainder = (m[2] || "").trim();
+        }
+      }
+
+      setContactCountryCode(derivedCountryCode);
+      setContactPhoneNumber(derivedPhoneRemainder.replace(/\D/g, ""));
+      setTimezone(userTimezone);
+      setActionOpen(true);
+
+      try {
+        setResolvingPrayerTask(true);
+        const task = await resolvePrayerTaskForPost(post);
+        setResolvedPrayerTask(task);
+        if (!task) {
+          toast({
+            title: "Missing Prayer Task",
+            description:
+              "This prayer post is not linked to a prayer task yet. Please create a matching prayer task (same name) or provide a mapping key.",
+            variant: "destructive",
+          });
+        }
+      } catch (e: any) {
+        toast({ title: "Error", description: e?.message || "Failed to load prayer task.", variant: "destructive" });
+      } finally {
+        setResolvingPrayerTask(false);
+      }
+    },
+    [navigate, profile, resolvePrayerTaskForPost, toast, user, userTimezone]
+  );
+
+  const confirmPrayerAction = useCallback(async () => {
+    if (!user || !actionPost || !resolvedPrayerTask) return;
+    try {
+      setSaving(true);
+
+      const start = computeStartDate();
+      const duration = resolvedPrayerTask.duration_days || resolvedPrayerTask.number_of_days;
+      const end = new Date(start);
+      end.setDate(end.getDate() + duration - 1);
+
+      const person = personName.trim() || null;
+      if (person) {
+        try {
+          await ensurePersonSaved(person);
+        } catch {
+          // best-effort: do not block joining/saving if metadata update fails
+        }
+      }
+
+      const effectiveEmail = contactEmail.trim() || user.email || "";
+      if (!effectiveEmail) {
+        toast({ title: "Missing Email", description: "Please enter your email.", variant: "destructive" });
+        return;
+      }
+
+      const cc = (contactCountryCode || "").trim();
+      const ccNormalized = cc ? (cc.startsWith("+") ? cc : `+${cc.replace(/\D/g, "")}`) : "";
+      const digitsOnlyPhone = (contactPhoneNumber || "").replace(/\D/g, "");
+      const effectivePhone = digitsOnlyPhone ? `${ccNormalized}${digitsOnlyPhone}`.trim() : null;
+
+      const insertData: any = {
+        task_id: resolvedPrayerTask.id,
+        user_id: user.id,
+        name: (profile as any)?.full_name || user.email?.split("@")[0] || "User",
+        email: effectiveEmail,
+        phone_number: effectivePhone,
+        person_needs_help: person,
+        prayer_time: prayerTime,
+        timezone,
+        start_date: start.toISOString().split("T")[0],
+        end_date: end.toISOString().split("T")[0],
+        current_day: 1,
+        is_active: true,
+      };
+
+      const { error } = await supabase.from("prayer_user_tasks" as any).insert([insertData]);
+      if (error) throw error;
+
+      toast({
+        title: actionMode === "join" ? "Prayer Joined" : "Saved",
+        description:
+          actionMode === "join"
+            ? `You've joined "${actionPost.title}". You'll receive daily reminders.`
+            : `Saved "${actionPost.title}". You'll start receiving reminders on ${insertData.start_date}.`,
+      });
+
+      setActionOpen(false);
+
+      // Update local joined set immediately so cards reflect "Joined" without reload
+      setJoinedTaskIds((prev) => {
+        const next = new Set(prev);
+        next.add(resolvedPrayerTask.id);
+        return next;
+      });
+    } catch (e: any) {
+      toast({ title: "Error", description: e?.message || "Failed to save prayer.", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  }, [
+    actionMode,
+    actionPost,
+    computeStartDate,
+    contactEmail,
+    contactCountryCode,
+    contactPhoneNumber,
+    ensurePersonSaved,
+    personName,
+    prayerTime,
+    profile,
+    resolvedPrayerTask,
+    timezone,
+    toast,
+    user,
+  ]);
+
+  // Loader
+  if (initializing || loading) {
     return (
       <div className="min-h-screen pink-yellow-shadow flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
@@ -267,11 +598,11 @@ const Blog = () => {
             </p>
             <div className="flex justify-center">
               <Button
-                onClick={() => navigate('/prayer-tasks')}
+                onClick={openRequestModal}
                 className="bg-gradient-to-r from-[var(--yellowcolor)] to-orange-500 hover:from-orange-500 hover:to-[var(--yellowcolor)] text-black font-semibold px-8 py-6 text-lg rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2"
               >
                 <Heart className="h-5 w-5" />
-                Join in Prayer - Prayer Tasks
+                Request a Blog / Prayer
               </Button>
             </div>
           </div>
@@ -291,7 +622,7 @@ const Blog = () => {
       {/* Main content with side images */}
       <div className="px-6 py-10 md:py-12 xl:py-20">
         <div className="flex grid-cols-1 flex-wrap justify-center gap-8 md:grid-cols-2 lg:grid-cols-3 lg:flex-nowrap">
-          {/* Left column images */}
+          {/* Left column image */}
           <div className="imgLeft01 max-w-40">
             <Link
               to="https://www.miracolieucaristici.org/en/Liste/scheda_c.html?nat=polonia&wh=sokolka&ct=Sok%C3%B3%C5%82ka%202008"
@@ -300,128 +631,87 @@ const Blog = () => {
             >
               <img src={Left02} alt="Left 02" />
             </Link>
-
-           
           </div>
 
-          {/* Center content (categories + posts) */}
+          {/* Center content (folders + leaf posts) */}
           <div className="mx-auto w-full max-w-7xl">
-            {/* Category Filter */}
+            {/* Navigation */}
             <div className="flex flex-col gap-3 mb-8 md:mb-12 items-center">
-              <div className="flex flex-wrap gap-3 justify-center">
-                <Button
-                  onClick={() => navigate('/prayer-tasks')}
-                  className="bg-gradient-to-r from-[var(--yellowcolor)] to-orange-500 hover:from-orange-500 hover:to-[var(--yellowcolor)] text-black font-semibold px-6 py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2 mb-4"
-                >
-                  <Heart className="h-4 w-4" />
-                  Prayer Tasks
-                </Button>
+              <div className="flex flex-wrap items-center gap-3 justify-center">
+                {categoryStack.length > 0 && (
+                  <Button variant="outline" className="border-white text-white bg-transparent hover:bg-white/10" onClick={goBack}>
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Back
+                  </Button>
+                )}
+                {prevSiblingId && (
+                  <Button variant="outline" className="border-white text-white bg-transparent hover:bg-white/10" onClick={() => goToSibling(prevSiblingId)}>
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Previous
+                  </Button>
+                )}
+                {nextSiblingId && (
+                  <Button variant="outline" className="border-white text-white bg-transparent hover:bg-white/10" onClick={() => goToSibling(nextSiblingId)}>
+                    Next
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                )}
               </div>
-              <div className="flex flex-wrap gap-3 justify-center">
-                <Badge
-                  variant={selectedCategory === "all" ? "default" : "outline"}
-                  className="cursor-pointer hover:scale-105 transition-transform px-4 py-2 text-white bg-transparent hover:bg-transparent border-white"
-                  onClick={showAll}
-                >
-                  All Posts
-                </Badge>
-
-                {/* Parent badges */}
-                {parents.map((parent) => {
-                  const children = childrenMap.get(parent.id) ?? [];
-                  const hasChildren = children.length > 0;
-                  const isActive = selectedCategory === parent.slug || selectedCategory === parent.id;
-                  return (
-                    <Badge
-                      key={parent.id}
-                      variant={isActive ? "default" : "outline"}
-                      className="cursor-pointer hover:scale-105 transition-transform px-4 py-2 flex items-center"
-                      style={{
-                        backgroundColor: isActive ? parent.color : "transparent",
-                        borderColor: parent.color,
-                        color: isActive ? "white" : parent.color,
-                      }}
-                      onClick={() => {
-                        setSelectedCategory((prev) => (prev === parent.slug ? prev : parent.slug));
-                        toggleOpenParent(parent.id);
-                      }}
-                      title={parent.description ?? parent.name}
-                    >
-                      {parent.name}
-                      {hasChildren && (
-                        <span
-                          style={{
-                            fontSize: 10,
-                            marginLeft: 8,
-                            opacity: 0.9,
-                            transform: openParentId === parent.id ? "rotate(180deg)" : "none",
-                            transition: "transform .12s ease",
-                          }}
-                        >
-                          ▾
-                        </span>
-                      )}
-                    </Badge>
-                  );
-                })}
-              </div>
-
-              {/* Single children row (for the open parent) */}
-              {openParentId && openChildren.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-2 justify-center">
-                  {openChildren.map(({ node, depth }) => {
-                    const isActive = selectedCategory === node.slug || selectedCategory === node.id;
-                    return (
-                      <Badge
-                        key={node.id}
-                        variant={isActive ? "default" : "outline"}
-                        className="cursor-pointer transition-transform px-3 py-1 text-sm"
-                        style={{
-                          marginLeft: depth === 1 ? 0 : depth * 6,
-                          backgroundColor: isActive ? node.color : "transparent",
-                          borderColor: node.color,
-                          color: isActive ? "white" : node.color,
-                        }}
-                        onClick={() => {
-                          setSelectedCategory((prev) => (prev === node.slug ? prev : node.slug));
-                        }}
-                      >
-                        {node.name}
-                      </Badge>
-                    );
-                  })}
-                </div>
-              )}
             </div>
 
-            {/* Blog Posts Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {visiblePosts.map((post) => (
-                <BlogPostCard key={post.id} post={post} categoryDisplayMap={categoryDisplayMap} postCategoryType={postCategoryType} />
-              ))}
-            </div>
-
-            {visibleCount < filteredPosts.length && (
-              <div className="flex justify-center mt-10">
-                <Button
-                  variant="outline"
-                  className="border-white text-white bg-transparent hover:bg-white/10"
-                  onClick={() => setVisibleCount((c) => Math.min(c + POSTS_PER_BATCH, filteredPosts.length))}
-                >
-                  Load More
-                </Button>
+            {/* Folder cards (only show categories until leaf) */}
+            {!isLeafCategory && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {currentCategoriesToShow.map((cat) => (
+                  <CategoryCard key={cat.id} category={cat} onOpen={() => openCategory(cat.id)} />
+                ))}
               </div>
             )}
 
-            {!loading && (posts.length > 0 || categories.length > 0) && filteredPosts.length === 0 && (
-              <div className="text-center py-16">
-                <h3 className="text-2xl font-semibold text-white mb-3">No posts found</h3>
-                <p className="text-muted-foreground">No blog posts are available in this category yet.</p>
-              </div>
+            {/* Leaf posts only */}
+            {isLeafCategory && (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {visiblePosts.map((post) => (
+                    (() => {
+                      const mappedId = parsePrayerTaskIdFromTags((post as any).tags);
+                      const joined = mappedId ? joinedTaskIds.has(mappedId) : false;
+                      return (
+                    <BlogPostCard
+                      key={post.id}
+                      post={post}
+                      joined={joined}
+                      onJoin={(p) => void openPrayerAction("join", p)}
+                      onSave={(p) => void openPrayerAction("save", p)}
+                    />
+                      );
+                    })()
+                  ))}
+                </div>
+
+                {visibleCount < leafPosts.length && (
+                  <div className="flex justify-center mt-10">
+                    <Button
+                      variant="outline"
+                      className="border-white text-white bg-transparent hover:bg-white/10"
+                      onClick={() => setVisibleCount((c) => Math.min(c + POSTS_PER_BATCH, leafPosts.length))}
+                    >
+                      Load More
+                    </Button>
+                  </div>
+                )}
+
+                {leafPosts.length === 0 && (
+                  <div className="text-center py-16">
+                    <h3 className="text-2xl font-semibold text-white mb-3">No prayers found</h3>
+                    <p className="text-muted-foreground">No items are available in this category yet.</p>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
-          {/* Right column images */}
+          {/* Right column image */}
           <div className="imgRight01 max-w-40">
             <Link
               to="https://www.miracolieucaristici.org/en/Liste/scheda_c.html?nat=polonia&wh=sokolka&ct=Sok%C3%B3%C5%82ka%202008"
@@ -430,102 +720,392 @@ const Blog = () => {
             >
               <img src={Right02} alt="Right 02" />
             </Link>
-            
           </div>
         </div>
       </div>
 
       <Footer />
+
+      {/* Blog / Prayer request popup */}
+      <Dialog open={requestOpen} onOpenChange={setRequestOpen}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Request a Blog / Prayer</DialogTitle>
+            <DialogDescription>
+              Submit a request for review. This will not be published automatically.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <Label>Request Type *</Label>
+              <Select value={requestType} onValueChange={(v: any) => setRequestType(v)}>
+                <SelectTrigger className="mt-1 rounded-[8px] border-muted-foreground/60 hover:border-muted-foreground shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent h-[40px]">
+                  <SelectValue placeholder="Select Blog or Prayer" />
+                </SelectTrigger>
+                <SelectContent className="border-secondary-foreground bg-black/90 text-white">
+                  <SelectItem value="blog">Blog</SelectItem>
+                  <SelectItem value="prayer">Prayer</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>Title *</Label>
+              <Input
+                value={requestTitle}
+                onChange={(e) => setRequestTitle(e.target.value)}
+                placeholder="Enter a title"
+                className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none"
+                style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as React.CSSProperties}
+              />
+            </div>
+
+            <div>
+              <Label>Content / Description *</Label>
+              <Textarea
+                value={requestContent}
+                onChange={(e) => setRequestContent(e.target.value)}
+                placeholder="Write your request here..."
+                className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none min-h-[140px]"
+                style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as React.CSSProperties}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <Label>Name *</Label>
+                <Input
+                  value={requestName}
+                  onChange={(e) => setRequestName(e.target.value)}
+                  placeholder="Your name"
+                  className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as React.CSSProperties}
+                />
+              </div>
+              <div>
+                <Label>Email *</Label>
+                <Input
+                  type="email"
+                  value={requestEmail}
+                  onChange={(e) => setRequestEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as React.CSSProperties}
+                />
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" className="rounded-[8px] border-0 hover:bg-muted/10" onClick={() => setRequestOpen(false)}>
+              Cancel
+            </Button>
+            <Button className="rounded-[8px] border-0 hover:bg-primary/80" disabled={requestSubmitting} onClick={submitRequest}>
+              {requestSubmitting ? "Sending..." : "Submit Request"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Prayer action popup (Join / Save reminder) */}
+      <Dialog open={actionOpen} onOpenChange={setActionOpen}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>{actionMode === "join" ? "Join Prayer" : "Save with Reminder"}</DialogTitle>
+            <DialogDescription>
+              {actionPost?.title}
+              <span className="block text-xs text-muted-foreground mt-1">
+                Your email and phone details are auto-filled from your profile. You can edit them if needed.
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+
+          {!resolvedPrayerTask ? (
+            <div className="text-sm text-muted-foreground">
+              {actionPost
+                ? resolvingPrayerTask
+                  ? "Loading prayer task…"
+                  : "No prayer task is linked to this post yet. Please ask an admin to map it, or request one."
+                : "Select a prayer first."}
+              {!resolvingPrayerTask && actionPost && (
+                <div className="mt-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="rounded-[8px] border-0 hover:bg-muted/10"
+                    onClick={() => navigate("/prayer-tasks")}
+                  >
+                    Request a Prayer Task
+                  </Button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <Label>Your Email *</Label>
+                  <Input
+                    type="email"
+                    value={contactEmail}
+                    onChange={(e) => setContactEmail(e.target.value)}
+                    placeholder="your.email@example.com"
+                    className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none"
+                    style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as React.CSSProperties}
+                  />
+                </div>
+                <div>
+                  <Label>Phone Number</Label>
+                  <div className="mt-1 flex gap-2">
+                    <Input
+                      type="tel"
+                      value={contactCountryCode}
+                      onChange={(e) => setContactCountryCode(e.target.value.replace(/[^\d+]/g, ""))}
+                      placeholder="+1"
+                      className="w-[88px] rounded-[8px] shadow-none border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none"
+                      style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as React.CSSProperties}
+                    />
+                    <Input
+                      type="tel"
+                      value={contactPhoneNumber}
+                      onChange={(e) => setContactPhoneNumber(e.target.value.replace(/\D/g, ""))}
+                      placeholder="7723211897"
+                      className="flex-1 rounded-[8px] shadow-none border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none"
+                      style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as React.CSSProperties}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <Label>Person Who Needs Help (optional)</Label>
+                <Select value={personName || "__custom__"} onValueChange={(v) => setPersonName(v === "__custom__" ? "" : v)}>
+                  <SelectTrigger className="rounded-[8px] border-muted-foreground/60 hover:border-muted-foreground shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400 h-[40px]">
+                    <SelectValue placeholder="Select a person (optional)" />
+                  </SelectTrigger>
+                  <SelectContent className="border-secondary-foreground bg-black/90 text-white">
+                    <SelectItem value="__custom__">Add / Type a new name</SelectItem>
+                    {personOptions.map((p: string) => (
+                      <SelectItem key={p} value={p}>
+                        {p}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Input
+                  className="mt-2 rounded-[8px] shadow-none border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as React.CSSProperties}
+                  placeholder="Type a name (saved to your account)"
+                  value={personName}
+                  onChange={(e) => setPersonName(e.target.value)}
+                />
+              </div>
+
+              {actionMode === "save" && (
+                <div className="space-y-3">
+                  <Label>When should reminders start?</Label>
+                  <Select value={reminderType} onValueChange={(v: any) => setReminderType(v)}>
+                    <SelectTrigger className="rounded-[8px] border-muted-foreground/60 hover:border-muted-foreground shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400 h-[40px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="border-secondary-foreground bg-black/90 text-white">
+                      <SelectItem value="days">After a number of days</SelectItem>
+                      <SelectItem value="weeks">After a number of weeks</SelectItem>
+                      <SelectItem value="date">On a specific date</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {reminderStartPreview && (
+                    <p className="text-xs text-muted-foreground">Starts on: {reminderStartPreview}</p>
+                  )}
+
+                  {reminderType === "date" && (
+                    <div>
+                      <Label>Start date</Label>
+                      <Input type="date" value={reminderDate} onChange={(e) => setReminderDate(e.target.value)} />
+                    </div>
+                  )}
+                  {reminderType === "days" && (
+                    <div>
+                      <Label>Number of days</Label>
+                      <Input type="number" min={0} value={reminderDays} onChange={(e) => setReminderDays(Number(e.target.value) || 0)} />
+                    </div>
+                  )}
+                  {reminderType === "weeks" && (
+                    <div>
+                      <Label>Number of weeks</Label>
+                      <Input type="number" min={0} value={reminderWeeks} onChange={(e) => setReminderWeeks(Number(e.target.value) || 0)} />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div>
+                <Label>Reminder Time (daily)</Label>
+                <Input type="time" value={prayerTime} onChange={(e) => setPrayerTime(e.target.value)} />
+                <p className="text-xs text-muted-foreground mt-1">You’ll receive reminders at this time daily</p>
+              </div>
+
+              <div>
+                <Label>Timezone</Label>
+                <Select value={timezone} onValueChange={setTimezone}>
+                  <SelectTrigger className="rounded-[8px] border-muted-foreground/60 hover:border-muted-foreground shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent data-[placeholder]:text-gray-400 h-[40px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="border-secondary-foreground bg-black/90 text-white">
+                    {commonTimezones.map((tz) => (
+                      <SelectItem key={tz.value} value={tz.value}>
+                        {tz.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" className="rounded-[8px] border-0 hover:bg-muted/10" onClick={() => setActionOpen(false)}>
+              Cancel
+            </Button>
+            <Button className="rounded-[8px] border-0 hover:bg-primary/80" disabled={saving || !resolvedPrayerTask} onClick={confirmPrayerAction}>
+              {actionMode === "join" ? "Join Prayer" : "Save Reminder"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
 
-const BlogPostCard = memo(
-  ({
-    post,
-    categoryDisplayMap,
-    postCategoryType,
-  }: {
-    post: BlogPost;
-    categoryDisplayMap: Map<string, { name: string; color: string }>;
-    postCategoryType: "id" | "slug";
-  }) => {
-    const rawCategory = typeof post.category === "string" ? post.category : "";
-    const normalizedCategory = rawCategory.toLowerCase().trim();
-    const categoryData =
-      categoryDisplayMap.get(postCategoryType === "id" ? rawCategory : normalizedCategory) ??
-      categoryDisplayMap.get(rawCategory) ??
-      categoryDisplayMap.get(normalizedCategory) ?? {
-      name: "General",
-      color: "#6B7280",
-    };
+const CategoryCard = memo(function CategoryCard({
+  category,
+  onOpen,
+}: {
+  category: BlogCategory;
+  onOpen: () => void;
+}) {
+  const imageUrl = (category as any).image_url || PLACEHOLDER_CATEGORY_IMAGE;
 
-    return (
-      <Card className="group hover:scale-105 hover:glow-primary transition-all duration-300 cursor-pointer border-0 shadow-none bg-gradient-pink-to-yellow rounded-sm p-[2px]">
-        <div className="bg-black rounded-sm p-0 h-full">
-          <Link to={`/blog/${post.slug}`}>
-            {post.featured_image && (
-              <img
-                src={post.featured_image}
-                alt={post.title}
-                loading="lazy"
-                decoding="async"
-                className="w-full h-40 object-cover rounded-t-sm mb-2"
-              />
+  return (
+    <Card
+      className="group hover:scale-105 hover:glow-primary transition-all duration-300 cursor-pointer border-0 shadow-none bg-gradient-pink-to-yellow rounded-sm p-[2px]"
+      onClick={onOpen}
+    >
+      <div className="bg-black rounded-sm p-0 h-full">
+        <img
+          src={imageUrl}
+          alt={category.name}
+          loading="lazy"
+          decoding="async"
+          className="w-full h-40 object-cover rounded-t-sm mb-2"
+        />
+        <CardHeader className="p-4 pb-0 space-y-0">
+          <h3 className="text-lg font-inter font-semibold text-white line-clamp-2 pb-2">{category.name}</h3>
+        </CardHeader>
+        <CardContent className="p-4 pt-0">
+          <div className="flex items-center justify-between text-xs text-muted-foreground pt-4">
+            <span className="text-white/70">Open folder</span>
+          </div>
+        </CardContent>
+      </div>
+    </Card>
+  );
+});
+
+const BlogPostCard = memo(function BlogPostCard({
+  post,
+  joined,
+  onJoin,
+  onSave,
+}: {
+  post: BlogPost;
+  joined: boolean;
+  onJoin: (post: BlogPost) => void;
+  onSave: (post: BlogPost) => void;
+}) {
+  return (
+    <Card className="group hover:scale-105 hover:glow-primary transition-all duration-300 cursor-pointer border-0 shadow-none bg-gradient-pink-to-yellow rounded-sm p-[2px]">
+      <div className="bg-black rounded-sm p-0 h-full">
+        <Link to={`/blog/${post.slug}`}>
+          {post.featured_image && (
+            <img
+              src={post.featured_image}
+              alt={post.title}
+              loading="lazy"
+              decoding="async"
+              className="w-full h-40 object-cover rounded-t-sm mb-2"
+            />
+          )}
+
+          <CardHeader className="p-4 pb-0 space-y-0">
+            <h3 className="text-lg font-inter font-semibold text-white line-clamp-2 pb-2">{post.title}</h3>
+
+            {post.excerpt && (
+              <p className="text-white font-open-sans font-normal text-sm line-clamp-3 mt-2" dangerouslySetInnerHTML={{ __html: post.excerpt }}></p>
             )}
+          </CardHeader>
 
-            <CardHeader className="p-4 pb-0 space-y-0">
-              <div className="flex items-center gap-2 mb-3">
-                <Badge style={{ backgroundColor: categoryData.color, color: "white" }} className="text-xs border-0">
-                  {categoryData.name}
-                </Badge>
-                <div className="flex items-center gap-1 text-xs text-white">
-                  <Eye className="w-3 h-3" />
-                  {post.view_count}
-                </div>
+          <CardContent className="p-4 pt-0">
+            <div className="flex items-center justify-between text-xs text-muted-foreground pt-4">
+              <div className="flex items-center gap-1">
+                <Calendar className="w-3 h-3" />
+                {new Date(post.published_at || post.created_at).toLocaleDateString()}
               </div>
-
-              <h3 className="text-lg font-inter font-semibold text-white line-clamp-2 pb-2">{post.title}</h3>
-
-              {post.excerpt && (
-                <p
-                  className="text-white font-open-sans font-normal text-sm line-clamp-3 mt-2"
-                  dangerouslySetInnerHTML={{ __html: post.excerpt }}
-                ></p>
-              )}
-            </CardHeader>
-
-            <CardContent className="p-4 pt-0">
-              <div className="flex items-center justify-between text-xs text-muted-foreground pt-4">
-                <div className="flex items-center gap-1">
-                  <Calendar className="w-3 h-3" />
-                  {new Date(post.published_at || post.created_at).toLocaleDateString()}
-                </div>
-                <div className="flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  {Math.ceil(post.content.length / 200)} min read
-                </div>
+              <div className="flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                {Math.ceil(post.content.length / 200)} min read
               </div>
+            </div>
 
-              {post.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1 mt-4">
-                  {post.tags.slice(0, 3).map((tag) => (
-                    <Badge key={tag} variant="outline" className="text-xs text-white bg-transparent">
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Link>
+            <div className="flex items-center gap-2 mt-3 text-xs text-white/70">
+              <Eye className="w-3 h-3" />
+              {post.view_count}
+            </div>
+
+            {post.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-4">
+                {post.tags.slice(0, 3).map((tag) => (
+                  <Badge key={tag} variant="outline" className="text-xs text-white bg-transparent">
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Link>
+
+        {/* Two required buttons in the card footer area (do not navigate to post) */}
+        <div className="p-4 pt-0">
+          <div className="flex gap-2">
+            <Button
+              className="flex-1 rounded-[8px] border-0 hover:bg-primary/80 bg-primary"
+              disabled={joined}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onJoin(post);
+              }}
+            >
+              <Heart className="h-4 w-4 mr-2" />
+              {joined ? "Joined" : "Join Prayer"}
+            </Button>
+            <Button
+              variant="outline"
+              className="flex-1 rounded-[8px] border-white/30 text-white bg-transparent hover:bg-white/10"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onSave(post);
+              }}
+            >
+              Save
+            </Button>
+          </div>
         </div>
-      </Card>
-    );
-  },
-  (prev, next) =>
-    prev.post === next.post &&
-    prev.postCategoryType === next.postCategoryType &&
-    prev.categoryDisplayMap === next.categoryDisplayMap
-);
+      </div>
+    </Card>
+  );
+});
 
 export default Blog;

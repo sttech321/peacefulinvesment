@@ -13,6 +13,7 @@ export interface BlogCategory {
   name: string;
   description?: string | null;
   color: string;
+  image_url?: string | null;
   created_at?: string;
   updated_at?: string;
   subcategories?: Subcategory[];
@@ -34,6 +35,7 @@ type CreateCategoryInput = {
   description?: string;
   color?: string;
   parent_id?: string | null;
+  image_url?: string | null;
 };
 
 type UpdateCategoryInput = Partial<
@@ -65,6 +67,7 @@ export function useCategories() {
           slug: cat.slug,
           description: cat.description,
           color: cat.color,
+          image_url: cat.image_url ?? null,
           created_at: cat.created_at,
           updated_at: cat.updated_at,
           subcategories: cat.blog_subcategories || [],
@@ -128,6 +131,7 @@ export function useCategories() {
             color: input.color ?? "#6B7280",
             parent_id: input.parent_id ?? null,
             sort_order: nextSortOrder,
+            image_url: input.image_url ?? null,
           },
         ])
         .select(

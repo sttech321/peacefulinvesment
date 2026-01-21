@@ -149,8 +149,22 @@ Deno.serve(async (req: Request) => {
     const personName = userTask.person_needs_help
       ? ` for ${escapeHtml(userTask.person_needs_help)}`
       : "";
-    const prayerLink = userTask.task?.link_or_video || "#";
     const baseUrl = Deno.env.get("SITE_URL") || "https://peacefulinvestment.com";
+
+    // Build a user-friendly link to *today's* prayer.
+    // - If `link_or_video` is relative, prefix SITE_URL so it works in email/SMS.
+    // - If it points to a blog post, append `?day=<n>` so the link is "that day's prayer/blog".
+    const rawLink: string = userTask.task?.link_or_video || "#";
+    const absoluteLink =
+      rawLink.startsWith("/") && rawLink !== "#"
+        ? `${baseUrl}${rawLink}`
+        : rawLink;
+
+    const shouldAppendDayParam = absoluteLink.includes("/blog/");
+    const prayerLink =
+      shouldAppendDayParam && absoluteLink !== "#"
+        ? `${absoluteLink}${absoluteLink.includes("?") ? "&" : "?"}day=${currentDay}`
+        : absoluteLink;
 
     // Email content
     const emailHtml = `

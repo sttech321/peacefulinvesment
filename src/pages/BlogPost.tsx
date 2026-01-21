@@ -1,9 +1,12 @@
-import { useState, useEffect, useCallback } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Calendar, Clock, Eye, Tag, Share2, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 import {
   useBlog,
   type BlogPost as BlogPostType,
@@ -12,14 +15,92 @@ import {
 import Footer from "@/components/Footer";
 import { boxShadow } from "html2canvas/dist/types/css/property-descriptors/box-shadow";
 
+type PrayerTaskLite = {
+  id: string;
+  number_of_days?: number | null;
+  duration_days?: number | null;
+};
+
+type PrayerUserTaskLite = {
+  id: string;
+  task_id: string;
+  user_id: string | null;
+  email: string;
+  phone_number: string | null;
+  person_needs_help: string | null;
+  prayer_time: string;
+  timezone: string;
+  start_date: string;
+  end_date: string;
+  current_day: number;
+  is_active: boolean;
+  completed_days?: number[];
+  task?: PrayerTaskLite;
+};
+
+function extractPrayerTaskIdFromTags(tags: unknown): string | null {
+  if (!Array.isArray(tags)) return null;
+  for (const t of tags) {
+    if (typeof t !== "string") continue;
+    const m = t.trim().match(/^prayer_task:(?<id>[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i);
+    if (m?.groups?.id) return m.groups.id;
+  }
+  return null;
+}
+
+function stripPrayerTaskTags(tags: string[]) {
+  return tags.filter((t) => !/^prayer_task:[0-9a-f-]{36}$/i.test(t.trim()));
+}
+
 const BlogPost = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { getPostBySlug, incrementViewCount, categories } = useBlog();
+  const { user } = useAuth();
+  const { toast } = useToast();
 
 
   const [post, setPost] = useState<BlogPostType | null>(null);
   const [loading, setLoading] = useState(true);
+  const [userTask, setUserTask] = useState<PrayerUserTaskLite | null>(null);
+  const [completing, setCompleting] = useState(false);
+
+  const mappedPrayerTaskId = useMemo(() => extractPrayerTaskIdFromTags((post as any)?.tags), [post]);
+
+  const getUserDate = useCallback((tz: string) => {
+    // Convert "now" into user's timezone-local date
+    const today = new Date();
+    return new Date(today.toLocaleString("en-US", { timeZone: tz }));
+  }, []);
+
+  const getCurrentDay = useCallback(
+    (ut: PrayerUserTaskLite): number => {
+      const startDate = new Date(ut.start_date);
+      const userDate = getUserDate(ut.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone);
+      startDate.setHours(0, 0, 0, 0);
+      userDate.setHours(0, 0, 0, 0);
+
+      const diffTime = userDate.getTime() - startDate.getTime();
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+      const endDate = new Date(ut.end_date);
+      endDate.setHours(0, 0, 0, 0);
+      const duration = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+      if (diffDays < 1) return 0; // Not started yet
+      if (diffDays > duration) return duration; // Completed
+      return diffDays;
+    },
+    [getUserDate]
+  );
+
+  const canCompleteToday = useMemo(() => {
+    if (!userTask) return false;
+    const currentDay = getCurrentDay(userTask);
+    const duration = userTask.task?.duration_days || userTask.task?.number_of_days || 1;
+    if (currentDay < 1 || currentDay > duration) return false;
+    return !((userTask.completed_days || []).includes(currentDay));
+  }, [getCurrentDay, userTask]);
 
   const fetchPost = useCallback(async () => {
     if (!slug) return;
@@ -41,6 +122,97 @@ const BlogPost = () => {
   useEffect(() => {
     fetchPost();
   }, [fetchPost]);
+
+  // Load user's prayer instance for this blog/prayer (mapped via tag prayer_task:<uuid>)
+  useEffect(() => {
+    const loadUserTask = async () => {
+      if (!user || !mappedPrayerTaskId) {
+        setUserTask(null);
+        return;
+      }
+
+      try {
+        const { data: ut, error } = await (supabase as any)
+          .from("prayer_user_tasks")
+          .select("*, task:prayer_tasks(id,number_of_days,duration_days)")
+          .eq("is_active", true)
+          .eq("user_id", user.id)
+          .eq("task_id", mappedPrayerTaskId)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (error) throw error;
+        if (!ut) {
+          setUserTask(null);
+          return;
+        }
+
+        // Fetch completed days
+        const { data: completions } = await (supabase as any)
+          .from("prayer_daily_completions")
+          .select("day_number")
+          .eq("user_task_id", ut.id);
+
+        setUserTask({
+          ...(ut as any),
+          completed_days: (completions || []).map((c: any) => c.day_number),
+        } as PrayerUserTaskLite);
+      } catch (e: any) {
+        console.warn("[BlogPost] Failed to load prayer progress:", e);
+        setUserTask(null);
+      }
+    };
+
+    void loadUserTask();
+  }, [mappedPrayerTaskId, user]);
+
+  const handleCompleteToday = useCallback(async () => {
+    if (!userTask) return;
+    const dayNumber = getCurrentDay(userTask);
+    try {
+      setCompleting(true);
+
+      const { data: canComplete, error: checkError } = await supabase.rpc("can_complete_prayer_day" as any, {
+        p_user_task_id: userTask.id,
+        p_day_number: dayNumber,
+      });
+      if (checkError) throw checkError;
+
+      if (!canComplete) {
+        toast({
+          title: "Cannot Complete",
+          description: "This day cannot be marked as completed. It may be a future day or already completed.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { error } = await (supabase as any)
+        .from("prayer_daily_completions")
+        .insert([{ user_task_id: userTask.id, day_number: dayNumber }]);
+      if (error) throw error;
+
+      const newCurrentDay = Math.max(userTask.current_day || 1, dayNumber + 1);
+      await (supabase as any).from("prayer_user_tasks").update({ current_day: newCurrentDay }).eq("id", userTask.id);
+
+      toast({ title: "Day Completed", description: `Day ${dayNumber} has been marked as completed.` });
+
+      // Refresh state (cheap)
+      setUserTask((prev) =>
+        prev
+          ? {
+              ...prev,
+              current_day: newCurrentDay,
+              completed_days: Array.from(new Set([...(prev.completed_days || []), dayNumber])).sort((a, b) => a - b),
+            }
+          : prev
+      );
+    } catch (e: any) {
+      toast({ title: "Error", description: e?.message || "Failed to mark day as completed.", variant: "destructive" });
+    } finally {
+      setCompleting(false);
+    }
+  }, [getCurrentDay, toast, userTask]);
 
   // Strip HTML tags from excerpt for sharing (plain text only)
   const stripHtmlTags = (html: string): string => {
@@ -105,6 +277,10 @@ const BlogPost = () => {
       name: "General",
       color: "#6B7280",
     };
+
+  const displayTags = stripPrayerTaskTags(post.tags || []);
+  const currentDay = userTask ? getCurrentDay(userTask) : 0;
+  const totalDays = userTask ? (userTask.task?.duration_days || userTask.task?.number_of_days || 1) : 0;
 
   return (
     <>
@@ -218,7 +394,7 @@ const BlogPost = () => {
 
                     <div className="flex items-center justify-between w-full">
                       <div className="flex flex-wrap gap-2">
-                        {post.tags.map((tag) => (
+                        {displayTags.map((tag) => (
                           <Badge key={tag} variant="outline" className="text-xs font-normal font-open-sans text-white p-1 px-3 bg-transparent">
                             <Tag className="w-3 h-3 mr-1" />
                             {tag}
@@ -239,6 +415,40 @@ const BlogPost = () => {
                         </Button>
                       </div>
                     </div>
+
+                    {/* Daily progress + Done (logged-in users only, requires mapping tag prayer_task:<uuid>) */}
+                    {user && mappedPrayerTaskId && (
+                      <div className="mt-6 w-full max-w-3xl">
+                        <div className="rounded-lg border border-muted-foreground/20 bg-white/5 p-4">
+                          {userTask ? (
+                            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                              <div>
+                                <div className="text-white font-semibold">My Prayer Progress</div>
+                                <div className="text-white/70 text-sm">
+                                  Day {currentDay} of {totalDays} • Prayer Time: {userTask.prayer_time} ({userTask.timezone})
+                                </div>
+                                {userTask.person_needs_help && (
+                                  <div className="text-white/70 text-sm">For: {userTask.person_needs_help}</div>
+                                )}
+                              </div>
+                              <div className="flex gap-2">
+                                <Button
+                                  className="rounded-[8px] border-0 hover:bg-primary/80"
+                                  disabled={!canCompleteToday || completing}
+                                  onClick={handleCompleteToday}
+                                >
+                                  {completing ? "Saving..." : "Done (Mark Today Complete)"}
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="text-white/70 text-sm">
+                              To track your daily progress and get reminders, start this prayer from the Catholic list (Join Prayer).
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <div className="">
                     {post.featured_image && (
