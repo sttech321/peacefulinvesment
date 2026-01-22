@@ -15,6 +15,7 @@ import { toast } from "@/hooks/use-toast";
 import ReferralAnalytics from "@/components/referrals/ReferralAnalytics";
 import SocialShare from "@/components/referrals/SocialShare";
 import Footer from "@/components/Footer";
+import { useAppTexts } from "@/hooks/useAppTexts";
 
 const Referrals = () => {
   const { user } = useAuth();
@@ -28,7 +29,7 @@ const Referrals = () => {
   const [subjectError, setSubjectError] = useState("");
   const [messageError, setMessageError] = useState("");
 
-
+  const { texts } = useAppTexts();
 
   if (!user) {
     return (
@@ -375,7 +376,7 @@ const Referrals = () => {
                     </h3>
                     {ownerInfoBadge}
                     <div className="text-muted-foreground">
-                      Share this link with friends to earn 5% commission on their trading account.
+                      {texts.referral_share_helper_text}
                     </div>
                   </div>
                   <div className="space-y-4">
@@ -727,8 +728,8 @@ const Referrals = () => {
         {/* How It Works */}
         <Card className="mt-8">
           <CardHeader>
-            <CardTitle>How Referrals Work</CardTitle>
-            <CardDescription>Earn money by referring new users to our platform</CardDescription>
+            <CardTitle>{texts.referral_page_title}</CardTitle>
+            <CardDescription>{texts.referral_page_subtitle}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -736,27 +737,27 @@ const Referrals = () => {
                 <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-3 mx-auto">
                   <Share2 className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="font-semibold mb-2 text-white">1. Share Your Link</h3>
+                <h3 className="font-semibold mb-2 text-white">1. {texts.referral_step_1_title}</h3>
                 <p className="text-sm text-muted-foreground">
-                  Share your unique referral link with friends and family
+                  {texts.referral_step_1_text}
                 </p>
               </div>
               <div className="text-center">
                 <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-3 mx-auto">
                   <Users className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="font-semibold mb-2 text-white">2. They Sign Up</h3>
+                <h3 className="font-semibold mb-2 text-white">2. {texts.referral_step_2_title}</h3>
                 <p className="text-sm text-muted-foreground">
-                  New users create an account using your referral link
+                  {texts.referral_step_2_text}
                 </p>
               </div>
               <div className="text-center">
                 <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-3 mx-auto">
                   <DollarSign className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="font-semibold mb-2 text-white">3. Earn 5%</h3>
+                <h3 className="font-semibold mb-2 text-white">3. {texts.referral_step_3_title}</h3>
                 <p className="text-sm text-muted-foreground">
-                  Get 5% commission when they make their first deposit
+                  {texts.referral_step_3_text}
                 </p>
               </div>
             </div>

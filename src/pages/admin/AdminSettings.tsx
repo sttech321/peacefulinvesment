@@ -3,11 +3,16 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Plus, Trash2, Settings, Link2, Mail, GripVertical } from "lucide-react";
+import { Loader2, Plus, Trash2, Settings, Link2, Mail, GripVertical, FileText } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  DEFAULT_APP_TEXTS,
+  APP_TEXT_LABELS,
+  APP_TEXT_PLACEHOLDERS,
+} from "@/config/appTextDefinitions";
 
 interface LinkItem {
   label: string;
@@ -31,6 +36,8 @@ export default function AdminSettings() {
   const [draggedLinkId, setDraggedLinkId] = useState<string | null>(null);
   const [dragOverLinkId, setDragOverLinkId] = useState<string | null>(null);
   const [draggedLinkType, setDraggedLinkType] = useState<'header' | 'footer' | null>(null);
+
+  const [appTexts, setAppTexts] = useState<Record<string, string>>({});
 
   // Fetch app settings
   useEffect(() => {
@@ -138,6 +145,18 @@ export default function AdminSettings() {
           { label: 'Download app', to: '/downloads', order: 4 },
         ]);
       }
+
+      const { data: textRows } = await supabase
+        .from("app_settings" as any)
+        .select("key, value");
+      const mergedTexts = { ...DEFAULT_APP_TEXTS };
+      textRows?.forEach((row: any) => {
+        if (mergedTexts[row.key] !== undefined) {
+          mergedTexts[row.key] = row.value;
+        }
+      });
+      setAppTexts(mergedTexts);
+
     } catch (error) {
       console.error('Error fetching app settings:', error);
     } finally {
@@ -194,6 +213,16 @@ export default function AdminSettings() {
         }, {
           onConflict: 'key'
         });
+
+        const textUpserts = Object.entries(appTexts).map(([key, value]) => ({
+          key,
+          value,
+          description: `Dynamic UI text for ${key}`,
+          updated_at: new Date().toISOString(),
+        }));
+        await supabase
+          .from("app_settings" as any)
+          .upsert(textUpserts, { onConflict: "key" });
 
       toast({
         title: "Success",
@@ -626,6 +655,43 @@ export default function AdminSettings() {
                 Add Footer Link
               </Button></div>
             </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Dynamic UI Text Settings */}
+      <div className="bg-gradient-pink-to-yellow p-[2px] rounded-sm">
+        <Card className="bg-black rounded-sm">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary" />
+              <CardTitle>Dynamic UI Texts</CardTitle>
+            </div>
+            <CardDescription>
+              Manage all referral, community and statistics content
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 p-3 sm:p-6 pt-0 sm:pt-0">
+            {Object.entries(appTexts).map(([key, value]) => (
+              <div key={key} className="space-y-1">
+                <Label className="text-xs text-muted-foreground">
+                  {APP_TEXT_LABELS[key]}
+                </Label>
+
+                <Input
+                  value={value}
+                  placeholder={APP_TEXT_PLACEHOLDERS[key]}
+                  onChange={(e) =>
+                    setAppTexts((prev) => ({
+                      ...prev,
+                      [key]: e.target.value,
+                    }))
+                  }
+                  className="rounded-[8px] border-0"
+                />
+              </div>
+            ))}
           </CardContent>
         </Card>
       </div>

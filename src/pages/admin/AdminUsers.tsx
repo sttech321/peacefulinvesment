@@ -518,7 +518,7 @@ export default function AdminUsers() {
 
     try {
       const { data, error } = await supabase
-        .from("kyc_documents")
+        .from("kyc_documents" as any)
         .select("*")
         .eq("user_id", user.user_id)
         .order("created_at", { ascending: false });

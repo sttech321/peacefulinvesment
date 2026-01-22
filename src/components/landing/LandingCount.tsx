@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import stats from '@/services/stats';
 import joinIcon from '@/assets/join-icon.svg';
+import { useAppTexts } from "@/hooks/useAppTexts";
 
 export default function LandingCount() {
   const stored = stats.getStats();
@@ -23,6 +24,8 @@ export default function LandingCount() {
         Math.floor(stored.aum - Math.max(1, Math.floor(stored.aum * 0.02)))
       ),
   });
+
+  const { texts } = useAppTexts();
 
   useEffect(() => {
     // animate from start to current on mount
@@ -91,34 +94,36 @@ export default function LandingCount() {
             <div className='grid grid-cols-2 items-center gap-0 rounded-sm bg-black md:grid-cols-4 pt-5 pb-4'>
               <div className='glass-card border-0 bg-transparent p-4 text-center shadow-none'>
                 <div className='mb-2 font-bebas-neue text-[45px] xl:text-[50px] font-normal leading-[36px] text-white'>
-                  {formatUsers(values.users)}
+                  {/* {formatUsers(values.users)} */}
+                  {texts.stats_aum_value}
                 </div>
                 <div className='font-open-sans text-[18px] lg:text-2xl font-normal text-white'>
-                  Assets Under Management
+                  {texts.stats_aum_label}
                 </div>
               </div>
               <div className='glass-card border-0 bg-transparent p-4 text-center shadow-none'>
                 <div className='mb-2 font-bebas-neue text-[45px] xl:text-[50px] font-normal leading-[36px] text-white'>
-                  {formatAum(values.aum)}
+                  {/* {formatAum(values.aum)} */}
+                  {texts.stats_investors_value}
                 </div>
                 <div className='font-open-sans text-[18px] lg:text-2xl font-normal text-white'>
-                  Active Investors
+                  {texts.stats_investors_label}
                 </div>
               </div>
               <div className='glass-card border-0 bg-transparent p-4 text-center shadow-none'>
                 <div className='mb-2 font-bebas-neue text-[45px] xl:text-[50px] font-normal leading-[36px] text-white'>
-                  99.9%
+                  {texts.stats_uptime_value}
                 </div>
                 <div className='font-open-sans text-[18px] lg:text-2xl font-normal text-white'>
-                  Platform Uptime
+                  {texts.stats_uptime_label}
                 </div>
               </div>
               <div className='glass-card border-0 bg-transparent p-4 text-center shadow-none'>
                 <div className='mb-2 font-bebas-neue text-[45px] xl:text-[50px] font-normal leading-[36px] text-white'>
-                  24/7
+                  {texts.stats_support_value}
                 </div>
                 <div className='font-open-sans text-[18px] lg:text-2xl font-normal text-white'>
-                  Expert Support
+                  {texts.stats_support_label}
                 </div>
               </div>
             </div>
@@ -127,10 +132,10 @@ export default function LandingCount() {
           <div className='mt-5 px-6 pt-10 text-center'>
             <img className='mx-auto' src={joinIcon} alt='Join Icon' />
             <h2 className='pt-5 font-inter text-2xl uppercase text-white lg:text-3xl'>
-              JOIN OUR COMMUNITY
+              {texts.community_title}
             </h2>
             <p className='mt-2 font-open-sans text-lg text-white lg:text-2xl'>
-              Connect with successful investors and learn from the best.
+              {texts.community_description}
             </p>
           </div>
         </div>
