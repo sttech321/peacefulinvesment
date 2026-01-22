@@ -73,8 +73,8 @@ const BlogPost = () => {
     (ut: PrayerUserTaskLite): number => {
       /**
        * IMPORTANT:
-       * The backend uses `CURRENT_DATE` in `can_complete_prayer_day()`, which is based on the DB timezone (Supabase is typically UTC).
-       * So we compute "today" in UTC to avoid users in ahead timezones being treated as "future day" by the DB.
+       * The backend `can_complete_prayer_day()` computes "today" using the prayer's stored timezone.
+       * We mirror that here so the UI and backend stay consistent.
        */
       const MS_DAY = 24 * 60 * 60 * 1000;
 
@@ -94,10 +94,28 @@ const BlogPost = () => {
       if (startMs === null || endMs === null) return 0;
 
       const now = new Date();
-      const todayUtcMs = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+      const tz = (ut as any)?.timezone || "UTC";
+      const getTodayInTzUtcMs = (timeZone: string): number => {
+        try {
+          const parts = new Intl.DateTimeFormat("en-US", {
+            timeZone,
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+          }).formatToParts(now);
+          const y = Number(parts.find((p) => p.type === "year")?.value);
+          const mo = Number(parts.find((p) => p.type === "month")?.value) - 1;
+          const d = Number(parts.find((p) => p.type === "day")?.value);
+          if (!Number.isFinite(y) || !Number.isFinite(mo) || !Number.isFinite(d)) throw new Error("bad date parts");
+          return Date.UTC(y, mo, d);
+        } catch {
+          return Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+        }
+      };
+      const todayTzMs = getTodayInTzUtcMs(tz);
 
       const duration = Math.floor((endMs - startMs) / MS_DAY) + 1;
-      const day = Math.floor((todayUtcMs - startMs) / MS_DAY) + 1;
+      const day = Math.floor((todayTzMs - startMs) / MS_DAY) + 1;
 
       if (day < 1) return 0; // Not started yet
       if (day > duration) return duration; // Completed
@@ -222,13 +240,31 @@ const BlogPost = () => {
 
       const duration = Number(task.duration_days || task.number_of_days || 1);
       const now = new Date();
-      const startUtcMs = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
-      const endUtcMs = startUtcMs + (Math.max(1, duration) - 1) * 24 * 60 * 60 * 1000;
-
-      const startDate = new Date(startUtcMs).toISOString().split("T")[0];
-      const endDate = new Date(endUtcMs).toISOString().split("T")[0];
-
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const MS_DAY = 24 * 60 * 60 * 1000;
+      const getTodayInTzUtcMs = (timeZone: string): number => {
+        try {
+          const parts = new Intl.DateTimeFormat("en-US", {
+            timeZone,
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+          }).formatToParts(now);
+          const y = Number(parts.find((p) => p.type === "year")?.value);
+          const mo = Number(parts.find((p) => p.type === "month")?.value) - 1;
+          const d = Number(parts.find((p) => p.type === "day")?.value);
+          if (!Number.isFinite(y) || !Number.isFinite(mo) || !Number.isFinite(d)) throw new Error("bad date parts");
+          return Date.UTC(y, mo, d);
+        } catch {
+          return Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+        }
+      };
+
+      const startTzMs = getTodayInTzUtcMs(timezone || "UTC");
+      const endTzMs = startTzMs + (Math.max(1, duration) - 1) * MS_DAY;
+
+      const startDate = new Date(startTzMs).toISOString().split("T")[0];
+      const endDate = new Date(endTzMs).toISOString().split("T")[0];
 
       // Best-effort: reuse phone from profile if present, so SMS/call can be sent server-side.
       const profilePhoneRaw = String((profile as any)?.phone || (profile as any)?.phone_number || "").trim();
