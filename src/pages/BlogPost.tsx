@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useProfile } from "@/hooks/useProfile";
 import {
   useBlog,
   type BlogPost as BlogPostType,
@@ -57,41 +58,52 @@ const BlogPost = () => {
   const navigate = useNavigate();
   const { getPostBySlug, incrementViewCount, categories } = useBlog();
   const { user } = useAuth();
+  const { profile } = useProfile();
   const { toast } = useToast();
-
 
   const [post, setPost] = useState<BlogPostType | null>(null);
   const [loading, setLoading] = useState(true);
   const [userTask, setUserTask] = useState<PrayerUserTaskLite | null>(null);
+  const [joining, setJoining] = useState(false);
   const [completing, setCompleting] = useState(false);
 
   const mappedPrayerTaskId = useMemo(() => extractPrayerTaskIdFromTags((post as any)?.tags), [post]);
 
-  const getUserDate = useCallback((tz: string) => {
-    // Convert "now" into user's timezone-local date
-    const today = new Date();
-    return new Date(today.toLocaleString("en-US", { timeZone: tz }));
-  }, []);
-
   const getCurrentDay = useCallback(
     (ut: PrayerUserTaskLite): number => {
-      const startDate = new Date(ut.start_date);
-      const userDate = getUserDate(ut.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone);
-      startDate.setHours(0, 0, 0, 0);
-      userDate.setHours(0, 0, 0, 0);
+      /**
+       * IMPORTANT:
+       * The backend uses `CURRENT_DATE` in `can_complete_prayer_day()`, which is based on the DB timezone (Supabase is typically UTC).
+       * So we compute "today" in UTC to avoid users in ahead timezones being treated as "future day" by the DB.
+       */
+      const MS_DAY = 24 * 60 * 60 * 1000;
 
-      const diffTime = userDate.getTime() - startDate.getTime();
-      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      const parseDateToUtcMs = (dateStr: string | null | undefined): number | null => {
+        const s = String(dateStr || "").trim();
+        const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (!m) return null;
+        const y = Number(m[1]);
+        const mo = Number(m[2]) - 1;
+        const d = Number(m[3]);
+        if (!Number.isFinite(y) || !Number.isFinite(mo) || !Number.isFinite(d)) return null;
+        return Date.UTC(y, mo, d);
+      };
 
-      const endDate = new Date(ut.end_date);
-      endDate.setHours(0, 0, 0, 0);
-      const duration = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      const startMs = parseDateToUtcMs(ut.start_date);
+      const endMs = parseDateToUtcMs(ut.end_date);
+      if (startMs === null || endMs === null) return 0;
 
-      if (diffDays < 1) return 0; // Not started yet
-      if (diffDays > duration) return duration; // Completed
-      return diffDays;
+      const now = new Date();
+      const todayUtcMs = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+
+      const duration = Math.floor((endMs - startMs) / MS_DAY) + 1;
+      const day = Math.floor((todayUtcMs - startMs) / MS_DAY) + 1;
+
+      if (day < 1) return 0; // Not started yet
+      if (day > duration) return duration; // Completed
+      return day;
     },
-    [getUserDate]
+    []
   );
 
   const canCompleteToday = useMemo(() => {
@@ -124,47 +136,162 @@ const BlogPost = () => {
   }, [fetchPost]);
 
   // Load user's prayer instance for this blog/prayer (mapped via tag prayer_task:<uuid>)
-  useEffect(() => {
-    const loadUserTask = async () => {
-      if (!user || !mappedPrayerTaskId) {
+  const loadUserTask = useCallback(async () => {
+    if (!user || !mappedPrayerTaskId) {
+      setUserTask(null);
+      return;
+    }
+
+    try {
+      const { data: ut, error } = await (supabase as any)
+        .from("prayer_user_tasks")
+        .select("*, task:prayer_tasks(id,number_of_days,duration_days)")
+        .eq("is_active", true)
+        .eq("user_id", user.id)
+        .eq("task_id", mappedPrayerTaskId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      if (!ut) {
         setUserTask(null);
         return;
       }
 
-      try {
-        const { data: ut, error } = await (supabase as any)
-          .from("prayer_user_tasks")
-          .select("*, task:prayer_tasks(id,number_of_days,duration_days)")
-          .eq("is_active", true)
-          .eq("user_id", user.id)
-          .eq("task_id", mappedPrayerTaskId)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        if (error) throw error;
-        if (!ut) {
-          setUserTask(null);
-          return;
-        }
+      // Fetch completed days
+      const { data: completions } = await (supabase as any)
+        .from("prayer_daily_completions")
+        .select("day_number")
+        .eq("user_task_id", ut.id);
 
-        // Fetch completed days
-        const { data: completions } = await (supabase as any)
-          .from("prayer_daily_completions")
-          .select("day_number")
-          .eq("user_task_id", ut.id);
-
-        setUserTask({
-          ...(ut as any),
-          completed_days: (completions || []).map((c: any) => c.day_number),
-        } as PrayerUserTaskLite);
-      } catch (e: any) {
-        console.warn("[BlogPost] Failed to load prayer progress:", e);
-        setUserTask(null);
-      }
-    };
-
-    void loadUserTask();
+      setUserTask({
+        ...(ut as any),
+        completed_days: (completions || []).map((c: any) => c.day_number),
+      } as PrayerUserTaskLite);
+    } catch (e: any) {
+      console.warn("[BlogPost] Failed to load prayer progress:", e);
+      setUserTask(null);
+    }
   }, [mappedPrayerTaskId, user]);
+
+  useEffect(() => {
+    void loadUserTask();
+  }, [loadUserTask]);
+
+  const handleJoinPrayer = useCallback(async () => {
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
+    if (!mappedPrayerTaskId) {
+      toast({
+        title: "Missing Prayer Task",
+        description: "This post is not linked to a prayer task yet (missing prayer_task:<uuid> tag).",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setJoining(true);
+
+      // If already joined, just refresh state
+      const { data: existing } = await (supabase as any)
+        .from("prayer_user_tasks")
+        .select("id")
+        .eq("is_active", true)
+        .eq("user_id", user.id)
+        .eq("task_id", mappedPrayerTaskId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (existing?.id) {
+        toast({ title: "Already Joined", description: "You already have an active prayer for this post." });
+        await loadUserTask();
+        return;
+      }
+
+      const { data: task, error: taskError } = await (supabase as any)
+        .from("prayer_tasks")
+        .select("id,number_of_days,duration_days")
+        .eq("id", mappedPrayerTaskId)
+        .maybeSingle();
+      if (taskError) throw taskError;
+      if (!task) throw new Error("Prayer task not found.");
+
+      const duration = Number(task.duration_days || task.number_of_days || 1);
+      const now = new Date();
+      const startUtcMs = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+      const endUtcMs = startUtcMs + (Math.max(1, duration) - 1) * 24 * 60 * 60 * 1000;
+
+      const startDate = new Date(startUtcMs).toISOString().split("T")[0];
+      const endDate = new Date(endUtcMs).toISOString().split("T")[0];
+
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+      // Best-effort: reuse phone from profile if present, so SMS/call can be sent server-side.
+      const profilePhoneRaw = String((profile as any)?.phone || (profile as any)?.phone_number || "").trim();
+      const profileCountryCodeRaw = String((profile as any)?.country_code || (profile as any)?.dial_code || "").trim();
+      const normalizeE164 = (cc: string, phone: string) => {
+        const p = phone.replace(/[^\d+]/g, "");
+        if (!p) return null;
+        if (p.startsWith("+")) return p;
+        const digits = p.replace(/\D/g, "");
+        if (!digits) return null;
+        const ccDigits = cc.replace(/[^\d+]/g, "");
+        if (!ccDigits) return null;
+        const normalizedCc = ccDigits.startsWith("+") ? ccDigits : `+${ccDigits.replace(/\D/g, "")}`;
+        return `${normalizedCc}${digits}`;
+      };
+
+      const derivedPhoneNumber =
+        profilePhoneRaw && profilePhoneRaw.startsWith("+")
+          ? profilePhoneRaw.replace(/[^\d+]/g, "")
+          : normalizeE164(profileCountryCodeRaw, profilePhoneRaw);
+
+      const insertData: any = {
+        task_id: mappedPrayerTaskId,
+        user_id: user.id,
+        name: user.email?.split("@")[0] || "User",
+        email: user.email || "",
+        phone_number: derivedPhoneNumber,
+        person_needs_help: null,
+        prayer_time: "07:00",
+        timezone,
+        start_date: startDate,
+        end_date: endDate,
+        current_day: 1,
+        is_active: true,
+      };
+
+      const { data: created, error } = await (supabase as any)
+        .from("prayer_user_tasks")
+        .insert([insertData])
+        .select("id")
+        .single();
+      if (error) throw error;
+
+      toast({ title: "Prayer Joined", description: "You’ve joined this prayer. You can now mark days as completed." });
+
+      // Fire server-side notifications (email + SMS + call). Best-effort (do not block UI on failure).
+      if (created?.id) {
+        try {
+          await supabase.functions.invoke("send-prayer-start-notification", {
+            body: { user_task_id: created.id },
+          });
+        } catch (e) {
+          console.warn("[BlogPost] send-prayer-start-notification failed:", e);
+        }
+      }
+
+      await loadUserTask();
+    } catch (e: any) {
+      toast({ title: "Error", description: e?.message || "Failed to join prayer.", variant: "destructive" });
+    } finally {
+      setJoining(false);
+    }
+  }, [loadUserTask, mappedPrayerTaskId, navigate, profile, toast, user]);
 
   const handleCompleteToday = useCallback(async () => {
     if (!userTask) return;
@@ -222,19 +349,45 @@ const BlogPost = () => {
   };
 
   const sharePost = async () => {
-    if (navigator.share && post) {
+    if (!post) return;
+
+    const url = window.location.href;
+    const message = `${post.title}\n${url}`;
+
+    // 1) Native share (best on mobile)
+    if (navigator.share) {
       try {
         await navigator.share({
           title: post.title,
-          text: post.excerpt ? stripHtmlTags(post.excerpt) : '',
-          url: window.location.href,
+          text: post.excerpt ? stripHtmlTags(post.excerpt) : message,
+          url,
         });
-      } catch (error) {
-        console.log('Error sharing:', error);
+        return;
+      } catch {
+        // fall through to SMS/copy fallback
       }
-    } else {
-      // Fallback to copying URL
-      navigator.clipboard.writeText(window.location.href);
+    }
+
+    // 2) SMS composer fallback (does NOT send automatically; it opens the messaging app)
+    try {
+      const ua = navigator.userAgent || "";
+      const isIOS = /iPad|iPhone|iPod/i.test(ua);
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(ua);
+      if (isMobile) {
+        const smsUrl = isIOS ? `sms:&body=${encodeURIComponent(message)}` : `sms:?body=${encodeURIComponent(message)}`;
+        window.location.href = smsUrl;
+        return;
+      }
+    } catch {
+      // ignore and fall back to copy
+    }
+
+    // 3) Copy link fallback (desktop)
+    try {
+      await navigator.clipboard.writeText(url);
+      toast({ title: "Link Copied", description: "Share link copied to clipboard." });
+    } catch {
+      toast({ title: "Share", description: "Could not open share. Please copy the URL from the address bar." });
     }
   };
 
@@ -442,8 +595,19 @@ const BlogPost = () => {
                               </div>
                             </div>
                           ) : (
-                            <div className="text-white/70 text-sm">
-                              To track your daily progress and get reminders, start this prayer from the Catholic list (Join Prayer).
+                            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                              <div className="text-white/70 text-sm">
+                                You haven’t joined this prayer yet. Join to track progress and mark days as completed.
+                              </div>
+                              <div className="flex gap-2">
+                                <Button
+                                  className="rounded-[8px] border-0 hover:bg-primary/80"
+                                  disabled={joining}
+                                  onClick={handleJoinPrayer}
+                                >
+                                  {joining ? "Joining..." : "Join Prayer"}
+                                </Button>
+                              </div>
                             </div>
                           )}
                         </div>

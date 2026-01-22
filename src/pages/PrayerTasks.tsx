@@ -86,6 +86,8 @@ interface PrayerUserTask {
 export default function PrayerTasks() {
   const { toast } = useToast();
   const { user } = useAuth();
+  // Supabase generated types in this repo don't include the prayer_* tables/rpcs, so use any for those calls.
+  const sb: any = supabase as any;
   const [tasks, setTasks] = useState<PrayerTask[]>([]);
   const [userTasks, setUserTasks] = useState<PrayerUserTask[]>([]);
   const [filteredTasks, setFilteredTasks] = useState<PrayerTask[]>([]);
@@ -104,6 +106,7 @@ export default function PrayerTasks() {
   const [instanceFormData, setInstanceFormData] = useState({
     name: "",
     email: "",
+    phone_country_code: "",
     phone_number: "",
     person_needs_help: "",
     prayer_time: "07:00",
@@ -173,7 +176,7 @@ export default function PrayerTasks() {
   const fetchTasks = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      const { data, error } = await sb
         .from('prayer_tasks')
         .select('*')
         .order('created_at', { ascending: false });
@@ -194,7 +197,7 @@ export default function PrayerTasks() {
 
   const fetchUserTasks = async () => {
     try {
-      const query = supabase
+      const query = sb
         .from('prayer_user_tasks')
         .select(`
           *,
@@ -211,7 +214,7 @@ export default function PrayerTasks() {
         query.is('user_id', null);
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await sb
         .from('prayer_user_tasks')
         .select(`
           *,
@@ -235,7 +238,7 @@ export default function PrayerTasks() {
       // Fetch completed days for each user task
       const tasksWithCompletions = await Promise.all(
         filtered.map(async (ut: PrayerUserTask) => {
-          const { data: completions } = await supabase
+          const { data: completions } = await sb
             .from('prayer_daily_completions')
             .select('day_number')
             .eq('user_task_id', ut.id);
@@ -294,11 +297,31 @@ export default function PrayerTasks() {
       endDate.setDate(endDate.getDate() + duration - 1);
 
       // Create user prayer instance
+      const normalizeCountryCode = (val: string) => {
+        const trimmed = (val || "").trim();
+        if (!trimmed) return "";
+        const digits = trimmed.replace(/[^\d+]/g, "");
+        if (!digits) return "";
+        return digits.startsWith("+") ? digits : `+${digits.replace(/\D/g, "")}`;
+      };
+
+      const digitsOnlyPhone = String(instanceFormData.phone_number || "").replace(/\D/g, "");
+      const ccNormalized = normalizeCountryCode(String((instanceFormData as any).phone_country_code || ""));
+      if (digitsOnlyPhone && !ccNormalized) {
+        toast({
+          title: "Missing Country Code",
+          description: "Please enter a country code (e.g. +91) to receive SMS/call notifications.",
+          variant: "destructive",
+        });
+        return;
+      }
+      const effectivePhone = digitsOnlyPhone ? `${ccNormalized}${digitsOnlyPhone}`.trim() : null;
+
       const insertData: any = {
         task_id: selectedTask.id,
         name: instanceFormData.name,
         email: instanceFormData.email,
-        phone_number: instanceFormData.phone_number || null,
+        phone_number: effectivePhone,
         person_needs_help: instanceFormData.person_needs_help || null,
         prayer_time: instanceFormData.prayer_time,
         timezone: instanceFormData.timezone,
@@ -314,9 +337,11 @@ export default function PrayerTasks() {
         insertData.anonymous_user_id = instanceFormData.email; // Use email as identifier
       }
 
-      const { error } = await supabase
+      const { data: created, error } = await sb
         .from('prayer_user_tasks')
-        .insert([insertData]);
+        .insert([insertData])
+        .select('id')
+        .single();
 
       if (error) throw error;
 
@@ -325,11 +350,52 @@ export default function PrayerTasks() {
         description: `You've started the ${selectedTask.name} prayer. You'll receive daily reminders.`,
       });
 
+      // Server-side notifications (email + SMS + call) on start/join. Best-effort.
+      if ((created as any)?.id) {
+        try {
+          const { data: notifData, error: notifError } = await supabase.functions.invoke("send-prayer-start-notification", {
+            body: { user_task_id: (created as any).id },
+          });
+          if (notifError) throw notifError;
+
+          const smsSent = Boolean((notifData as any)?.sms_sent);
+          const callPlaced = Boolean((notifData as any)?.call_placed);
+          const smsError = String((notifData as any)?.sms_error || "");
+          const callError = String((notifData as any)?.call_error || "");
+
+          if (!effectivePhone) {
+            toast({
+              title: "Started (No Phone Alerts)",
+              description: "Add your phone number (with country code) to receive SMS/phone call alerts.",
+            });
+          } else if (!smsSent && !callPlaced) {
+            toast({
+              title: "Started (Alerts Not Sent)",
+              description: smsError || callError || "Twilio did not send SMS/call. Check Twilio geo-permissions and trial verification.",
+            });
+          } else {
+            toast({
+              title: "Alert Sent",
+              description: `We sent a notification to ${effectivePhone}.`,
+            });
+          }
+        } catch (e) {
+          console.warn("[PrayerTasks] send-prayer-start-notification failed:", e);
+          if (effectivePhone) {
+            toast({
+              title: "Started (Alerts Failed)",
+              description: "Your prayer was started, but SMS/call sending failed. Check Twilio setup and try again.",
+            });
+          }
+        }
+      }
+
       setStartInstanceDialogOpen(false);
       setSelectedTask(null);
       setInstanceFormData({
         name: "",
         email: user?.email || "",
+        phone_country_code: "",
         phone_number: "",
         person_needs_help: "",
         prayer_time: "07:00",
@@ -349,12 +415,94 @@ export default function PrayerTasks() {
     }
   };
 
+  const formatDuration = (ms: number): string => {
+    const clampedSec = Math.max(0, Math.floor(ms / 1000));
+    const hours = Math.floor(clampedSec / 3600);
+    const minutes = Math.floor((clampedSec % 3600) / 60);
+    if (hours <= 0) return `${Math.max(1, minutes)} min`;
+    if (minutes <= 0) return `${hours} hr`;
+    return `${hours} hr ${minutes} min`;
+  };
+
+  const getTzOffsetMs = (timeZone: string, date: Date): number => {
+    try {
+      const parts = new Intl.DateTimeFormat("en-US", {
+        timeZone,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+      }).formatToParts(date);
+      const y = Number(parts.find((p) => p.type === "year")?.value);
+      const mo = Number(parts.find((p) => p.type === "month")?.value) - 1;
+      const d = Number(parts.find((p) => p.type === "day")?.value);
+      const h = Number(parts.find((p) => p.type === "hour")?.value);
+      const mi = Number(parts.find((p) => p.type === "minute")?.value);
+      const s = Number(parts.find((p) => p.type === "second")?.value);
+      if (![y, mo, d, h, mi, s].every(Number.isFinite)) return 0;
+      const asUtc = Date.UTC(y, mo, d, h, mi, s);
+      return asUtc - date.getTime();
+    } catch {
+      return 0;
+    }
+  };
+
+  const getYmdInTz = (timeZone: string, date: Date): { y: number; mo: number; d: number } | null => {
+    try {
+      const parts = new Intl.DateTimeFormat("en-US", {
+        timeZone,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).formatToParts(date);
+      const y = Number(parts.find((p) => p.type === "year")?.value);
+      const mo = Number(parts.find((p) => p.type === "month")?.value);
+      const d = Number(parts.find((p) => p.type === "day")?.value);
+      if (![y, mo, d].every(Number.isFinite)) return null;
+      return { y, mo, d };
+    } catch {
+      return null;
+    }
+  };
+
+  const nextMidnightInTzMs = (timeZone: string, now: Date): number | null => {
+    const ymd = getYmdInTz(timeZone, now);
+    if (!ymd) return null;
+    const localAsUtc = Date.UTC(ymd.y, ymd.mo - 1, ymd.d + 1, 0, 0, 0);
+    let guess = localAsUtc - getTzOffsetMs(timeZone, now);
+    for (let i = 0; i < 2; i++) {
+      const offset = getTzOffsetMs(timeZone, new Date(guess));
+      guess = localAsUtc - offset;
+    }
+    return guess;
+  };
+
+  const midnightOfDateInTzMs = (yyyyMmDd: string, timeZone: string, now: Date): number | null => {
+    const s = String(yyyyMmDd || "").trim();
+    const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return null;
+    const y = Number(m[1]);
+    const mo = Number(m[2]) - 1;
+    const d = Number(m[3]);
+    if (![y, mo, d].every(Number.isFinite)) return null;
+    const localAsUtc = Date.UTC(y, mo, d, 0, 0, 0);
+    let guess = localAsUtc - getTzOffsetMs(timeZone, now);
+    for (let i = 0; i < 2; i++) {
+      const offset = getTzOffsetMs(timeZone, new Date(guess));
+      guess = localAsUtc - offset;
+    }
+    return guess;
+  };
+
   const handleCompleteDay = async (userTaskId: string, dayNumber: number) => {
     try {
       setCompleting(userTaskId);
 
       // Check if day can be completed
-      const { data: canComplete, error: checkError } = await supabase
+      const { data: canComplete, error: checkError } = await sb
         .rpc('can_complete_prayer_day', {
           p_user_task_id: userTaskId,
           p_day_number: dayNumber,
@@ -363,16 +511,37 @@ export default function PrayerTasks() {
       if (checkError) throw checkError;
 
       if (!canComplete) {
+        const ut = userTasks.find((t) => t.id === userTaskId);
+        const todayDay = ut ? getCurrentDay(ut) : 0;
+        const alreadyCompleted = Boolean((ut?.completed_days || []).includes(dayNumber));
+        const tz = ut?.timezone || "UTC";
+        const now = new Date();
+
+        const description = alreadyCompleted
+          ? `You already completed Day ${dayNumber}.`
+          : todayDay < 1
+            ? (() => {
+                const startMs = ut?.start_date ? midnightOfDateInTzMs(ut.start_date, tz, now) : null;
+                if (startMs) return `This prayer hasn’t started yet. Please wait ${formatDuration(startMs - now.getTime())}.`;
+                return "This prayer hasn’t started yet. Please come back on the start date.";
+              })()
+            : dayNumber > todayDay
+              ? (() => {
+                  const nextMs = nextMidnightInTzMs(tz, now);
+                  if (nextMs) return `Please wait ${formatDuration(nextMs - now.getTime())} and try again.`;
+                  return `You can only complete up to today (Day ${todayDay}). Please come back tomorrow.`;
+                })()
+              : "This day can’t be completed right now.";
+
         toast({
           title: "Cannot Complete",
-          description: "This day cannot be marked as completed. It may be a future day or already completed.",
-          variant: "destructive",
+          description,
         });
         return;
       }
 
       // Insert completion
-      const { error } = await supabase
+      const { error } = await sb
         .from('prayer_daily_completions')
         .insert([{
           user_task_id: userTaskId,
@@ -385,7 +554,7 @@ export default function PrayerTasks() {
       const userTask = userTasks.find(ut => ut.id === userTaskId);
       if (userTask) {
         const newCurrentDay = Math.max(userTask.current_day, dayNumber + 1);
-        await supabase
+        await sb
           .from('prayer_user_tasks')
           .update({ current_day: newCurrentDay })
           .eq('id', userTaskId);
@@ -470,20 +639,56 @@ export default function PrayerTasks() {
   };
 
   const getCurrentDay = (userTask: PrayerUserTask): number => {
-    const startDate = new Date(userTask.start_date);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    startDate.setHours(0, 0, 0, 0);
-    
-    const diffTime = today.getTime() - startDate.getTime();
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    
-    const duration = new Date(userTask.end_date).getTime() - startDate.getTime();
-    const totalDays = Math.floor(duration / (1000 * 60 * 60 * 24)) + 1;
-    
-    if (diffDays < 1) return 0; // Not started yet
-    if (diffDays > totalDays) return totalDays; // Completed
-    return diffDays;
+    /**
+     * IMPORTANT:
+     * The backend `can_complete_prayer_day()` computes "today" using the prayer's stored timezone.
+     * We mirror that here so the UI and backend stay consistent.
+     */
+    const MS_DAY = 24 * 60 * 60 * 1000;
+
+    const parseDateToUtcMs = (dateStr: string | null | undefined): number | null => {
+      const s = String(dateStr || "").trim();
+      const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (!m) return null;
+      const y = Number(m[1]);
+      const mo = Number(m[2]) - 1;
+      const d = Number(m[3]);
+      if (!Number.isFinite(y) || !Number.isFinite(mo) || !Number.isFinite(d)) return null;
+      return Date.UTC(y, mo, d);
+    };
+
+    const startMs = parseDateToUtcMs(userTask.start_date);
+    const endMs = parseDateToUtcMs(userTask.end_date);
+    if (startMs === null || endMs === null) return 0;
+
+    const now = new Date();
+    const tz = userTask.timezone || "UTC";
+    const getTodayInTzUtcMs = (timeZone: string): number => {
+      try {
+        const parts = new Intl.DateTimeFormat("en-US", {
+          timeZone,
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        }).formatToParts(now);
+        const y = Number(parts.find((p) => p.type === "year")?.value);
+        const mo = Number(parts.find((p) => p.type === "month")?.value) - 1;
+        const d = Number(parts.find((p) => p.type === "day")?.value);
+        if (!Number.isFinite(y) || !Number.isFinite(mo) || !Number.isFinite(d)) throw new Error("bad date parts");
+        return Date.UTC(y, mo, d);
+      } catch {
+        return Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+      }
+    };
+
+    const todayTzMs = getTodayInTzUtcMs(tz);
+
+    const totalDays = Math.floor((endMs - startMs) / MS_DAY) + 1;
+    const day = Math.floor((todayTzMs - startMs) / MS_DAY) + 1;
+
+    if (day < 1) return 0; // Not started yet
+    if (day > totalDays) return totalDays; // Completed
+    return day;
   };
 
   const canCompleteToday = (userTask: PrayerUserTask): boolean => {
@@ -584,6 +789,11 @@ export default function PrayerTasks() {
                             <div className="text-sm text-white/70 space-y-1">
                               <div>Day {currentDay} of {duration}</div>
                               <div>Prayer Time: {userTask.prayer_time} ({userTask.timezone})</div>
+                              {currentDay < 1 && (
+                                <div className="text-xs text-white/60">
+                                  Starts on: {userTask.start_date} ({userTask.timezone || "UTC"})
+                                </div>
+                              )}
                               {userTask.task?.link_or_video && (
                                 <a
                                   href={userTask.task.link_or_video}
@@ -627,7 +837,7 @@ export default function PrayerTasks() {
                               </Badge>
                             ) : (
                               <Badge variant="outline" className="px-4 py-2">
-                                {currentDay < 1 ? 'Not Started Yet' : 'Future Day'}
+                                {currentDay < 1 ? 'Starts Soon' : 'Future Day'}
                               </Badge>
                             )}
                           </div>
@@ -818,15 +1028,36 @@ export default function PrayerTasks() {
             </div>
             <div>
               <Label htmlFor="instance-phone">Phone Number</Label>
-              <Input
-                id="instance-phone"
-                type="tel"
-                value={instanceFormData.phone_number}
-                onChange={(e) => setInstanceFormData({ ...instanceFormData, phone_number: e.target.value })}
-                placeholder="+1 (555) 123-4567"
-                className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none'
-                style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as React.CSSProperties}
-              />
+              <div className="mt-1 flex gap-2">
+                <Input
+                  id="instance-phone-cc"
+                  type="tel"
+                  value={(instanceFormData as any).phone_country_code}
+                  onChange={(e) =>
+                    setInstanceFormData({
+                      ...instanceFormData,
+                      phone_country_code: e.target.value.replace(/[^\d+]/g, ""),
+                    } as any)
+                  }
+                  placeholder="+91"
+                  className='w-[88px] rounded-[8px] shadow-none border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none'
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as React.CSSProperties}
+                />
+                <Input
+                  id="instance-phone"
+                  type="tel"
+                  value={instanceFormData.phone_number}
+                  onChange={(e) =>
+                    setInstanceFormData({
+                      ...instanceFormData,
+                      phone_number: e.target.value.replace(/\D/g, ""),
+                    })
+                  }
+                  placeholder="1234569879"
+                  className='flex-1 rounded-[8px] shadow-none border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none'
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as React.CSSProperties}
+                />
+              </div>
             </div>
             <div>
               <Label htmlFor="instance-person">Person Who Needs Help (Optional)</Label>

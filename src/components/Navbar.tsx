@@ -18,6 +18,7 @@ import {
   LogOut,
   Shield as VerificationIcon,
   Edit,
+  Heart,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -249,6 +250,15 @@ const Navbar = () => {
                         Verification Center
                       </Link>
                     </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link
+                        to='/prayer-tasks'
+                        className='flex w-full cursor-pointer items-center gap-2'
+                      >
+                        <Heart className='h-4 w-4' />
+                        Prayer Tasks
+                      </Link>
+                    </DropdownMenuItem>
                     {isAdmin() && (
                       <DropdownMenuItem asChild>
                         <Link
@@ -362,6 +372,13 @@ const Navbar = () => {
                       onClick={() => setIsOpen(false)}
                     >
                       Verification Center
+                    </Link>
+                    <Link
+                      to='/prayer-tasks'
+                      className='block truncate px-6 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground'
+                      onClick={() => setIsOpen(false)}
+                    >
+                      Prayer Tasks
                     </Link>
                     {isAdmin() && (
                       <Link

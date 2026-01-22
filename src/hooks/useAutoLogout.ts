@@ -138,7 +138,7 @@ export function useAutoLogout(options: UseAutoLogoutOptions = {}) {
       }
 
       const remainingSeconds = Math.ceil(remainingMs / 1000);
-      console.info(`[AutoLogout] No activity. Auto-logout in ${remainingSeconds}s`);
+     // console.info(`[AutoLogout] No activity. Auto-logout in ${remainingSeconds}s`);
     }, 1000);
   }, [debug, stopCountdown]);
 
@@ -174,13 +174,13 @@ export function useAutoLogout(options: UseAutoLogoutOptions = {}) {
     stopTimer();
     deadlineMsRef.current = Date.now() + inactivityTimeoutMs;
 
-    if (debug) {
-      console.info(
-        `[AutoLogout] Inactivity timer reset. Auto-logout in ${Math.ceil(
-          inactivityTimeoutMs / 1000
-        )}s`
-      );
-    }
+    // if (debug) {
+    //   console.info(
+    //     `[AutoLogout] Inactivity timer reset. Auto-logout in ${Math.ceil(
+    //       inactivityTimeoutMs / 1000
+    //     )}s`
+    //   );
+    // }
 
     startCountdown();
     timerIdRef.current = window.setTimeout(() => {

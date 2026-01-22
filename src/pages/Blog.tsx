@@ -23,7 +23,6 @@ import Right01 from "@/assets/right-01.jpg";
 import Right02 from "@/assets/right-02.jpg";
 
 const POSTS_PER_BATCH = 9;
-const PLACEHOLDER_CATEGORY_IMAGE = "/placeholder.svg";
 
 type PrayerTaskLite = {
   id: string;
@@ -48,6 +47,54 @@ const Blog = () => {
   const { user } = useAuth();
   const { profile } = useProfile();
   const { toast } = useToast();
+
+  // STATE
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [openParentId, setOpenParentId] = useState<string | null>(null);
+
+  // BUILD PARENTS & CHILDREN MAP
+  const { parents, childrenMap } = useMemo(() => {
+    const map = new Map<string, BlogCategory[]>();
+    const parentsArr: BlogCategory[] = [];
+
+    categories.forEach((c) => {
+      const parentId = c.parent_id ?? null;
+      if (parentId === null) {
+        parentsArr.push(c);
+      } else {
+        if (!map.has(parentId)) map.set(parentId, []);
+        map.get(parentId)!.push(c);
+      }
+    });
+
+    return { parents: parentsArr, childrenMap: map };
+  }, [categories]);
+
+  // TOGGLE ONLY ONE PARENT OPEN
+  const toggleOpenParent = (parentId: string) => {
+    setOpenParentId((prev) => (prev === parentId ? null : parentId));
+  };
+
+  // BUILD FLATTENED SUBCATEGORIES (supports multi-level)
+  const buildFlattenedChildren = (rootId: string) => {
+    const result: { node: BlogCategory; depth: number }[] = [];
+
+    const visit = (id: string, depth: number) => {
+      const children = childrenMap.get(id) ?? [];
+      children.forEach((child) => {
+        result.push({ node: child, depth });
+        visit(child.id, depth + 1);
+      });
+    };
+
+    visit(rootId, 1);
+    return result;
+  };
+
+  const openChildren = useMemo(() => {
+    if (!openParentId) return [];
+    return buildFlattenedChildren(openParentId);
+  }, [openParentId, childrenMap]);
 
   // Folder navigation (blog_categories with parent_id)
   const [categoryStack, setCategoryStack] = useState<string[]>([]);
@@ -98,6 +145,11 @@ const Blog = () => {
     setVisibleCount(POSTS_PER_BATCH);
   }, [currentCategoryId]);
 
+  // Reset batch rendering when changing selected category/subcategory (badge-based navigation)
+  useEffect(() => {
+    setVisibleCount(POSTS_PER_BATCH);
+  }, [selectedCategory]);
+
   // Detect whether posts store category as slug or id
   const postCategoryType = useMemo(() => {
     const sample = posts.find(Boolean);
@@ -110,6 +162,45 @@ const Blog = () => {
   }, [posts]);
 
   const idMap = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
+
+  // Category-based filtering for blog/prayer cards (do not show any blogs until a category/subcategory is selected)
+  const filteredPosts = useMemo(() => {
+    if (!selectedCategory || selectedCategory === "all") return [];
+
+    const selectedNode = categories.find((c) => c.slug === selectedCategory);
+    if (!selectedNode) return [];
+
+    const isParent = (selectedNode.parent_id ?? null) === null;
+
+    const allowedNodes: BlogCategory[] = [selectedNode];
+    if (isParent) {
+      const descendants: BlogCategory[] = [];
+      const visit = (id: string) => {
+        const children = childrenMap.get(id) ?? [];
+        for (const child of children) {
+          descendants.push(child);
+          visit(child.id);
+        }
+      };
+      visit(selectedNode.id);
+      allowedNodes.push(...descendants);
+    }
+
+    const allowedSlugs = new Set(
+      allowedNodes
+        .map((c) => String(c.slug || "").toLowerCase().trim())
+        .filter(Boolean)
+    );
+    const allowedIds = new Set(allowedNodes.map((c) => String(c.id)).filter(Boolean));
+
+    return posts.filter((p) => {
+      if (!p.category) return false;
+      if (postCategoryType === "id") return allowedIds.has(String(p.category));
+      return allowedSlugs.has(String(p.category).toLowerCase().trim());
+    });
+  }, [categories, childrenMap, postCategoryType, posts, selectedCategory]);
+
+  const filteredVisiblePosts = useMemo(() => filteredPosts.slice(0, visibleCount), [filteredPosts, visibleCount]);
 
   const leafPosts = useMemo(() => {
     if (!isLeafCategory || !currentCategoryId) return [];
@@ -507,6 +598,14 @@ const Blog = () => {
       const cc = (contactCountryCode || "").trim();
       const ccNormalized = cc ? (cc.startsWith("+") ? cc : `+${cc.replace(/\D/g, "")}`) : "";
       const digitsOnlyPhone = (contactPhoneNumber || "").replace(/\D/g, "");
+      if (digitsOnlyPhone && !ccNormalized) {
+        toast({
+          title: "Missing Country Code",
+          description: "Please enter a country code (e.g. +91) to receive SMS/phone call alerts.",
+          variant: "destructive",
+        });
+        return;
+      }
       const effectivePhone = digitsOnlyPhone ? `${ccNormalized}${digitsOnlyPhone}`.trim() : null;
 
       const insertData: any = {
@@ -524,7 +623,11 @@ const Blog = () => {
         is_active: true,
       };
 
-      const { error } = await supabase.from("prayer_user_tasks" as any).insert([insertData]);
+      const { data: created, error } = await (supabase as any)
+        .from("prayer_user_tasks")
+        .insert([insertData])
+        .select("id")
+        .single();
       if (error) throw error;
 
       toast({
@@ -534,6 +637,55 @@ const Blog = () => {
             ? `You've joined "${actionPost.title}". You'll receive daily reminders.`
             : `Saved "${actionPost.title}". You'll start receiving reminders on ${insertData.start_date}.`,
       });
+
+      // Server-side notifications (email + SMS + call) on start/join. Best-effort.
+      if (created?.id) {
+        try {
+          const { data: notifData, error: notifError } = await supabase.functions.invoke("send-prayer-start-notification", {
+            body: { user_task_id: created.id },
+          });
+          if (notifError) throw notifError;
+
+          // Optional user-facing hint when phone is missing or provider is not configured.
+          const smsSent = Boolean((notifData as any)?.sms_sent);
+          const callPlaced = Boolean((notifData as any)?.call_placed);
+          const smsError = String((notifData as any)?.sms_error || "");
+          const callError = String((notifData as any)?.call_error || "");
+
+          if (!effectivePhone) {
+            toast({
+              title: "Joined (No Phone Alerts)",
+              description: "Add your phone number (with country code, e.g. +919988629175) to receive SMS/phone call alerts.",
+            });
+          } else if (!smsSent && !callPlaced) {
+            toast({
+              title: "Joined (Alerts Not Sent)",
+              description:
+                smsError ||
+                callError ||
+                "Your prayer was joined, but SMS/call could not be sent. Check Twilio setup (AUTH_TOKEN, From number, trial verified number).",
+            });
+          } else {
+            toast({
+              title: "Alert Sent",
+              description: `We sent a notification to ${effectivePhone}.`,
+            });
+          }
+        } catch (e) {
+          console.warn("[Blog] send-prayer-start-notification failed:", e);
+          if (!effectivePhone) {
+            toast({
+              title: "Joined (No Phone Alerts)",
+              description: "Add your phone number (with country code, e.g. +919988629175) to receive SMS/phone call alerts.",
+            });
+          } else {
+            toast({
+              title: "Joined (Alerts Failed)",
+              description: "Your prayer was joined, but sending SMS/call failed. Please try again later or contact support.",
+            });
+          }
+        }
+      }
 
       setActionOpen(false);
 
@@ -637,6 +789,53 @@ const Blog = () => {
           <div className="mx-auto w-full max-w-7xl">
             {/* Navigation */}
             <div className="flex flex-col gap-3 mb-8 md:mb-12 items-center">
+              {/* PARENT CATEGORIES */}
+              <div className="flex flex-wrap gap-3 justify-center">
+                {parents.map((parent) => {
+                  const hasChildren = (childrenMap.get(parent.id) ?? []).length > 0;
+                  const isActive = selectedCategory === parent.slug;
+
+                  return (
+                    <Badge
+                      key={parent.id}
+                      onClick={() => {
+                        setSelectedCategory(parent.slug);
+                        toggleOpenParent(parent.id);
+                      }}
+                      style={{
+                        backgroundColor: isActive ? parent.color : "transparent",
+                        borderColor: parent.color,
+                        color: isActive ? "white" : parent.color,
+                      }}
+                      className="cursor-pointer px-4 py-2"
+                    >
+                      {parent.name}
+                      {hasChildren && <span className="ml-2">▾</span>}
+                    </Badge>
+                  );
+                })}
+              </div>
+
+              {/* SUBCATEGORIES (ONLY FOR OPEN PARENT) */}
+              {openParentId && openChildren.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-3 justify-center">
+                  {openChildren.map(({ node, depth }) => (
+                    <Badge
+                      key={node.id}
+                      onClick={() => setSelectedCategory(node.slug)}
+                      style={{
+                        marginLeft: depth * 6,
+                        borderColor: node.color,
+                        color: node.color,
+                      }}
+                      className="cursor-pointer px-3 py-1 text-sm"
+                    >
+                      {node.name}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+
               <div className="flex flex-wrap items-center gap-3 justify-center">
                 {categoryStack.length > 0 && (
                   <Button variant="outline" className="border-white text-white bg-transparent hover:bg-white/10" onClick={goBack}>
@@ -659,20 +858,13 @@ const Blog = () => {
               </div>
             </div>
 
-            {/* Folder cards (only show categories until leaf) */}
-            {!isLeafCategory && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {currentCategoriesToShow.map((cat) => (
-                  <CategoryCard key={cat.id} category={cat} onOpen={() => openCategory(cat.id)} />
-                ))}
-              </div>
-            )}
+            {/* Category images/cards are intentionally hidden (categories are shown above as badges) */}
 
-            {/* Leaf posts only */}
-            {isLeafCategory && (
+            {/* Blogs / prayers (only after a category/subcategory is selected) */}
+            {selectedCategory !== "all" && (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {visiblePosts.map((post) => (
+                  {filteredVisiblePosts.map((post) => (
                     (() => {
                       const mappedId = parsePrayerTaskIdFromTags((post as any).tags);
                       const joined = mappedId ? joinedTaskIds.has(mappedId) : false;
@@ -689,19 +881,19 @@ const Blog = () => {
                   ))}
                 </div>
 
-                {visibleCount < leafPosts.length && (
+                {visibleCount < filteredPosts.length && (
                   <div className="flex justify-center mt-10">
                     <Button
                       variant="outline"
                       className="border-white text-white bg-transparent hover:bg-white/10"
-                      onClick={() => setVisibleCount((c) => Math.min(c + POSTS_PER_BATCH, leafPosts.length))}
+                      onClick={() => setVisibleCount((c) => Math.min(c + POSTS_PER_BATCH, filteredPosts.length))}
                     >
                       Load More
                     </Button>
                   </div>
                 )}
 
-                {leafPosts.length === 0 && (
+                {filteredPosts.length === 0 && (
                   <div className="text-center py-16">
                     <h3 className="text-2xl font-semibold text-white mb-3">No prayers found</h3>
                     <p className="text-muted-foreground">No items are available in this category yet.</p>
@@ -977,41 +1169,6 @@ const Blog = () => {
     </div>
   );
 };
-
-const CategoryCard = memo(function CategoryCard({
-  category,
-  onOpen,
-}: {
-  category: BlogCategory;
-  onOpen: () => void;
-}) {
-  const imageUrl = (category as any).image_url || PLACEHOLDER_CATEGORY_IMAGE;
-
-  return (
-    <Card
-      className="group hover:scale-105 hover:glow-primary transition-all duration-300 cursor-pointer border-0 shadow-none bg-gradient-pink-to-yellow rounded-sm p-[2px]"
-      onClick={onOpen}
-    >
-      <div className="bg-black rounded-sm p-0 h-full">
-        <img
-          src={imageUrl}
-          alt={category.name}
-          loading="lazy"
-          decoding="async"
-          className="w-full h-40 object-cover rounded-t-sm mb-2"
-        />
-        <CardHeader className="p-4 pb-0 space-y-0">
-          <h3 className="text-lg font-inter font-semibold text-white line-clamp-2 pb-2">{category.name}</h3>
-        </CardHeader>
-        <CardContent className="p-4 pt-0">
-          <div className="flex items-center justify-between text-xs text-muted-foreground pt-4">
-            <span className="text-white/70">Open folder</span>
-          </div>
-        </CardContent>
-      </div>
-    </Card>
-  );
-});
 
 const BlogPostCard = memo(function BlogPostCard({
   post,

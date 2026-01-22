@@ -8,15 +8,33 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+function envFlag(name: string, defaultValue = false): boolean {
+  const raw = Deno.env.get(name);
+  if (raw === undefined) return defaultValue;
+  const v = raw.trim().toLowerCase();
+  if (!v) return defaultValue;
+  return v === "1" || v === "true" || v === "yes" || v === "on";
+}
+
 // SMS Provider - Using Twilio (configure via environment variables)
-async function sendSMS(phoneNumber: string, message: string): Promise<boolean> {
+async function sendSMS(
+  phoneNumber: string,
+  message: string
+): Promise<{ ok: boolean; error?: string; status?: number; sid?: string; skipped?: boolean }> {
+  // Opt-in: keep logs clean unless SMS is explicitly enabled.
+  if (!envFlag("TWILIO_ENABLE_SMS", false)) {
+    return { ok: false, skipped: true };
+  }
+
   const twilioAccountSid = Deno.env.get("TWILIO_ACCOUNT_SID");
   const twilioAuthToken = Deno.env.get("TWILIO_AUTH_TOKEN");
   const twilioPhoneNumber = Deno.env.get("TWILIO_PHONE_NUMBER");
 
   if (!twilioAccountSid || !twilioAuthToken || !twilioPhoneNumber) {
-    console.warn("Twilio credentials not configured. SMS will not be sent.");
-    return false;
+    console.warn(
+      "[send-daily-prayer-reminder] Twilio SMS enabled but missing env (TWILIO_ACCOUNT_SID/TWILIO_AUTH_TOKEN/TWILIO_PHONE_NUMBER)."
+    );
+    return { ok: false, error: "Twilio SMS enabled but missing required env vars." };
   }
 
   try {
@@ -38,14 +56,24 @@ async function sendSMS(phoneNumber: string, message: string): Promise<boolean> {
 
     if (!response.ok) {
       const error = await response.text();
-      console.error("Twilio SMS error:", error);
-      return false;
+      console.error("[send-daily-prayer-reminder] Twilio SMS error:", response.status, error);
+      return { ok: false, status: response.status, error };
     }
 
-    return true;
+    const contentType = response.headers.get("content-type") || "";
+    const payload = contentType.includes("application/json")
+      ? await response.json().catch(() => null)
+      : null;
+
+    // Twilio returns { sid: "SM..." , ... }
+    const sid = payload && typeof payload.sid === "string" ? payload.sid : undefined;
+    if (sid) {
+      console.log("[send-daily-prayer-reminder] Twilio SMS queued:", sid);
+    }
+    return { ok: true, sid };
   } catch (error) {
-    console.error("SMS sending error:", error);
-    return false;
+    console.error("[send-daily-prayer-reminder] SMS sending exception:", error);
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 
@@ -227,9 +255,14 @@ Deno.serve(async (req: Request) => {
 
     // Send SMS if phone number is provided
     let smsSent = false;
+    let smsError: string | null = null;
+    let smsSid: string | null = null;
     if (userTask.phone_number) {
       const smsMessage = `Daily Prayer Reminder - Day ${currentDay} of ${duration}\n\n${taskName}${personName}\n\nView: ${prayerLink !== "#" ? prayerLink : baseUrl + "/prayer-tasks"}`;
-      smsSent = await sendSMS(userTask.phone_number, smsMessage);
+      const smsRes = await sendSMS(userTask.phone_number, smsMessage);
+      smsSent = smsRes.ok;
+      smsSid = smsRes.ok && smsRes.sid ? smsRes.sid : null;
+      smsError = smsRes.ok || smsRes.skipped ? null : (smsRes.error || null);
     }
 
     return new Response(
@@ -238,6 +271,8 @@ Deno.serve(async (req: Request) => {
         message: "Reminder sent",
         email_sent: true,
         sms_sent: smsSent,
+        sms_sid: smsSid,
+        sms_error: smsError,
         day: currentDay,
       }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
