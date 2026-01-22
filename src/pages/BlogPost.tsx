@@ -608,7 +608,7 @@ const BlogPost = () => {
                     {/* Daily progress + Done (logged-in users only, requires mapping tag prayer_task:<uuid>) */}
                     {user && mappedPrayerTaskId && (
                       <div className="mt-6 w-full max-w-3xl">
-                        <div className="rounded-lg border border-muted-foreground/20 bg-white/5 p-4">
+                        {/* <div className="rounded-lg border border-muted-foreground/20 bg-white/5 p-4">
                           {userTask ? (
                             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                               <div>
@@ -616,6 +616,11 @@ const BlogPost = () => {
                                 <div className="text-white/70 text-sm">
                                   Day {currentDay} of {totalDays} • Prayer Time: {userTask.prayer_time} ({userTask.timezone})
                                 </div>
+                                {currentDay < 1 && (
+                                  <div className="text-white/60 text-xs mt-1">
+                                    Starts on: {userTask.start_date} ({userTask.timezone || "UTC"})
+                                  </div>
+                                )}
                                 {userTask.person_needs_help && (
                                   <div className="text-white/70 text-sm">For: {userTask.person_needs_help}</div>
                                 )}
@@ -625,8 +630,13 @@ const BlogPost = () => {
                                   className="rounded-[8px] border-0 hover:bg-primary/80"
                                   disabled={!canCompleteToday || completing}
                                   onClick={handleCompleteToday}
+                                  title={
+                                    currentDay < 1
+                                      ? `This prayer starts on ${userTask.start_date} (${userTask.timezone || "UTC"}).`
+                                      : undefined
+                                  }
                                 >
-                                  {completing ? "Saving..." : "Done (Mark Today Complete)"}
+                                  {completing ? "Saving..." : currentDay < 1 ? "Starts Soon" : "Done (Mark Today Complete)"}
                                 </Button>
                               </div>
                             </div>
@@ -646,7 +656,7 @@ const BlogPost = () => {
                               </div>
                             </div>
                           )}
-                        </div>
+                        </div> */}
                       </div>
                     )}
                   </div>
