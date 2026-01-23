@@ -932,7 +932,7 @@ const Blog = () => {
             <div>
               <Label>Request Type *</Label>
               <Select value={requestType} onValueChange={(v: any) => setRequestType(v)}>
-                <SelectTrigger className="mt-1 rounded-[8px] border-muted-foreground/60 hover:border-muted-foreground shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent h-[40px]">
+                <SelectTrigger className="mt-1 rounded-[8px] border-muted-foreground/60 hover:border-muted-foreground shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent h-[40px]" style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as React.CSSProperties}>
                   <SelectValue placeholder="Select Blog or Prayer" />
                 </SelectTrigger>
                 <SelectContent className="border-secondary-foreground bg-black/90 text-white">
