@@ -15,6 +15,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import Footer from "@/components/Footer";
+import { StartPrayerDialog, type StartPrayerDialogForm } from "@/components/prayer/StartPrayerDialog";
 
 // Side images
 import Left01 from "@/assets/left-01.jpg";
@@ -29,6 +30,8 @@ type PrayerTaskLite = {
   name: string;
   number_of_days: number;
   duration_days?: number | null;
+  start_date?: string | null;
+  end_date?: string | null;
 };
 
 function parsePrayerTaskIdFromTags(tags: unknown): string | null {
@@ -41,12 +44,63 @@ function parsePrayerTaskIdFromTags(tags: unknown): string | null {
   return null;
 }
 
+function parseTraditionalDatesFromTags(tags: unknown): { start_date: string; end_date: string; label?: string } | null {
+  if (!Array.isArray(tags)) return null;
+  let start: string | null = null;
+  let end: string | null = null;
+  let label: string | undefined;
+
+  for (const raw of tags) {
+    const t = String(raw || "").trim();
+    if (!t) continue;
+
+    // Accept a few safe, non-technical tag formats (no IDs shown in UI):
+    // - traditional_dates:YYYY-MM-DD..YYYY-MM-DD
+    // - traditional_start:YYYY-MM-DD + traditional_end:YYYY-MM-DD
+    // - fixed_dates:YYYY-MM-DD..YYYY-MM-DD
+    const mRange = t.match(/^(traditional_dates|fixed_dates):(?<s>\d{4}-\d{2}-\d{2})\.\.(?<e>\d{4}-\d{2}-\d{2})$/i);
+    if (mRange?.groups?.s && mRange?.groups?.e) {
+      start = mRange.groups.s;
+      end = mRange.groups.e;
+      continue;
+    }
+    const mStart = t.match(/^(traditional_start|fixed_start):(?<s>\d{4}-\d{2}-\d{2})$/i);
+    if (mStart?.groups?.s) {
+      start = mStart.groups.s;
+      continue;
+    }
+    const mEnd = t.match(/^(traditional_end|fixed_end):(?<e>\d{4}-\d{2}-\d{2})$/i);
+    if (mEnd?.groups?.e) {
+      end = mEnd.groups.e;
+      continue;
+    }
+    const mLabel = t.match(/^(traditional_label|fixed_label):(?<label>.+)$/i);
+    if (mLabel?.groups?.label) {
+      label = mLabel.groups.label.trim();
+      continue;
+    }
+  }
+
+  if (!start || !end) return null;
+  return { start_date: start, end_date: end, label };
+}
+
 const Blog = () => {
   const { posts, categories, loading, initializing } = useBlog();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { profile } = useProfile();
   const { toast } = useToast();
+
+  const addDaysToYmd = useCallback((yyyyMmDd: string, daysToAdd: number): string => {
+    const m = String(yyyyMmDd || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return yyyyMmDd;
+    const y = Number(m[1]);
+    const mo = Number(m[2]) - 1;
+    const d = Number(m[3]);
+    const dt = new Date(Date.UTC(y, mo, d + Math.max(0, daysToAdd)));
+    return dt.toISOString().slice(0, 10);
+  }, []);
 
   // STATE
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
@@ -241,6 +295,27 @@ const Blog = () => {
   const [reminderDate, setReminderDate] = useState<string>(new Date().toISOString().split("T")[0]);
   const [reminderDays, setReminderDays] = useState<number>(1);
   const [reminderWeeks, setReminderWeeks] = useState<number>(1);
+
+  const [descriptionOpen, setDescriptionOpen] = useState(false);
+  const [descriptionPost, setDescriptionPost] = useState<BlogPost | null>(null);
+  const [traditionalDates, setTraditionalDates] = useState<{ start_date: string; end_date: string; label?: string } | null>(null);
+
+  const [joinForm, setJoinForm] = useState<StartPrayerDialogForm>(() => ({
+    name: "",
+    email: "",
+    phone_country_code: "",
+    phone_number: "",
+    person_needs_help: "",
+    start_date: "",
+    end_date: "",
+    prayer_time: "07:00",
+    timezone: userTimezone,
+  }));
+
+  const openDescription = useCallback((post: BlogPost) => {
+    setDescriptionPost(post);
+    setDescriptionOpen(true);
+  }, []);
 
   // ---------- Blog / Prayer request modal ----------
   const [requestOpen, setRequestOpen] = useState(false);
@@ -464,7 +539,7 @@ const Blog = () => {
       if (taggedTaskId) {
         const { data, error } = await (supabase as any)
           .from("prayer_tasks")
-          .select("id,name,number_of_days,duration_days")
+          .select("id,name,number_of_days,duration_days,start_date,end_date")
           .eq("id", taggedTaskId)
           .maybeSingle();
         if (error) throw error;
@@ -476,7 +551,7 @@ const Blog = () => {
       try {
         const { data, error } = await (supabase as any)
           .from("prayer_tasks")
-          .select("id,name,number_of_days,duration_days,link_or_video")
+          .select("id,name,number_of_days,duration_days,start_date,end_date,link_or_video")
           .ilike("link_or_video", `%${blogPath}%`)
           .limit(1)
           .maybeSingle();
@@ -492,7 +567,7 @@ const Blog = () => {
       // Fallback: exact name match
       const { data, error } = await (supabase as any)
         .from("prayer_tasks")
-        .select("id,name,number_of_days,duration_days")
+        .select("id,name,number_of_days,duration_days,start_date,end_date")
         .eq("name", post.title)
         .limit(1)
         .maybeSingle();
@@ -549,10 +624,40 @@ const Blog = () => {
       setTimezone(userTimezone);
       setActionOpen(true);
 
+      // Will be filled after resolving the linked prayer task (preferred) or tags (fallback)
+      setTraditionalDates(null);
+
+      // Keep the shared dialog values in sync for Join Prayer
+      setJoinForm((prev) => ({
+        ...prev,
+        name: String((profile as any)?.full_name || user.email?.split("@")[0] || "User"),
+        email: String((profile as any)?.email || user.email || ""),
+        phone_country_code: derivedCountryCode,
+        phone_number: derivedPhoneRemainder.replace(/\D/g, ""),
+        person_needs_help: "",
+        start_date: "",
+        end_date: "",
+        prayer_time: prayerTime,
+        timezone: userTimezone,
+      }));
+
       try {
         setResolvingPrayerTask(true);
         const task = await resolvePrayerTaskForPost(post);
         setResolvedPrayerTask(task);
+
+        // Prefer traditional/fixed dates from the linked prayer task (authoritative),
+        // fall back to non-technical blog tags when present.
+        const fromTask =
+          task?.start_date && task?.end_date ? { start_date: String(task.start_date), end_date: String(task.end_date) } : null;
+        const nextTraditional = fromTask || parseTraditionalDatesFromTags((post as any).tags);
+        setTraditionalDates(nextTraditional);
+        setJoinForm((prev) => ({
+          ...prev,
+          start_date: nextTraditional?.start_date || "",
+          end_date: nextTraditional?.end_date || "",
+        }));
+
         if (!task) {
           toast({
             title: "Missing Prayer Task",
@@ -717,6 +822,130 @@ const Blog = () => {
     user,
   ]);
 
+  const confirmJoinPrayerFromDialog = useCallback(async () => {
+    if (!user || !actionPost || !resolvedPrayerTask) return;
+    try {
+      setSaving(true);
+
+      const duration = resolvedPrayerTask.duration_days || resolvedPrayerTask.number_of_days;
+
+      const effectiveName = joinForm.name.trim() || (profile as any)?.full_name || user.email?.split("@")[0] || "User";
+      const effectiveEmail = joinForm.email.trim() || user.email || "";
+      if (!effectiveEmail) {
+        toast({ title: "Missing Email", description: "Please enter your email.", variant: "destructive" });
+        return;
+      }
+
+      const cc = (joinForm.phone_country_code || "").trim();
+      const ccNormalized = cc ? (cc.startsWith("+") ? cc : `+${cc.replace(/\D/g, "")}`) : "";
+      const digitsOnlyPhone = (joinForm.phone_number || "").replace(/\D/g, "");
+      if (digitsOnlyPhone && !ccNormalized) {
+        toast({
+          title: "Missing Country Code",
+          description: "Please enter a country code (e.g. +91) to receive SMS/phone call alerts.",
+          variant: "destructive",
+        });
+        return;
+      }
+      const effectivePhone = digitsOnlyPhone ? `${ccNormalized}${digitsOnlyPhone}`.trim() : null;
+
+      let startDateYmd: string;
+      let endDateYmd: string;
+      if (traditionalDates?.start_date && traditionalDates?.end_date) {
+        startDateYmd = traditionalDates.start_date;
+        endDateYmd = traditionalDates.end_date;
+      } else {
+        const start = computeStartDate(); // existing behavior: join starts today
+        startDateYmd = start.toISOString().split("T")[0];
+        endDateYmd = addDaysToYmd(startDateYmd, Math.max(1, duration) - 1);
+      }
+
+      const person = joinForm.person_needs_help.trim() || null;
+      if (person) {
+        try {
+          await ensurePersonSaved(person);
+        } catch {
+          // best-effort
+        }
+      }
+
+      const insertData: any = {
+        task_id: resolvedPrayerTask.id,
+        user_id: user.id,
+        name: effectiveName,
+        email: effectiveEmail,
+        phone_number: effectivePhone,
+        person_needs_help: person,
+        prayer_time: joinForm.prayer_time,
+        timezone: joinForm.timezone,
+        start_date: startDateYmd,
+        end_date: endDateYmd,
+        current_day: 1,
+        is_active: true,
+      };
+
+      const { data: created, error } = await (supabase as any)
+        .from("prayer_user_tasks")
+        .insert([insertData])
+        .select("id")
+        .single();
+      if (error) throw error;
+
+      toast({
+        title: "Prayer Joined",
+        description: `You've joined \"${actionPost.title}\". You'll receive daily reminders.`,
+      });
+
+      // Server-side notifications (email + SMS + call). Best-effort.
+      if (created?.id) {
+        try {
+          const { data: notifData, error: notifError } = await supabase.functions.invoke("send-prayer-start-notification", {
+            body: { user_task_id: created.id },
+          });
+          if (notifError) throw notifError;
+
+          const smsSent = Boolean((notifData as any)?.sms_sent);
+          const callPlaced = Boolean((notifData as any)?.call_placed);
+          const smsError = String((notifData as any)?.sms_error || "");
+          const callError = String((notifData as any)?.call_error || "");
+
+          if (!effectivePhone) {
+            toast({
+              title: "Joined (No Phone Alerts)",
+              description: "Add your phone number (with country code, e.g. +919988629175) to receive SMS/phone call alerts.",
+            });
+          } else if (!smsSent && !callPlaced) {
+            toast({
+              title: "Joined (Alerts Not Sent)",
+              description:
+                smsError ||
+                callError ||
+                "Your prayer was joined, but SMS/call could not be sent. Check Twilio setup (AUTH_TOKEN, From number, trial verified number).",
+            });
+          } else {
+            toast({
+              title: "Alert Sent",
+              description: `We sent a notification to ${effectivePhone}.`,
+            });
+          }
+        } catch (e) {
+          console.warn("[Blog] send-prayer-start-notification failed:", e);
+        }
+      }
+
+      setActionOpen(false);
+      setJoinedTaskIds((prev) => {
+        const next = new Set(prev);
+        next.add(resolvedPrayerTask.id);
+        return next;
+      });
+    } catch (e: any) {
+      toast({ title: "Error", description: e?.message || "Failed to join prayer.", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  }, [actionPost, addDaysToYmd, ensurePersonSaved, joinForm, profile, resolvedPrayerTask, toast, user]);
+
   // Loader
   if (initializing || loading) {
     return (
@@ -875,6 +1104,7 @@ const Blog = () => {
                       joined={joined}
                       onJoin={(p) => void openPrayerAction("join", p)}
                       onSave={(p) => void openPrayerAction("save", p)}
+                      onDescription={openDescription}
                     />
                       );
                     })()
@@ -1001,7 +1231,37 @@ const Blog = () => {
       </Dialog>
 
       {/* Prayer action popup (Join / Save reminder) */}
-      <Dialog open={actionOpen} onOpenChange={setActionOpen}>
+      <StartPrayerDialog
+        open={actionOpen && actionMode === "join"}
+        onOpenChange={setActionOpen}
+        title="Join Prayer"
+        description={
+          <>
+            {actionPost?.title}
+            <span className="block text-xs text-muted-foreground mt-1">
+              Your email and phone details are auto-filled from your profile. You can edit them if needed.
+            </span>
+            {!resolvedPrayerTask && (
+              <span className="block text-xs text-muted-foreground mt-2">
+                {resolvingPrayerTask
+                  ? "Loading prayer task…"
+                  : "No prayer task is linked to this post yet. Please ask an admin to map it, or request one."}
+              </span>
+            )}
+          </>
+        }
+        submitting={saving || resolvingPrayerTask}
+        submitDisabled={!resolvedPrayerTask || resolvingPrayerTask}
+        submitLabel="Join Prayer"
+        showStartDatePicker={false}
+        traditionalDates={traditionalDates || undefined}
+        form={joinForm}
+        setForm={setJoinForm}
+        timezoneOptions={commonTimezones}
+        onSubmit={confirmJoinPrayerFromDialog}
+      />
+
+      <Dialog open={actionOpen && actionMode === "save"} onOpenChange={setActionOpen}>
         <DialogContent className="max-w-xl">
           <DialogHeader>
             <DialogTitle>{actionMode === "join" ? "Join Prayer" : "Save with Reminder"}</DialogTitle>
@@ -1166,6 +1426,33 @@ const Blog = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Prayer description popup (only shown on explicit click) */}
+      <Dialog open={descriptionOpen} onOpenChange={setDescriptionOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Prayer Description</DialogTitle>
+            <DialogDescription>{descriptionPost?.title}</DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[70vh] overflow-auto text-sm text-white/90 leading-relaxed">
+            {descriptionPost?.content ? (
+              <div dangerouslySetInnerHTML={{ __html: descriptionPost.content }} />
+            ) : (
+              <p className="text-muted-foreground">No description available.</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              className="rounded-[8px] border-0 hover:bg-muted/10"
+              onClick={() => setDescriptionOpen(false)}
+              type="button"
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
@@ -1175,12 +1462,20 @@ const BlogPostCard = memo(function BlogPostCard({
   joined,
   onJoin,
   onSave,
+  onDescription,
 }: {
   post: BlogPost;
   joined: boolean;
   onJoin: (post: BlogPost) => void;
   onSave: (post: BlogPost) => void;
+  onDescription: (post: BlogPost) => void;
 }) {
+  const safeTags = Array.isArray((post as any).tags) ? ((post as any).tags as string[]) : [];
+  const displayTags = safeTags
+    .map((t) => String(t || "").trim())
+    .filter(Boolean)
+    .filter((t) => !/^prayer_task:/i.test(t));
+
   return (
     <Card className="group hover:scale-105 hover:glow-primary transition-all duration-300 cursor-pointer border-0 shadow-none bg-gradient-pink-to-yellow rounded-sm p-[2px]">
       <div className="bg-black rounded-sm p-0 h-full">
@@ -1198,7 +1493,7 @@ const BlogPostCard = memo(function BlogPostCard({
           <CardHeader className="p-4 pb-0 space-y-0">
             <h3 className="text-lg font-inter font-semibold text-white line-clamp-2 pb-2">{post.title}</h3>
 
-            {post.excerpt && (
+            {!joined && post.excerpt && (
               <p className="text-white font-open-sans font-normal text-sm line-clamp-3 mt-2" dangerouslySetInnerHTML={{ __html: post.excerpt }}></p>
             )}
           </CardHeader>
@@ -1220,9 +1515,9 @@ const BlogPostCard = memo(function BlogPostCard({
               {post.view_count}
             </div>
 
-            {post.tags.length > 0 && (
+            {!joined && displayTags.length > 0 && (
               <div className="flex flex-wrap gap-1 mt-4">
-                {post.tags.slice(0, 3).map((tag) => (
+                {displayTags.slice(0, 1).map((tag) => (
                   <Badge key={tag} variant="outline" className="text-xs text-white bg-transparent">
                     {tag}
                   </Badge>
@@ -1234,7 +1529,7 @@ const BlogPostCard = memo(function BlogPostCard({
 
         {/* Two required buttons in the card footer area (do not navigate to post) */}
         <div className="p-4 pt-0">
-          <div className="flex gap-2">
+          <div className="grid grid-cols-3 gap-2">
             <Button
               className="flex-1 rounded-[8px] border-0 hover:bg-primary/80 bg-primary"
               disabled={joined}
@@ -1257,6 +1552,17 @@ const BlogPostCard = memo(function BlogPostCard({
               }}
             >
               Save
+            </Button>
+            <Button
+              variant="outline"
+              className="flex-1 rounded-[8px] border-white/30 text-white bg-transparent hover:bg-white/10"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onDescription(post);
+              }}
+            >
+              Description
             </Button>
           </div>
         </div>

@@ -32,6 +32,8 @@ import {
   AlertCircle,
   CheckCircle2,
   PlayCircle,
+  StopCircle,
+  RotateCcw,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -39,6 +41,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import Footer from "@/components/Footer";
+import { StartPrayerDialog } from "@/components/prayer/StartPrayerDialog";
 
 interface PrayerTask {
   id: string;
@@ -99,6 +102,8 @@ export default function PrayerTasks() {
   const [starting, setStarting] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
   const [completing, setCompleting] = useState<string | null>(null);
+  const [stopping, setStopping] = useState<string | null>(null);
+  const [restarting, setRestarting] = useState<string | null>(null);
 
   // Get user's timezone
   const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -109,6 +114,7 @@ export default function PrayerTasks() {
     phone_country_code: "",
     phone_number: "",
     person_needs_help: "",
+    start_date: new Date().toISOString().split("T")[0],
     prayer_time: "07:00",
     timezone: userTimezone,
   });
@@ -197,30 +203,12 @@ export default function PrayerTasks() {
 
   const fetchUserTasks = async () => {
     try {
-      const query = sb
-        .from('prayer_user_tasks')
-        .select(`
-          *,
-          task:prayer_tasks(*)
-        `)
-        .eq('is_active', true)
-        .order('created_at', { ascending: false });
-
-      if (user) {
-        query.eq('user_id', user.id);
-      } else {
-        // For anonymous users, we'd need to track by email or session
-        // For now, we'll fetch all and filter client-side
-        query.is('user_id', null);
-      }
-
       const { data, error } = await sb
         .from('prayer_user_tasks')
         .select(`
           *,
           task:prayer_tasks(*)
         `)
-        .eq('is_active', true)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -290,11 +278,12 @@ export default function PrayerTasks() {
 
       setStarting(true);
 
-      // Calculate end date
-      const startDate = new Date(selectedTask.start_date);
       const duration = selectedTask.duration_days || selectedTask.number_of_days;
-      const endDate = new Date(startDate);
-      endDate.setDate(endDate.getDate() + duration - 1);
+
+      // Use selected start date from the form (cron-safe and user-controlled)
+      const startDateYmd = String((instanceFormData as any).start_date || selectedTask.start_date || "").trim();
+      const fixedEnd = String((instanceFormData as any).end_date || (selectedTask as any).end_date || "").trim();
+      const endDateYmd = fixedEnd || addDaysToYmd(startDateYmd, Math.max(1, duration) - 1);
 
       // Create user prayer instance
       const normalizeCountryCode = (val: string) => {
@@ -325,8 +314,8 @@ export default function PrayerTasks() {
         person_needs_help: instanceFormData.person_needs_help || null,
         prayer_time: instanceFormData.prayer_time,
         timezone: instanceFormData.timezone,
-        start_date: selectedTask.start_date,
-        end_date: endDate.toISOString().split('T')[0],
+        start_date: startDateYmd,
+        end_date: endDateYmd,
         current_day: 1,
         is_active: true,
       };
@@ -398,6 +387,7 @@ export default function PrayerTasks() {
         phone_country_code: "",
         phone_number: "",
         person_needs_help: "",
+        start_date: new Date().toISOString().split("T")[0],
         prayer_time: "07:00",
         timezone: userTimezone,
       });
@@ -553,11 +543,57 @@ export default function PrayerTasks() {
       // Update current_day in user task
       const userTask = userTasks.find(ut => ut.id === userTaskId);
       if (userTask) {
+        const duration = getDurationForUserTask(userTask);
         const newCurrentDay = Math.max(userTask.current_day, dayNumber + 1);
-        await sb
-          .from('prayer_user_tasks')
-          .update({ current_day: newCurrentDay })
-          .eq('id', userTaskId);
+        const justCompleted = dayNumber >= duration;
+
+        const updatePayload: any = { current_day: newCurrentDay };
+        if (justCompleted) updatePayload.is_active = false;
+
+        await sb.from('prayer_user_tasks').update(updatePayload).eq('id', userTaskId);
+
+        // Completed Prayer Folder Handling (best-effort)
+        if (justCompleted && user?.id) {
+          try {
+            const folderName = "Completed Prayers";
+            const { data: existingFolder } = await sb
+              .from("prayer_folders")
+              .select("id")
+              .eq("created_by", user.id)
+              .eq("name", folderName)
+              .maybeSingle();
+
+            let folderId: string | null = existingFolder?.id ? String(existingFolder.id) : null;
+
+            if (!folderId) {
+              const { data: createdFolder, error: folderErr } = await sb
+                .from("prayer_folders")
+                .insert([
+                  {
+                    name: folderName,
+                    created_by: user.id,
+                    email: user.email || null,
+                    phone_number: userTask.phone_number || null,
+                  },
+                ])
+                .select("id")
+                .single();
+              if (folderErr) throw folderErr;
+              folderId = createdFolder?.id ? String(createdFolder.id) : null;
+            }
+
+            // Save completed prayer under the user's folder.
+            // Only apply folder/status to non-shared tasks to avoid impacting other users.
+            if (folderId && userTask.task && !userTask.task.is_shared) {
+              await sb
+                .from("prayer_tasks")
+                .update({ folder_id: folderId, status: "DONE" })
+                .eq("id", userTask.task_id);
+            }
+          } catch (e) {
+            console.warn("[PrayerTasks] completed folder handling failed:", e);
+          }
+        }
       }
 
       toast({
@@ -575,6 +611,125 @@ export default function PrayerTasks() {
       });
     } finally {
       setCompleting(null);
+    }
+  };
+
+  const getTodayYmdInTimezone = (timeZone: string): string => {
+    const now = new Date();
+    try {
+      const parts = new Intl.DateTimeFormat("en-US", {
+        timeZone: timeZone || "UTC",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).formatToParts(now);
+      const y = parts.find((p) => p.type === "year")?.value;
+      const mo = parts.find((p) => p.type === "month")?.value;
+      const d = parts.find((p) => p.type === "day")?.value;
+      if (!y || !mo || !d) return now.toISOString().slice(0, 10);
+      return `${y}-${mo}-${d}`;
+    } catch {
+      return now.toISOString().slice(0, 10);
+    }
+  };
+
+  const addDaysToYmd = (yyyyMmDd: string, daysToAdd: number): string => {
+    const m = String(yyyyMmDd || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return yyyyMmDd;
+    const y = Number(m[1]);
+    const mo = Number(m[2]) - 1;
+    const d = Number(m[3]);
+    const dt = new Date(Date.UTC(y, mo, d + Math.max(0, daysToAdd)));
+    return dt.toISOString().slice(0, 10);
+  };
+
+  const handleStopPrayer = async (ut: PrayerUserTask) => {
+    if (!ut?.id) return;
+    const ok = window.confirm(
+      "Stop this prayer?\n\nThis will pause the prayer and stop reminders. Your progress will be saved.\n\nYou can restart later (restarting begins again from Day 1)."
+    );
+    if (!ok) return;
+    try {
+      setStopping(ut.id);
+
+      // Optimistic UI update
+      setUserTasks((prev) => prev.map((p) => (p.id === ut.id ? { ...p, is_active: false } : p)));
+
+      const { error } = await sb.from("prayer_user_tasks").update({ is_active: false }).eq("id", ut.id);
+      if (error) throw error;
+
+      toast({ title: "Prayer Stopped", description: "This prayer has been stopped. You can restart it anytime." });
+    } catch (e: any) {
+      toast({ title: "Error", description: e?.message || "Failed to stop prayer.", variant: "destructive" });
+      fetchUserTasks();
+    } finally {
+      setStopping(null);
+    }
+  };
+
+  const handleRestartPrayer = async (ut: PrayerUserTask) => {
+    if (!ut?.id) return;
+    if (isPrayerCompleted(ut)) {
+      toast({
+        title: "Completed",
+        description: "This prayer is already completed and cannot be restarted.",
+      });
+      return;
+    }
+    const ok = window.confirm(
+      "Are you sure you want to restart this prayer? This will reset the progress and start again from Day 1."
+    );
+    if (!ok) return;
+
+    try {
+      setRestarting(ut.id);
+
+      const duration = getDurationForUserTask(ut);
+      const tz = ut.timezone || userTimezone || "UTC";
+      const startDate = getTodayYmdInTimezone(tz);
+      const endDate = addDaysToYmd(startDate, Math.max(1, duration) - 1);
+
+      // Preserve history without deleting: shift existing completion rows out of the 1..duration range.
+      const { data: completions, error: compErr } = await sb
+        .from("prayer_daily_completions")
+        .select("id, day_number")
+        .eq("user_task_id", ut.id);
+      if (compErr) throw compErr;
+
+      if (Array.isArray(completions) && completions.length) {
+        const offset = 10000;
+        await Promise.all(
+          completions.map((c: any) =>
+            sb
+              .from("prayer_daily_completions")
+              .update({ day_number: Number(c.day_number) + offset })
+              .eq("id", c.id)
+          )
+        );
+      }
+
+      // Reuse the SAME prayer_user_tasks record (no new row)
+      const { error } = await sb
+        .from("prayer_user_tasks")
+        .update({ is_active: true, current_day: 1, start_date: startDate, end_date: endDate })
+        .eq("id", ut.id);
+      if (error) throw error;
+
+      // Optimistic UI update (instant)
+      setUserTasks((prev) =>
+        prev.map((p) =>
+          p.id === ut.id
+            ? { ...p, is_active: true, current_day: 1, start_date: startDate, end_date: endDate, completed_days: [] }
+            : p
+        )
+      );
+
+      toast({ title: "Prayer Restarted", description: "This prayer has been restarted from Day 1." });
+      fetchUserTasks();
+    } catch (e: any) {
+      toast({ title: "Error", description: e?.message || "Failed to restart prayer.", variant: "destructive" });
+    } finally {
+      setRestarting(null);
     }
   };
 
@@ -624,16 +779,31 @@ export default function PrayerTasks() {
   };
 
   const handleTaskClick = (task: PrayerTask) => {
-    // Check if user already has an instance
-    const existingInstance = userTasks.find(ut => ut.task_id === task.id);
-    if (existingInstance) {
+    const activeInstance = userTasks.find((ut) => ut.task_id === task.id && ut.is_active);
+    if (activeInstance) {
       toast({
         title: "Already Started",
-        description: "You've already started this prayer. Check 'My Prayers' below.",
+        description: "You already have an active prayer for this task. Check 'My Prayers' below.",
       });
       return;
     }
 
+    // If the user previously stopped it, allow restart. If completed, do not allow restart.
+    const existingInstance = userTasks.find((ut) => ut.task_id === task.id);
+    if (existingInstance) {
+      if (isPrayerCompleted(existingInstance)) {
+        toast({
+          title: "Completed",
+          description: "This prayer is already completed and cannot be restarted.",
+        });
+        return;
+      }
+      handleRestartPrayer(existingInstance);
+      return;
+    }
+
+    // Default the start date to the task start date (if provided)
+    setInstanceFormData((prev) => ({ ...(prev as any), start_date: task.start_date || prev.start_date } as any));
     setSelectedTask(task);
     setStartInstanceDialogOpen(true);
   };
@@ -691,9 +861,21 @@ export default function PrayerTasks() {
     return day;
   };
 
+  const getDurationForUserTask = (userTask: PrayerUserTask): number => {
+    return userTask.task?.duration_days || userTask.task?.number_of_days || 1;
+  };
+
+  const isPrayerCompleted = (userTask: PrayerUserTask): boolean => {
+    const duration = getDurationForUserTask(userTask);
+    const completedDays = userTask.completed_days || [];
+    return completedDays.includes(duration) || completedDays.length >= duration || userTask.current_day > duration;
+  };
+
   const canCompleteToday = (userTask: PrayerUserTask): boolean => {
+    if (!userTask.is_active) return false;
+    if (isPrayerCompleted(userTask)) return false;
     const currentDay = getCurrentDay(userTask);
-    if (currentDay < 1 || currentDay > (userTask.task?.duration_days || userTask.task?.number_of_days || 1)) {
+    if (currentDay < 1 || currentDay > getDurationForUserTask(userTask)) {
       return false;
     }
     return !(userTask.completed_days || []).includes(currentDay);
@@ -742,6 +924,10 @@ export default function PrayerTasks() {
     { value: 'Australia/Sydney', label: 'Sydney (AEDT)' },
   ];
 
+  const activeInProgress = userTasks.filter((ut) => ut.is_active && !isPrayerCompleted(ut));
+  const completedPrayers = userTasks.filter((ut) => isPrayerCompleted(ut));
+  const stoppedPrayers = userTasks.filter((ut) => !ut.is_active && !isPrayerCompleted(ut));
+
   return (
     <div className="min-h-screen pink-yellow-shadow pt-20">
       <div className="animate-slide-up bg-black/20 px-6 py-10 text-center md:py-12 lg:py-24">
@@ -757,94 +943,199 @@ export default function PrayerTasks() {
 
       <div className="space-y-6 px-5 py-8 md:py-12 lg:py-16">
         <div className="mx-auto w-full max-w-7xl">
-          {/* My Active Prayers */}
+          {/* My Prayers */}
           {userTasks.length > 0 && (
             <Card className="border border-muted/20 p-0 rounded-lg bg-white/5 mb-6">
               <CardHeader>
-                <CardTitle className="text-primary">My Active Prayers</CardTitle>
+                <CardTitle className="text-primary">My Prayers</CardTitle>
                 <CardDescription>
                   Track your daily prayer progress
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {userTasks.map((userTask) => {
-                    const currentDay = getCurrentDay(userTask);
-                    const duration = userTask.task?.duration_days || userTask.task?.number_of_days || 1;
-                    const canComplete = canCompleteToday(userTask);
-                    const isCompleted = (userTask.completed_days || []).includes(currentDay);
+                <div className="space-y-6">
+                  {activeInProgress.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="text-sm font-semibold text-white/90">Active / In Progress</div>
+                      {activeInProgress.map((ut) => {
+                        const currentDay = getCurrentDay(ut);
+                        const duration = getDurationForUserTask(ut);
+                        const canComplete = canCompleteToday(ut);
+                        const isCompletedToday = (ut.completed_days || []).includes(currentDay);
 
-                    return (
-                      <Card key={userTask.id} className="border border-muted/20 p-4">
-                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <h3 className="font-semibold text-white">{userTask.task?.name || 'Unknown Prayer'}</h3>
-                              {userTask.person_needs_help && (
-                                <Badge variant="outline" className="text-xs">
-                                  For: {userTask.person_needs_help}
-                                </Badge>
-                              )}
-                            </div>
-                            <div className="text-sm text-white/70 space-y-1">
-                              <div>Day {currentDay} of {duration}</div>
-                              <div>Prayer Time: {userTask.prayer_time} ({userTask.timezone})</div>
-                              {currentDay < 1 && (
-                                <div className="text-xs text-white/60">
-                                  Starts on: {userTask.start_date} ({userTask.timezone || "UTC"})
-                                </div>
-                              )}
-                              {userTask.task?.link_or_video && (
-                                <a
-                                  href={userTask.task.link_or_video}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-primary hover:underline flex items-center gap-1"
-                                >
-                                  {userTask.task.link_or_video.includes('youtube') || userTask.task.link_or_video.includes('video') ? (
-                                    <Video className="h-4 w-4" />
-                                  ) : (
-                                    <LinkIcon className="h-4 w-4" />
+                        return (
+                          <Card key={ut.id} className="border border-muted/20 p-4">
+                            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <h3 className="font-semibold text-white">{ut.task?.name || "Unknown Prayer"}</h3>
+                                  {ut.person_needs_help && (
+                                    <Badge variant="outline" className="text-xs">
+                                      For: {ut.person_needs_help}
+                                    </Badge>
                                   )}
-                                  View Prayer Content
-                                </a>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {canComplete && !isCompleted ? (
-                              <Button
-                                onClick={() => handleCompleteDay(userTask.id, currentDay)}
-                                disabled={completing === userTask.id}
-                                className="rounded-[8px]"
-                              >
-                                {completing === userTask.id ? (
-                                  <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Completing...
-                                  </>
-                                ) : (
-                                  <>
+                                  <Badge className="bg-blue-600 text-white">In Progress</Badge>
+                                </div>
+                                <div className="text-sm text-white/70 space-y-1">
+                                  <div>Day {currentDay} of {duration}</div>
+                                  <div>Prayer Time: {ut.prayer_time} ({ut.timezone})</div>
+                                  {currentDay < 1 && (
+                                    <div className="text-xs text-white/60">
+                                      Starts on: {ut.start_date} ({ut.timezone || "UTC"})
+                                    </div>
+                                  )}
+                                  {ut.task?.link_or_video && (
+                                    <a
+                                      href={ut.task.link_or_video}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-primary hover:underline flex items-center gap-1"
+                                    >
+                                      {ut.task.link_or_video.includes("youtube") || ut.task.link_or_video.includes("video") ? (
+                                        <Video className="h-4 w-4" />
+                                      ) : (
+                                        <LinkIcon className="h-4 w-4" />
+                                      )}
+                                      View Prayer Content
+                                    </a>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                                {canComplete && !isCompletedToday ? (
+                                  <Button
+                                    onClick={() => handleCompleteDay(ut.id, currentDay)}
+                                    disabled={completing === ut.id}
+                                    className="rounded-[8px]"
+                                  >
+                                    {completing === ut.id ? (
+                                      <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Completing...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <CheckCircle2 className="mr-2 h-4 w-4" />
+                                        Mark Day {currentDay} Done
+                                      </>
+                                    )}
+                                  </Button>
+                                ) : isCompletedToday ? (
+                                  <Badge variant="secondary" className="px-4 py-2">
                                     <CheckCircle2 className="mr-2 h-4 w-4" />
-                                    Mark Day {currentDay} Done
-                                  </>
+                                    Day {currentDay} Completed
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" className="px-4 py-2">
+                                    {currentDay < 1 ? "Starts Soon" : "Future Day"}
+                                  </Badge>
                                 )}
-                              </Button>
-                            ) : isCompleted ? (
-                              <Badge variant="secondary" className="px-4 py-2">
-                                <CheckCircle2 className="mr-2 h-4 w-4" />
-                                Day {currentDay} Completed
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="px-4 py-2">
-                                {currentDay < 1 ? 'Starts Soon' : 'Future Day'}
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                      </Card>
-                    );
-                  })}
+
+                                <Button
+                                  variant="outline"
+                                  className="rounded-[8px]"
+                                  disabled={stopping === ut.id}
+                                  onClick={() => handleStopPrayer(ut)}
+                                >
+                                  {stopping === ut.id ? (
+                                    <>
+                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                      Stopping...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <StopCircle className="mr-2 h-4 w-4" />
+                                      Stop Prayer
+                                    </>
+                                  )}
+                                </Button>
+                              </div>
+                            </div>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {completedPrayers.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="text-sm font-semibold text-white/90">Completed (Done)</div>
+                      {completedPrayers.map((ut) => {
+                        const duration = getDurationForUserTask(ut);
+                        return (
+                          <Card key={ut.id} className="border border-muted/20 p-4">
+                            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <h3 className="font-semibold text-white">{ut.task?.name || "Unknown Prayer"}</h3>
+                                  <Badge className="bg-green-600 text-white">Done</Badge>
+                                </div>
+                                <div className="text-sm text-white/70 space-y-1">
+                                  <div>Progress: {duration} / {duration}</div>
+                                  <div>Prayer Time: {ut.prayer_time} ({ut.timezone})</div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Button variant="outline" className="rounded-[8px]" disabled>
+                                  <CheckCircle2 className="mr-2 h-4 w-4" />
+                                  Completed
+                                </Button>
+                              </div>
+                            </div>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {stoppedPrayers.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="text-sm font-semibold text-white/90">Stopped</div>
+                      {stoppedPrayers.map((ut) => {
+                        const duration = getDurationForUserTask(ut);
+                        return (
+                          <Card key={ut.id} className="border border-muted/20 p-4">
+                            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <h3 className="font-semibold text-white">{ut.task?.name || "Unknown Prayer"}</h3>
+                                  <Badge variant="outline" className="text-white border-white/30">Stopped</Badge>
+                                </div>
+                                <div className="text-sm text-white/70 space-y-1">
+                                  <div>Progress: {Math.min(duration, Math.max(0, ut.current_day - 1))} / {duration}</div>
+                                  <div>Prayer Time: {ut.prayer_time} ({ut.timezone})</div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  className="rounded-[8px]"
+                                  disabled={restarting === ut.id}
+                                  onClick={() => handleRestartPrayer(ut)}
+                                >
+                                  {restarting === ut.id ? (
+                                    <>
+                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                      Restarting...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <RotateCcw className="mr-2 h-4 w-4" />
+                                      Restart (Day 1)
+                                    </>
+                                  )}
+                                </Button>
+                              </div>
+                            </div>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {activeInProgress.length === 0 && completedPrayers.length === 0 && stoppedPrayers.length === 0 && (
+                    <div className="text-white/70 text-sm">No prayers yet.</div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -909,26 +1200,37 @@ export default function PrayerTasks() {
               ) : (
                 <div className="space-y-4">
                   {filteredTasks.map((task) => {
-                    const hasInstance = userTasks.some(ut => ut.task_id === task.id);
+                    const instances = userTasks.filter((ut) => ut.task_id === task.id);
+                    const hasActiveInstance = instances.some((ut) => ut.is_active && !isPrayerCompleted(ut));
+                    const hasCompletedInstance = instances.some((ut) => isPrayerCompleted(ut));
+                    const hasStoppedInstance = instances.some((ut) => !ut.is_active && !isPrayerCompleted(ut));
                     return (
                       <Card
                         key={task.id}
-                        className={`cursor-pointer transition-colors mt-4 p-6 ${
-                          !hasInstance ? 'hover:bg-white/10' : ''
-                        }`}
-                        onClick={() => !hasInstance && handleTaskClick(task)}
+                        className={`cursor-pointer transition-colors mt-4 p-6 hover:bg-white/10`}
+                        onClick={() => handleTaskClick(task)}
                       >
                         <CardContent className="p-0 sm:p-0">
                           <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
                             <div className="md:col-span-1">
                               <div className="font-inter text-sm text-white">{task.name}</div>
                               {getStatusBadge(task.status)}
-                              {hasInstance && (
+                              {hasActiveInstance ? (
                                 <Badge variant="secondary" className="mt-2">
                                   <PlayCircle className="mr-1 h-3 w-3" />
                                   Active
                                 </Badge>
-                              )}
+                              ) : hasCompletedInstance ? (
+                                <Badge className="mt-2 bg-green-600 text-white">
+                                  <CheckCircle2 className="mr-1 h-3 w-3" />
+                                  Completed
+                                </Badge>
+                              ) : hasStoppedInstance ? (
+                                <Badge variant="outline" className="mt-2 text-white border-white/30">
+                                  <StopCircle className="mr-1 h-3 w-3" />
+                                  Stopped
+                                </Badge>
+                              ) : null}
                             </div>
                             <div className="md:col-span-1">
                               {task.link_or_video ? (
@@ -970,14 +1272,23 @@ export default function PrayerTasks() {
                               )}
                             </div>
                             <div className="md:col-span-1">
-                              {!hasInstance ? (
+                              {hasActiveInstance ? (
+                                <Badge variant="secondary" className="w-full text-center p-2 rounded-[8px]">
+                                  Already Active
+                                </Badge>
+                              ) : hasCompletedInstance ? (
+                                <Button size="sm" variant="outline" className="w-full rounded-[8px]" disabled>
+                                  <CheckCircle2 className="mr-2 h-4 w-4" />
+                                  Completed
+                                </Button>
+                              ) : hasStoppedInstance ? (
+                                <Button size="sm" className="w-full rounded-[8px]">
+                                  Restart (Day 1)
+                                </Button>
+                              ) : (
                                 <Button size="sm" className="w-full rounded-[8px]">
                                   Start Prayer
                                 </Button>
-                              ) : (
-                                <Badge variant="secondary" className="w-full text-center p-2 rounded-[8px]">
-                                  Already Started
-                                </Badge>
                               )}
                             </div>
                           </div>
@@ -994,131 +1305,30 @@ export default function PrayerTasks() {
       <Footer />
 
       {/* Start Prayer Instance Dialog */}
-      <Dialog open={startInstanceDialogOpen} onOpenChange={setStartInstanceDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Start Prayer</DialogTitle>
-            <DialogDescription className="font-inter text-black/50">
-              {user ? "Your email and phone will be auto-filled. You can edit them if needed." : "Please provide your information to start this prayer."}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="instance-name">Your Name *</Label>
-              <Input
-                id="instance-name"
-                value={instanceFormData.name}
-                onChange={(e) => setInstanceFormData({ ...instanceFormData, name: e.target.value })}
-                placeholder="Your full name"
-                className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none'
-                style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as React.CSSProperties}
-              />
-            </div>
-            <div>
-              <Label htmlFor="instance-email">Your Email *</Label>
-              <Input
-                id="instance-email"
-                type="email"
-                value={instanceFormData.email}
-                onChange={(e) => setInstanceFormData({ ...instanceFormData, email: e.target.value })}
-                placeholder="your.email@example.com"
-                className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none'
-                style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as React.CSSProperties}
-              />
-            </div>
-            <div>
-              <Label htmlFor="instance-phone">Phone Number</Label>
-              <div className="mt-1 flex gap-2">
-                <Input
-                  id="instance-phone-cc"
-                  type="tel"
-                  value={(instanceFormData as any).phone_country_code}
-                  onChange={(e) =>
-                    setInstanceFormData({
-                      ...instanceFormData,
-                      phone_country_code: e.target.value.replace(/[^\d+]/g, ""),
-                    } as any)
-                  }
-                  placeholder="+91"
-                  className='w-[88px] rounded-[8px] shadow-none border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none'
-                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as React.CSSProperties}
-                />
-                <Input
-                  id="instance-phone"
-                  type="tel"
-                  value={instanceFormData.phone_number}
-                  onChange={(e) =>
-                    setInstanceFormData({
-                      ...instanceFormData,
-                      phone_number: e.target.value.replace(/\D/g, ""),
-                    })
-                  }
-                  placeholder="1234569879"
-                  className='flex-1 rounded-[8px] shadow-none border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none'
-                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as React.CSSProperties}
-                />
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="instance-person">Person Who Needs Help (Optional)</Label>
-              <Input
-                id="instance-person"
-                value={instanceFormData.person_needs_help}
-                onChange={(e) => setInstanceFormData({ ...instanceFormData, person_needs_help: e.target.value })}
-                placeholder="e.g., JEFF"
-                className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none'
-                style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as React.CSSProperties}
-              />
-            </div>
-            <div>
-              <Label htmlFor="instance-prayer-time">Daily Prayer Time *</Label>
-              <Input
-                id="instance-prayer-time"
-                type="time"
-                value={instanceFormData.prayer_time}
-                onChange={(e) => setInstanceFormData({ ...instanceFormData, prayer_time: e.target.value })}
-                className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none'
-                style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as React.CSSProperties}
-              />
-              <p className="text-xs text-muted-foreground mt-1">You'll receive reminders at this time daily</p>
-            </div>
-            <div>
-              <Label htmlFor="instance-timezone">Timezone *</Label>
-              <Select
-                value={instanceFormData.timezone}
-                onValueChange={(value) => setInstanceFormData({ ...instanceFormData, timezone: value })}
-              >
-                <SelectTrigger className='rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none'
-                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as React.CSSProperties}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="border-secondary-foreground bg-black/90 text-white">
-                  {commonTimezones.map(tz => (
-                    <SelectItem key={tz.value} value={tz.value}>
-                      {tz.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex justify-end gap-2 pt-4">
-              <Button className="border-0 rounded-[8px] hover:bg-white/80" variant="outline" onClick={() => setStartInstanceDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button className="border-0 rounded-[8px] hover:bg-primary/80 gap-0" onClick={handleStartInstance} disabled={starting}>
-                {starting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Starting...
-                  </>
-                ) : (
-                  "Start Prayer"
-                )}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <StartPrayerDialog
+        open={startInstanceDialogOpen}
+        onOpenChange={setStartInstanceDialogOpen}
+        title="Start Prayer"
+        description={
+          user
+            ? "Your email and phone will be auto-filled. You can edit them if needed."
+            : "Please provide your information to start this prayer."
+        }
+        submitting={starting}
+        submitLabel="Start Prayer"
+        traditionalDates={
+          selectedTask && (selectedTask as any).start_date && (selectedTask as any).end_date
+            ? {
+                start_date: String((selectedTask as any).start_date),
+                end_date: String((selectedTask as any).end_date),
+              }
+            : undefined
+        }
+        form={instanceFormData as any}
+        setForm={(next) => setInstanceFormData(next as any)}
+        timezoneOptions={commonTimezones}
+        onSubmit={handleStartInstance}
+      />
 
       {/* Send Email Dialog */}
       <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>

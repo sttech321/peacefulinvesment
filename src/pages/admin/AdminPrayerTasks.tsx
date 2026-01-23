@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -22,6 +22,7 @@ type PrayerTask = {
   folder_id?: string | null;
   start_date?: string;
   start_time?: string;
+  status?: "TODO" | "DONE" | string;
 };
 
 type PrayerFolder = {
@@ -67,12 +68,19 @@ export default function AdminPrayerTasks() {
   const [loading, setLoading] = useState(true);
   const [userTasks, setUserTasks] = useState<PrayerUserTask[]>([]);
   const [profilesByUserId, setProfilesByUserId] = useState<Map<string, UserProfileLite>>(new Map());
+  const syncRef = useRef(false);
 
   // Prayer task templates (admin creates these; users join instances)
   const [templatesLoading, setTemplatesLoading] = useState(true);
   const [templates, setTemplates] = useState<PrayerTask[]>([]);
   const [templateSearch, setTemplateSearch] = useState("");
   const [folders, setFolders] = useState<PrayerFolder[]>([]);
+
+  const folderMap = useMemo(() => {
+    const map = new Map<string, string>();
+    folders.forEach((f) => map.set(String(f.id), String(f.name)));
+    return map;
+  }, [folders]);
 
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -100,6 +108,7 @@ export default function AdminPrayerTasks() {
   });
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deletingUserTaskId, setDeletingUserTaskId] = useState<string | null>(null);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "TODO" | "DONE">("all");
@@ -124,6 +133,71 @@ export default function AdminPrayerTasks() {
       if (error) throw error;
       // Supabase nested select typing can be overly strict here; cast through unknown.
       const rows = (data || []) as unknown as PrayerUserTask[];
+
+      // --- Completion sync (admin-safe, no deletes) ---
+      // Ensures completed instances are marked inactive and (for non-shared tasks) moved into the user's Completed Prayers folder.
+      if (!syncRef.current) {
+        syncRef.current = true;
+        try {
+          const ensureCompletedFolderId = async (userId: string): Promise<string | null> => {
+            const { data: existing, error: exErr } = await (supabase as any)
+              .from("prayer_folders")
+              .select("id")
+              .eq("created_by", userId)
+              .eq("name", "Completed Prayers")
+              .maybeSingle();
+            if (exErr) throw exErr;
+            if (existing?.id) return String(existing.id);
+
+            const { data: created, error: crErr } = await (supabase as any)
+              .from("prayer_folders")
+              .insert([{ name: "Completed Prayers", created_by: userId, parent_id: null }])
+              .select("id")
+              .single();
+            if (crErr) throw crErr;
+            return created?.id ? String(created.id) : null;
+          };
+
+          for (const ut of rows) {
+            const duration =
+              (ut.task as any)?.duration_days ||
+              (ut.task as any)?.number_of_days ||
+              daysBetweenInclusive(ut.start_date, ut.end_date);
+
+            // Completion rule:
+            // - final day completed (current_day >= duration), OR
+            // - current_day exceeds duration
+            const isCompleted = Number(ut.current_day) >= Number(duration);
+            if (!isCompleted) continue;
+
+            // Mark inactive (per-user instance only)
+            if (ut.is_active) {
+              await (supabase as any).from("prayer_user_tasks").update({ is_active: false }).eq("id", ut.id);
+            }
+
+            // Shared prayer safety: never mutate shared prayer task template
+            if (ut.task?.is_shared) continue;
+            if (!ut.user_id) continue;
+
+            const completedFolderId = await ensureCompletedFolderId(ut.user_id);
+            if (!completedFolderId) continue;
+
+            const currentFolderId = ut.task?.folder_id ? String(ut.task.folder_id) : null;
+            const currentStatus = String((ut.task as any)?.status || "");
+            if (currentFolderId !== completedFolderId || currentStatus !== "DONE") {
+              await (supabase as any)
+                .from("prayer_tasks")
+                .update({ folder_id: completedFolderId, status: "DONE" })
+                .eq("id", ut.task_id);
+            }
+          }
+        } catch (e) {
+          console.warn("[AdminPrayerTasks] completion sync failed:", e);
+        } finally {
+          syncRef.current = false;
+        }
+      }
+
       setUserTasks(rows);
 
       const userIds = Array.from(new Set(rows.map((r) => r.user_id).filter(Boolean))) as string[];
@@ -344,6 +418,27 @@ export default function AdminPrayerTasks() {
     [fetchTemplates, toast]
   );
 
+  const deleteCompletedUserTask = useCallback(
+    async (utId: string) => {
+      const ok = window.confirm(`Delete this completed prayer record?\n\nThis cannot be undone.`);
+      if (!ok) return;
+
+      try {
+        setDeletingUserTaskId(utId);
+        const { error } = await (supabase as any).from("prayer_user_tasks").delete().eq("id", utId);
+        if (error) throw error;
+
+        toast({ title: "Deleted", description: "Completed prayer record deleted successfully." });
+        await fetchTracking();
+      } catch (e: any) {
+        toast({ title: "Error", description: e?.message || "Failed to delete completed prayer record.", variant: "destructive" });
+      } finally {
+        setDeletingUserTaskId(null);
+      }
+    },
+    [fetchTracking, toast]
+  );
+
   const rows = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
     const today = new Date().toISOString().slice(0, 10);
@@ -354,7 +449,8 @@ export default function AdminPrayerTasks() {
           (ut.task as any)?.number_of_days ||
           daysBetweenInclusive(ut.start_date, ut.end_date);
 
-        const isDone = ut.current_day >= duration || new Date().toISOString().slice(0, 10) > ut.end_date;
+        // Completion rule: completed when current_day reaches/exceeds duration (not based on end_date passing).
+        const isDone = Number(ut.current_day) >= Number(duration);
         const status: "TODO" | "DONE" = isDone ? "DONE" : "TODO";
         const visibility: "shared" | "private" = ut.task?.is_shared ? "shared" : "private";
 
@@ -376,6 +472,9 @@ export default function AdminPrayerTasks() {
 
         const daysRemaining = Math.max(0, duration - ut.current_day);
 
+        const folderId = ut.task?.folder_id ? String(ut.task.folder_id) : "";
+        const folderName = folderId && folderMap.has(folderId) ? folderMap.get(folderId) : "—";
+
         return {
           ut,
           duration,
@@ -386,6 +485,7 @@ export default function AdminPrayerTasks() {
           displayName,
           displayEmail,
           displayPhone,
+          folderName,
         };
       })
       .filter(({ ut, status, visibility, startStatus, displayName, displayEmail, displayPhone }) => {
@@ -405,7 +505,7 @@ export default function AdminPrayerTasks() {
           (displayPhone || "").toLowerCase().includes(q)
         );
       });
-  }, [activeOnly, profilesByUserId, searchTerm, startStatusFilter, statusFilter, userTasks, visibilityFilter]);
+  }, [activeOnly, folderMap, profilesByUserId, searchTerm, startStatusFilter, statusFilter, userTasks, visibilityFilter]);
 
   return (
     <div className="space-y-6">
@@ -608,6 +708,7 @@ export default function AdminPrayerTasks() {
                   <tr className="border-b border-muted/20 bg-white/15 text-white">
                     <th className="text-left px-4 py-3">User</th>
                     <th className="text-left px-4 py-3">Prayer</th>
+                    <th className="text-left px-4 py-3">Folder</th>
                     <th className="text-left px-4 py-3">Person Needs Help</th>
                     <th className="text-left px-4 py-3">Joined</th>
                     <th className="text-left px-4 py-3">Progress</th>
@@ -617,10 +718,11 @@ export default function AdminPrayerTasks() {
                     <th className="text-left px-4 py-3">End</th>
                     <th className="text-left px-4 py-3">Time</th>
                     <th className="text-left px-4 py-3">Visibility</th>
+                    <th className="text-left px-4 py-3">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map(({ ut, duration, startStatus, daysRemaining, visibility, displayName, displayEmail, displayPhone }) => (
+                  {rows.map(({ ut, duration, startStatus, daysRemaining, visibility, displayName, displayEmail, displayPhone, folderName }) => (
                     <tr key={ut.id} className="border-b border-muted/20 hover:bg-white/10 text-white">
                       <td className="px-4 py-3 whitespace-nowrap">
                         <div className="font-medium">{displayName}</div>
@@ -628,6 +730,7 @@ export default function AdminPrayerTasks() {
                         <div className="text-xs text-white/60">{displayPhone}</div>
                       </td>
                       <td className="px-4 py-3">{ut.task?.name || "-"}</td>
+                      <td className="px-4 py-3 whitespace-nowrap">{folderName || "—"}</td>
                       <td className="px-4 py-3">{ut.person_needs_help || "-"}</td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         {(ut.created_at || "").replace("T", " ").slice(0, 16) || "-"}
@@ -672,6 +775,22 @@ export default function AdminPrayerTasks() {
                           <Badge variant="outline" className="text-white border-white/30">
                             Private
                           </Badge>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-black/60">
+                        {startStatus === "done" ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="rounded-[8px]"
+                            disabled={deletingUserTaskId === ut.id}
+                            onClick={() => deleteCompletedUserTask(ut.id)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            {deletingUserTaskId === ut.id ? "Deleting..." : "Delete"}
+                          </Button>
+                        ) : (
+                          <span className="text-xs text-black/60">—</span>
                         )}
                       </td>
                     </tr>
