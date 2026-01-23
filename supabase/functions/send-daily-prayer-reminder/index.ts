@@ -16,6 +16,76 @@ function envFlag(name: string, defaultValue = false): boolean {
   return v === "1" || v === "true" || v === "yes" || v === "on";
 }
 
+function parseYmd(dateStr: string): { y: number; mo: number; d: number } | null {
+  const s = String(dateStr || "").trim();
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return null;
+  const y = Number(m[1]);
+  const mo = Number(m[2]);
+  const d = Number(m[3]);
+  if (![y, mo, d].every(Number.isFinite)) return null;
+  return { y, mo, d };
+}
+
+function ymdToUtcMs(ymd: { y: number; mo: number; d: number }): number {
+  return Date.UTC(ymd.y, ymd.mo - 1, ymd.d);
+}
+
+function getLocalYmd(timeZone: string, at: Date): { y: number; mo: number; d: number } | null {
+  try {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(at);
+    const y = Number(parts.find((p) => p.type === "year")?.value);
+    const mo = Number(parts.find((p) => p.type === "month")?.value);
+    const d = Number(parts.find((p) => p.type === "day")?.value);
+    if (![y, mo, d].every(Number.isFinite)) return null;
+    return { y, mo, d };
+  } catch {
+    return null;
+  }
+}
+
+function getLocalHm(timeZone: string, at: Date): { hh: number; mm: number } | null {
+  try {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).formatToParts(at);
+    const hh = Number(parts.find((p) => p.type === "hour")?.value);
+    const mm = Number(parts.find((p) => p.type === "minute")?.value);
+    if (![hh, mm].every(Number.isFinite)) return null;
+    return { hh, mm };
+  } catch {
+    return null;
+  }
+}
+
+function parsePrayerTimeToHm(prayerTime: string): { hh: number; mm: number } | null {
+  const s = String(prayerTime || "").trim();
+  const m = s.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if (!m) return null;
+  const hh = Number(m[1]);
+  const mm = Number(m[2]);
+  if (!Number.isFinite(hh) || !Number.isFinite(mm)) return null;
+  if (hh < 0 || hh > 23 || mm < 0 || mm > 59) return null;
+  return { hh, mm };
+}
+
+function isDueNow(prayerTime: string, timeZone: string, now: Date, windowMinutes = 1): boolean {
+  const dueHm = parsePrayerTimeToHm(prayerTime);
+  const nowHm = getLocalHm(timeZone, now);
+  if (!dueHm || !nowHm) return false;
+  const dueMins = dueHm.hh * 60 + dueHm.mm;
+  const nowMins = nowHm.hh * 60 + nowHm.mm;
+  return nowMins >= dueMins && nowMins < dueMins + Math.max(1, windowMinutes);
+}
+
 // SMS Provider - Using Twilio (configure via environment variables)
 async function sendSMS(
   phoneNumber: string,
@@ -89,6 +159,9 @@ function escapeHtml(text: string): string {
 }
 
 Deno.serve(async (req: Request) => {
+  // MUST show up every minute when triggered by pg_cron + pg_net
+  console.log("CRON HIT: send-daily-prayer-reminder", new Date().toISOString());
+
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, {
@@ -117,85 +190,107 @@ Deno.serve(async (req: Request) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { user_task_id } = await req.json();
+    // CRON-SAFE: request body can be {} (pg_cron + pg_net)
+    const body = await req.json().catch(() => ({}));
+    const windowMinutes = Number((body as any)?.window_minutes ?? 1);
+    const userTaskIdFilter = String((body as any)?.user_task_id || "").trim() || null; // optional manual filter
 
-    if (!user_task_id) {
-      return new Response(
-        JSON.stringify({ error: "user_task_id is required" }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
-    // Fetch user task with task details
-    const { data: userTask, error: taskError } = await supabase
+    // Fetch ALL active prayer tasks
+    let q = supabase
       .from("prayer_user_tasks")
-      .select(`
-        *,
-        task:prayer_tasks(*)
-      `)
-      .eq("id", user_task_id)
-      .eq("is_active", true)
-      .single();
+      .select(`*, task:prayer_tasks(*)`)
+      .eq("is_active", true);
+    if (userTaskIdFilter) q = q.eq("id", userTaskIdFilter);
 
-    if (taskError || !userTask) {
-      throw new Error(`User task not found: ${taskError?.message}`);
+    const { data: tasks, error } = await q;
+    if (error) throw error;
+
+    if (!tasks?.length) {
+      console.log("No active prayer tasks");
+      return new Response(JSON.stringify({ success: true, processed: 0, sent: 0, results: [] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
-    // Calculate current day
-    const startDate = new Date(userTask.start_date);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    startDate.setHours(0, 0, 0, 0);
+    const now = new Date();
+    const results: Array<{ user_task_id: string; sent: boolean; reason: string }> = [];
 
-    const diffTime = today.getTime() - startDate.getTime();
-    const currentDay = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    const duration = userTask.task?.duration_days || userTask.task?.number_of_days || 1;
+    for (const userTask of tasks) {
+      try {
+        const tz = String((userTask as any)?.timezone || "UTC");
+        const prayerTime = String((userTask as any)?.prayer_time || "");
 
-    if (currentDay < 1 || currentDay > duration) {
-      return new Response(
-        JSON.stringify({ error: "Prayer is not active today" }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
+        // Only send during the configured prayer_time window (cron runs every minute).
+        if (!isDueNow(prayerTime, tz, now, windowMinutes)) {
+          results.push({ user_task_id: (userTask as any).id, sent: false, reason: "Not due now" });
+          continue;
+        }
 
-    // Check if already completed today
-    const { data: completion } = await supabase
-      .from("prayer_daily_completions")
-      .select("id")
-      .eq("user_task_id", user_task_id)
-      .eq("day_number", currentDay)
-      .single();
+        // Calculate current day based on start_date and today's date in user's timezone
+        const startYmd = parseYmd(String((userTask as any).start_date || ""));
+        const todayYmd = getLocalYmd(tz, now) || getLocalYmd("UTC", now);
+        if (!startYmd || !todayYmd) {
+          results.push({ user_task_id: (userTask as any).id, sent: false, reason: "Invalid start_date/timezone" });
+          continue;
+        }
+        const MS_DAY = 24 * 60 * 60 * 1000;
+        const currentDay = Math.floor((ymdToUtcMs(todayYmd) - ymdToUtcMs(startYmd)) / MS_DAY) + 1;
 
-    if (completion) {
-      return new Response(
-        JSON.stringify({ message: "Day already completed, reminder not sent" }),
-        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
+        const duration = (userTask as any).task?.duration_days || (userTask as any).task?.number_of_days || 1;
+        if (currentDay < 1 || currentDay > duration) {
+          results.push({ user_task_id: (userTask as any).id, sent: false, reason: "Prayer not active today" });
+          continue;
+        }
 
-    const taskName = escapeHtml(userTask.task?.name || "Prayer");
-    const personName = userTask.person_needs_help
-      ? ` for ${escapeHtml(userTask.person_needs_help)}`
-      : "";
-    const baseUrl = Deno.env.get("SITE_URL") || "https://peacefulinvestment.com";
+        // Skip if already completed today
+        const { data: completion } = await supabase
+          .from("prayer_daily_completions")
+          .select("id")
+          .eq("user_task_id", (userTask as any).id)
+          .eq("day_number", currentDay)
+          .maybeSingle();
+        if (completion?.id) {
+          results.push({ user_task_id: (userTask as any).id, sent: false, reason: "Day already completed" });
+          continue;
+        }
 
-    // Build a user-friendly link to *today's* prayer.
-    // - If `link_or_video` is relative, prefix SITE_URL so it works in email/SMS.
-    // - If it points to a blog post, append `?day=<n>` so the link is "that day's prayer/blog".
-    const rawLink: string = userTask.task?.link_or_video || "#";
-    const absoluteLink =
-      rawLink.startsWith("/") && rawLink !== "#"
-        ? `${baseUrl}${rawLink}`
-        : rawLink;
+        // Skip if already sent today (based on last_sent_at)
+        const lastSentAtRaw = (userTask as any).last_sent_at;
+        if (lastSentAtRaw) {
+          const lastSent = new Date(String(lastSentAtRaw));
+          if (!Number.isNaN(lastSent.getTime())) {
+            const lastSentYmd = getLocalYmd(tz, lastSent) || getLocalYmd("UTC", lastSent);
+            if (lastSentYmd && ymdToUtcMs(lastSentYmd) === ymdToUtcMs(todayYmd)) {
+              results.push({ user_task_id: (userTask as any).id, sent: false, reason: "Already sent today" });
+              continue;
+            }
+          }
+        }
 
-    const shouldAppendDayParam = absoluteLink.includes("/blog/");
-    const prayerLink =
-      shouldAppendDayParam && absoluteLink !== "#"
-        ? `${absoluteLink}${absoluteLink.includes("?") ? "&" : "?"}day=${currentDay}`
-        : absoluteLink;
+        const taskName = escapeHtml((userTask as any).task?.name || "Prayer");
+        const personName = (userTask as any).person_needs_help
+          ? ` for ${escapeHtml((userTask as any).person_needs_help)}`
+          : "";
+        const baseUrl = Deno.env.get("SITE_URL") || "https://peacefulinvestment.com";
 
-    // Email content
-    const emailHtml = `
+        // Build a user-friendly link to *today's* prayer.
+        // - If `link_or_video` is relative, prefix SITE_URL so it works in email/SMS.
+        // - If it points to a blog post, append `?day=<n>` so the link is "that day's prayer/blog".
+        const rawLink: string = (userTask as any).task?.link_or_video || "#";
+        const absoluteLink =
+          rawLink.startsWith("/") && rawLink !== "#"
+            ? `${baseUrl}${rawLink}`
+            : rawLink;
+
+        const shouldAppendDayParam = absoluteLink.includes("/blog/");
+        const prayerLink =
+          shouldAppendDayParam && absoluteLink !== "#"
+            ? `${absoluteLink}${absoluteLink.includes("?") ? "&" : "?"}day=${currentDay}`
+            : absoluteLink;
+
+        // Email content (KEEP AS-IS)
+        const emailHtml = `
       <!DOCTYPE html>
       <html lang="en">
       <head>
@@ -217,7 +312,7 @@ Deno.serve(async (req: Request) => {
                   <td style="padding: 30px;">
                     <h2 style="color: #333333; margin-top: 0;">Day ${currentDay} of ${duration}</h2>
                     <p style="color: #555555; font-size: 16px; line-height: 1.6;">
-                      Hello ${escapeHtml(userTask.name)},
+                      Hello ${escapeHtml((userTask as any).name)},
                     </p>
                     <p style="color: #555555; font-size: 16px; line-height: 1.6;">
                       This is your daily reminder for <strong>${taskName}</strong>${personName}.
@@ -245,35 +340,55 @@ Deno.serve(async (req: Request) => {
       </html>
     `;
 
-    // Send email
-    await resend.emails.send({
-      from: "Peaceful Investment <support@peacefulinvestment.com>",
-      to: userTask.email,
-      subject: `Daily Prayer Reminder - Day ${currentDay} of ${duration} - ${taskName}`,
-      html: emailHtml,
-    });
+        // Send email
+        await resend.emails.send({
+          from: "Peaceful Investment <support@peacefulinvestment.com>",
+          to: (userTask as any).email,
+          subject: `Daily Prayer Reminder - Day ${currentDay} of ${duration} - ${taskName}`,
+          html: emailHtml,
+        });
 
-    // Send SMS if phone number is provided
-    let smsSent = false;
-    let smsError: string | null = null;
-    let smsSid: string | null = null;
-    if (userTask.phone_number) {
-      const smsMessage = `Daily Prayer Reminder - Day ${currentDay} of ${duration}\n\n${taskName}${personName}\n\nView: ${prayerLink !== "#" ? prayerLink : baseUrl + "/prayer-tasks"}`;
-      const smsRes = await sendSMS(userTask.phone_number, smsMessage);
-      smsSent = smsRes.ok;
-      smsSid = smsRes.ok && smsRes.sid ? smsRes.sid : null;
-      smsError = smsRes.ok || smsRes.skipped ? null : (smsRes.error || null);
+        // Send SMS if phone number is provided (Twilio SMS logic unchanged)
+        let smsSent = false;
+        let smsError: string | null = null;
+        let smsSid: string | null = null;
+        if ((userTask as any).phone_number) {
+          const smsMessage = `Daily Prayer Reminder - Day ${currentDay} of ${duration}\n\n${taskName}${personName}\n\nView: ${prayerLink !== "#" ? prayerLink : baseUrl + "/prayer-tasks"}`;
+          const smsRes = await sendSMS((userTask as any).phone_number, smsMessage);
+          smsSent = smsRes.ok;
+          smsSid = smsRes.ok && smsRes.sid ? smsRes.sid : null;
+          smsError = smsRes.ok || smsRes.skipped ? null : (smsRes.error || null);
+        }
+
+        // Update last_sent_at AFTER successful send
+        const { error: updErr } = await supabase
+          .from("prayer_user_tasks")
+          .update({ last_sent_at: new Date().toISOString() })
+          .eq("id", (userTask as any).id);
+        if (updErr) {
+          console.warn("[send-daily-prayer-reminder] Failed to update last_sent_at:", updErr.message);
+        }
+
+        results.push({
+          user_task_id: (userTask as any).id,
+          sent: true,
+          reason: smsSent ? "Email+SMS sent" : smsError ? `Email sent (SMS error: ${smsError})` : "Email sent",
+        });
+      } catch (e) {
+        results.push({
+          user_task_id: (userTask as any).id,
+          sent: false,
+          reason: e instanceof Error ? e.message : String(e),
+        });
+      }
     }
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: "Reminder sent",
-        email_sent: true,
-        sms_sent: smsSent,
-        sms_sid: smsSid,
-        sms_error: smsError,
-        day: currentDay,
+        processed: results.length,
+        sent: results.filter((r) => r.sent).length,
+        results,
       }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
