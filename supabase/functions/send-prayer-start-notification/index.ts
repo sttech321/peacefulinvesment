@@ -208,8 +208,8 @@ Deno.serve(async (req: Request) => {
     <meta name="format-detection" content="telephone=no,date=no,address=no,email=no,url=no" />
      <title>Prayer Started</title>
   </head>
-  <body style="margin:0; padding:0; background-color:#fff;"> 
-    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%; background-color:#fff;">
+  <body style="margin:0; padding:0; background-color:#f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;"> 
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%; background-color:#f3f4f6;">
       <tr>
         <td align="center" style="padding:28px 12px;">
           <!-- Outer container -->
@@ -217,7 +217,7 @@ Deno.serve(async (req: Request) => {
             <!-- Main card wrapper -->
             <tr>
               <td style="padding:0 12px;">
-                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" class="card" style="width:100%; border-radius:22px; overflow:hidden;">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" class="card" style="width:100%; border-radius:22px; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,0.08);">
                   <!-- HERO (dark / gradient) -->
                   <tr>
                     <td
@@ -242,15 +242,15 @@ Deno.serve(async (req: Request) => {
 
                   <!-- BODY (light section) -->
                   <tr>
-                    <td style="background-color:#f3f4f6; padding:26px 28px 30px 28px; font-family:Segoe UI, Roboto, Helvetica, Arial, sans-serif;">
+                    <td style="background-color:#FFF; padding:26px 28px 30px 28px; font-family:Segoe UI, Roboto, Helvetica, Arial, sans-serif;">
  
-<div style="font-size:24px;line-height:22px;color: #373737;font-weight: 700;padding-bottom:20px; text-align:left;">Prayer Started</div> 
+					<div style="font-size:24px;line-height:22px;color: #373737;font-weight: 700;padding-bottom:20px; text-align:left;">Prayer Started</div> 
 
 
                       <div style="text-align:left;"> 
 
 					<p style="font-size:16px; line-height:24px; color:#6b7280;margin:0; padding:0 0 7px 0;">
-                      Hello ${escapeHtml(userTask.name || 'Friend')},
+                      Hello ${escapeHtml(userTask.name || "Friend")},
                     </p>
                     <p style="font-size:16px; line-height:24px; color:#6b7280;margin:0; padding:0 0 7px 0;">
                       You’ve started <strong>${taskName}</strong>${person}.
@@ -278,11 +278,7 @@ Deno.serve(async (req: Request) => {
 
             <!-- Footer -->
             <tr>
-              <td class="px" style="padding:16px 24px 0 24px; font-family:Segoe UI, Roboto, Helvetica, Arial, sans-serif;">
-                <div style="font-size:12px; line-height:18px; color:#6b7280; text-align:center;">
-                  © <span style="color:#6b7280;">Peaceful Investment</span>. All rights reserved.
-                </div>
-              </td>
+              <td style="text-align:center; font-size:12px; color:#9ca3af; padding-top:15px">© Peaceful Investment. All rights reserved.		</td>
             </tr>
           </table>
         </td>
