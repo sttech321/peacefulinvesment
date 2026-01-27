@@ -795,13 +795,13 @@ const BlogPost = () => {
               <div className="flex justify-center gap-4">
                 <Link to="/blog" className="bg-gradient-pink-to-yellow rounded-[12px] p-[2px]">
                   <Button variant="outline" className=" hover:bg-gradient-pink-to-yellow block rounded-[10px] border-0 bg-black p-0 px-5 font-inter text-xs font-semibold uppercase text-white hover:text-white">
-                    Read More Articles
+                    Read More Prayers
                   </Button>
                 </Link>
                 <span className="bg-gradient-pink-to-yellow rounded-[12px] p-[2px]">
                   <Button onClick={sharePost} className="bg-gradient-yellow-to-pink hover:bg-gradient-pink-to-yellow flex rounded-[10px] border-0 p-0 px-5 font-inter text-xs font-semibold uppercase text-white">
                     <Share2 className="w-4 h-4 mr-1" />
-                    Share Article
+                    Share Prayers
                   </Button></span>
               </div>
             </div>
