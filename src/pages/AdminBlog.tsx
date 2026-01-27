@@ -39,8 +39,42 @@ function extractPrayerTaskIdFromPostTags(tags: unknown): string | null {
   return null;
 }
 
-function stripPrayerTaskTags(tags: string[]) {
-  return tags.filter((t) => !/^prayer_task:[0-9a-f-]{36}$/i.test(t.trim()));
+function extractExtraTextsFromTags(tags: unknown): { extra_left: string; extra_right: string } {
+  let extra_left = "";
+  let extra_right = "";
+  if (!Array.isArray(tags)) return { extra_left, extra_right };
+  for (const raw of tags) {
+    const t = String(raw || "").trim();
+    const mLeft = t.match(/^extra_left:(?<v>.+)$/i);
+    if (mLeft?.groups?.v) {
+      try {
+        extra_left = decodeURIComponent(mLeft.groups.v);
+      } catch {
+        extra_left = mLeft.groups.v;
+      }
+      continue;
+    }
+    const mRight = t.match(/^extra_right:(?<v>.+)$/i);
+    if (mRight?.groups?.v) {
+      try {
+        extra_right = decodeURIComponent(mRight.groups.v);
+      } catch {
+        extra_right = mRight.groups.v;
+      }
+      continue;
+    }
+  }
+  return { extra_left, extra_right };
+}
+
+function stripSystemTags(tags: string[]) {
+  return tags.filter((t) => {
+    const s = String(t || "").trim();
+    if (/^prayer_task:[0-9a-f-]{36}$/i.test(s)) return false;
+    if (/^extra_left:/i.test(s)) return false;
+    if (/^extra_right:/i.test(s)) return false;
+    return true;
+  });
 }
 
 const AdminBlog = () => {
@@ -70,6 +104,8 @@ const AdminBlog = () => {
   const [formData, setFormData] = useState<any>({
     title: "",
     slug: "",
+    header_left_text: "",
+    header_right_text: "",
     content: "",
     excerpt: "",
     category: "general",
@@ -88,6 +124,22 @@ const AdminBlog = () => {
   const [prayerTasks, setPrayerTasks] = useState<PrayerTaskOption[]>([]);
   const [loadingPrayerTasks, setLoadingPrayerTasks] = useState(false);
   const [selectedPrayerTaskId, setSelectedPrayerTaskId] = useState<string>("none");
+
+  // Hide prayer tasks that are already mapped to other blog posts (via tag prayer_task:<uuid>).
+  // Allow the currently-selected task to remain visible while editing.
+  const usedPrayerTaskIds = useMemo(() => {
+    const used = new Set<string>();
+    for (const p of posts || []) {
+      if (editingPost?.id && p.id === editingPost.id) continue; // allow current post to keep its mapping
+      const mapped = extractPrayerTaskIdFromPostTags((p as any).tags);
+      if (mapped) used.add(mapped);
+    }
+    return used;
+  }, [editingPost?.id, posts]);
+
+  const availablePrayerTasks = useMemo(() => {
+    return (prayerTasks || []).filter((t) => !usedPrayerTaskIds.has(t.id) || t.id === selectedPrayerTaskId);
+  }, [prayerTasks, selectedPrayerTaskId, usedPrayerTaskIds]);
 
   // Cleanup object URL previews (preview only; never persisted)
   useEffect(() => {
@@ -193,6 +245,8 @@ const AdminBlog = () => {
     setFormData({
       title: "",
       slug: "",
+      header_left_text: "",
+      header_right_text: "",
       content: "",
       excerpt: "",
       category: "general",
@@ -245,7 +299,7 @@ const AdminBlog = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const { previewUrl, featured_image, ...cleanForm } = formData;
+    const { previewUrl, featured_image, header_left_text, header_right_text, ...cleanForm } = formData;
     const featuredFile = featured_image instanceof File ? (featured_image as File) : null;
 
     // Human-entered tags (comma-separated)
@@ -255,15 +309,18 @@ const AdminBlog = () => {
       .filter(Boolean);
 
     // Mapping tag (Option A): stored in DB as a normal tag, but hidden from the tags input.
-    const tagsWithoutMapping = stripPrayerTaskTags(baseTags);
+    const tagsWithoutSystem = stripSystemTags(baseTags);
     const mappingTag =
       selectedPrayerTaskId && selectedPrayerTaskId !== "none"
         ? `prayer_task:${selectedPrayerTaskId}`
         : null;
-    const finalTags = mappingTag ? [...tagsWithoutMapping, mappingTag] : tagsWithoutMapping;
+    const finalTags = [...tagsWithoutSystem, ...(mappingTag ? [mappingTag] : [])];
 
     const basePostData = {
       ...cleanForm,
+      // Store extra text fields as real DB columns on blog_posts
+      header_left_text: String(header_left_text || "").trim() || null,
+      header_right_text: String(header_right_text || "").trim() || null,
       tags: finalTags,
       published_at: cleanForm.status === "published" ? new Date().toISOString() : null,
     };
@@ -377,13 +434,30 @@ const AdminBlog = () => {
     setFeaturedPreviewObjectUrl(null);
     const mappedPrayerTaskId = extractPrayerTaskIdFromPostTags((post as any).tags);
     setSelectedPrayerTaskId(mappedPrayerTaskId ?? "none");
+    const extractedExtras = extractExtraTextsFromTags((post as any).tags); // legacy fallback
+
+    const safeDecode = (val: unknown) => {
+      const s = String(val ?? "").trim();
+      if (!s) return "";
+      try {
+        return decodeURIComponent(s);
+      } catch {
+        return s;
+      }
+    };
+
+    // Prefer DB columns if present; fall back to legacy system tags.
+    const extraLeft = safeDecode((post as any)?.header_left_text) || extractedExtras.extra_left || "";
+    const extraRight = safeDecode((post as any)?.header_right_text) || extractedExtras.extra_right || "";
     setFormData({
       title: post.title,
       slug: post.slug,
+      header_left_text: extraLeft,
+      header_right_text: extraRight,
       content: post.content,
       excerpt: post.excerpt || "",
       category: post.category,
-      tags: stripPrayerTaskTags(post.tags).join(", "),
+      tags: stripSystemTags(post.tags).join(", "),
       status: post.status,
       meta_title: post.meta_title || "",
       meta_description: post.meta_description || "",
@@ -576,7 +650,7 @@ const AdminBlog = () => {
                     <Label htmlFor="title">Title</Label>
                     <Input
                       id="title"
-                      className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none"
+                      className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none bg-black/5"
                     style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
                       value={formData.title}
                       onChange={(e) => setFormData({ ...formData, title: e.target.value, slug: generateSlug(e.target.value) })}
@@ -585,14 +659,40 @@ const AdminBlog = () => {
                   </div>
                   <div>
                     <Label htmlFor="slug">Slug</Label>
-                    <Input id="slug" className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none"
+                    <Input id="slug" className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none bg-black/10"
                     style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties } value={formData.slug} onChange={(e) => setFormData({ ...formData, slug: e.target.value })} required />
+                  </div>
+                </div>
+
+                {/* Extra text fields (saved as hidden system tags) */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="header_left_text">Header Text (Left)</Label>
+                    <Input
+                      id="header_left_text"
+                      value={formData.header_left_text || ""}
+                      onChange={(e) => setFormData({ ...formData, header_left_text: e.target.value })}
+                      placeholder="Optional extra text"
+                      className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none bg-black/5"
+                      style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as React.CSSProperties}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="header_right_text">Header Text (Right)</Label>
+                    <Input
+                      id="header_right_text"
+                      value={formData.header_right_text || ""}
+                      onChange={(e) => setFormData({ ...formData, header_right_text: e.target.value })}
+                      placeholder="Optional extra text"
+                      className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none bg-black/10"
+                      style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as React.CSSProperties}
+                    />
                   </div>
                 </div>
 
                 <div>
                   <Label htmlFor="excerpt">Excerpt</Label>
-                  <div className="mt-1">
+                  <div className="mt-1 bg-black/5 rounded-[8px] p-1">
                     <RichTextEditor
                       value={formData.excerpt || ''}
                       onChange={(value) => setFormData({ ...formData, excerpt: value })}
@@ -607,7 +707,7 @@ const AdminBlog = () => {
 
                 <div>
                   <Label htmlFor="content">Content</Label>
-                  <div className="mt-1">
+                  <div className="mt-1 bg-black/10 rounded-[8px] p-1">
                     <RichTextEditor
                       value={formData.content || ''}
                       onChange={(value) => setFormData({ ...formData, content: value })}
@@ -840,7 +940,7 @@ const AdminBlog = () => {
                     </SelectTrigger>
                     <SelectContent className="border-secondary-foreground bg-black/90 text-white">
                       <SelectItem value="none">None</SelectItem>
-                      {prayerTasks.map((t) => (
+                      {availablePrayerTasks.map((t) => (
                         <SelectItem key={t.id} value={t.id}>
                           {t.name}
                         </SelectItem>

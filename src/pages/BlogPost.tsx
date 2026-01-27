@@ -15,11 +15,19 @@ import {
 } from "@/hooks/useBlog";
 import Footer from "@/components/Footer";
 import { boxShadow } from "html2canvas/dist/types/css/property-descriptors/box-shadow";
+import {
+  StartPrayerDialog,
+  type StartPrayerDialogForm,
+  type TraditionalDateRange,
+} from "@/components/prayer/StartPrayerDialog";
+import { locationService } from "@/services/location/LocationService";
 
 type PrayerTaskLite = {
   id: string;
   number_of_days?: number | null;
   duration_days?: number | null;
+  start_date?: string | null;
+  end_date?: string | null;
 };
 
 type PrayerUserTaskLite = {
@@ -50,7 +58,50 @@ function extractPrayerTaskIdFromTags(tags: unknown): string | null {
 }
 
 function stripPrayerTaskTags(tags: string[]) {
-  return tags.filter((t) => !/^prayer_task:[0-9a-f-]{36}$/i.test(t.trim()));
+  return tags.filter((t) => {
+    const s = String(t || "").trim();
+    if (/^prayer_task:[0-9a-f-]{36}$/i.test(s)) return false;
+    if (/^extra_left:/i.test(s)) return false;
+    if (/^extra_right:/i.test(s)) return false;
+    return true;
+  });
+}
+
+function parseTraditionalDatesFromTags(tags: unknown): TraditionalDateRange | null {
+  if (!Array.isArray(tags)) return null;
+  let start: string | null = null;
+  let end: string | null = null;
+  let label: string | undefined;
+
+  for (const raw of tags) {
+    const t = String(raw || "").trim();
+    if (!t) continue;
+
+    const mRange = t.match(/^(traditional_dates|fixed_dates):(?<s>\d{4}-\d{2}-\d{2})\.\.(?<e>\d{4}-\d{2}-\d{2})$/i);
+    if (mRange?.groups?.s && mRange?.groups?.e) {
+      start = mRange.groups.s;
+      end = mRange.groups.e;
+      continue;
+    }
+    const mStart = t.match(/^(traditional_start|fixed_start):(?<s>\d{4}-\d{2}-\d{2})$/i);
+    if (mStart?.groups?.s) {
+      start = mStart.groups.s;
+      continue;
+    }
+    const mEnd = t.match(/^(traditional_end|fixed_end):(?<e>\d{4}-\d{2}-\d{2})$/i);
+    if (mEnd?.groups?.e) {
+      end = mEnd.groups.e;
+      continue;
+    }
+    const mLabel = t.match(/^(traditional_label|fixed_label):(?<label>.+)$/i);
+    if (mLabel?.groups?.label) {
+      label = mLabel.groups.label.trim();
+      continue;
+    }
+  }
+
+  if (!start || !end) return null;
+  return { start_date: start, end_date: end, label };
 }
 
 const BlogPost = () => {
@@ -68,6 +119,53 @@ const BlogPost = () => {
   const [completing, setCompleting] = useState(false);
 
   const mappedPrayerTaskId = useMemo(() => extractPrayerTaskIdFromTags((post as any)?.tags), [post]);
+
+  const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const [joinDialogOpen, setJoinDialogOpen] = useState(false);
+  const [joinForm, setJoinForm] = useState<StartPrayerDialogForm>(() => ({
+    name: "",
+    email: "",
+    phone_country_code: "",
+    phone_number: "",
+    person_needs_help: "",
+    start_date: "",
+    end_date: "",
+    prayer_time: "07:00",
+    timezone: userTimezone,
+  }));
+  const [traditionalDates, setTraditionalDates] = useState<TraditionalDateRange | undefined>(undefined);
+  const [resolvedPrayerTask, setResolvedPrayerTask] = useState<PrayerTaskLite | null>(null);
+  const [resolvingPrayerTask, setResolvingPrayerTask] = useState(false);
+
+  const commonTimezones = useMemo(
+    () => [
+      { value: "America/New_York", label: "Eastern Time (ET)" },
+      { value: "America/Chicago", label: "Central Time (CT)" },
+      { value: "America/Denver", label: "Mountain Time (MT)" },
+      { value: "America/Los_Angeles", label: "Pacific Time (PT)" },
+      { value: "America/Phoenix", label: "Arizona Time" },
+      { value: "America/Anchorage", label: "Alaska Time" },
+      { value: "Pacific/Honolulu", label: "Hawaii Time" },
+      { value: "UTC", label: "UTC" },
+      { value: "Europe/London", label: "London (GMT)" },
+      { value: "Europe/Paris", label: "Paris (CET)" },
+      { value: "Asia/Dubai", label: "Dubai (GST)" },
+      { value: "Asia/Tokyo", label: "Tokyo (JST)" },
+      { value: "Asia/Shanghai", label: "Shanghai (CST)" },
+      { value: "Australia/Sydney", label: "Sydney (AEDT)" },
+    ],
+    []
+  );
+
+  const addDaysToYmd = useCallback((yyyyMmDd: string, daysToAdd: number): string => {
+    const m = String(yyyyMmDd || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return yyyyMmDd;
+    const y = Number(m[1]);
+    const mo = Number(m[2]) - 1;
+    const d = Number(m[3]);
+    const dt = new Date(Date.UTC(y, mo, d + Math.max(0, daysToAdd)));
+    return dt.toISOString().slice(0, 10);
+  }, []);
 
   const getCurrentDay = useCallback(
     (ut: PrayerUserTaskLite): number => {
@@ -196,7 +294,7 @@ const BlogPost = () => {
     void loadUserTask();
   }, [loadUserTask]);
 
-  const handleJoinPrayer = useCallback(async () => {
+  const openJoinPrayerDialog = useCallback(async () => {
     if (!user) {
       navigate("/auth");
       return;
@@ -205,6 +303,102 @@ const BlogPost = () => {
       toast({
         title: "Missing Prayer Task",
         description: "This post is not linked to a prayer task yet (missing prayer_task:<uuid> tag).",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Prefill basics
+      const nameFromProfile = (profile as any)?.full_name || (profile as any)?.name || "";
+      const emailFromProfile = (profile as any)?.email || user.email || "";
+      const fallbackName = user.email ? user.email.split("@")[0] : "User";
+
+      const normalizeDialCode = (val: string) => {
+        const trimmed = String(val || "").trim();
+        if (!trimmed) return "";
+        const digits = trimmed.replace(/[^\d+]/g, "");
+        if (!digits) return "";
+        return digits.startsWith("+") ? digits : `+${digits.replace(/\D/g, "")}`;
+      };
+
+      const profileCountryRaw = String((profile as any)?.country_code || (profile as any)?.dial_code || (profile as any)?.dialCode || "").trim();
+      let derivedCountryCode = normalizeDialCode(profileCountryRaw);
+      if (!derivedCountryCode && /^[A-Za-z]{2}$/.test(profileCountryRaw)) {
+        const iso = profileCountryRaw.toUpperCase();
+        const c = locationService.getCountryByCode(iso);
+        const mapped = normalizeDialCode(String((c as any)?.callingCode || ""));
+        if (mapped) derivedCountryCode = mapped;
+      }
+
+      const profilePhoneRaw = String((profile as any)?.phone || (profile as any)?.phone_number || "").trim();
+      let derivedPhoneRemainder = profilePhoneRaw;
+      if (derivedCountryCode && profilePhoneRaw.startsWith(derivedCountryCode)) {
+        derivedPhoneRemainder = profilePhoneRaw.slice(derivedCountryCode.length).trim();
+      } else if (!derivedCountryCode) {
+        const m = profilePhoneRaw.match(/^\s*(\+\d{1,3})(?=[\s\-\(\.)])\s*(.*)$/);
+        if (m) {
+          derivedCountryCode = normalizeDialCode(m[1] || "");
+          derivedPhoneRemainder = (m[2] || "").trim();
+        }
+      }
+
+      setJoinForm({
+        name: String(nameFromProfile || fallbackName),
+        email: String(emailFromProfile || ""),
+        phone_country_code: derivedCountryCode,
+        phone_number: derivedPhoneRemainder.replace(/\D/g, ""),
+        person_needs_help: "",
+        start_date: "",
+        end_date: "",
+        prayer_time: "07:00",
+        timezone: userTimezone,
+      });
+
+      setTraditionalDates(undefined);
+      setResolvedPrayerTask(null);
+      setJoinDialogOpen(true);
+
+      // Resolve linked task for suggested dates + duration
+      setResolvingPrayerTask(true);
+      const { data: task, error: taskError } = await (supabase as any)
+        .from("prayer_tasks")
+        .select("id,number_of_days,duration_days,start_date,end_date")
+        .eq("id", mappedPrayerTaskId)
+        .maybeSingle();
+      if (taskError) throw taskError;
+      if (!task) throw new Error("Prayer task not found.");
+      setResolvedPrayerTask(task as PrayerTaskLite);
+
+      const fromTask =
+        (task as any)?.start_date && (task as any)?.end_date
+          ? { start_date: String((task as any).start_date), end_date: String((task as any).end_date) }
+          : null;
+      const nextTraditional = fromTask || parseTraditionalDatesFromTags((post as any)?.tags);
+      setTraditionalDates(nextTraditional || undefined);
+      if (nextTraditional) {
+        setJoinForm((prev) => ({
+          ...prev,
+          start_date: nextTraditional.start_date,
+          end_date: nextTraditional.end_date,
+        }));
+      }
+    } catch (e: any) {
+      toast({ title: "Error", description: e?.message || "Failed to prepare join dialog.", variant: "destructive" });
+    } finally {
+      setResolvingPrayerTask(false);
+    }
+  }, [mappedPrayerTaskId, navigate, post, profile, toast, user, userTimezone]);
+
+  const confirmJoinPrayerFromDialog = useCallback(async () => {
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
+    if (!mappedPrayerTaskId || !resolvedPrayerTask) {
+      toast({
+        title: "Missing Prayer Task",
+        description: "This post is not linked to a prayer task yet.",
         variant: "destructive",
       });
       return;
@@ -227,76 +421,66 @@ const BlogPost = () => {
       if (existing?.id) {
         toast({ title: "Already Joined", description: "You already have an active prayer for this post." });
         await loadUserTask();
+        setJoinDialogOpen(false);
         return;
       }
 
-      const { data: task, error: taskError } = await (supabase as any)
-        .from("prayer_tasks")
-        .select("id,number_of_days,duration_days")
-        .eq("id", mappedPrayerTaskId)
-        .maybeSingle();
-      if (taskError) throw taskError;
-      if (!task) throw new Error("Prayer task not found.");
+      const duration = Number(resolvedPrayerTask.duration_days || resolvedPrayerTask.number_of_days || 1);
 
-      const duration = Number(task.duration_days || task.number_of_days || 1);
-      const now = new Date();
-      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      const MS_DAY = 24 * 60 * 60 * 1000;
-      const getTodayInTzUtcMs = (timeZone: string): number => {
-        try {
-          const parts = new Intl.DateTimeFormat("en-US", {
-            timeZone,
-            year: "numeric",
-            month: "2-digit",
-            day: "2-digit",
-          }).formatToParts(now);
-          const y = Number(parts.find((p) => p.type === "year")?.value);
-          const mo = Number(parts.find((p) => p.type === "month")?.value) - 1;
-          const d = Number(parts.find((p) => p.type === "day")?.value);
-          if (!Number.isFinite(y) || !Number.isFinite(mo) || !Number.isFinite(d)) throw new Error("bad date parts");
-          return Date.UTC(y, mo, d);
-        } catch {
-          return Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
-        }
-      };
+      const effectiveName = joinForm.name.trim() || (profile as any)?.full_name || user.email?.split("@")[0] || "User";
+      const effectiveEmail = joinForm.email.trim() || user.email || "";
+      if (!effectiveEmail) {
+        toast({ title: "Missing Email", description: "Please enter your email.", variant: "destructive" });
+        return;
+      }
 
-      const startTzMs = getTodayInTzUtcMs(timezone || "UTC");
-      const endTzMs = startTzMs + (Math.max(1, duration) - 1) * MS_DAY;
+      const cc = (joinForm.phone_country_code || "").trim();
+      const ccNormalized = cc ? (cc.startsWith("+") ? cc : `+${cc.replace(/\D/g, "")}`) : "";
+      const digitsOnlyPhone = (joinForm.phone_number || "").replace(/\D/g, "");
+      if (digitsOnlyPhone && !ccNormalized) {
+        toast({
+          title: "Missing Country Code",
+          description: "Please select a country code (e.g. +91) to receive SMS/phone call alerts.",
+          variant: "destructive",
+        });
+        return;
+      }
+      const effectivePhone = digitsOnlyPhone ? `${ccNormalized}${digitsOnlyPhone}`.trim() : null;
 
-      const startDate = new Date(startTzMs).toISOString().split("T")[0];
-      const endDate = new Date(endTzMs).toISOString().split("T")[0];
+      const customStart = (joinForm.start_date || "").trim();
+      const customEnd = String(joinForm.end_date || "").trim();
 
-      // Best-effort: reuse phone from profile if present, so SMS/call can be sent server-side.
-      const profilePhoneRaw = String((profile as any)?.phone || (profile as any)?.phone_number || "").trim();
-      const profileCountryCodeRaw = String((profile as any)?.country_code || (profile as any)?.dial_code || "").trim();
-      const normalizeE164 = (cc: string, phone: string) => {
-        const p = phone.replace(/[^\d+]/g, "");
-        if (!p) return null;
-        if (p.startsWith("+")) return p;
-        const digits = p.replace(/\D/g, "");
-        if (!digits) return null;
-        const ccDigits = cc.replace(/[^\d+]/g, "");
-        if (!ccDigits) return null;
-        const normalizedCc = ccDigits.startsWith("+") ? ccDigits : `+${ccDigits.replace(/\D/g, "")}`;
-        return `${normalizedCc}${digits}`;
-      };
+      let startDateYmd: string;
+      let endDateYmd: string;
 
-      const derivedPhoneNumber =
-        profilePhoneRaw && profilePhoneRaw.startsWith("+")
-          ? profilePhoneRaw.replace(/[^\d+]/g, "")
-          : normalizeE164(profileCountryCodeRaw, profilePhoneRaw);
+      if (customStart) {
+        startDateYmd = customStart;
+      } else if (traditionalDates?.start_date) {
+        startDateYmd = traditionalDates.start_date;
+      } else {
+        const today = new Date().toISOString().slice(0, 10);
+        startDateYmd = today;
+      }
+
+      if (customEnd) {
+        endDateYmd = customEnd;
+      } else if (!customStart && traditionalDates?.end_date) {
+        endDateYmd = traditionalDates.end_date;
+      } else {
+        endDateYmd = addDaysToYmd(startDateYmd, Math.max(1, duration) - 1);
+      }
 
       const insertData: any = {
         task_id: mappedPrayerTaskId,
         user_id: user.id,
-        name: user.email?.split("@")[0] || "User",
-        email: user.email || "",
-        phone_number: derivedPhoneNumber,
-        person_needs_help: null,
-        prayer_time: "07:00",
-        timezone,
-        start_date: startDate,
-        end_date: endDate,
+        name: effectiveName,
+        email: effectiveEmail,
+        phone_number: effectivePhone,
+        person_needs_help: joinForm.person_needs_help.trim() || null,
+        prayer_time: joinForm.prayer_time,
+        timezone: joinForm.timezone || userTimezone,
+        start_date: startDateYmd,
+        end_date: endDateYmd,
         current_day: 1,
         is_active: true,
       };
@@ -310,7 +494,7 @@ const BlogPost = () => {
 
       toast({ title: "Prayer Joined", description: "You’ve joined this prayer. You can now mark days as completed." });
 
-      // Fire server-side notifications (email + SMS + call). Best-effort (do not block UI on failure).
+      // Fire server-side notifications (email + SMS + call). Best-effort.
       if (created?.id) {
         try {
           await supabase.functions.invoke("send-prayer-start-notification", {
@@ -321,13 +505,14 @@ const BlogPost = () => {
         }
       }
 
+      setJoinDialogOpen(false);
       await loadUserTask();
     } catch (e: any) {
       toast({ title: "Error", description: e?.message || "Failed to join prayer.", variant: "destructive" });
     } finally {
       setJoining(false);
     }
-  }, [loadUserTask, mappedPrayerTaskId, navigate, profile, toast, user]);
+  }, [addDaysToYmd, joinForm, loadUserTask, mappedPrayerTaskId, navigate, profile, resolvedPrayerTask, toast, traditionalDates, user, userTimezone]);
 
   const handleCompleteToday = useCallback(async () => {
     if (!userTask) return;
@@ -467,6 +652,9 @@ const BlogPost = () => {
       color: "#6B7280",
     };
 
+  const headerLeftText = String((post as any)?.header_left_text || "").trim();
+  const headerRightText = String((post as any)?.header_right_text || "").trim();
+
   const displayTags = stripPrayerTaskTags(post.tags || []);
   const currentDay = userTask ? getCurrentDay(userTask) : 0;
   const totalDays = userTask ? (userTask.task?.duration_days || userTask.task?.number_of_days || 1) : 0;
@@ -520,6 +708,23 @@ const BlogPost = () => {
                     <h1 className="pb-5 md:pb-7 font-inter text-2xl font-bold text-white md:text-3xl w-full">
                       {post.title}
                     </h1>
+
+                    {(headerLeftText || headerRightText) && (
+                      <div className="w-full flex flex-wrap items-center justify-between gap-3 pb-5 md:pb-7">
+                        {headerLeftText ? (
+                          <div className="rounded-full bg-white/10 border border-white/10 px-3 py-1 text-xs text-white/90">
+                            {headerLeftText}
+                          </div>
+                        ) : (
+                          <span />
+                        )}
+                        {headerRightText ? (
+                          <div className="rounded-full bg-white/5 border border-white/10 px-3 py-1 text-xs text-white/80 ml-auto">
+                            {headerRightText}
+                          </div>
+                        ) : null}
+                      </div>
+                    )}
 
                       {post.excerpt && (
                        <div
@@ -608,7 +813,7 @@ const BlogPost = () => {
                     {/* Daily progress + Done (logged-in users only, requires mapping tag prayer_task:<uuid>) */}
                     {user && mappedPrayerTaskId && (
                       <div className="mt-6 w-full max-w-3xl">
-                        {/* <div className="rounded-lg border border-muted-foreground/20 bg-white/5 p-4">
+                        <div className="rounded-lg border border-muted-foreground/20 bg-white/5 p-4">
                           {userTask ? (
                             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                               <div>
@@ -625,7 +830,7 @@ const BlogPost = () => {
                                   <div className="text-white/70 text-sm">For: {userTask.person_needs_help}</div>
                                 )}
                               </div>
-                              <div className="flex gap-2">
+                              {/* <div className="flex gap-2">
                                 <Button
                                   className="rounded-[8px] border-0 hover:bg-primary/80"
                                   disabled={!canCompleteToday || completing}
@@ -638,7 +843,7 @@ const BlogPost = () => {
                                 >
                                   {completing ? "Saving..." : currentDay < 1 ? "Starts Soon" : "Done (Mark Today Complete)"}
                                 </Button>
-                              </div>
+                              </div> */}
                             </div>
                           ) : (
                             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
@@ -649,14 +854,14 @@ const BlogPost = () => {
                                 <Button
                                   className="rounded-[8px] border-0 hover:bg-primary/80"
                                   disabled={joining}
-                                  onClick={handleJoinPrayer}
+                                  onClick={openJoinPrayerDialog}
                                 >
                                   {joining ? "Joining..." : "Join Prayer"}
                                 </Button>
                               </div>
                             </div>
                           )}
-                        </div> */}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -808,6 +1013,31 @@ const BlogPost = () => {
           </footer>
         </article>
       </div>
+
+      {/* Join Prayer dialog (client-side) */}
+      <StartPrayerDialog
+        open={joinDialogOpen}
+        onOpenChange={setJoinDialogOpen}
+        title="Join Prayer"
+        description={
+          <>
+            {post?.title}
+            <span className="block text-xs text-muted-foreground mt-1">
+              Your email and phone details are auto-filled from your profile. You can edit them if needed.
+            </span>
+          </>
+        }
+        submitting={joining || resolvingPrayerTask}
+        submitDisabled={!resolvedPrayerTask || resolvingPrayerTask}
+        submitLabel="Join Prayer"
+        showStartDatePicker={true}
+        traditionalDates={traditionalDates}
+        form={joinForm}
+        setForm={setJoinForm}
+        timezoneOptions={commonTimezones}
+        onSubmit={confirmJoinPrayerFromDialog}
+      />
+
       <Footer />
     </>
   );

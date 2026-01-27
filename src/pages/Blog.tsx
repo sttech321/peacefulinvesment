@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import Footer from "@/components/Footer";
 import { StartPrayerDialog, type StartPrayerDialogForm } from "@/components/prayer/StartPrayerDialog";
+import { locationService } from "@/services/location/LocationService";
 
 // Side images
 import Left01 from "@/assets/left-01.jpg";
@@ -129,26 +130,42 @@ const Blog = () => {
     setOpenParentId((prev) => (prev === parentId ? null : parentId));
   };
 
-  // BUILD FLATTENED SUBCATEGORIES (supports multi-level)
-  const buildFlattenedChildren = (rootId: string) => {
-    const result: { node: BlogCategory; depth: number }[] = [];
+  // Render subcategories level-by-level (clean UI) while respecting direct parent_id relationships.
+  const getSortedChildren = useCallback(
+    (parentId: string) => {
+      const children = childrenMap.get(parentId) ?? [];
+      return [...children].sort((a, b) => a.name.localeCompare(b.name));
+    },
+    [childrenMap]
+  );
 
-    const visit = (id: string, depth: number) => {
-      const children = childrenMap.get(id) ?? [];
-      children.forEach((child) => {
-        result.push({ node: child, depth });
-        visit(child.id, depth + 1);
-      });
-    };
+  const categoriesById = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
 
-    visit(rootId, 1);
-    return result;
-  };
+  const selectedCategoryNode = useMemo(() => {
+    if (!selectedCategory || selectedCategory === "all") return null;
+    return categories.find((c) => c.slug === selectedCategory) ?? null;
+  }, [categories, selectedCategory]);
 
-  const openChildren = useMemo(() => {
+  const subcategoryPathIds = useMemo(() => {
     if (!openParentId) return [];
-    return buildFlattenedChildren(openParentId);
-  }, [openParentId, childrenMap]);
+
+    // If nothing selected yet (or parent itself selected), show only one level.
+    if (!selectedCategoryNode) return [openParentId];
+
+    // Build ancestry from selected node up; only expand if the open parent is in the ancestry chain.
+    const ancestry: string[] = [];
+    let cur: BlogCategory | null = selectedCategoryNode;
+    while (cur) {
+      ancestry.unshift(cur.id);
+      const pid = cur.parent_id ?? null;
+      if (!pid) break;
+      cur = categoriesById.get(pid) ?? null;
+    }
+
+    const idx = ancestry.indexOf(openParentId);
+    if (idx === -1) return [openParentId];
+    return ancestry.slice(idx);
+  }, [categoriesById, openParentId, selectedCategoryNode]);
 
   // Folder navigation (blog_categories with parent_id)
   const [categoryStack, setCategoryStack] = useState<string[]>([]);
@@ -602,7 +619,15 @@ const Blog = () => {
         return digits.startsWith("+") ? digits : `+${digits.replace(/\D/g, "")}`;
       };
 
-      const ccFromProfile = normalizeCountryCode(String(profileCountryCodeRaw || ""));
+      const rawCountryCode = String(profileCountryCodeRaw || "").trim();
+      let ccFromProfile = normalizeCountryCode(rawCountryCode);
+      // If profile stores ISO country code (e.g. "US"), map it to a calling code (+1).
+      if (!ccFromProfile && /^[A-Za-z]{2}$/.test(rawCountryCode)) {
+        const iso = rawCountryCode.toUpperCase();
+        const c = locationService.getCountryByCode(iso);
+        const mapped = normalizeCountryCode(String((c as any)?.callingCode || ""));
+        if (mapped) ccFromProfile = mapped;
+      }
       const rawPhone = String(profilePhoneRaw || "").trim();
 
       // If we have an explicit profile country code, prefer it and strip it from the phone field if present.
@@ -851,12 +876,25 @@ const Blog = () => {
 
       let startDateYmd: string;
       let endDateYmd: string;
-      if (traditionalDates?.start_date && traditionalDates?.end_date) {
+      const customStart = (joinForm.start_date || "").trim();
+      const customEnd = String(joinForm.end_date || "").trim();
+
+      if (customStart) {
+        startDateYmd = customStart;
+      } else if (traditionalDates?.start_date) {
         startDateYmd = traditionalDates.start_date;
+      } else {
+        const start = computeStartDate(); // default: join starts today
+        startDateYmd = start.toISOString().split("T")[0];
+      }
+
+      if (customEnd) {
+        endDateYmd = customEnd;
+      } else if (!customStart && traditionalDates?.end_date) {
+        // If no custom date override was provided, honor the traditional end date when available.
         endDateYmd = traditionalDates.end_date;
       } else {
-        const start = computeStartDate(); // existing behavior: join starts today
-        startDateYmd = start.toISOString().split("T")[0];
+        // If user only picked a start date (or no traditional range exists), compute end from duration.
         endDateYmd = addDaysToYmd(startDateYmd, Math.max(1, duration) - 1);
       }
 
@@ -986,7 +1024,7 @@ const Blog = () => {
                 >
                   <Button
                     variant='ghost'
-                    className='hover:bg-gradient-pink-to-yellow block h-[40px] rounded-[10px] border-0 bg-black p-0 px-5 font-inter text-xs font-semibold uppercase text-white hover:text-white'
+                    className='hover:bg-gradient-pink-to-yellow h-[40px] rounded-[10px] border-0 bg-black p-0 px-5 font-inter text-xs font-semibold uppercase text-white hover:text-white'
                   >
                     Prayer Tasks
                   </Button>
@@ -995,7 +1033,7 @@ const Blog = () => {
 <span className='bg-gradient-pink-to-yellow rounded-[12px] p-[2px]'>
                <Button
                 onClick={openRequestModal}
-                className="hover:bg-gradient-pink-to-yellow block h-[40px] rounded-[10px] border-0 bg-black p-0 px-5 font-inter text-xs font-semibold uppercase text-white hover:text-white flex items-center gap-2"
+                className="hover:bg-gradient-pink-to-yellow h-[40px] rounded-[10px] border-0 bg-black p-0 px-5 font-inter text-xs font-semibold uppercase text-white hover:text-white flex items-center gap-2"
               >
                 <Heart className="h-5 w-5" />
                 Request a Blog / Prayer
@@ -1061,22 +1099,40 @@ const Blog = () => {
               </div>
 
               {/* SUBCATEGORIES (ONLY FOR OPEN PARENT) */}
-              {openParentId && openChildren.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-3 justify-center">
-                  {openChildren.map(({ node, depth }) => (
-                    <Badge
-                      key={node.id}
-                      onClick={() => setSelectedCategory(node.slug)}
-                      style={{
-                        marginLeft: depth * 6,
-                        borderColor: node.color,
-                        color: node.color,
-                      }}
-                      className="cursor-pointer px-3 py-1 text-sm"
-                    >
-                      {node.name}
-                    </Badge>
-                  ))}
+              {openParentId && (childrenMap.get(openParentId) ?? []).length > 0 && (
+                <div className="w-full mt-3 flex flex-col items-center gap-3">
+                  {subcategoryPathIds.map((parentId, levelIdx) => {
+                    const children = getSortedChildren(parentId);
+                    if (!children.length) return null;
+                    const activeChildId = subcategoryPathIds[levelIdx + 1] ?? null;
+
+                    return (
+                      <div key={parentId} className="flex flex-wrap gap-2 justify-center">
+                        {children.map((node) => {
+                          const hasChildren = (childrenMap.get(node.id) ?? []).length > 0;
+                          const isActive =
+                            (activeChildId && node.id === activeChildId) ||
+                            (!activeChildId && selectedCategory === node.slug);
+
+                          return (
+                            <Badge
+                              key={node.id}
+                              onClick={() => setSelectedCategory(node.slug)}
+                              style={{
+                                backgroundColor: isActive ? node.color : "transparent",
+                                borderColor: node.color,
+                                color: isActive ? "white" : node.color,
+                              }}
+                              className="cursor-pointer px-3 py-1 text-sm"
+                            >
+                              {node.name}
+                              {hasChildren && <span className="ml-2 opacity-80">▾</span>}
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 
@@ -1485,11 +1541,16 @@ const BlogPostCard = memo(function BlogPostCard({
   onSave: (post: BlogPost) => void;
   onDescription: (post: BlogPost) => void;
 }) {
+  const mappedPrayerTaskId = parsePrayerTaskIdFromTags((post as any).tags);
+  const hasPrayerTask = Boolean(mappedPrayerTaskId);
+
   const safeTags = Array.isArray((post as any).tags) ? ((post as any).tags as string[]) : [];
   const displayTags = safeTags
     .map((t) => String(t || "").trim())
     .filter(Boolean)
-    .filter((t) => !/^prayer_task:/i.test(t));
+    .filter((t) => !/^prayer_task:/i.test(t))
+    .filter((t) => !/^extra_left:/i.test(t))
+    .filter((t) => !/^extra_right:/i.test(t));
 
   return (
     <Card className="group hover:scale-105 hover:glow-primary transition-all duration-300 cursor-pointer border-0 shadow-none bg-gradient-pink-to-yellow rounded-sm p-[2px]">
@@ -1544,19 +1605,21 @@ const BlogPostCard = memo(function BlogPostCard({
 
         {/* Two required buttons in the card footer area (do not navigate to post) */}
         <div className="p-4 pt-0">
-          <div className="grid grid-cols-3 gap-2">
-            <Button
-              className="flex-1 rounded-[8px] border-0 hover:bg-primary/80 bg-primary gap-0"
-              disabled={joined}
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onJoin(post);
-              }}
-            >
-              <Heart className="h-4 w-4 mr-1" />
-              {joined ? "Joined" : "Join Prayer"}
-            </Button>
+          <div className={`grid ${hasPrayerTask ? "grid-cols-3" : "grid-cols-2"} gap-2`}>
+            {hasPrayerTask && (
+              <Button
+                className="flex-1 rounded-[8px] border-0 hover:bg-primary/80 bg-primary gap-0"
+                disabled={joined}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onJoin(post);
+                }}
+              >
+                <Heart className="h-4 w-4 mr-1" />
+                {joined ? "Joined" : "Join Prayer"}
+              </Button>
+            )}
             <Button
               variant="outline"
               className="flex-1 rounded-[8px] border-white/30 text-white bg-transparent hover:bg-white/10"

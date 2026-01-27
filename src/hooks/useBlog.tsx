@@ -22,6 +22,8 @@ export interface BlogPost {
   id: string;
   title: string;
   slug: string;
+  header_left_text?: string | null;
+  header_right_text?: string | null;
   content: string;
   excerpt?: string;
   featured_image?: string;
@@ -177,6 +179,8 @@ export const useBlog = () => {
           {
             title: post.title!,
             slug: post.slug!,
+            header_left_text: (post as any).header_left_text ?? null,
+            header_right_text: (post as any).header_right_text ?? null,
             content: post.content!,
             excerpt: post.excerpt,
             category: post.category || "general",
