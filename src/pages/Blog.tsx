@@ -1531,7 +1531,7 @@ const BlogPostCard = memo(function BlogPostCard({
         <div className="p-4 pt-0">
           <div className="grid grid-cols-3 gap-2">
             <Button
-              className="flex-1 rounded-[8px] border-0 hover:bg-primary/80 bg-primary"
+              className="flex-1 rounded-[8px] border-0 hover:bg-primary/80 bg-primary gap-0"
               disabled={joined}
               onClick={(e) => {
                 e.preventDefault();
@@ -1539,7 +1539,7 @@ const BlogPostCard = memo(function BlogPostCard({
                 onJoin(post);
               }}
             >
-              <Heart className="h-4 w-4 mr-2" />
+              <Heart className="h-4 w-4 mr-1" />
               {joined ? "Joined" : "Join Prayer"}
             </Button>
             <Button

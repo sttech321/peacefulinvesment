@@ -291,53 +291,100 @@ Deno.serve(async (req: Request) => {
 
         // Email content (KEEP AS-IS)
         const emailHtml = `
-      <!DOCTYPE html>
-      <html lang="en">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Daily Prayer Reminder - Day ${currentDay}</title>
-      </head>
-      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif; background-color: #f5f5f5; padding: 20px;">
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f5f5f5;">
-          <tr>
-            <td align="center">
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                <tr>
-                  <td style="padding: 30px; background-color: #FFC61A;">
-                    <h1 style="color: #333333; margin: 0; font-size: 28px;">Daily Prayer Reminder</h1>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding: 30px;">
-                    <h2 style="color: #333333; margin-top: 0;">Day ${currentDay} of ${duration}</h2>
-                    <p style="color: #555555; font-size: 16px; line-height: 1.6;">
+      <!doctype html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="x-apple-disable-message-reformatting" />
+    <meta name="format-detection" content="telephone=no,date=no,address=no,email=no,url=no" />
+     <title>Daily Prayer Reminder - Day ${currentDay}</title>
+  </head>
+  <body style="margin:0; padding:0; background-color:#fff;"> 
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%; background-color:#fff;">
+      <tr>
+        <td align="center" style="padding:28px 12px;">
+          <!-- Outer container -->
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" class="container" style="width:600px; max-width:600px;">
+            <!-- Main card wrapper -->
+            <tr>
+              <td style="padding:0 12px;">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" class="card" style="width:100%; border-radius:22px; overflow:hidden;">
+                  <!-- HERO (dark / gradient) -->
+                  <tr>
+                    <td
+                      align="center"
+                      style="padding:28px; background-color:#000;"
+                    >
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;">
+                        <tr>
+                          <td align="center" style="padding:0 0 16px 0;">
+                            <img
+                              src="https://www.peacefulinvestment.com/assets/new-logo-C1z5AvYQ.gif"
+                              width="150"
+                              alt="Peaceful Investment"
+                              style="display:block; width:150px; max-width:100%; height:auto; border:0; outline:none; text-decoration:none;"
+                            />
+                          </td>
+                        </tr>
+                         
+                      </table>
+                    </td>
+                  </tr>
+
+                  <!-- BODY (light section) -->
+                  <tr>
+                    <td style="background-color:#f3f4f6; padding:26px 28px 30px 28px; font-family:Segoe UI, Roboto, Helvetica, Arial, sans-serif;">
+ 
+						<div style="font-size:24px;line-height:22px;color: #373737;font-weight: 700;padding-bottom:30px; text-align:left;">Daily Prayer Reminder</div>
+
+						<div style="font-size:18px;line-height:22px;color: #373737;font-weight: 700;padding-bottom:10px; text-align:left;">Day ${currentDay} of ${duration}</div>
+
+
+                      <div style="text-align:left;"> 
+
+					<p style="font-size:16px; line-height:24px; color:#6b7280;margin:0; padding:0 0 7px 0;">
                       Hello ${escapeHtml((userTask as any).name)},
                     </p>
-                    <p style="color: #555555; font-size: 16px; line-height: 1.6;">
+                    <p style="font-size:16px; line-height:24px; color:#6b7280;margin:0; padding:0 0 7px 0;">
                       This is your daily reminder for <strong>${taskName}</strong>${personName}.
                     </p>
-                    <p style="color: #555555; font-size: 16px; line-height: 1.6;">
+                    <p style="font-size:16px; line-height:24px; color:#6b7280;margin:0; padding:0 0 7px 0;">
                       Please take a moment to pray today.
                     </p>
-                    ${prayerLink !== "#" ? `
-                    <div style="margin: 30px 0; text-align: center;">
-                      <a href="${prayerLink}" style="display: inline-block; padding: 12px 24px; background-color: #FFC61A; color: #333333; text-decoration: none; border-radius: 6px; font-weight: bold;">
+					 </div>
+					 ${prayerLink !== "#" ? `
+                    <div style="margin: 30px 0; text-align: left;">
+                      <a href="${prayerLink}" style="display: inline-block; background-color:#d7111d; color: #ffffff; text-decoration: none; font-family: Segoe UI, Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 18px; font-weight: 700; padding: 14px 32px; border-radius: 9999px; text-transform: uppercase;">
                         View Today's Prayer
                       </a>
                     </div>
                     ` : ""}
-                    <p style="color: #888888; font-size: 14px; margin-top: 30px;">
-                      <a href="${baseUrl}/prayer-tasks" style="color: #888888;">View your prayer progress</a>
-                    </p>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-        </table>
-      </body>
-      </html>
+					
+                  <p style="color: #888888; font-size: 14px; margin-top: 30px;">
+                      <a href="${baseUrl}/prayer-tasks" style="color: #000000;font-weight: 600;text-decoration: underline;">View your prayer progress</a>
+                    </p> 
+                      
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td class="px" style="padding:16px 24px 0 24px; font-family:Segoe UI, Roboto, Helvetica, Arial, sans-serif;">
+                <div style="font-size:12px; line-height:18px; color:#6b7280; text-align:center;">
+                  © <span style="color:#6b7280;">Peaceful Investment</span>. All rights reserved.
+                </div>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
     `;
 
         // Send email

@@ -974,7 +974,7 @@ export default function PrayerTasks() {
                                       For: {ut.person_needs_help}
                                     </Badge>
                                   )}
-                                  <Badge className="bg-blue-600 text-white">In Progress</Badge>
+                                  <Badge className="bg-blue-600 text-white border-0 hover:bg-blue-700">In Progress</Badge>
                                 </div>
                                 <div className="text-sm text-white/70 space-y-1">
                                   <div>Day {currentDay} of {duration}</div>
@@ -1016,14 +1016,14 @@ export default function PrayerTasks() {
                                       </>
                                     ) : (
                                       <>
-                                        <CheckCircle2 className="mr-2 h-4 w-4" />
+                                        <CheckCircle2 className="mr-1 h-4 w-4" />
                                         Mark Day {currentDay} Done
                                       </>
                                     )}
                                   </Button>
                                 ) : isCompletedToday ? (
                                   <Badge variant="secondary" className="px-4 py-2">
-                                    <CheckCircle2 className="mr-2 h-4 w-4" />
+                                    <CheckCircle2 className="mr-1 h-4 w-4" />
                                     Day {currentDay} Completed
                                   </Badge>
                                 ) : (
@@ -1040,12 +1040,12 @@ export default function PrayerTasks() {
                                 >
                                   {stopping === ut.id ? (
                                     <>
-                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                      <Loader2 className="mr-1 h-4 w-4 animate-spin" />
                                       Stopping...
                                     </>
                                   ) : (
                                     <>
-                                      <StopCircle className="mr-2 h-4 w-4" />
+                                      <StopCircle className="mr-1 h-4 w-4" />
                                       Stop Prayer
                                     </>
                                   )}
@@ -1214,9 +1214,10 @@ export default function PrayerTasks() {
                           <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
                             <div className="md:col-span-1">
                               <div className="font-inter text-sm text-white">{task.name}</div>
+                              <div className="flex items-center flex-wrap gap-2 pt-2">
                               {getStatusBadge(task.status)}
                               {hasActiveInstance ? (
-                                <Badge variant="secondary" className="mt-2">
+                                <Badge variant="secondary" className="mt-0">
                                   <PlayCircle className="mr-1 h-3 w-3" />
                                   Active
                                 </Badge>
@@ -1230,7 +1231,7 @@ export default function PrayerTasks() {
                                   <StopCircle className="mr-1 h-3 w-3" />
                                   Stopped
                                 </Badge>
-                              ) : null}
+                              ) : null}</div>
                             </div>
                             <div className="md:col-span-1">
                               {task.link_or_video ? (
@@ -1273,20 +1274,20 @@ export default function PrayerTasks() {
                             </div>
                             <div className="md:col-span-1">
                               {hasActiveInstance ? (
-                                <Badge variant="secondary" className="w-full text-center p-2 rounded-[8px]">
+                                <Badge variant="secondary" className="w-full text-center p-2 rounded-[8px] justify-center">
                                   Already Active
                                 </Badge>
                               ) : hasCompletedInstance ? (
-                                <Button size="sm" variant="outline" className="w-full rounded-[8px]" disabled>
+                                <Button size="sm" variant="outline" className="w-full rounded-[8px] justify-center" disabled>
                                   <CheckCircle2 className="mr-2 h-4 w-4" />
                                   Completed
                                 </Button>
                               ) : hasStoppedInstance ? (
-                                <Button size="sm" className="w-full rounded-[8px]">
+                                <Button size="sm" className="w-full rounded-[8px] justify-center">
                                   Restart (Day 1)
                                 </Button>
                               ) : (
-                                <Button size="sm" className="w-full rounded-[8px]">
+                                <Button size="sm" className="w-full rounded-[8px] justify-center">
                                   Start Prayer
                                 </Button>
                               )}
