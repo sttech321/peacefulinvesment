@@ -576,9 +576,9 @@ export default function AdminPrayerTasks() {
                       </td>
                       <td className="px-4 py-3">
                         {t.is_shared ? (
-                          <Badge className="bg-green-600 text-white">Shared</Badge>
+                          <Badge className="bg-green-600 hover:bg-green-700 border-0 text-white">Shared</Badge>
                         ) : (
-                          <Badge variant="outline" className="text-white border-white/30">
+                          <Badge variant="outline" className="bg-white/10 hover:bg-white/20 text-white border-0">
                             Private
                           </Badge>
                         )}
@@ -591,19 +591,19 @@ export default function AdminPrayerTasks() {
                           <Button
                             type="button"
                             variant="outline"
-                            className="h-8 px-2 rounded-[8px] border-white/30 text-white bg-transparent hover:bg-white/10"
+                            className="h-[36px] px-3 border-0 text-white bg-muted/20 hover:text-white hover:bg-muted/40 rounded-[8px]"
                             onClick={() => openEdit(t)}
                           >
-                            <Pencil className="h-4 w-4" />
+                            <Pencil className="h-2 w-2" />
                           </Button>
                           <Button
                             type="button"
                             variant="outline"
-                            className="h-8 px-2 rounded-[8px] border-red-500/50 text-red-200 bg-transparent hover:bg-red-500/10"
+                            className="h-[36px] px-3 border-0 text-white bg-red-600 hover:text-white hover:bg-red-700 rounded-[8px]"
                             disabled={deletingId === t.id}
                             onClick={() => deleteTemplate(t)}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-2 w-2" />
                           </Button>
                         </div>
                       </td>
@@ -743,20 +743,20 @@ export default function AdminPrayerTasks() {
                       </td>
                       <td className="px-4 py-3">
                         {startStatus === "done" ? (
-                          <Badge className="bg-green-600 text-white">Done</Badge>
+                          <Badge className="bg-green-600 hover:bg-green-700 border-0 text-white">Done</Badge>
                         ) : startStatus === "overdue" ? (
-                          <Badge className="bg-red-600 text-white">Overdue</Badge>
+                          <Badge className="bg-red-600 hover:bg-red-700 border-0 text-white">Overdue</Badge>
                         ) : startStatus === "upcoming" ? (
-                          <Badge variant="secondary" className="bg-white/10 text-white">
+                          <Badge variant="secondary" className="bg-white/10 hover:bg-white/20 text-white border-0">
                             Upcoming
                           </Badge>
                         ) : (
-                          <Badge className="bg-blue-600 text-white">In Progress</Badge>
+                          <Badge className="bg-blue-600 hover:bg-blue-700 text-white border-0">In Progress</Badge>
                         )}
                       </td>
                       <td className="px-4 py-3">
                         {ut.is_active ? (
-                          <Badge className="bg-green-600 text-white">Active</Badge>
+                          <Badge className="bg-green-600 hover:bg-green-700 border-0 text-white">Active</Badge>
                         ) : (
                           <Badge variant="outline" className="text-white border-white/30">
                             Inactive
@@ -770,9 +770,9 @@ export default function AdminPrayerTasks() {
                       </td>
                       <td className="px-4 py-3">
                         {visibility === "shared" ? (
-                          <Badge className="bg-green-600 text-white">Shared</Badge>
+                          <Badge className="bg-green-600 hover:bg-green-700 border-0 text-white">Shared</Badge>
                         ) : (
-                          <Badge variant="outline" className="text-white border-white/30">
+                          <Badge variant="outline" className="bg-white/10 hover:bg-white/20 text-white border-0">
                             Private
                           </Badge>
                         )}
@@ -782,7 +782,7 @@ export default function AdminPrayerTasks() {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="rounded-[8px]"
+                            className="text-white bg-red-600 hover:text-white hover:bg-red-700 rounded-[8px] border-0"
                             disabled={deletingUserTaskId === ut.id}
                             onClick={() => deleteCompletedUserTask(ut.id)}
                           >
@@ -791,6 +791,8 @@ export default function AdminPrayerTasks() {
                           </Button>
                         ) : (
                           <span className="text-xs text-black/60">—</span>
+
+                          
                         )}
                       </td>
                     </tr>
@@ -816,6 +818,7 @@ export default function AdminPrayerTasks() {
                 value={createForm.name}
                 onChange={(e) => setCreateForm((p) => ({ ...p, name: e.target.value }))}
                 placeholder="e.g., Peaceful Investment"
+                className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none" style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
               />
             </div>
 
@@ -825,13 +828,14 @@ export default function AdminPrayerTasks() {
                 value={createForm.link_or_video}
                 onChange={(e) => setCreateForm((p) => ({ ...p, link_or_video: e.target.value }))}
                 placeholder="/blog/<slug>  (recommended for blog prayers)"
+                className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none" style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
               />
             </div>
 
             <div>
               <Label>Folder</Label>
               <Select value={createForm.folder_id} onValueChange={(v) => setCreateForm((p) => ({ ...p, folder_id: v }))}>
-                <SelectTrigger>
+                <SelectTrigger className="mt-1 rounded-[8px] shadow-none border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400" style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                   <SelectValue placeholder="Unassigned" />
                 </SelectTrigger>
                 <SelectContent className="border-secondary-foreground bg-black/90 text-white">
@@ -852,6 +856,7 @@ export default function AdminPrayerTasks() {
                 min={1}
                 value={createForm.number_of_days}
                 onChange={(e) => setCreateForm((p) => ({ ...p, number_of_days: Number(e.target.value) || 1 }))}
+                className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none" style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
               />
             </div>
 
@@ -861,6 +866,7 @@ export default function AdminPrayerTasks() {
                 type="date"
                 value={createForm.start_date}
                 onChange={(e) => setCreateForm((p) => ({ ...p, start_date: e.target.value }))}
+                className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none" style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
               />
             </div>
 
@@ -870,11 +876,13 @@ export default function AdminPrayerTasks() {
                 type="time"
                 value={createForm.start_time}
                 onChange={(e) => setCreateForm((p) => ({ ...p, start_time: e.target.value }))}
+                className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none" style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
               />
             </div>
 
             <div className="flex items-center gap-2">
               <Checkbox
+              className="rounded-[2px]"
                 checked={createForm.is_shared}
                 onCheckedChange={(v) => setCreateForm((p) => ({ ...p, is_shared: Boolean(v) }))}
               />
@@ -883,10 +891,10 @@ export default function AdminPrayerTasks() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateOpen(false)}>
+            <Button variant="outline" className="rounded-[8px] border-0 hover:bg-white/80" onClick={() => setCreateOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={submitCreate} disabled={creating}>
+            <Button className="rounded-[8px] border-0 hover:bg-primary/80" onClick={submitCreate} disabled={creating}>
               {creating ? "Creating..." : "Create"}
             </Button>
           </DialogFooter>
@@ -907,6 +915,7 @@ export default function AdminPrayerTasks() {
                 value={editForm.name}
                 onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))}
                 placeholder="e.g., Peaceful Investment"
+                className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none" style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
               />
             </div>
 
@@ -916,13 +925,14 @@ export default function AdminPrayerTasks() {
                 value={editForm.link_or_video}
                 onChange={(e) => setEditForm((p) => ({ ...p, link_or_video: e.target.value }))}
                 placeholder="/blog/<slug>  (recommended for blog prayers)"
+                className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none" style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
               />
             </div>
 
             <div>
               <Label>Folder</Label>
               <Select value={editForm.folder_id} onValueChange={(v) => setEditForm((p) => ({ ...p, folder_id: v }))}>
-                <SelectTrigger>
+                <SelectTrigger className="mt-1 rounded-[8px] shadow-none border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400" style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
                   <SelectValue placeholder="Unassigned" />
                 </SelectTrigger>
                 <SelectContent className="border-secondary-foreground bg-black/90 text-white">
@@ -943,6 +953,7 @@ export default function AdminPrayerTasks() {
                 min={1}
                 value={editForm.number_of_days}
                 onChange={(e) => setEditForm((p) => ({ ...p, number_of_days: Number(e.target.value) || 1 }))}
+                className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none" style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
               />
             </div>
 
@@ -952,6 +963,7 @@ export default function AdminPrayerTasks() {
                 type="date"
                 value={editForm.start_date}
                 onChange={(e) => setEditForm((p) => ({ ...p, start_date: e.target.value }))}
+                className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none" style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
               />
             </div>
 
@@ -961,11 +973,12 @@ export default function AdminPrayerTasks() {
                 type="time"
                 value={editForm.start_time}
                 onChange={(e) => setEditForm((p) => ({ ...p, start_time: e.target.value }))}
+                className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none" style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
               />
             </div>
 
             <div className="flex items-center gap-2">
-              <Checkbox checked={editForm.is_shared} onCheckedChange={(v) => setEditForm((p) => ({ ...p, is_shared: Boolean(v) }))} />
+              <Checkbox className="rounded-[2px]" checked={editForm.is_shared} onCheckedChange={(v) => setEditForm((p) => ({ ...p, is_shared: Boolean(v) }))} />
               <span className="text-sm text-black">Make this prayer task shared (others can see and join)</span>
             </div>
           </div>
@@ -973,6 +986,7 @@ export default function AdminPrayerTasks() {
           <DialogFooter>
             <Button
               variant="outline"
+              className="rounded-[8px] border-0 hover:bg-white/80"
               onClick={() => {
                 setEditOpen(false);
                 setEditId(null);
@@ -980,7 +994,7 @@ export default function AdminPrayerTasks() {
             >
               Cancel
             </Button>
-            <Button onClick={submitEdit} disabled={editing || !editId}>
+            <Button className="rounded-[8px] border-0 hover:bg-primary/80" onClick={submitEdit} disabled={editing || !editId}>
               {editing ? "Saving..." : "Save"}
             </Button>
           </DialogFooter>

@@ -977,14 +977,29 @@ const Blog = () => {
             <p className="max-w-2xl mx-auto font-inter text-lg md:text-[20px] font-normal text-white mb-6">
               Daily prayers, spiritual guidance, and charitable mission updates from Peaceful Investment
             </p>
-            <div className="flex justify-center">
-              <Button
+            <div className="flex justify-center gap-4 flex-wrap">
+               
+
+              <Link
+                  to='/prayer-tasks'
+                  className='bg-gradient-pink-to-yellow rounded-[12px] p-[2px]'
+                >
+                  <Button
+                    variant='ghost'
+                    className='hover:bg-gradient-pink-to-yellow block h-[40px] rounded-[10px] border-0 bg-black p-0 px-5 font-inter text-xs font-semibold uppercase text-white hover:text-white'
+                  >
+                    Prayer Tasks
+                  </Button>
+                </Link>
+
+<span className='bg-gradient-pink-to-yellow rounded-[12px] p-[2px]'>
+               <Button
                 onClick={openRequestModal}
-                className="bg-gradient-to-r from-[var(--yellowcolor)] to-orange-500 hover:from-orange-500 hover:to-[var(--yellowcolor)] text-black font-semibold px-8 py-6 text-lg rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2"
+                className="hover:bg-gradient-pink-to-yellow block h-[40px] rounded-[10px] border-0 bg-black p-0 px-5 font-inter text-xs font-semibold uppercase text-white hover:text-white flex items-center gap-2"
               >
                 <Heart className="h-5 w-5" />
                 Request a Blog / Prayer
-              </Button>
+              </Button></span>
             </div>
           </div>
 
