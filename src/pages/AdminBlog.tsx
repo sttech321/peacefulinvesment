@@ -870,7 +870,7 @@ const AdminBlog = () => {
                   </div>
                 </div>
 
-                <div className="flex justify-end gap-2">
+                <div className="flex justify-end gap-2 pb-2">
                   <Button type="button" variant="outline" className="rounded-[8px] border-0 hover:bg-white/80" onClick={() => setDialogOpen(false)}>
                     Cancel
                   </Button>
@@ -933,10 +933,10 @@ const AdminBlog = () => {
                     </div>
 
                     <div className="flex justify-end gap-2">
-                      <Button size="sm" className="rounded-[8px] border-0" variant="outline" onClick={() => handleEdit(post)}>
+                      <Button size="sm" className="rounded-[8px] border-0 bg-muted/20 hover:bg-muted/40 text-white h-[36px] px-3" variant="outline" onClick={() => handleEdit(post)}>
                         <Edit className="w-4 h-4" />
                       </Button>
-                      <Button size="sm" className="rounded-[8px] border-0 text-destructive hover:text-destructive" variant="outline" onClick={() => handleDelete(post.id)}>
+                      <Button size="sm" className="rounded-[8px] border-0 text-white bg-red-600 hover:bg-red-700 h-[36px] px-3" variant="outline" onClick={() => handleDelete(post.id)}>
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>

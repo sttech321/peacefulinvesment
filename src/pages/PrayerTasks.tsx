@@ -104,6 +104,8 @@ export default function PrayerTasks() {
   const [completing, setCompleting] = useState<string | null>(null);
   const [stopping, setStopping] = useState<string | null>(null);
   const [restarting, setRestarting] = useState<string | null>(null);
+  const [prayerDialogOpen, setPrayerDialogOpen] = useState(false);
+  const [activePrayerTask, setActivePrayerTask] = useState<PrayerUserTask | null>(null);
 
   // Get user's timezone
   const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -808,6 +810,11 @@ export default function PrayerTasks() {
     setStartInstanceDialogOpen(true);
   };
 
+  const handleOpenPrayer = (ut: PrayerUserTask) => {
+    setActivePrayerTask(ut);
+    setPrayerDialogOpen(true);
+  };
+
   const getCurrentDay = (userTask: PrayerUserTask): number => {
     /**
      * IMPORTANT:
@@ -891,6 +898,29 @@ export default function PrayerTasks() {
       minute: '2-digit',
       hour12: true,
     });
+  };
+
+  const getYouTubeEmbedUrl = (url: string): string | null => {
+    try {
+      const u = new URL(url);
+      const host = u.hostname.toLowerCase();
+      if (host.includes("youtu.be")) {
+        const id = u.pathname.replace("/", "").trim();
+        return id ? `https://www.youtube.com/embed/${id}` : null;
+      }
+      if (host.includes("youtube.com")) {
+        if (u.pathname.startsWith("/embed/")) return `https://www.youtube.com${u.pathname}`;
+        const id = u.searchParams.get("v");
+        return id ? `https://www.youtube.com/embed/${id}` : null;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
+  const isDirectVideoUrl = (url: string): boolean => {
+    return /\.(mp4|webm|ogg)(\?.*)?$/i.test(url);
   };
 
   const getStatusBadge = (status: string) => {
@@ -1005,9 +1035,9 @@ export default function PrayerTasks() {
                               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
                                 {canComplete && !isCompletedToday ? (
                                   <Button
-                                    onClick={() => handleCompleteDay(ut.id, currentDay)}
+                                    onClick={() => handleOpenPrayer(ut)}
                                     disabled={completing === ut.id}
-                                    className="rounded-[8px]"
+                                    className="rounded-[8px] gap-1"
                                   >
                                     {completing === ut.id ? (
                                       <>
@@ -1016,14 +1046,14 @@ export default function PrayerTasks() {
                                       </>
                                     ) : (
                                       <>
-                                        <CheckCircle2 className="mr-1 h-4 w-4" />
-                                        Mark Day {currentDay} Done
+                                        <PlayCircle className="mr-1 h-4 w-4" />
+                                        Pray
                                       </>
                                     )}
                                   </Button>
                                 ) : isCompletedToday ? (
                                   <Badge variant="secondary" className="px-4 py-2">
-                                    <CheckCircle2 className="mr-1 h-4 w-4" />
+                                    <CheckCircle2 className="mr-2 h-4 w-4" />
                                     Day {currentDay} Completed
                                   </Badge>
                                 ) : (
@@ -1034,7 +1064,7 @@ export default function PrayerTasks() {
 
                                 <Button
                                   variant="outline"
-                                  className="rounded-[8px]"
+                                  className="rounded-[8px] gap-1"
                                   disabled={stopping === ut.id}
                                   onClick={() => handleStopPrayer(ut)}
                                 >
@@ -1304,6 +1334,110 @@ export default function PrayerTasks() {
         </div>
       </div>
       <Footer />
+
+      {/* Prayer Content Dialog */}
+      <Dialog
+        open={prayerDialogOpen}
+        onOpenChange={(open) => {
+          setPrayerDialogOpen(open);
+          if (!open) setActivePrayerTask(null);
+        }}
+      >
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>{activePrayerTask?.task?.name || "Prayer"}</DialogTitle>
+            <DialogDescription className="font-inter text-black/50">
+              {activePrayerTask?.person_needs_help
+                ? `Praying for ${activePrayerTask.person_needs_help}`
+                : "Prayer content"
+              }
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {(() => {
+              const url = activePrayerTask?.task?.link_or_video || "";
+              if (!url) {
+                return (
+                  <div className="text-sm text-muted-foreground">Prayer content is not available.</div>
+                );
+              }
+              const youtubeEmbed = getYouTubeEmbedUrl(url);
+              if (youtubeEmbed) {
+                return (
+                  <div className="aspect-video w-full overflow-hidden rounded-lg border border-muted/30">
+                    <iframe
+                      src={youtubeEmbed}
+                      title="Prayer Video"
+                      className="h-full w-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  </div>
+                );
+              }
+              if (isDirectVideoUrl(url)) {
+                return (
+                  <video className="w-full rounded-lg" controls>
+                    <source src={url} />
+                    Your browser does not support the video tag.
+                  </video>
+                );
+              }
+              return (
+                <a
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  Open Prayer Content
+                </a>
+              );
+            })()}
+
+            {(() => {
+              if (!activePrayerTask) return null;
+              const currentDay = getCurrentDay(activePrayerTask);
+              const dayLabel = Math.max(1, currentDay);
+              const isCompleted = (activePrayerTask.completed_days || []).includes(currentDay);
+              const canComplete = canCompleteToday(activePrayerTask) && !isCompleted;
+
+              return (
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button
+                    variant="outline"
+                    className="rounded-[8px]"
+                    onClick={() => setPrayerDialogOpen(false)}
+                  >
+                    Close
+                  </Button>
+                  <Button
+                    className="rounded-[8px]"
+                    disabled={!canComplete || completing === activePrayerTask.id}
+                    onClick={async () => {
+                      await handleCompleteDay(activePrayerTask.id, currentDay);
+                      setPrayerDialogOpen(false);
+                      setActivePrayerTask(null);
+                    }}
+                  >
+                    {completing === activePrayerTask.id ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Completing...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="mr-0 h-4 w-4" />
+                        Day {dayLabel} Done
+                      </>
+                    )}
+                  </Button>
+                </div>
+              );
+            })()}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Start Prayer Instance Dialog */}
       <StartPrayerDialog

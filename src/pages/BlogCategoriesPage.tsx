@@ -529,17 +529,15 @@ export default function AdminBlogCategories() {
             variant="outline"
             size="icon"
             onClick={() => startEdit(node)}
-            className="rounded-[8px] border-0 hover:bg-white/80"
-            title="Edit category"
+            className="bg-muted/20 hover:bg-muted/40 rounded-[8px] border-0 text-white h-[36px] px-3" 
           >
             <Edit2 className="h-4 w-4" />
           </Button>
           <Button
             variant="outline"
             size="icon"
-            className="text-red-600 hover:text-red-700 hover:bg-red-50 rounded-[8px] border-0"
-            onClick={() => handleDelete(node.id)}
-            title="Delete category"
+            className="text-white hover:bg-red-700 bg-red-600 rounded-[8px] border-0 h-[36px] px-3"
+            onClick={() => handleDelete(node.id)} 
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -610,8 +608,8 @@ export default function AdminBlogCategories() {
           if (!isOpen) resetForm();
         }}
       >
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
+        <DialogContent className="max-w-2xl p-0 gap-0">
+          <DialogHeader className="p-4">
             <DialogTitle>
               {editingId ? "Edit Category" : "Create Category"}
             </DialogTitle>
@@ -621,6 +619,10 @@ export default function AdminBlogCategories() {
                 : "Add a new category for organizing blog posts."}
             </DialogDescription>
           </DialogHeader>
+
+
+<div className="px-4 mb-4 max-h-[70vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent">
+
 
           <form onSubmit={handleSubmit} className="space-y-3 mt-2">
             {error && (
@@ -760,7 +762,7 @@ export default function AdminBlogCategories() {
               </span>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex justify-end gap-2 pt-2 pb-2">
               <Button
                 type="button" 
                 variant="outline"
@@ -776,6 +778,7 @@ export default function AdminBlogCategories() {
               </Button>
             </div>
           </form>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
