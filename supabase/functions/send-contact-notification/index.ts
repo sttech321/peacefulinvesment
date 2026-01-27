@@ -171,45 +171,101 @@ Submitted: ${new Date().toLocaleString()}
 
     // 2. Send confirmation email to user
     const userEmailHtml = `
-      <!DOCTYPE html>
+       <!DOCTYPE html>
       <html lang="en">
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Thank You for Contacting Us</title>
       </head>
-      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif; background-color: #f5f5f5; padding: 20px;">
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f5f5f5;">
+      <body style="margin:0; padding:0; background-color:#f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
           <tr>
-            <td align="center">
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <td align="center" style="padding:28px 12px;">
+			
+			<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" class="container" style="width:600px; max-width:600px;">
+            <!-- Main card wrapper -->
+            <tr>
+              <td style="padding:0 12px;">
+			  
+			  
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="width:100%; background-color: #ffffff; border-radius: 22px; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,0.08);">
                 <tr>
-                  <td style="padding: 30px; text-align: center; background-color: #ffffff;">
-                    <h1 style="color: #333333; margin: 0; font-size: 28px;">Thank You for Contacting Us!</h1>
+                   <td
+                      align="center"
+                      style="padding:28px; background-color:#000;"
+                    >
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;">
+                        <tr>
+                          <td align="center" style="padding:0 0 16px 0;">
+                            <img
+                              src="https://www.peacefulinvestment.com/assets/new-logo-C1z5AvYQ.gif"
+                              width="150"
+                              alt="Peaceful Investment"
+                              style="display:block; width:150px; max-width:100%; height:auto; border:0; outline:none; text-decoration:none;"
+                            />
+                          </td>
+                        </tr>
+                         
+                      </table>
+                    </td>
+                </tr>
+                <tr>
+                  <td style="padding: 28px 32px 8px; text-align: center;">
+                    <p style="margin: 0; color: #6b7280; font-size: 14px; letter-spacing: 0.2px;">Welcome to Peaceful Investment!</p>
+                    <h1 style="margin: 6px 0 12px; color: #111827; font-size: 24px; font-weight: 700;">Thank You for Contacting Us</h1>
+                    <p style="margin: 0 auto; max-width: 460px; color: #4b5563; font-size: 15px; line-height: 1.6;">
+                      We’ve received your message. Our team will get back to you within 24 hours.
+                    </p>
                   </td>
                 </tr>
                 <tr>
-                  <td style="padding: 30px;">
-                    <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
-                      Hello ${safeName},
-                    </p>
-                    <p style="color: #555555; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
-                      We've received your message and our team will get back to you within 24 hours.
-                    </p>
-                    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                      <p style="color: #333333; font-size: 14px; margin: 0 0 10px 0;"><strong>Your Message:</strong></p>
-                      <p style="color: #555555; font-size: 14px; margin: 0; white-space: pre-wrap;">${safeMessage}</p>
+                  <td style="padding: 16px 32px 8px;">
+                    <p style="color: #111827; font-size: 15px; margin: 0 0 12px;">Hello ${safeName},</p>
+                    <div style="background-color: #f8fafc; border: 1px solid #e5e7eb; padding: 16px; border-radius: 10px;">
+                      <p style="margin: 0 0 8px; color: #111827; font-size: 13px;"><strong>Your Message</strong></p>
+                      <p style="margin: 0; color: #4b5563; font-size: 14px; line-height: 1.6; white-space: pre-wrap;">${safeMessage}</p>
                     </div>
-                    <p style="color: #888888; font-size: 12px; margin-top: 30px;">
-                      Best regards,<br>
-                      Peaceful Investment Support Team
-                    </p>
                   </td>
                 </tr>
+                <tr>
+                  <td style="padding: 20px 32px 28px; text-align: center;">
+                    <a
+                      href="https://www.peacefulinvestment.com"
+                      style="display: inline-block; background-color: #d61f26; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 700; padding: 12px 26px; border-radius: 999px;"
+                    >
+                      VISIT WEBSITE
+                    </a>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 0 32px 28px; text-align: center; color: #9ca3af; font-size: 12px;">
+                    <div style="padding:4px 0">If you have any urgent questions, contact us at</div>
+                    <a href="mailto:support@peacefulinvestment.com" style="color: #9ca3af; text-decoration: underline;">support@peacefulinvestment.com</a>
+                    <div style="padding:0px 0">OR</div>
+					Call <a href="tel:+17723211897" style="color: #9ca3af; text-decoration: underline;">+1 (772) 321-1897</a>.
+                  </td>
+                </tr>
+                
               </table>
+			  
+			  </td>
+          </tr>
+		  
+		   <tr>
+		   <td style="text-align:center; font-size:12px; color:#9ca3af; padding-top:15px">© Peaceful Investment. All rights reserved.		</td>
+		  </tr>
+		  
+		  
+        </table>
+		
+		
             </td>
           </tr>
+		  
+		 
         </table>
+		 
       </body>
       </html>
     `;
