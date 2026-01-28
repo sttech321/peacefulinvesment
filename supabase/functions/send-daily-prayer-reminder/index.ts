@@ -190,6 +190,18 @@ Deno.serve(async (req: Request) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Best-effort automatic status update: mark overdue prayer_tasks as "NOT DONE".
+    // This runs as part of the same cron-triggered job.
+    try {
+      const { data: updatedCount, error: updStatusErr } = await supabase.rpc("update_overdue_prayer_task_statuses");
+      if (updStatusErr) throw updStatusErr;
+      if (typeof updatedCount === "number" && updatedCount > 0) {
+        console.log("[send-daily-prayer-reminder] Marked overdue prayer_tasks NOT DONE:", updatedCount);
+      }
+    } catch (e) {
+      console.warn("[send-daily-prayer-reminder] update_overdue_prayer_task_statuses failed (non-fatal):", e);
+    }
+
     // CRON-SAFE: request body can be {} (pg_cron + pg_net)
     const body = await req.json().catch(() => ({}));
     const windowMinutes = Number((body as any)?.window_minutes ?? 1);
@@ -220,6 +232,10 @@ Deno.serve(async (req: Request) => {
       try {
         const tz = String((userTask as any)?.timezone || "UTC");
         const prayerTime = String((userTask as any)?.prayer_time || "");
+        const isUnlimited =
+          String((userTask as any)?.schedule_mode || "") === "DAILY_UNLIMITED" ||
+          (userTask as any)?.end_date == null ||
+          String((userTask as any)?.task?.schedule_mode || "") === "DAILY_UNLIMITED";
 
         // Only send during the configured prayer_time window (cron runs every minute).
         if (!isDueNow(prayerTime, tz, now, windowMinutes)) {
@@ -237,20 +253,25 @@ Deno.serve(async (req: Request) => {
         const MS_DAY = 24 * 60 * 60 * 1000;
         const currentDay = Math.floor((ymdToUtcMs(todayYmd) - ymdToUtcMs(startYmd)) / MS_DAY) + 1;
 
-        const duration = (userTask as any).task?.duration_days || (userTask as any).task?.number_of_days || 1;
-        if (currentDay < 1 || currentDay > duration) {
+        const duration: number | null = isUnlimited
+          ? null
+          : ((userTask as any).task?.duration_days || (userTask as any).task?.number_of_days || 1);
+
+        if (currentDay < 1 || (duration !== null && currentDay > duration)) {
           results.push({ user_task_id: (userTask as any).id, sent: false, reason: "Prayer not active today" });
           continue;
         }
 
         // Skip if already completed today
-        const { data: completion } = await supabase
+        const { count: completionCount, error: completionErr } = await supabase
           .from("prayer_daily_completions")
-          .select("id")
+          .select("id", { count: "exact", head: true })
           .eq("user_task_id", (userTask as any).id)
-          .eq("day_number", currentDay)
-          .maybeSingle();
-        if (completion?.id) {
+          .eq("day_number", currentDay);
+        if (completionErr) {
+          console.warn("[send-daily-prayer-reminder] completion lookup failed:", completionErr.message);
+        }
+        if ((completionCount || 0) > 0) {
           results.push({ user_task_id: (userTask as any).id, sent: false, reason: "Day already completed" });
           continue;
         }
@@ -288,6 +309,8 @@ Deno.serve(async (req: Request) => {
           shouldAppendDayParam && absoluteLink !== "#"
             ? `${absoluteLink}${absoluteLink.includes("?") ? "&" : "?"}day=${currentDay}`
             : absoluteLink;
+
+        const progressLabel = isUnlimited ? `Day ${currentDay}` : `Day ${currentDay} of ${duration}`;
 
         // Email content (KEEP AS-IS)
         const emailHtml = `
@@ -338,7 +361,7 @@ Deno.serve(async (req: Request) => {
  
 <div style="font-size:24px;line-height:22px;color: #373737;font-weight: 700;padding-bottom:30px; text-align:left;">Daily Prayer Reminder</div>
 
-<div style="font-size:18px;line-height:22px;color: #373737;font-weight: 700;padding-bottom:10px; text-align:left;">Day ${currentDay} of ${duration}</div>
+<div style="font-size:18px;line-height:22px;color: #373737;font-weight: 700;padding-bottom:10px; text-align:left;">${progressLabel}</div>
 
 
                       <div style="text-align:left;"> 
@@ -388,7 +411,7 @@ Deno.serve(async (req: Request) => {
         await resend.emails.send({
           from: "Peaceful Investment <support@peacefulinvestment.com>",
           to: (userTask as any).email,
-          subject: `Daily Prayer Reminder - Day ${currentDay} of ${duration} - ${taskName}`,
+          subject: `Daily Prayer Reminder - ${progressLabel} - ${taskName}`,
           html: emailHtml,
         });
 
@@ -397,7 +420,7 @@ Deno.serve(async (req: Request) => {
         let smsError: string | null = null;
         let smsSid: string | null = null;
         if ((userTask as any).phone_number) {
-          const smsMessage = `Daily Prayer Reminder - Day ${currentDay} of ${duration}\n\n${taskName}${personName}\n\nView: ${prayerLink !== "#" ? prayerLink : baseUrl + "/prayer-tasks"}`;
+          const smsMessage = `Daily Prayer Reminder - ${progressLabel}\n\n${taskName}${personName}\n\nView: ${prayerLink !== "#" ? prayerLink : baseUrl + "/prayer-tasks"}`;
           const smsRes = await sendSMS((userTask as any).phone_number, smsMessage);
           smsSent = smsRes.ok;
           smsSid = smsRes.ok && smsRes.sid ? smsRes.sid : null;

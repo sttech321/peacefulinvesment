@@ -51,6 +51,7 @@ interface PrayerTask {
   person_needs_help: string | null;
   number_of_days: number;
   duration_days: number;
+  schedule_mode?: 'FIXED' | 'DAILY_UNLIMITED';
   current_day: number;
   start_date: string;
   end_date: string | null;
@@ -77,13 +78,15 @@ interface PrayerUserTask {
   prayer_time: string;
   timezone: string;
   start_date: string;
-  end_date: string;
+  end_date: string | null;
   current_day: number;
   is_active: boolean;
+  schedule_mode?: 'FIXED' | 'DAILY_UNLIMITED';
   created_at: string;
   updated_at: string;
   task?: PrayerTask;
   completed_days?: number[];
+  completion_counts?: Record<number, number>;
 }
 
 export default function PrayerTasks() {
@@ -232,10 +235,22 @@ export default function PrayerTasks() {
             .from('prayer_daily_completions')
             .select('day_number')
             .eq('user_task_id', ut.id);
-          
+
+          const counts: Record<number, number> = {};
+          for (const c of (completions || []) as any[]) {
+            const dn = Number((c as any)?.day_number);
+            if (!Number.isFinite(dn)) continue;
+            counts[dn] = (counts[dn] || 0) + 1;
+          }
+          const completedDays = Object.keys(counts)
+            .map((k) => Number(k))
+            .filter((n) => Number.isFinite(n))
+            .sort((a, b) => a - b);
+
           return {
             ...ut,
-            completed_days: completions?.map(c => c.day_number) || [],
+            completed_days: completedDays,
+            completion_counts: counts,
           };
         })
       );
@@ -280,12 +295,15 @@ export default function PrayerTasks() {
 
       setStarting(true);
 
+      const scheduleMode: "FIXED" | "DAILY_UNLIMITED" =
+        (selectedTask as any)?.schedule_mode === "DAILY_UNLIMITED" ? "DAILY_UNLIMITED" : "FIXED";
       const duration = selectedTask.duration_days || selectedTask.number_of_days;
 
       // Use selected start date from the form (cron-safe and user-controlled)
       const startDateYmd = String((instanceFormData as any).start_date || selectedTask.start_date || "").trim();
       const fixedEnd = String((instanceFormData as any).end_date || (selectedTask as any).end_date || "").trim();
-      const endDateYmd = fixedEnd || addDaysToYmd(startDateYmd, Math.max(1, duration) - 1);
+      const endDateYmd =
+        scheduleMode === "DAILY_UNLIMITED" ? null : (fixedEnd || addDaysToYmd(startDateYmd, Math.max(1, duration) - 1));
 
       // Create user prayer instance
       const normalizeCountryCode = (val: string) => {
@@ -320,6 +338,7 @@ export default function PrayerTasks() {
         end_date: endDateYmd,
         current_day: 1,
         is_active: true,
+        schedule_mode: scheduleMode,
       };
 
       if (user) {
@@ -338,7 +357,10 @@ export default function PrayerTasks() {
 
       toast({
         title: "Prayer Started",
-        description: `You've started the ${selectedTask.name} prayer. You'll receive daily reminders.`,
+        description:
+          scheduleMode === "DAILY_UNLIMITED"
+            ? `You've started the ${selectedTask.name} daily prayer (unlimited). You'll receive daily reminders.`
+            : `You've started the ${selectedTask.name} prayer. You'll receive daily reminders.`,
       });
 
       // Server-side notifications (email + SMS + call) on start/join. Best-effort.
@@ -505,13 +527,11 @@ export default function PrayerTasks() {
       if (!canComplete) {
         const ut = userTasks.find((t) => t.id === userTaskId);
         const todayDay = ut ? getCurrentDay(ut) : 0;
-        const alreadyCompleted = Boolean((ut?.completed_days || []).includes(dayNumber));
         const tz = ut?.timezone || "UTC";
         const now = new Date();
 
-        const description = alreadyCompleted
-          ? `You already completed Day ${dayNumber}.`
-          : todayDay < 1
+        const description =
+          todayDay < 1
             ? (() => {
                 const startMs = ut?.start_date ? midnightOfDateInTzMs(ut.start_date, tz, now) : null;
                 if (startMs) return `This prayer hasn’t started yet. Please wait ${formatDuration(startMs - now.getTime())}.`;
@@ -547,7 +567,7 @@ export default function PrayerTasks() {
       if (userTask) {
         const duration = getDurationForUserTask(userTask);
         const newCurrentDay = Math.max(userTask.current_day, dayNumber + 1);
-        const justCompleted = dayNumber >= duration;
+        const justCompleted = duration !== null && dayNumber >= duration;
 
         const updatePayload: any = { current_day: newCurrentDay };
         if (justCompleted) updatePayload.is_active = false;
@@ -600,7 +620,7 @@ export default function PrayerTasks() {
 
       toast({
         title: "Day Completed",
-        description: `Day ${dayNumber} has been marked as completed.`,
+        description: `Logged completion for Day ${dayNumber}.`,
       });
 
       fetchUserTasks();
@@ -686,12 +706,13 @@ export default function PrayerTasks() {
     try {
       setRestarting(ut.id);
 
+      const isUnlimited = isUnlimitedDaily(ut);
       const duration = getDurationForUserTask(ut);
       const tz = ut.timezone || userTimezone || "UTC";
       const startDate = getTodayYmdInTimezone(tz);
-      const endDate = addDaysToYmd(startDate, Math.max(1, duration) - 1);
+      const endDate = isUnlimited ? null : addDaysToYmd(startDate, Math.max(1, duration || 1) - 1);
 
-      // Preserve history without deleting: shift existing completion rows out of the 1..duration range.
+      // Preserve history without deleting: shift existing completion rows out of the current day-number range.
       const { data: completions, error: compErr } = await sb
         .from("prayer_daily_completions")
         .select("id, day_number")
@@ -713,7 +734,7 @@ export default function PrayerTasks() {
       // Reuse the SAME prayer_user_tasks record (no new row)
       const { error } = await sb
         .from("prayer_user_tasks")
-        .update({ is_active: true, current_day: 1, start_date: startDate, end_date: endDate })
+        .update({ is_active: true, current_day: 1, start_date: startDate, end_date: endDate, schedule_mode: isUnlimited ? "DAILY_UNLIMITED" : "FIXED" })
         .eq("id", ut.id);
       if (error) throw error;
 
@@ -721,7 +742,7 @@ export default function PrayerTasks() {
       setUserTasks((prev) =>
         prev.map((p) =>
           p.id === ut.id
-            ? { ...p, is_active: true, current_day: 1, start_date: startDate, end_date: endDate, completed_days: [] }
+            ? { ...p, is_active: true, current_day: 1, start_date: startDate, end_date: endDate, schedule_mode: isUnlimited ? "DAILY_UNLIMITED" : "FIXED", completed_days: [], completion_counts: {} }
             : p
         )
       );
@@ -836,7 +857,7 @@ export default function PrayerTasks() {
 
     const startMs = parseDateToUtcMs(userTask.start_date);
     const endMs = parseDateToUtcMs(userTask.end_date);
-    if (startMs === null || endMs === null) return 0;
+    if (startMs === null) return 0;
 
     const now = new Date();
     const tz = userTask.timezone || "UTC";
@@ -860,20 +881,30 @@ export default function PrayerTasks() {
 
     const todayTzMs = getTodayInTzUtcMs(tz);
 
-    const totalDays = Math.floor((endMs - startMs) / MS_DAY) + 1;
+    const totalDays = endMs === null ? Number.POSITIVE_INFINITY : (Math.floor((endMs - startMs) / MS_DAY) + 1);
     const day = Math.floor((todayTzMs - startMs) / MS_DAY) + 1;
 
     if (day < 1) return 0; // Not started yet
-    if (day > totalDays) return totalDays; // Completed
+    if (Number.isFinite(totalDays) && day > totalDays) return totalDays as number; // Completed (fixed prayers)
     return day;
   };
 
-  const getDurationForUserTask = (userTask: PrayerUserTask): number => {
+  const isUnlimitedDaily = (userTask: PrayerUserTask): boolean => {
+    return (
+      (userTask as any)?.schedule_mode === "DAILY_UNLIMITED" ||
+      (userTask as any)?.task?.schedule_mode === "DAILY_UNLIMITED" ||
+      userTask.end_date == null
+    );
+  };
+
+  const getDurationForUserTask = (userTask: PrayerUserTask): number | null => {
+    if (isUnlimitedDaily(userTask)) return null;
     return userTask.task?.duration_days || userTask.task?.number_of_days || 1;
   };
 
   const isPrayerCompleted = (userTask: PrayerUserTask): boolean => {
     const duration = getDurationForUserTask(userTask);
+    if (duration === null) return false; // unlimited daily prayers never "finish"
     const completedDays = userTask.completed_days || [];
     return completedDays.includes(duration) || completedDays.length >= duration || userTask.current_day > duration;
   };
@@ -882,10 +913,24 @@ export default function PrayerTasks() {
     if (!userTask.is_active) return false;
     if (isPrayerCompleted(userTask)) return false;
     const currentDay = getCurrentDay(userTask);
-    if (currentDay < 1 || currentDay > getDurationForUserTask(userTask)) {
-      return false;
-    }
-    return !(userTask.completed_days || []).includes(currentDay);
+    const duration = getDurationForUserTask(userTask);
+    if (currentDay < 1) return false;
+    if (duration !== null && currentDay > duration) return false;
+    // Multiple completions per day are allowed.
+    return true;
+  };
+
+  const getCompletionCountForDay = (userTask: PrayerUserTask, dayNumber: number): number => {
+    const counts = userTask.completion_counts || {};
+    const n = Number(dayNumber);
+    return Number.isFinite(n) ? Number(counts[n] || 0) : 0;
+  };
+
+  const isDayNotDone = (userTask: PrayerUserTask, dayNumber: number): boolean => {
+    const currentDay = getCurrentDay(userTask);
+    if (dayNumber < 1) return false;
+    if (dayNumber >= currentDay) return false; // today/future not decided yet
+    return getCompletionCountForDay(userTask, dayNumber) === 0;
   };
 
   const formatDateTime = (date: string, time: string) => {
@@ -991,7 +1036,9 @@ export default function PrayerTasks() {
                         const currentDay = getCurrentDay(ut);
                         const duration = getDurationForUserTask(ut);
                         const canComplete = canCompleteToday(ut);
-                        const isCompletedToday = (ut.completed_days || []).includes(currentDay);
+                        const todayCount = getCompletionCountForDay(ut, currentDay);
+                        const yesterday = Math.max(0, currentDay - 1);
+                        const showYesterdayNotDone = yesterday >= 1 && isDayNotDone(ut, yesterday);
 
                         return (
                           <Card key={ut.id} className="border border-muted/20 p-4">
@@ -1007,13 +1054,20 @@ export default function PrayerTasks() {
                                   <Badge className="bg-blue-600 text-white border-0 hover:bg-blue-700">In Progress</Badge>
                                 </div>
                                 <div className="text-sm text-white/70 space-y-1">
-                                  <div>Day {currentDay} of {duration}</div>
+                                  <div>
+                                    Day {Math.max(0, currentDay)}
+                                    {duration === null ? "" : ` of ${duration}`}
+                                    {duration === null ? <span className="ml-2 text-xs text-white/60">(Daily, unlimited)</span> : null}
+                                  </div>
                                   <div>Prayer Time: {ut.prayer_time} ({ut.timezone})</div>
                                   {currentDay < 1 && (
                                     <div className="text-xs text-white/60">
                                       Starts on: {ut.start_date} ({ut.timezone || "UTC"})
                                     </div>
                                   )}
+                                  {showYesterdayNotDone ? (
+                                    <div className="text-xs text-red-200">Day {yesterday} status: Not Done</div>
+                                  ) : null}
                                   {ut.task?.link_or_video && (
                                     <a
                                       href={ut.task.link_or_video}
@@ -1033,11 +1087,11 @@ export default function PrayerTasks() {
                               </div>
 
                               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
-                                {canComplete && !isCompletedToday ? (
+                                {canComplete ? (
                                   <Button
                                     onClick={() => handleOpenPrayer(ut)}
                                     disabled={completing === ut.id}
-                                    className="rounded-[8px] gap-1"
+                                    className="rounded-[8px] gap-1 h-[36px]"
                                   >
                                     {completing === ut.id ? (
                                       <>
@@ -1047,24 +1101,26 @@ export default function PrayerTasks() {
                                     ) : (
                                       <>
                                         <PlayCircle className="mr-1 h-4 w-4" />
-                                        Pray
+                                        Pray{todayCount > 0 ? " Again" : ""}
                                       </>
                                     )}
                                   </Button>
-                                ) : isCompletedToday ? (
-                                  <Badge variant="secondary" className="px-4 py-2">
-                                    <CheckCircle2 className="mr-2 h-4 w-4" />
-                                    Day {currentDay} Completed
-                                  </Badge>
                                 ) : (
                                   <Badge variant="outline" className="px-4 py-2">
                                     {currentDay < 1 ? "Starts Soon" : "Future Day"}
                                   </Badge>
                                 )}
 
+                                {todayCount > 0 ? (
+                                  <Badge variant="secondary" className="px-4 py-2 rounded-[8px] gap-1 h-[36px]">
+                                    <CheckCircle2 className="mr-1 h-4 w-4" />
+                                    Today: {todayCount}×
+                                  </Badge>
+                                ) : null}
+
                                 <Button
                                   variant="outline"
-                                  className="rounded-[8px] gap-1"
+                                  className="rounded-[8px] gap-1 h-[36px]"
                                   disabled={stopping === ut.id}
                                   onClick={() => handleStopPrayer(ut)}
                                 >
@@ -1092,7 +1148,7 @@ export default function PrayerTasks() {
                     <div className="space-y-3">
                       <div className="text-sm font-semibold text-white/90">Completed (Done)</div>
                       {completedPrayers.map((ut) => {
-                        const duration = getDurationForUserTask(ut);
+                        const duration = getDurationForUserTask(ut) || 0;
                         return (
                           <Card key={ut.id} className="border border-muted/20 p-4">
                             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -1123,7 +1179,7 @@ export default function PrayerTasks() {
                     <div className="space-y-3">
                       <div className="text-sm font-semibold text-white/90">Stopped</div>
                       {stoppedPrayers.map((ut) => {
-                        const duration = getDurationForUserTask(ut);
+                        const duration = getDurationForUserTask(ut) || 0;
                         return (
                           <Card key={ut.id} className="border border-muted/20 p-4">
                             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -1286,7 +1342,9 @@ export default function PrayerTasks() {
                             <div className="md:col-span-1">
                               <div className="text-sm text-white">Duration</div>
                               <div className="text-white/70 text-sm pt-2">
-                                {task.duration_days || task.number_of_days} days
+                                {(task as any)?.schedule_mode === "DAILY_UNLIMITED"
+                                  ? "Daily (Unlimited)"
+                                  : `${task.duration_days || task.number_of_days} days`}
                               </div>
                             </div>
                             <div className="md:col-span-1">
@@ -1399,8 +1457,8 @@ export default function PrayerTasks() {
               if (!activePrayerTask) return null;
               const currentDay = getCurrentDay(activePrayerTask);
               const dayLabel = Math.max(1, currentDay);
-              const isCompleted = (activePrayerTask.completed_days || []).includes(currentDay);
-              const canComplete = canCompleteToday(activePrayerTask) && !isCompleted;
+              const todayCount = getCompletionCountForDay(activePrayerTask, currentDay);
+              const canComplete = canCompleteToday(activePrayerTask);
 
               return (
                 <div className="flex justify-end gap-2 pt-2">
@@ -1428,7 +1486,7 @@ export default function PrayerTasks() {
                     ) : (
                       <>
                         <CheckCircle2 className="mr-0 h-4 w-4" />
-                        Day {dayLabel} Done
+                        Log Day {dayLabel} Completion{todayCount > 0 ? ` (Today: ${todayCount}×)` : ""}
                       </>
                     )}
                   </Button>
@@ -1452,7 +1510,10 @@ export default function PrayerTasks() {
         submitting={starting}
         submitLabel="Start Prayer"
         traditionalDates={
-          selectedTask && (selectedTask as any).start_date && (selectedTask as any).end_date
+          selectedTask &&
+          (selectedTask as any).schedule_mode !== "DAILY_UNLIMITED" &&
+          (selectedTask as any).start_date &&
+          (selectedTask as any).end_date
             ? {
                 start_date: String((selectedTask as any).start_date),
                 end_date: String((selectedTask as any).end_date),
