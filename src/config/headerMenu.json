@@ -1,0 +1,18 @@
+{
+  "auth": [
+    { "name": "Home", "href": "/" },
+    { "name": "Dashboard", "href": "/dashboard" },
+    { "name": "Accounts", "href": "/meta-trader-accounts" },
+    { "name": "Referrals", "href": "/referrals" },
+    { "name": "Catholic", "href": "/blog" },
+    { "name": "Contact", "href": "/contact" },
+    { "name": "Deposit & Withdrawal", "href": "/requests" }
+  ],
+  "guest": [
+    { "name": "Home", "href": "/" },
+    { "name": "Downloads", "href": "/downloads" },
+    { "name": "Contact", "href": "/contact" },
+    { "name": "About", "href": "/about" },
+    { "name": "Features", "href": "/#features" }
+  ]
+}

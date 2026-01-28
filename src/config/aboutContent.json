@@ -1,0 +1,45 @@
+{
+  "heroTitle": "Empowering Traders",
+  "heroBadge": "About Peaceful Investment",
+  "heroHighlight": "Worldwide",
+  "heroSubtitle": "We're on a mission to democratize access to investing and create opportunities for financial growth across the globe.",
+  "heroCtaPrimaryLabel": "View Our Platform",
+  "heroCtaPrimaryLink": "/downloads",
+  "missionVisionTitle": "Our Mission & Vision",
+  "missionTitle": "Mission",
+  "missionBody": "To provide accessible, secure, and innovative investing solutions that empower individuals to achieve their financial goals through transparent and ethical practices.",
+  "visionTitle": "Vision",
+  "visionBody": "To become the world's most trusted platform for individual traders, known for innovation, security, and unwavering commitment to client success.",
+  "whyChooseTitle": "Why Choose Peaceful Investment?",
+  "whyChooseFeatures": [
+    "Advanced investing technology with MetaTrader integration",
+    "The best trading environment",
+    "Educational resources and market analysis",
+    "Over 30 years of combined experience in investment management and technology",
+    "Mobile trading apps for iOS and Android"
+  ],
+  "valuesTitle": "Our Core",
+  "valuesHighlight": "Values",
+  "valuesSubtitle": "These principles guide everything we do and shape the way we serve our clients.",
+  "valuesItems": [
+    {
+      "title": "Trust & Security",
+      "description": "Your financial security is our top priority. We implement the highest standards of data protection."
+    },
+    {
+      "title": "Client-First Approach",
+      "description": "Every decision we make is centered around our clients' success and financial well-being."
+    },
+    {
+      "title": "Innovation",
+      "description": "We continuously evolve our platform with cutting-edge technology to provide the best investing experience."
+    },
+    {
+      "title": "Global Reach",
+      "description": "Serving clients worldwide with localized support."
+    }
+  ],
+  "achievementsTitle": "Our",
+  "achievementsHighlight": "Achievements",
+  "achievementsSubtitle": "Milestones that demonstrate our commitment to excellence and growth."
+}

@@ -1,7 +1,15 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
+import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from '@/hooks/useAuth';
+import { useEffect, useState } from "react";
+import type { CSSProperties } from "react";
+import defaultAboutContent from "@/config/aboutContent.json";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   Users, 
   Target, 
@@ -14,37 +22,100 @@ import {
   CheckCircle,
   Building2,
   Lightbulb,
-  ArrowRight
+  ArrowRight,
+  Edit,
+  X
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import Footer from "@/components/Footer";
+import Footer from "@/components/Footer"; 
+import { Close } from "@radix-ui/react-toast";
+import { Cancel } from "@radix-ui/react-alert-dialog";
 
 
 export default function About() {
   const { user } = useAuth();
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [aboutContent, setAboutContent] = useState(() => ({
+    ...defaultAboutContent
+  }));
 
-  const values = [
-    {
-      icon: Shield,
-      title: "Trust & Security",
-      description: "Your financial security is our top priority. We implement the highest standards of data protection."
-    },
-    {
-      icon: Heart,
-      title: "Client-First Approach",
-      description: "Every decision we make is centered around our clients' success and financial well-being."
-    },
-    {
-      icon: Zap,
-      title: "Innovation",
-      description: "We continuously evolve our platform with cutting-edge technology to provide the best investing experience."
-    },
-    {
-      icon: Globe,
-      title: "Global Reach",
-      description: "Serving clients worldwide with localized support."
+  const handleWhyChooseFeaturesChange = (value: string) => {
+    const normalized = value.split("\n");
+    setAboutContent((prev) => ({
+      ...prev,
+      whyChooseFeatures: normalized
+    }));
+  };
+
+  const updateValuesItem = (index: number, patch: { title?: string; description?: string }) => {
+    setAboutContent((prev) => {
+      const currentItems = prev.valuesItems ?? defaultAboutContent.valuesItems ?? [];
+      const nextItems = currentItems.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, ...patch } : item
+      );
+
+      return {
+        ...prev,
+        valuesItems: nextItems
+      };
+    });
+  };
+
+  useEffect(() => {
+    const loadContent = async () => {
+      const { data, error } = await supabase
+        .from("app_settings")
+        .select("value")
+        .eq("key", "about_content")
+        .maybeSingle();
+
+      if (error || !data?.value) {
+        return;
+      }
+
+      try {
+        const parsed = JSON.parse(data.value);
+        setAboutContent({ ...defaultAboutContent, ...parsed });
+      } catch {
+        // Keep defaults on parse error
+      }
+    };
+
+    void loadContent();
+  }, []);
+
+  const handleSave = async () => {
+    if (!user) {
+      return;
     }
-  ];
+    setIsSaving(true);
+    const payload = JSON.stringify(aboutContent);
+    const { error } = await supabase
+      .from("app_settings")
+      .upsert(
+        {
+          key: "about_content",
+          value: payload,
+          description: "About page content JSON"
+        },
+        { onConflict: "key" }
+      );
+
+    setIsSaving(false);
+    if (!error) {
+      setIsEditorOpen(false);
+    }
+  };
+
+  const valueIcons = [Shield, Heart, Zap, Globe];
+  const values = (aboutContent.valuesItems ?? defaultAboutContent.valuesItems ?? []).map(
+    (item, index) => ({
+      icon: valueIcons[index] ?? Shield,
+      title: item?.title ?? "",
+      description: item?.description ?? ""
+    })
+  );
 
   const achievements = [
     { number: "10K+", label: "Active Traders", icon: Users },
@@ -106,19 +177,29 @@ export default function About() {
     <div className="min-h-screen pink-yellow-shadow pt-16">
       {/* Hero Section */}
       <section className="relative px-6 py-10 md:py-12 lg:py-24 bg-black/20">
+        {user && (
+          <div className="fixed right-6 top-24 z-20">
+            <Button
+              size="sm"
+              className="bg-gradient-pink-to-yellow hover:bg-gradient-yellow-to-pink text-white rounded-[8px] border-0"
+              onClick={() => setIsEditorOpen(true)}
+            >
+              <Edit className='h-4 w-4' /> About Page
+            </Button>
+          </div>
+        )}
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-0">
             <Badge variant="secondary" className="mb-6">
               <Building2 className="w-4 h-4 mr-2" />
-              About Peaceful Investment
+              {aboutContent.heroBadge}
             </Badge>
             <h1 className="font-inter font-bold text-white text-3xl md:text-4xl lg:text-5xl xl:text-6xl mb-6">
-              Empowering Traders
-              <span className="text-[var(--yellowcolor)]"> Worldwide</span>
+              {aboutContent.heroTitle}
+              <span className="text-[var(--yellowcolor)]"> {aboutContent.heroHighlight}</span>
             </h1>
             <p className="max-w-3xl mx-auto font-inter text-lg md:text-[20px] font-normal text-white mb-8">
-              We're on a mission to democratize access to investing and create 
-              opportunities for financial growth across the globe.
+              {aboutContent.heroSubtitle}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               {!user && (
@@ -130,9 +211,9 @@ export default function About() {
               </Link>
               )}
 
-              <Link to="/downloads" className="bg-gradient-pink-to-yellow rounded-[12px] p-[2px]">
+              <Link to={aboutContent.heroCtaPrimaryLink} className="bg-gradient-pink-to-yellow rounded-[12px] p-[2px]">
                 <Button variant="outline" className="bg-gradient-yellow-to-pink hover:bg-gradient-pink-to-yellow block rounded-[10px] border-0 p-0 px-5 font-inter text-xs font-semibold uppercase text-white w-full">
-                  View Our Platform
+                  {aboutContent.heroCtaPrimaryLabel}
                 </Button>
               </Link>
             </div>
@@ -146,7 +227,7 @@ export default function About() {
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
               <h2 className="mb-4 md:mb-6 font-inter text-2xl font-bold text-white md:text-3xl">
-                Our Mission & Vision
+                {aboutContent.missionVisionTitle}
               </h2>
               <div className="space-y-6">
                 <div className="flex items-start space-x-4">
@@ -157,11 +238,10 @@ export default function About() {
                   </div>
                   <div>
                     <h3 className="text-xl font-semibold text-white mb-2">
-                      Mission
+                      {aboutContent.missionTitle}
                     </h3>
                     <p className="font-open-sans text-lg text-muted-foreground">
-                      To provide accessible, secure, and innovative investing solutions that empower 
-                      individuals to achieve their financial goals through transparent and ethical practices.
+                      {aboutContent.missionBody}
                     </p>
                   </div>
                 </div>
@@ -173,11 +253,10 @@ export default function About() {
                   </div>
                   <div>
                     <h3 className="text-xl font-semibold text-white mb-2">
-                      Vision
+                      {aboutContent.visionTitle}
                     </h3>
                     <p className="font-open-sans text-lg text-muted-foreground">
-                      To become the world's most trusted platform for individual traders, 
-                      known for innovation, security, and unwavering commitment to client success.
+                      {aboutContent.visionBody}
                     </p>
                   </div>
                 </div>
@@ -188,17 +267,12 @@ export default function About() {
               <Card className="relative bg-white/50 border-0 shadow-xl">
                 <CardContent className="p-8">
                   <h3 className="text-2xl font-bold text-foreground mb-4">
-                    Why Choose Peaceful Investment?
+                    {aboutContent.whyChooseTitle}
                   </h3>
                   <div className="space-y-4">
-                    {[
-                      "Advanced investing technology with MetaTrader integration",
-                      //"24/7 customer support in multiple languages",
-                      "The best trading environment",
-                      "Educational resources and market analysis",
-                      "Over 30 years of combined experience in investment management and technology",
-                      "Mobile trading apps for iOS and Android"
-                    ].map((feature, index) => (
+                    {(aboutContent.whyChooseFeatures ?? [])
+                      .filter((feature) => feature.trim().length > 0)
+                      .map((feature, index) => (
                       <div key={index} className="flex items-center space-x-3">
                         <CheckCircle className="w-5 h-5 text-black flex-shrink-0" />
                         <span className="text-black">{feature}</span>
@@ -217,10 +291,11 @@ export default function About() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="mb-4 md:mb-6 font-inter text-2xl font-bold uppercase text-white md:text-3xl">
-              Our Core <span className="text-[var(--yellowcolor)]">Values</span>
+              {aboutContent.valuesTitle}{" "}
+              <span className="text-[var(--yellowcolor)]">{aboutContent.valuesHighlight}</span>
             </h2>
             <p className="mx-auto max-w-3xl font-open-sans text-lg text-white lg:text-xl">
-              These principles guide everything we do and shape the way we serve our clients.
+              {aboutContent.valuesSubtitle}
             </p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -258,10 +333,11 @@ export default function About() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-10 md:mb-14">
             <h2 className="mb-4 md:mb-5 font-inter text-2xl font-bold uppercase text-white md:text-3xl">
-              Our <span className="text-[var(--yellowcolor)]">Achievements</span>
+              {aboutContent.achievementsTitle}{" "}
+              <span className="text-[var(--yellowcolor)]">{aboutContent.achievementsHighlight}</span>
             </h2>
             <p className="mx-auto max-w-3xl font-open-sans text-lg text-white lg:text-xl">
-              Milestones that demonstrate our commitment to excellence and growth.
+              {aboutContent.achievementsSubtitle}
             </p>
           </div>
  
@@ -416,6 +492,358 @@ export default function About() {
       </section>
 
       <Footer />
+
+      {user && (
+        <>
+          <div
+            className={`fixed inset-0 z-40 bg-black/70 transition-opacity ${
+              isEditorOpen ? "opacity-100" : "pointer-events-none opacity-0"
+            }`}
+            onClick={() => setIsEditorOpen(false)}
+            aria-hidden="true"
+          />
+          <aside
+            className={`fixed right-0 top-0 z-50 h-full w-full max-w-md transform bg-[#2e2e2e] text-black shadow-2xl transition-transform duration-300 ${
+              isEditorOpen ? "translate-x-0" : "translate-x-full"
+            }`}
+            aria-label="Edit About Page"
+          >
+            <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
+              <h2 className="text-lg font-semibold text-white">Edit About Page</h2>
+              <Button size="sm" variant="outline" className="text-black border-0 rounded-[8px] bg-white/10 hover:bg-white/20" onClick={() => setIsEditorOpen(false)}>
+                 
+                <X className="h-4 w-4 text-white" />
+
+              </Button>
+            </div>
+            <div
+              className="space-y-4 px-6 pt-6 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent"
+              style={{ height: "calc(100vh - 157px)" }}
+            >
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Hero Badge</Label>
+                <Input
+                  value={aboutContent.heroBadge}
+                  onChange={(event) =>
+                    setAboutContent((prev) => ({
+                      ...prev,
+                      heroBadge: event.target.value
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-0 border-0 box-shadow-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Hero Title</Label>
+                <Input
+                  value={aboutContent.heroTitle}
+                  onChange={(event) =>
+                    setAboutContent((prev) => ({
+                      ...prev,
+                      heroTitle: event.target.value
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Hero Highlight</Label>
+                <Input
+                  value={aboutContent.heroHighlight}
+                  onChange={(event) =>
+                    setAboutContent((prev) => ({
+                      ...prev,
+                      heroHighlight: event.target.value
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Hero Subtitle</Label>
+                <Textarea
+                  value={aboutContent.heroSubtitle}
+                  onChange={(event) =>
+                    setAboutContent((prev) => ({
+                      ...prev,
+                      heroSubtitle: event.target.value
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none resize-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                  rows={4}
+                />
+              </div> 
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Hero Primary Button Label</Label>
+                <Input
+                  value={aboutContent.heroCtaPrimaryLabel}
+                  onChange={(event) =>
+                    setAboutContent((prev) => ({
+                      ...prev,
+                      heroCtaPrimaryLabel: event.target.value
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Hero Primary Button Link</Label>
+                <Input
+                  value={aboutContent.heroCtaPrimaryLink}
+                  onChange={(event) =>
+                    setAboutContent((prev) => ({
+                      ...prev,
+                      heroCtaPrimaryLink: event.target.value
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Mission & Vision Title</Label>
+                <Input
+                  value={aboutContent.missionVisionTitle}
+                  onChange={(event) =>
+                    setAboutContent((prev) => ({
+                      ...prev,
+                      missionVisionTitle: event.target.value
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Mission Title</Label>
+                <Input
+                  value={aboutContent.missionTitle}
+                  onChange={(event) =>
+                    setAboutContent((prev) => ({
+                      ...prev,
+                      missionTitle: event.target.value
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Mission Text</Label>
+                <Textarea
+                  value={aboutContent.missionBody}
+                  onChange={(event) =>
+                    setAboutContent((prev) => ({
+                      ...prev,
+                      missionBody: event.target.value
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none resize-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                  rows={4}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Vision Title</Label>
+                <Input
+                  value={aboutContent.visionTitle}
+                  onChange={(event) =>
+                    setAboutContent((prev) => ({
+                      ...prev,
+                      visionTitle: event.target.value
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Vision Text</Label>
+                <Textarea
+                  value={aboutContent.visionBody}
+                  onChange={(event) =>
+                    setAboutContent((prev) => ({
+                      ...prev,
+                      visionBody: event.target.value
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none resize-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                  rows={4}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Why Choose Title</Label>
+                <Input
+                  value={aboutContent.whyChooseTitle}
+                  onChange={(event) =>
+                    setAboutContent((prev) => ({
+                      ...prev,
+                      whyChooseTitle: event.target.value
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Why Choose Features (one per line)</Label>
+                <Textarea
+                  value={(aboutContent.whyChooseFeatures ?? []).join("\n")}
+                  onChange={(event) => handleWhyChooseFeaturesChange(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key !== "Tab") {
+                      return;
+                    }
+                    event.preventDefault();
+                    const target = event.currentTarget;
+                    const { selectionStart, selectionEnd, value } = target;
+                    const nextValue = `${value.slice(0, selectionStart)}\t${value.slice(selectionEnd)}`;
+                    handleWhyChooseFeaturesChange(nextValue);
+                    requestAnimationFrame(() => {
+                      target.selectionStart = selectionStart + 1;
+                      target.selectionEnd = selectionStart + 1;
+                    });
+                  }}
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none resize-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                  rows={6}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Values Title</Label>
+                <Input
+                  value={aboutContent.valuesTitle}
+                  onChange={(event) =>
+                    setAboutContent((prev) => ({
+                      ...prev,
+                      valuesTitle: event.target.value
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Values Highlight</Label>
+                <Input
+                  value={aboutContent.valuesHighlight}
+                  onChange={(event) =>
+                    setAboutContent((prev) => ({
+                      ...prev,
+                      valuesHighlight: event.target.value
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Values Subtitle</Label>
+                <Textarea
+                  value={aboutContent.valuesSubtitle}
+                  onChange={(event) =>
+                    setAboutContent((prev) => ({
+                      ...prev,
+                      valuesSubtitle: event.target.value
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none resize-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                  rows={3}
+                />
+              </div>
+              <div>
+                <Label className="text-sm text-white font-normal">Values Items</Label>
+                {(aboutContent.valuesItems ?? defaultAboutContent.valuesItems ?? []).map((item, index) => (
+                  <div key={`values-item-${index}`} className="rounded-lg border border-white/10 p-4 space-y-3 bg-black/20 my-2 inline-block w-full">
+                    <div className="space-y-1">
+                      <Label className="text-sm text-white font-normal">Title</Label>
+                      <Input
+                        value={item?.title ?? ""}
+                        onChange={(event) =>
+                          updateValuesItem(index, { title: event.target.value })
+                        }
+                        className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                        style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-sm text-white font-normal">Description</Label>
+                      <Textarea
+                        value={item?.description ?? ""}
+                        onChange={(event) =>
+                          updateValuesItem(index, { description: event.target.value })
+                        }
+                        className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none resize-none"
+                        style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                        rows={3}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Achievements Title</Label>
+                <Input
+                  value={aboutContent.achievementsTitle}
+                  onChange={(event) =>
+                    setAboutContent((prev) => ({
+                      ...prev,
+                      achievementsTitle: event.target.value
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Achievements Highlight</Label>
+                <Input
+                  value={aboutContent.achievementsHighlight}
+                  onChange={(event) =>
+                    setAboutContent((prev) => ({
+                      ...prev,
+                      achievementsHighlight: event.target.value
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Achievements Subtitle</Label>
+                <Textarea
+                  value={aboutContent.achievementsSubtitle}
+                  onChange={(event) =>
+                    setAboutContent((prev) => ({
+                      ...prev,
+                      achievementsSubtitle: event.target.value
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none resize-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                  rows={3}
+                />
+              </div>
+            </div>
+            <div className="p-6">
+              <Button
+                className="w-full bg-gradient-pink-to-yellow text-white rounded-[8px] border-0"
+                onClick={handleSave}
+                disabled={isSaving}
+              >
+                {isSaving ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
+          </aside>
+        </>
+      )}
     </div>
   );
 }
