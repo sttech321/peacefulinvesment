@@ -1,6 +1,7 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, type CSSProperties } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,8 +27,10 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { useProfile } from '@/hooks/useProfile';
 import { supabase } from '@/integrations/supabase/client';
 import logoAnimation from '@/assets/new-logo.gif';
+import defaultHeaderMenu from '@/config/headerMenu.json';
 
 interface LinkItem {
+  id?: string;
   label: string;
   to: string;
   order?: number;
@@ -38,24 +41,24 @@ type NavLink = {
   href: string;
 };
 
-const DEFAULT_NAV_LINKS_AUTH: NavLink[] = [
-  { name: 'Home', href: '/' },
-  { name: 'Dashboard', href: '/dashboard' },
-  { name: 'Accounts', href: '/meta-trader-accounts' },
-  { name: 'Referrals', href: '/referrals' },
-  { name: 'Catholic', href: '/blog' },
-  { name: 'Contact', href: '/contact' },
-  { name: 'Deposit & Withdrawal', href: '/requests' },
-];
+type ProfileMenuLabels = {
+  profileSettings: string;
+  verificationCenter: string;
+  prayerTasks: string;
+  adminDashboard: string;
+  signOut: string;
+};
 
-const DEFAULT_NAV_LINKS_GUEST: NavLink[] = [
-  { name: 'Home', href: '/' },
-  { name: 'Downloads', href: '/downloads' },
-  // Catholic section is restricted to logged-in users only (do not show to guests)
-  { name: 'Contact', href: '/contact' },
-  { name: 'About', href: '/about' },
-  { name: 'Features', href: '/#features' },
-];
+const DEFAULT_NAV_LINKS_AUTH: NavLink[] = defaultHeaderMenu.auth;
+const DEFAULT_NAV_LINKS_GUEST: NavLink[] = defaultHeaderMenu.guest;
+
+const DEFAULT_PROFILE_MENU_LABELS: ProfileMenuLabels = {
+  profileSettings: 'Profile Settings',
+  verificationCenter: 'Verification Center',
+  prayerTasks: 'Prayer Tasks',
+  adminDashboard: 'Admin Dashboard',
+  signOut: 'Sign Out',
+};
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -64,9 +67,18 @@ const Navbar = () => {
   const { profile } = useProfile();
   const navigate = useNavigate();
   const [headerLinks, setHeaderLinks] = useState<LinkItem[]>([]);
+  const [isHeaderEditorOpen, setIsHeaderEditorOpen] = useState(false);
+  const [isHeaderSaving, setIsHeaderSaving] = useState(false);
+  const [headerLinksDraft, setHeaderLinksDraft] = useState<LinkItem[]>([]);
+  const [profileMenuLabels, setProfileMenuLabels] = useState<ProfileMenuLabels>(
+    DEFAULT_PROFILE_MENU_LABELS
+  );
+  const [profileMenuLabelsDraft, setProfileMenuLabelsDraft] =
+    useState<ProfileMenuLabels>(DEFAULT_PROFILE_MENU_LABELS);
 
   useEffect(() => {
     fetchHeaderLinks();
+    fetchProfileMenuLabels();
   }, []);
 
   const fetchHeaderLinks = async () => {
@@ -96,26 +108,163 @@ const Navbar = () => {
     }
   };
 
+  const fetchProfileMenuLabels = async () => {
+    try {
+      const { data } = await supabase
+        .from('app_settings' as any)
+        .select('value')
+        .eq('key', 'profile_menu_labels')
+        .maybeSingle();
+
+      if ((data as any)?.value) {
+        try {
+          const parsed = JSON.parse((data as any).value);
+          setProfileMenuLabels({
+            ...DEFAULT_PROFILE_MENU_LABELS,
+            ...parsed,
+          });
+        } catch (e) {
+          console.warn('Failed to parse profile menu labels, using defaults:', e);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching profile menu labels:', error);
+    }
+  };
+
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
   };
 
+  const openHeaderEditor = () => {
+    const defaultAuthLinks = DEFAULT_NAV_LINKS_AUTH.map((link, index) => ({
+      id: `${Date.now()}-${index}-${Math.random().toString(36).slice(2)}`,
+      label: link.name,
+      to: link.href,
+      order: index + 1,
+    }));
+
+    const baseLinks = headerLinks.length > 0 ? headerLinks : defaultAuthLinks;
+    const sortedLinks = [...baseLinks]
+      .map((link, index) => ({
+        ...link,
+        id: link.id ?? `${Date.now()}-${index}-${Math.random().toString(36).slice(2)}`,
+      }))
+      .sort((a, b) => {
+      const orderA = a.order !== undefined ? a.order : 999;
+      const orderB = b.order !== undefined ? b.order : 999;
+      return orderA - orderB;
+    });
+
+    setHeaderLinksDraft(sortedLinks);
+    setProfileMenuLabelsDraft(profileMenuLabels);
+    setIsHeaderEditorOpen(true);
+  };
+
+  const updateHeaderDraft = (index: number, patch: Partial<LinkItem>) => {
+    setHeaderLinksDraft((prev) =>
+      prev.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, ...patch } : item
+      )
+    );
+  };
+
+  const addHeaderLink = () => {
+    setHeaderLinksDraft((prev) => [
+      ...prev,
+      {
+        id: `${Date.now()}-${prev.length}-${Math.random().toString(36).slice(2)}`,
+        label: '',
+        to: '',
+        order: prev.length + 1,
+      },
+    ]);
+  };
+
+  const removeHeaderLink = (index: number) => {
+    setHeaderLinksDraft((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSaveHeaderLinks = async () => {
+    if (!user) {
+      return;
+    }
+
+    setIsHeaderSaving(true);
+    const sanitized = headerLinksDraft
+      .map((link, index) => ({
+        label: (link.label ?? '').trim(),
+        to: (link.to ?? '').trim(),
+        order: Number.isFinite(Number(link.order))
+          ? Number(link.order)
+          : index + 1,
+      }))
+      .filter((link) => link.label.length > 0 && link.to.length > 0);
+
+    const { error } = await supabase
+      .from('app_settings')
+      .upsert(
+        {
+          key: 'header_links',
+          value: JSON.stringify(sanitized),
+          description: 'Navigation links for the header/navbar',
+        },
+        { onConflict: 'key' }
+      );
+
+    const { error: labelsError } = await supabase
+      .from('app_settings')
+      .upsert(
+        {
+          key: 'profile_menu_labels',
+          value: JSON.stringify(profileMenuLabelsDraft),
+          description: 'Labels for the profile dropdown menu',
+        },
+        { onConflict: 'key' }
+      );
+
+    setIsHeaderSaving(false);
+    if (!error && !labelsError) {
+      const sortedLinks = [...sanitized].sort((a, b) => {
+        const orderA = a.order !== undefined ? a.order : 999;
+        const orderB = b.order !== undefined ? b.order : 999;
+        return orderA - orderB;
+      });
+      setHeaderLinks(sortedLinks);
+      setProfileMenuLabels(profileMenuLabelsDraft);
+      setIsHeaderEditorOpen(false);
+    }
+  };
+
   const isAuthenticated = Boolean(user);
+
+  const activeProfileMenuLabels = isHeaderEditorOpen
+    ? profileMenuLabelsDraft
+    : profileMenuLabels;
 
   // Prefer configured header links for authenticated users; otherwise use defaults.
   const mainNavLinks: NavLink[] = useMemo(() => {
-    if (isAuthenticated && headerLinks.length > 0) {
-      return headerLinks
+    const sourceLinks = isHeaderEditorOpen ? headerLinksDraft : headerLinks;
+
+    if (isAuthenticated && sourceLinks.length > 0) {
+      return sourceLinks
         .map((link) => ({
           name: link.label.trim(),
           href: link.to.trim(),
+          order: link.order,
         }))
-        .filter((l) => l.name.length > 0 && l.href.length > 0);
+        .filter((l) => l.name.length > 0 && l.href.length > 0)
+        .sort((a, b) => {
+          const orderA = a.order !== undefined ? a.order : 999;
+          const orderB = b.order !== undefined ? b.order : 999;
+          return orderA - orderB;
+        })
+        .map(({ name, href }) => ({ name, href }));
     }
 
     return isAuthenticated ? DEFAULT_NAV_LINKS_AUTH : DEFAULT_NAV_LINKS_GUEST;
-  }, [headerLinks, isAuthenticated]);
+  }, [headerLinks, headerLinksDraft, isAuthenticated, isHeaderEditorOpen]);
 
   // Services dropdown for logged-in users
   // Show "Overseas Company" only for USA users who have completed their profile
@@ -153,12 +302,13 @@ const Navbar = () => {
   ];
 
   return (
-    <nav
-      className='fixed left-0 right-0 top-0 z-50 border-b bg-[#000] backdrop-blur-xl px-6'
-      style={{ borderColor: 'var(--pinkcolor)' }}
-    >
-      <div className='mx-auto max-w-7xl'>
-        <div className='flex h-[80px] min-w-0 items-center justify-between'>
+    <>
+      <nav
+        className='fixed left-0 right-0 top-0 z-50 border-b bg-[#000] backdrop-blur-xl px-6'
+        style={{ borderColor: 'var(--pinkcolor)' }}
+      >
+        <div className='mx-auto max-w-7xl'>
+          <div className='flex h-[80px] min-w-0 items-center justify-between'>
           {/* Logo */} 
           <Link
             to='/'
@@ -214,12 +364,23 @@ const Navbar = () => {
                 {/* Theme Toggle */}
                 {/* <ThemeToggle /> */}
 
+                {isAdmin() && (
+                  <Button
+                    size='sm'
+                    className='bg-gradient-pink-to-yellow hover:bg-gradient-yellow-to-pink text-white border-0 px-4 py-2 font-inter text-xs font-semibold uppercase absolute right-6 top-5 rounded-[8px] h-10'
+                    onClick={openHeaderEditor}
+                  ><Edit className='h-4 w-4' />
+                     Menu
+                  </Button>
+                )}
+
                 {/* Profile Dropdown */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant='ghost'
-                      className='flex items-center gap-2 px-3 py-2 border-0 bg-gradient-pink-to-yellow rounded-[10px] text-white hover:text-white ' style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
+                      className='flex items-center gap-2 px-3 py-2 border-0 bg-gradient-pink-to-yellow rounded-[10px] text-white hover:text-white '
+                      style={{ "--tw-ring-offset-width": "0" } as CSSProperties}
                     >
                       <User className='h-4 w-4' />
                       <span className='text-sm'>
@@ -238,7 +399,7 @@ const Navbar = () => {
                         className='flex w-full cursor-pointer items-center gap-2'
                       >
                         <User className='h-4 w-4' />
-                        Profile Settings
+                        {activeProfileMenuLabels.profileSettings}
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
@@ -247,7 +408,7 @@ const Navbar = () => {
                         className='flex w-full cursor-pointer items-center gap-2'
                       >
                         <VerificationIcon className='h-4 w-4' />
-                        Verification Center
+                        {activeProfileMenuLabels.verificationCenter}
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
@@ -256,7 +417,7 @@ const Navbar = () => {
                         className='flex w-full cursor-pointer items-center gap-2'
                       >
                         <Heart className='h-4 w-4' />
-                        Prayer Tasks
+                        {activeProfileMenuLabels.prayerTasks}
                       </Link>
                     </DropdownMenuItem>
                     {isAdmin() && (
@@ -266,17 +427,18 @@ const Navbar = () => {
                           className='flex w-full cursor-pointer items-center gap-2'
                         >
                           <Edit className='h-4 w-4' />
-                          Admin Dashboard
+                          {activeProfileMenuLabels.adminDashboard}
                         </Link>
                       </DropdownMenuItem>
                     )}
+                    
                     <DropdownMenuSeparator className='bg-black/10' />
                     <DropdownMenuItem
                       onClick={handleSignOut}
                       className='flex w-full cursor-pointer items-center gap-2 text-destructive focus:text-white hover:bg-black hover:text-white'
                     >
                       <LogOut className='h-4 w-4' />
-                      Sign Out
+                      {activeProfileMenuLabels.signOut}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -309,6 +471,17 @@ const Navbar = () => {
 
           {/* Mobile menu button */}
           <div className='ml-2 flex-shrink-0 lg:hidden'>
+
+             {isAdmin() && (
+                  <Button
+                    size='sm'
+                    className='bg-gradient-pink-to-yellow hover:bg-gradient-yellow-to-pink text-white border-0 px-4 py-1 font-inter text-xs font-semibold uppercase absolute right-20 top-5 rounded-[8px] h-[36px]'
+                    onClick={openHeaderEditor}
+                  ><Edit className='h-4 w-4' />
+                    Menu
+                  </Button>
+                )}
+
             <button
               onClick={() => setIsOpen(!isOpen)}
               className='p-1 text-muted-foreground hover:text-foreground'
@@ -364,21 +537,21 @@ const Navbar = () => {
                       className='block truncate px-6 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground'
                       onClick={() => setIsOpen(false)}
                     >
-                      Profile Settings
+                      {activeProfileMenuLabels.profileSettings}
                     </Link>
                     <Link
                       to='/verification'
                       className='block truncate px-6 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground'
                       onClick={() => setIsOpen(false)}
                     >
-                      Verification Center
+                      {activeProfileMenuLabels.verificationCenter}
                     </Link>
                     <Link
                       to='/prayer-tasks'
                       className='block truncate px-6 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground'
                       onClick={() => setIsOpen(false)}
                     >
-                      Prayer Tasks
+                      {activeProfileMenuLabels.prayerTasks}
                     </Link>
                     {isAdmin() && (
                       <Link
@@ -386,7 +559,7 @@ const Navbar = () => {
                         className='block truncate px-6 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground'
                         onClick={() => setIsOpen(false)}
                       >
-                        Admin Dashboard
+                        {activeProfileMenuLabels.adminDashboard}
                       </Link>
                     )}
                   </>
@@ -449,6 +622,188 @@ const Navbar = () => {
         )}
       </div>
     </nav>
+
+    {user && isAdmin() && (
+      <>
+        <div
+          className={`fixed inset-0 z-40 bg-black/60 transition-opacity ${
+            isHeaderEditorOpen ? 'opacity-100' : 'pointer-events-none opacity-0'
+          }`}
+          onClick={() => setIsHeaderEditorOpen(false)}
+          aria-hidden='true'
+        />
+        <aside
+          className={`fixed right-0 top-0 z-50 h-full w-full max-w-md transform bg-[#2e2e2e] text-white shadow-2xl transition-transform duration-300 ${
+            isHeaderEditorOpen ? 'translate-x-0' : 'translate-x-full'
+          }`}
+          aria-label='Edit Header Menu'
+        >
+          <div className='flex items-center justify-between border-b border-white/10 px-6 py-4'>
+            <h2 className='text-lg font-semibold'>Edit Header Menu</h2>
+            <Button
+              size='sm'
+              variant='outline'
+              className='text-black border-0 rounded-[8px] bg-white/10 hover:bg-white/20'
+              onClick={() => setIsHeaderEditorOpen(false)}
+            >
+              <X className="h-4 w-4 text-white" />
+            </Button>
+          </div>
+          <div
+            className='space-y-4 px-6 pt-6 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent'
+            style={{ height: 'calc(100vh - 157px)' }}
+          >
+            <div className='space-y-4'>
+              {headerLinksDraft.map((link, index) => (
+                <div
+                  key={link.id ?? `${index}`}
+                  className='rounded-lg border border-white/10 p-4 space-y-2 bg-black/20 my-2 inline-block w-full'
+                >
+                  <div className='flex items-center justify-between'>
+                    <span className='text-sm text-white font-normal'>Link {index + 1}</span>
+                    <Button
+                      size='sm'
+                      variant='outline'
+                      className='text-black border-0 rounded-[8px]'
+                      onClick={() => removeHeaderLink(index)}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                  <div className='space-y-1'>
+                    <label className='text-sm text-muted-foreground'>Label</label>
+                    <Input
+                      value={link.label}
+                      onChange={(event) =>
+                        updateHeaderDraft(index, { label: event.target.value })
+                      }
+                      className='text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none'
+                      style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                    />
+                  </div>
+                  <div className='space-y-2'>
+                    <label className='text-sm text-muted-foreground'>Link</label>
+                    <Input
+                      value={link.to}
+                      onChange={(event) =>
+                        updateHeaderDraft(index, { to: event.target.value })
+                      }
+                      className='text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none'
+                      style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                    />
+                  </div>
+                  <div className='space-y-2'>
+                    <label className='text-sm text-muted-foreground'>Order</label>
+                    <Input
+                      type='number'
+                      value={link.order ?? index + 1}
+                      onChange={(event) =>
+                        updateHeaderDraft(index, { order: Number(event.target.value) })
+                      }
+                      className='text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none'
+                      style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                    />
+                  </div>
+                </div>
+              ))}
+              {headerLinksDraft.length === 0 && (
+                <p className='text-sm text-muted-foreground'>No links yet. Add your first link below.</p>
+              )}
+              <Button
+                size='sm'
+                className='w-full bg-gradient-pink-to-yellow text-white rounded-[8px] border-0'
+                onClick={addHeaderLink}
+              >
+                Add Link
+              </Button>
+            </div>
+            <div className='space-y-4 border-t border-white/10 pt-6'>
+              <h3 className='text-sm font-semibold text-white'>Profile Menu Labels</h3>
+              <div className='space-y-2'>
+                <label className='text-sm text-muted-foreground'>Profile Settings</label>
+                <Input
+                  value={profileMenuLabelsDraft.profileSettings}
+                  onChange={(event) =>
+                    setProfileMenuLabelsDraft((prev) => ({
+                      ...prev,
+                      profileSettings: event.target.value,
+                    }))
+                  }
+                  className='text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none'
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                />
+              </div>
+              <div className='space-y-2'>
+                <label className='text-sm text-muted-foreground'>Verification Center</label>
+                <Input
+                  value={profileMenuLabelsDraft.verificationCenter}
+                  onChange={(event) =>
+                    setProfileMenuLabelsDraft((prev) => ({
+                      ...prev,
+                      verificationCenter: event.target.value,
+                    }))
+                  }
+                  className='text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none'
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                />
+              </div>
+              <div className='space-y-2'>
+                <label className='text-sm text-muted-foreground'>Prayer Tasks</label>
+                <Input
+                  value={profileMenuLabelsDraft.prayerTasks}
+                  onChange={(event) =>
+                    setProfileMenuLabelsDraft((prev) => ({
+                      ...prev,
+                      prayerTasks: event.target.value,
+                    }))
+                  }
+                  className='text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none'
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                />
+              </div>
+              <div className='space-y-2'>
+                <label className='text-sm text-muted-foreground'>Admin Dashboard</label>
+                <Input
+                  value={profileMenuLabelsDraft.adminDashboard}
+                  onChange={(event) =>
+                    setProfileMenuLabelsDraft((prev) => ({
+                      ...prev,
+                      adminDashboard: event.target.value,
+                    }))
+                  }
+                  className='text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none'
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                />
+              </div>
+              <div className='space-y-2'>
+                <label className='text-sm text-muted-foreground'>Sign Out</label>
+                <Input
+                  value={profileMenuLabelsDraft.signOut}
+                  onChange={(event) =>
+                    setProfileMenuLabelsDraft((prev) => ({
+                      ...prev,
+                      signOut: event.target.value,
+                    }))
+                  }
+                  className='text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none'
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                />
+              </div>
+            </div>
+          </div>
+          <div className='p-6'>
+            <Button
+              className='w-full bg-gradient-pink-to-yellow text-white rounded-[8px] border-0'
+              onClick={handleSaveHeaderLinks}
+              disabled={isHeaderSaving}
+            >
+              {isHeaderSaving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </div>
+        </aside>
+      </>
+    )}
+  </>
   );
 };
 
