@@ -239,38 +239,27 @@ export function StartPrayerDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className={`max-w-md ${
-          step === "details" && effectiveTraditionalDates ? "max-h-[85vh] overflow-y-auto" : ""
+        className={`max-w-md p-0 ${
+          step === "details" && effectiveTraditionalDates ? "p-0" : ""
         }`}
       >
         <DialogHeader>
           {step === "begin" ? (
-            <div className="flex items-start justify-between gap-3">
-              <DialogTitle className="text-3xl leading-tight">When Would You Like to Begin?</DialogTitle>
-              <Button
-                type="button"
-                className="rounded-[999px] px-6"
-                disabled={!beginChoice || (beginChoice === "traditional" && !traditionalDates)}
-                onClick={() => {
-                  if (!beginChoice) return;
-                  applyBeginChoice(beginChoice);
-                  setStep("details");
-                }}
-              >
-                Next
-              </Button>
+            <div className="flex items-center justify-between gap-3 p-4 pb-0">
+              <DialogTitle className="text-[22px] leading-tight">When Would You Like to Begin?</DialogTitle>
+              
             </div>
           ) : (
             <>
-              <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start justify-between gap-3 p-4 pb-1">
                 <div className="min-w-0">
-                  <DialogTitle>{title}</DialogTitle>
-                  {description ? <DialogDescription className="font-inter text-black/50">{description}</DialogDescription> : null}
+                  <DialogTitle className="text-[22px] pb-2">{title}</DialogTitle>
+                   
                 </div>
                 <Button
                   type="button"
                   variant="outline"
-                  className="rounded-[999px] border-0"
+                  className="rounded-[8px] border-0 bg-primary hover:bg-primary/80 text-black mr-6"
                   onClick={() => setStep("begin")}
                 >
                   Change
@@ -281,7 +270,7 @@ export function StartPrayerDialog({
         </DialogHeader>
 
         {step === "begin" ? (
-          <div className="space-y-3">
+          <div className="space-y-3 pt-0 p-4">
             <button
               type="button"
               onClick={() => {
@@ -333,9 +322,27 @@ export function StartPrayerDialog({
               <div className="text-lg font-semibold text-black/90">Pick Your Own Date</div>
               <div className="text-sm text-muted-foreground mt-1">Choose a start date that works best for your schedule.</div>
             </button>
+
+             
+            <div className="flex items-center justify-between gap-3">
+           
+              <Button
+                type="button"
+                className="rounded-[8px] px-6 mt-2 bg-primary hover:bg-primary/80 border-0"
+                disabled={!beginChoice || (beginChoice === "traditional" && !traditionalDates)}
+                onClick={() => {
+                  if (!beginChoice) return;
+                  applyBeginChoice(beginChoice);
+                  setStep("details");
+                }}
+              >
+                Next
+              </Button>
+            </div>
+          
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-4 px-4 mb-4 max-h-[70vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent">
           <div>
             <Label htmlFor="prayer-instance-name">Your Name *</Label>
             <Input
@@ -615,7 +622,7 @@ export function StartPrayerDialog({
             ) : null}
           </div>
 
-          <div className="flex justify-end gap-2 pt-4">
+          <div className="flex justify-end gap-2 pt-4 pb-2">
             <Button
               className="border-0 rounded-[8px] hover:bg-white/80"
               variant="outline"
