@@ -1115,16 +1115,19 @@ export default function PrayerTasks() {
 
       <div className="space-y-6 px-5 py-8 md:py-12 lg:py-16">
         <div className="mx-auto w-full max-w-7xl">
+
+
+          
           {/* My Prayers */}
           {userTasks.length > 0 && (
-            <Card className="border border-muted/20 p-0 rounded-lg bg-white/5 mb-6">
-              <CardHeader>
+            <Card className="border-0 p-0 rounded-lg bg-transparent mb-10">
+              <CardHeader className="p-0 sm:p-0">
                 <CardTitle className="text-primary">My Prayers</CardTitle>
-                <CardDescription>
+                <CardDescription className="pb-4">
                   Track your daily prayer progress
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-0 sm:p-0">
                 <div className="space-y-6">
                   {activeInProgress.length > 0 && (
                     <div className="space-y-3">
@@ -1203,7 +1206,7 @@ export default function PrayerTasks() {
                                     )}
                                   </Button>
                                 ) : (
-                                  <Badge variant="outline" className="px-4 py-2">
+                                  <Badge variant="outline" className="px-4 py-2 rounded-[8px] h-[36px]">
                                     {currentDay < 1 ? "Starts Soon" : "Future Day"}
                                   </Badge>
                                 )}
@@ -1217,7 +1220,7 @@ export default function PrayerTasks() {
 
                                 <Button
                                   variant="outline"
-                                  className="rounded-[8px] gap-1 h-[36px]"
+                                  className="rounded-[8px] gap-1 h-[36px] border-0 bg-white hover:bg-white/80 text-black"
                                   disabled={stopping === ut.id}
                                   onClick={() => handleStopPrayer(ut)}
                                 >
@@ -1367,7 +1370,7 @@ export default function PrayerTasks() {
           <Card className="border-0 bg-transparent p-0 pt-8 md:pt-10">
             <CardHeader className="px-0 sm:px-0 pt-0 pb-0 p-0 sm:p-0">
               <CardTitle className="text-primary">Available Prayer Tasks</CardTitle>
-              <CardDescription className="text-lg font-inter">
+              <CardDescription className="text-sm font-inter">
                 {filteredTasks.length} task{filteredTasks.length !== 1 ? 's' : ''} found
               </CardDescription>
             </CardHeader>
@@ -1562,13 +1565,13 @@ export default function PrayerTasks() {
                 <div className="flex justify-end gap-2 pt-2">
                   <Button
                     variant="outline"
-                    className="rounded-[8px]"
+                    className="rounded-[8px] border-0 hover:bg-white/80 text-black"
                     onClick={() => setPrayerDialogOpen(false)}
                   >
                     Close
                   </Button>
                   <Button
-                    className="rounded-[8px]"
+                    className="rounded-[8px] border-0 hover:bg-primary/80 text-black"
                     disabled={!canComplete || completing === activePrayerTask.id}
                     onClick={async () => {
                       await handleCompleteDay(activePrayerTask.id, currentDay);
