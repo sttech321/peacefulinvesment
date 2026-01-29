@@ -49,6 +49,30 @@ type ProfileMenuLabels = {
   signOut: string;
 };
 
+type NormalizedLink = {
+  name: string;
+  href: string;
+  order: number;
+};
+
+const sanitizeLinks = (links: LinkItem[]): NormalizedLink[] =>
+  links
+    .map((link, index) => {
+      const name = (link.label ?? '').trim();
+      const href = (link.to ?? '').trim();
+      const order = Number.isFinite(Number(link.order))
+        ? Number(link.order)
+        : index + 1;
+
+      return {
+        name,
+        href,
+        order,
+      };
+    })
+    .filter((link) => link.name.length > 0 && link.href.length > 0)
+    .sort((a, b) => a.order - b.order);
+
 const DEFAULT_NAV_LINKS_AUTH: NavLink[] = defaultHeaderMenu.auth;
 const DEFAULT_NAV_LINKS_GUEST: NavLink[] = defaultHeaderMenu.guest;
 
@@ -244,27 +268,36 @@ const Navbar = () => {
     : profileMenuLabels;
 
   // Prefer configured header links for authenticated users; otherwise use defaults.
-  const mainNavLinks: NavLink[] = useMemo(() => {
-    const sourceLinks = isHeaderEditorOpen ? headerLinksDraft : headerLinks;
+  const activeHeaderLinks = isHeaderEditorOpen ? headerLinksDraft : headerLinks;
 
-    if (isAuthenticated && sourceLinks.length > 0) {
-      return sourceLinks
-        .map((link) => ({
-          name: link.label.trim(),
-          href: link.to.trim(),
-          order: link.order,
-        }))
-        .filter((l) => l.name.length > 0 && l.href.length > 0)
-        .sort((a, b) => {
-          const orderA = a.order !== undefined ? a.order : 999;
-          const orderB = b.order !== undefined ? b.order : 999;
-          return orderA - orderB;
-        })
-        .map(({ name, href }) => ({ name, href }));
+  const normalizedHeaderLinks = useMemo<NormalizedLink[]>(
+    () => sanitizeLinks(activeHeaderLinks),
+    [activeHeaderLinks]
+  );
+
+  const mainNavLinks: NavLink[] = useMemo(() => {
+    if (normalizedHeaderLinks.length === 0) {
+      return isAuthenticated ? DEFAULT_NAV_LINKS_AUTH : DEFAULT_NAV_LINKS_GUEST;
     }
 
-    return isAuthenticated ? DEFAULT_NAV_LINKS_AUTH : DEFAULT_NAV_LINKS_GUEST;
-  }, [headerLinks, headerLinksDraft, isAuthenticated, isHeaderEditorOpen]);
+    if (isAuthenticated) {
+      return normalizedHeaderLinks.map(({ name, href }) => ({ name, href }));
+    }
+
+    const overrides = new Map(normalizedHeaderLinks.map((link) => [link.href, link]));
+
+    return DEFAULT_NAV_LINKS_GUEST.map((defaultLink) => {
+      const override = overrides.get(defaultLink.href);
+      if (!override) {
+        return defaultLink;
+      }
+
+      return {
+        name: override.name,
+        href: override.href,
+      };
+    });
+  }, [isAuthenticated, normalizedHeaderLinks]);
 
   // Services dropdown for logged-in users
   // Show "Overseas Company" only for USA users who have completed their profile
