@@ -38,10 +38,12 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import Footer from "@/components/Footer";
 import { StartPrayerDialog } from "@/components/prayer/StartPrayerDialog";
+import { locationService } from "@/services/location/LocationService";
 
 interface PrayerTask {
   id: string;
@@ -74,6 +76,7 @@ interface PrayerUserTask {
   name: string;
   email: string;
   phone_number: string | null;
+  times_per_day?: number | null;
   person_needs_help: string | null;
   prayer_time: string;
   timezone: string;
@@ -92,6 +95,7 @@ interface PrayerUserTask {
 export default function PrayerTasks() {
   const { toast } = useToast();
   const { user } = useAuth();
+  const { profile } = useProfile();
   // Supabase generated types in this repo don't include the prayer_* tables/rpcs, so use any for those calls.
   const sb: any = supabase as any;
   const [tasks, setTasks] = useState<PrayerTask[]>([]);
@@ -113,11 +117,71 @@ export default function PrayerTasks() {
   // Get user's timezone
   const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
+  const normalizeCountryCode = (val: string): string => {
+    const trimmed = String(val || "").trim();
+    if (!trimmed) return "";
+    const digits = trimmed.replace(/[^\d+]/g, "");
+    if (!digits) return "";
+    return digits.startsWith("+") ? digits : `+${digits.replace(/\D/g, "")}`;
+  };
+
+  const derivePhoneFromProfile = (p: any): { phone_country_code: string; phone_number: string } => {
+    const profileCountryRaw = String(p?.country_code || p?.countryCode || p?.dial_code || p?.dialCode || "").trim();
+    let derivedCountryCode = normalizeCountryCode(profileCountryRaw);
+
+    if (!derivedCountryCode && /^[A-Za-z]{2}$/.test(profileCountryRaw)) {
+      const iso = profileCountryRaw.toUpperCase();
+      try {
+        const c = locationService.getCountryByCode(iso);
+        const mapped = normalizeCountryCode(String((c as any)?.callingCode || ""));
+        if (mapped) derivedCountryCode = mapped;
+      } catch {
+        // ignore
+      }
+    }
+
+    const profilePhoneRaw = String(p?.phone || p?.phone_number || "").trim();
+    let derivedPhoneRemainder = profilePhoneRaw;
+
+    if (derivedCountryCode && profilePhoneRaw.startsWith(derivedCountryCode)) {
+      derivedPhoneRemainder = profilePhoneRaw.slice(derivedCountryCode.length).trim();
+    } else if (!derivedCountryCode) {
+      // Prefer safe parsing when separators exist (e.g. "+1 (555) 123-4567").
+      const m = profilePhoneRaw.match(/^\s*(\+\d{1,3})(?=[\s\-\(\.)])\s*(.*)$/);
+      if (m) {
+        derivedCountryCode = normalizeCountryCode(m[1] || "");
+        derivedPhoneRemainder = (m[2] || "").trim();
+      } else if (profilePhoneRaw.startsWith("+")) {
+        // Best-effort: match the longest known calling code prefix.
+        try {
+          const candidates = locationService
+            .getAllCountries()
+            .map((c: any) => normalizeCountryCode(String(c?.callingCode || "")))
+            .filter(Boolean)
+            .sort((a: string, b: string) => b.length - a.length);
+          const matched = candidates.find((cc: string) => profilePhoneRaw.startsWith(cc));
+          if (matched) {
+            derivedCountryCode = matched;
+            derivedPhoneRemainder = profilePhoneRaw.slice(matched.length).trim();
+          }
+        } catch {
+          // ignore
+        }
+      }
+    }
+
+    return {
+      phone_country_code: derivedCountryCode,
+      phone_number: derivedPhoneRemainder.replace(/\D/g, ""),
+    };
+  };
+
   const [instanceFormData, setInstanceFormData] = useState({
     name: "",
     email: "",
     phone_country_code: "",
     phone_number: "",
+    times_per_day: 1,
     person_needs_help: "",
     start_date: new Date().toISOString().split("T")[0],
     prayer_time: "07:00",
@@ -171,14 +235,31 @@ export default function PrayerTasks() {
   }, [user]);
 
   useEffect(() => {
-    // Auto-fill email and phone for logged-in users
-    if (user && user.email) {
-      setInstanceFormData(prev => ({
-        ...prev,
-        email: user.email || "",
-      }));
-    }
-  }, [user]);
+    // Auto-fill from user profile when available (keep editable).
+    // If profile doesn't have phone, user must type it (phone is required).
+    if (!user) return;
+    if (!startInstanceDialogOpen) return;
+
+    setInstanceFormData((prev: any) => {
+      const next = { ...prev };
+
+      const nameFromProfile = String((profile as any)?.full_name || (profile as any)?.name || "").trim();
+      const emailFromProfile = String((profile as any)?.email || user.email || "").trim();
+      const fallbackName = user.email ? user.email.split("@")[0] : "User";
+
+      if (!String(prev.name || "").trim()) next.name = nameFromProfile || fallbackName;
+      if (!String(prev.email || "").trim()) next.email = emailFromProfile;
+
+      const hasPhoneDigits = Boolean(String(prev.phone_number || "").replace(/\D/g, ""));
+      if (!hasPhoneDigits) {
+        const derived = derivePhoneFromProfile(profile as any);
+        if (derived.phone_country_code) next.phone_country_code = derived.phone_country_code;
+        if (derived.phone_number) next.phone_number = derived.phone_number;
+      }
+
+      return next;
+    });
+  }, [profile, startInstanceDialogOpen, user]);
 
   useEffect(() => {
     filterTasks();
@@ -284,10 +365,27 @@ export default function PrayerTasks() {
     if (!selectedTask) return;
 
     try {
-      if (!instanceFormData.name.trim() || !instanceFormData.email.trim()) {
+      const digitsOnlyPhone = String(instanceFormData.phone_number || "").replace(/\D/g, "");
+      const ccNormalized = normalizeCountryCode(String((instanceFormData as any).phone_country_code || ""));
+      const timesPerDay = Math.max(1, Math.floor(Number((instanceFormData as any).times_per_day || 1)));
+      const prayerTime = String((instanceFormData as any).prayer_time || "").trim();
+      const tz = String((instanceFormData as any).timezone || "").trim();
+      const startDateYmdCandidate = String((instanceFormData as any).start_date || selectedTask.start_date || "").trim();
+
+      if (
+        !instanceFormData.name.trim() ||
+        !instanceFormData.email.trim() ||
+        !digitsOnlyPhone ||
+        !ccNormalized ||
+        !startDateYmdCandidate ||
+        !prayerTime ||
+        !tz ||
+        !Number.isFinite(timesPerDay) ||
+        timesPerDay < 1
+      ) {
         toast({
           title: "Error",
-          description: "Please fill in required fields (Name and Email).",
+          description: "Please fill in required fields (Name, Email, Phone Number, Start Date, Time, Timezone, and Prayer Frequency).",
           variant: "destructive",
         });
         return;
@@ -306,31 +404,14 @@ export default function PrayerTasks() {
         scheduleMode === "DAILY_UNLIMITED" ? null : (fixedEnd || addDaysToYmd(startDateYmd, Math.max(1, duration) - 1));
 
       // Create user prayer instance
-      const normalizeCountryCode = (val: string) => {
-        const trimmed = (val || "").trim();
-        if (!trimmed) return "";
-        const digits = trimmed.replace(/[^\d+]/g, "");
-        if (!digits) return "";
-        return digits.startsWith("+") ? digits : `+${digits.replace(/\D/g, "")}`;
-      };
-
-      const digitsOnlyPhone = String(instanceFormData.phone_number || "").replace(/\D/g, "");
-      const ccNormalized = normalizeCountryCode(String((instanceFormData as any).phone_country_code || ""));
-      if (digitsOnlyPhone && !ccNormalized) {
-        toast({
-          title: "Missing Country Code",
-          description: "Please enter a country code (e.g. +91) to receive SMS/call notifications.",
-          variant: "destructive",
-        });
-        return;
-      }
-      const effectivePhone = digitsOnlyPhone ? `${ccNormalized}${digitsOnlyPhone}`.trim() : null;
+      const effectivePhone = `${ccNormalized}${digitsOnlyPhone}`.trim();
 
       const insertData: any = {
         task_id: selectedTask.id,
         name: instanceFormData.name,
         email: instanceFormData.email,
         phone_number: effectivePhone,
+        times_per_day: timesPerDay,
         person_needs_help: instanceFormData.person_needs_help || null,
         prayer_time: instanceFormData.prayer_time,
         timezone: instanceFormData.timezone,
@@ -376,12 +457,7 @@ export default function PrayerTasks() {
           const smsError = String((notifData as any)?.sms_error || "");
           const callError = String((notifData as any)?.call_error || "");
 
-          if (!effectivePhone) {
-            toast({
-              title: "Started (No Phone Alerts)",
-              description: "Add your phone number (with country code) to receive SMS/phone call alerts.",
-            });
-          } else if (!smsSent && !callPlaced) {
+          if (!smsSent && !callPlaced) {
             toast({
               title: "Started (Alerts Not Sent)",
               description: smsError || callError || "Twilio did not send SMS/call. Check Twilio geo-permissions and trial verification.",
@@ -394,12 +470,10 @@ export default function PrayerTasks() {
           }
         } catch (e) {
           console.warn("[PrayerTasks] send-prayer-start-notification failed:", e);
-          if (effectivePhone) {
-            toast({
-              title: "Started (Alerts Failed)",
-              description: "Your prayer was started, but SMS/call sending failed. Check Twilio setup and try again.",
-            });
-          }
+          toast({
+            title: "Started (Alerts Failed)",
+            description: "Your prayer was started, but SMS/call sending failed. Check Twilio setup and try again.",
+          });
         }
       }
 
@@ -410,6 +484,7 @@ export default function PrayerTasks() {
         email: user?.email || "",
         phone_country_code: "",
         phone_number: "",
+        times_per_day: 1,
         person_needs_help: "",
         start_date: new Date().toISOString().split("T")[0],
         prayer_time: "07:00",
@@ -1003,6 +1078,28 @@ export default function PrayerTasks() {
   const completedPrayers = userTasks.filter((ut) => isPrayerCompleted(ut));
   const stoppedPrayers = userTasks.filter((ut) => !ut.is_active && !isPrayerCompleted(ut));
 
+  const isStartInstanceReady = (() => {
+    const nameOk = Boolean(String((instanceFormData as any)?.name || "").trim());
+    const emailOk = Boolean(String((instanceFormData as any)?.email || "").trim());
+    const digitsOnlyPhone = String((instanceFormData as any)?.phone_number || "").replace(/\D/g, "");
+    const ccNormalized = normalizeCountryCode(String((instanceFormData as any)?.phone_country_code || ""));
+    const startDateOk = Boolean(String((instanceFormData as any)?.start_date || "").trim());
+    const timeOk = Boolean(String((instanceFormData as any)?.prayer_time || "").trim());
+    const tzOk = Boolean(String((instanceFormData as any)?.timezone || "").trim());
+    const timesPerDay = Math.max(1, Math.floor(Number((instanceFormData as any)?.times_per_day || 1)));
+    return (
+      nameOk &&
+      emailOk &&
+      Boolean(digitsOnlyPhone) &&
+      Boolean(ccNormalized) &&
+      startDateOk &&
+      timeOk &&
+      tzOk &&
+      Number.isFinite(timesPerDay) &&
+      timesPerDay >= 1
+    );
+  })();
+
   return (
     <div className="min-h-screen pink-yellow-shadow pt-20">
       <div className="animate-slide-up bg-black/20 px-6 py-10 text-center md:py-12 lg:py-24">
@@ -1114,7 +1211,7 @@ export default function PrayerTasks() {
                                 {todayCount > 0 ? (
                                   <Badge variant="secondary" className="px-4 py-2 rounded-[8px] gap-1 h-[36px]">
                                     <CheckCircle2 className="mr-1 h-4 w-4" />
-                                    Today: {todayCount}×
+                                    Today: {todayCount}× / {Math.max(1, Number((ut as any).times_per_day || 1))}×
                                   </Badge>
                                 ) : null}
 
@@ -1458,6 +1555,7 @@ export default function PrayerTasks() {
               const currentDay = getCurrentDay(activePrayerTask);
               const dayLabel = Math.max(1, currentDay);
               const todayCount = getCompletionCountForDay(activePrayerTask, currentDay);
+              const timesPerDay = Math.max(1, Number((activePrayerTask as any)?.times_per_day || 1));
               const canComplete = canCompleteToday(activePrayerTask);
 
               return (
@@ -1486,7 +1584,7 @@ export default function PrayerTasks() {
                     ) : (
                       <>
                         <CheckCircle2 className="mr-0 h-4 w-4" />
-                        Log Day {dayLabel} Completion{todayCount > 0 ? ` (Today: ${todayCount}×)` : ""}
+                        Log Day {dayLabel} Completion{` (Today: ${todayCount}× / ${timesPerDay}×)`}
                       </>
                     )}
                   </Button>
@@ -1504,10 +1602,11 @@ export default function PrayerTasks() {
         title="Start Prayer"
         description={
           user
-            ? "Your email and phone will be auto-filled. You can edit them if needed."
+            ? "Your info will be auto-filled from your profile when available. Phone number is required and can be edited."
             : "Please provide your information to start this prayer."
         }
         submitting={starting}
+        submitDisabled={!isStartInstanceReady}
         submitLabel="Start Prayer"
         traditionalDates={
           selectedTask &&

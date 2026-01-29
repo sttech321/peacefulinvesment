@@ -127,6 +127,7 @@ const BlogPost = () => {
     email: "",
     phone_country_code: "",
     phone_number: "",
+    times_per_day: 1,
     person_needs_help: "",
     start_date: "",
     end_date: "",
@@ -348,6 +349,7 @@ const BlogPost = () => {
         email: String(emailFromProfile || ""),
         phone_country_code: derivedCountryCode,
         phone_number: derivedPhoneRemainder.replace(/\D/g, ""),
+        times_per_day: 1,
         person_needs_help: "",
         start_date: "",
         end_date: "",
@@ -437,7 +439,16 @@ const BlogPost = () => {
       const cc = (joinForm.phone_country_code || "").trim();
       const ccNormalized = cc ? (cc.startsWith("+") ? cc : `+${cc.replace(/\D/g, "")}`) : "";
       const digitsOnlyPhone = (joinForm.phone_number || "").replace(/\D/g, "");
-      if (digitsOnlyPhone && !ccNormalized) {
+      const timesPerDay = Math.max(1, Math.floor(Number((joinForm as any).times_per_day || 1)));
+      if (!digitsOnlyPhone) {
+        toast({
+          title: "Missing Phone Number",
+          description: "Please enter your phone number to receive reminders.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (!ccNormalized) {
         toast({
           title: "Missing Country Code",
           description: "Please select a country code (e.g. +91) to receive SMS/phone call alerts.",
@@ -445,7 +456,25 @@ const BlogPost = () => {
         });
         return;
       }
-      const effectivePhone = digitsOnlyPhone ? `${ccNormalized}${digitsOnlyPhone}`.trim() : null;
+      const effectivePhone = `${ccNormalized}${digitsOnlyPhone}`.trim();
+      if (!Number.isFinite(timesPerDay) || timesPerDay < 1) {
+        toast({
+          title: "Invalid Prayer Frequency",
+          description: "Please set prayer frequency to at least 1 time per day.",
+          variant: "destructive",
+        });
+        return;
+      }
+      const prayerTime = String((joinForm as any).prayer_time || "").trim();
+      const tz = String((joinForm as any).timezone || userTimezone || "").trim();
+      if (!prayerTime) {
+        toast({ title: "Missing Time", description: "Please select a daily prayer time.", variant: "destructive" });
+        return;
+      }
+      if (!tz) {
+        toast({ title: "Missing Timezone", description: "Please select your timezone.", variant: "destructive" });
+        return;
+      }
 
       const customStart = (joinForm.start_date || "").trim();
       const customEnd = String(joinForm.end_date || "").trim();
@@ -476,9 +505,10 @@ const BlogPost = () => {
         name: effectiveName,
         email: effectiveEmail,
         phone_number: effectivePhone,
+        times_per_day: timesPerDay,
         person_needs_help: joinForm.person_needs_help.trim() || null,
-        prayer_time: joinForm.prayer_time,
-        timezone: joinForm.timezone || userTimezone,
+        prayer_time: prayerTime,
+        timezone: tz,
         start_date: startDateYmd,
         end_date: endDateYmd,
         current_day: 1,
@@ -1028,7 +1058,12 @@ const BlogPost = () => {
           </>
         }
         submitting={joining || resolvingPrayerTask}
-        submitDisabled={!resolvedPrayerTask || resolvingPrayerTask}
+        submitDisabled={
+          !resolvedPrayerTask ||
+          resolvingPrayerTask ||
+          !String(joinForm.phone_number || "").replace(/\D/g, "") ||
+          !String(joinForm.phone_country_code || "").replace(/[^\d+]/g, "").trim()
+        }
         submitLabel="Join Prayer"
         showStartDatePicker={true}
         traditionalDates={traditionalDates}

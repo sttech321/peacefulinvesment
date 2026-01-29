@@ -262,7 +262,8 @@ Deno.serve(async (req: Request) => {
           continue;
         }
 
-        // Skip if already completed today
+        // Skip if already completed today (honor per-user frequency goal)
+        const timesPerDay = Math.max(1, Number((userTask as any).times_per_day || 1));
         const { count: completionCount, error: completionErr } = await supabase
           .from("prayer_daily_completions")
           .select("id", { count: "exact", head: true })
@@ -271,7 +272,7 @@ Deno.serve(async (req: Request) => {
         if (completionErr) {
           console.warn("[send-daily-prayer-reminder] completion lookup failed:", completionErr.message);
         }
-        if ((completionCount || 0) > 0) {
+        if ((completionCount || 0) >= timesPerDay) {
           results.push({ user_task_id: (userTask as any).id, sent: false, reason: "Day already completed" });
           continue;
         }
