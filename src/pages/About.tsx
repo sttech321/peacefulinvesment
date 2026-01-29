@@ -92,26 +92,7 @@ export default function About() {
   const [aboutContent, setAboutContent] = useState(() => ({
     ...defaultAboutContent
   }));
-
-  const mergedValuesItems = mergeArrayWithDefaults<ValuesItem>(
-    defaultAboutContent.valuesItems as ValuesItem[] | undefined,
-    (aboutContent.valuesItems as ValuesItem[] | undefined) ?? null
-  );
-
-  const mergedAchievementsItems = mergeArrayWithDefaults<AchievementItem>(
-    defaultAboutContent.achievementsItems as AchievementItem[] | undefined,
-    (aboutContent.achievementsItems as AchievementItem[] | undefined) ?? null
-  );
-
-  const mergedLeadershipMembers = mergeArrayWithDefaults<LeadershipMember>(
-    defaultAboutContent.leadershipMembers as LeadershipMember[] | undefined,
-    (aboutContent.leadershipMembers as LeadershipMember[] | undefined) ?? null
-  );
-
-  const mergedJourneyMilestones = mergeArrayWithDefaults<JourneyMilestone>(
-    defaultAboutContent.journeyMilestones as JourneyMilestone[] | undefined,
-    (aboutContent.journeyMilestones as JourneyMilestone[] | undefined) ?? null
-  );
+  const [isContentReady, setIsContentReady] = useState(false);
 
   const handleWhyChooseFeaturesChange = (value: string) => {
     const normalized = value.split("\n");
@@ -185,46 +166,49 @@ export default function About() {
 
   useEffect(() => {
     const loadContent = async () => {
-      const { data, error } = await supabase
-        .from("app_settings")
-        .select("value")
-        .eq("key", "about_content")
-        .maybeSingle();
-
-      if (error || !data?.value) {
-        return;
-      }
+      let nextContent = { ...defaultAboutContent };
 
       try {
-        const parsed = JSON.parse(data.value) as Record<string, unknown>;
-        const parsedValues = parsed["valuesItems"] as ValuesItem[] | undefined;
-        const parsedAchievements = parsed["achievementsItems"] as AchievementItem[] | undefined;
-        const parsedLeadership = parsed["leadershipMembers"] as LeadershipMember[] | undefined;
-        const parsedMilestones = parsed["journeyMilestones"] as JourneyMilestone[] | undefined;
-        const merged = {
-          ...defaultAboutContent,
-          ...parsed,
-          valuesItems: mergeArrayWithDefaults<ValuesItem>(
-            defaultAboutContent.valuesItems as ValuesItem[] | undefined,
-            parsedValues ?? null
-          ),
-          achievementsItems: mergeArrayWithDefaults<AchievementItem>(
-            defaultAboutContent.achievementsItems as AchievementItem[] | undefined,
-            parsedAchievements ?? null
-          ),
-          leadershipMembers: mergeArrayWithDefaults<LeadershipMember>(
-            defaultAboutContent.leadershipMembers as LeadershipMember[] | undefined,
-            parsedLeadership ?? null
-          ),
-          journeyMilestones: mergeArrayWithDefaults<JourneyMilestone>(
-            defaultAboutContent.journeyMilestones as JourneyMilestone[] | undefined,
-            parsedMilestones ?? null
-          )
-        };
-        setAboutContent(merged);
+        const { data, error } = await supabase
+          .from("app_settings")
+          .select("value")
+          .eq("key", "about_content")
+          .maybeSingle();
+
+        if (!error && data?.value) {
+          const parsed = JSON.parse(data.value) as Record<string, unknown>;
+          const parsedValues = parsed["valuesItems"] as ValuesItem[] | undefined;
+          const parsedAchievements = parsed["achievementsItems"] as AchievementItem[] | undefined;
+          const parsedLeadership = parsed["leadershipMembers"] as LeadershipMember[] | undefined;
+          const parsedMilestones = parsed["journeyMilestones"] as JourneyMilestone[] | undefined;
+
+          nextContent = {
+            ...defaultAboutContent,
+            ...parsed,
+            valuesItems: mergeArrayWithDefaults<ValuesItem>(
+              defaultAboutContent.valuesItems as ValuesItem[] | undefined,
+              parsedValues ?? null
+            ),
+            achievementsItems: mergeArrayWithDefaults<AchievementItem>(
+              defaultAboutContent.achievementsItems as AchievementItem[] | undefined,
+              parsedAchievements ?? null
+            ),
+            leadershipMembers: mergeArrayWithDefaults<LeadershipMember>(
+              defaultAboutContent.leadershipMembers as LeadershipMember[] | undefined,
+              parsedLeadership ?? null
+            ),
+            journeyMilestones: mergeArrayWithDefaults<JourneyMilestone>(
+              defaultAboutContent.journeyMilestones as JourneyMilestone[] | undefined,
+              parsedMilestones ?? null
+            )
+          };
+        }
       } catch {
-        // Keep defaults on parse error
+        // Keep defaults when Supabase or parsing fails
       }
+
+      setAboutContent(nextContent);
+      setIsContentReady(true);
     };
 
     void loadContent();
@@ -252,6 +236,30 @@ export default function About() {
       setIsEditorOpen(false);
     }
   };
+
+  if (!isContentReady) {
+    return <div className="min-h-screen pink-yellow-shadow pt-16" />;
+  }
+
+  const mergedValuesItems = mergeArrayWithDefaults<ValuesItem>(
+    defaultAboutContent.valuesItems as ValuesItem[] | undefined,
+    (aboutContent.valuesItems as ValuesItem[] | undefined) ?? null
+  );
+
+  const mergedAchievementsItems = mergeArrayWithDefaults<AchievementItem>(
+    defaultAboutContent.achievementsItems as AchievementItem[] | undefined,
+    (aboutContent.achievementsItems as AchievementItem[] | undefined) ?? null
+  );
+
+  const mergedLeadershipMembers = mergeArrayWithDefaults<LeadershipMember>(
+    defaultAboutContent.leadershipMembers as LeadershipMember[] | undefined,
+    (aboutContent.leadershipMembers as LeadershipMember[] | undefined) ?? null
+  );
+
+  const mergedJourneyMilestones = mergeArrayWithDefaults<JourneyMilestone>(
+    defaultAboutContent.journeyMilestones as JourneyMilestone[] | undefined,
+    (aboutContent.journeyMilestones as JourneyMilestone[] | undefined) ?? null
+  );
 
   const valueIcons = [Shield, Heart, Zap, Globe];
   const values = mergedValuesItems.map(
