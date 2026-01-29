@@ -322,6 +322,7 @@ const Blog = () => {
     email: "",
     phone_country_code: "",
     phone_number: "",
+    times_per_day: 1,
     person_needs_help: "",
     start_date: "",
     end_date: "",
@@ -864,7 +865,16 @@ const Blog = () => {
       const cc = (joinForm.phone_country_code || "").trim();
       const ccNormalized = cc ? (cc.startsWith("+") ? cc : `+${cc.replace(/\D/g, "")}`) : "";
       const digitsOnlyPhone = (joinForm.phone_number || "").replace(/\D/g, "");
-      if (digitsOnlyPhone && !ccNormalized) {
+      const timesPerDay = Math.max(1, Math.floor(Number((joinForm as any).times_per_day || 1)));
+      if (!digitsOnlyPhone) {
+        toast({
+          title: "Missing Phone Number",
+          description: "Please enter your phone number to receive reminders.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (!ccNormalized) {
         toast({
           title: "Missing Country Code",
           description: "Please enter a country code (e.g. +91) to receive SMS/phone call alerts.",
@@ -872,7 +882,25 @@ const Blog = () => {
         });
         return;
       }
-      const effectivePhone = digitsOnlyPhone ? `${ccNormalized}${digitsOnlyPhone}`.trim() : null;
+      const effectivePhone = `${ccNormalized}${digitsOnlyPhone}`.trim();
+      if (!Number.isFinite(timesPerDay) || timesPerDay < 1) {
+        toast({
+          title: "Invalid Prayer Frequency",
+          description: "Please set prayer frequency to at least 1 time per day.",
+          variant: "destructive",
+        });
+        return;
+      }
+      const prayerTime = String((joinForm as any).prayer_time || "").trim();
+      const tz = String((joinForm as any).timezone || userTimezone || "").trim();
+      if (!prayerTime) {
+        toast({ title: "Missing Time", description: "Please select a daily prayer time.", variant: "destructive" });
+        return;
+      }
+      if (!tz) {
+        toast({ title: "Missing Timezone", description: "Please select your timezone.", variant: "destructive" });
+        return;
+      }
 
       let startDateYmd: string;
       let endDateYmd: string;
@@ -913,9 +941,10 @@ const Blog = () => {
         name: effectiveName,
         email: effectiveEmail,
         phone_number: effectivePhone,
+        times_per_day: timesPerDay,
         person_needs_help: person,
-        prayer_time: joinForm.prayer_time,
-        timezone: joinForm.timezone,
+        prayer_time: prayerTime,
+        timezone: tz,
         start_date: startDateYmd,
         end_date: endDateYmd,
         current_day: 1,
@@ -1322,7 +1351,12 @@ const Blog = () => {
           </>
         }
         submitting={saving || resolvingPrayerTask}
-        submitDisabled={!resolvedPrayerTask || resolvingPrayerTask}
+        submitDisabled={
+          !resolvedPrayerTask ||
+          resolvingPrayerTask ||
+          !String(joinForm.phone_number || "").replace(/\D/g, "") ||
+          !String(joinForm.phone_country_code || "").replace(/[^\d+]/g, "").trim()
+        }
         submitLabel="Join Prayer"
         showStartDatePicker={false}
         traditionalDates={traditionalDates || undefined}
@@ -1385,7 +1419,7 @@ const Blog = () => {
                       type="tel"
                       value={contactCountryCode}
                       onChange={(e) => setContactCountryCode(e.target.value.replace(/[^\d+]/g, ""))}
-                      placeholder="+1"
+                      placeholder="+Code"
                       className="w-[88px] rounded-[8px] shadow-none border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none"
                       style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as React.CSSProperties}
                     />
@@ -1393,7 +1427,7 @@ const Blog = () => {
                       type="tel"
                       value={contactPhoneNumber}
                       onChange={(e) => setContactPhoneNumber(e.target.value.replace(/\D/g, ""))}
-                      placeholder="7723211897"
+                      placeholder="Enter phone number"
                       className="flex-1 rounded-[8px] shadow-none border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none"
                       style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as React.CSSProperties}
                     />
