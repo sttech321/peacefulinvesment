@@ -1,0 +1,42 @@
+{
+  "heroTitle": "Contact",
+  "heroTitleHighlight": "Us",
+  "heroSubtitle": "Get in touch with our support team. We're here to help with any questions or technical issues you may have.",
+
+  "formTitle": "Send us a Message",
+  "formDescription": "Fill out the form below and we'll get back to you as soon as possible.",
+
+  "labelFullName": "Full Name *",
+  "labelEmail": "Email Address *",
+  "labelPhone": "Phone Number (Optional)",
+  "labelSubject": "Subject *",
+  "labelPriority": "Priority Level",
+  "labelMessage": "Message *",
+  "labelPreferredContactMethod": "Preferred Contact Method",
+  "submitButtonLabel": "Send Message",
+
+  "contactInfoSectionTitle": "Contact Information",
+  "contactInfoName": "Patrick Oliveri",
+  "contactInfoPhone": "+1 (772) 321-1897",
+  "contactInfoEmail": "support@peacefulinvestment.com",
+  "contactInfoAddress": "Peaceful Investment Headquarters",
+  "contactInfoEmailLabel": "Email Support",
+  "contactInfoEmailHelperText": "24/7 support available",
+  "contactInfoAddressLabel": "Office Address",
+
+  "faqSectionTitle": "Frequently Asked Questions",
+  "faqItems": [
+    {
+      "question": "How quickly will I receive a response?",
+      "answer": "We typically respond to all inquiries within 24 hours during business days."
+    },
+    {
+      "question": "What information should I include?",
+      "answer": "Please include your account details, specific error messages, and steps to reproduce the issue."
+    },
+    {
+      "question": "Is there emergency support available?",
+      "answer": "Yes, for urgent issues, use high-priority {{email}} or {{phone}}."
+    }
+  ]
+}
