@@ -126,6 +126,8 @@ export default function ContactFormEnhanced({ onSuccess }: ContactFormEnhancedPr
 
       // Then send email notification via Edge Function (non-critical)
       try {
+        const idempotencyKey =
+          (globalThis as any)?.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
         const { error: functionError } = await supabase.functions.invoke('send-contact-notification', {
           body: {
             contactData: {
@@ -137,6 +139,9 @@ export default function ContactFormEnhanced({ onSuccess }: ContactFormEnhancedPr
               message: data.message,
               contact_method: data.contactMethod,
             },
+          },
+          headers: {
+            "Idempotency-Key": idempotencyKey,
           },
         });
 

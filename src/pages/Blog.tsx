@@ -398,6 +398,8 @@ const Blog = () => {
       ].join("\n");
 
       // 1) Email admin/support via Edge Function (required)
+      const idempotencyKey =
+        (globalThis as any)?.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
       const { error: functionError } = await supabase.functions.invoke("send-contact-notification", {
         body: {
           contactData: {
@@ -409,6 +411,9 @@ const Blog = () => {
             message,
             contact_method: "email",
           },
+        },
+        headers: {
+          "Idempotency-Key": idempotencyKey,
         },
       });
       if (functionError) throw functionError;

@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { Resend } from "npm:resend@3.2.0";
+import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -8,6 +9,8 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+const ROUTE = "send-contact-notification";
 
 // HTML escape function
 function escapeHtml(text: string): string {
@@ -19,6 +22,32 @@ function escapeHtml(text: string): string {
     "'": '&#039;',
   };
   return text.replace(/[&<>"']/g, (m) => map[m]);
+}
+
+function getClientIp(req: Request): string {
+  const cf = req.headers.get("cf-connecting-ip");
+  if (cf && cf.trim()) return cf.trim();
+
+  const xff = req.headers.get("x-forwarded-for");
+  if (xff && xff.trim()) return xff.split(",")[0].trim();
+
+  const xr = req.headers.get("x-real-ip");
+  if (xr && xr.trim()) return xr.trim();
+
+  return "unknown";
+}
+
+async function sha256Hex(input: string): Promise<string> {
+  const bytes = new TextEncoder().encode(input);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  const arr = Array.from(new Uint8Array(digest));
+  return arr.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function getEnvInt(name: string, fallback: number): number {
+  const raw = Deno.env.get(name);
+  const n = raw ? Number(raw) : NaN;
+  return Number.isFinite(n) ? Math.floor(n) : fallback;
 }
 
 Deno.serve(async (req: Request) => {
@@ -44,10 +73,23 @@ Deno.serve(async (req: Request) => {
     });
   }
 
+  let parsedBody: any = null;
+  let parsedContactData: any = null;
+  let resolvedIdemKey: string | null = null;
+  let resolvedIp: string | null = null;
+  let resolvedEmailLower: string | null = null;
+
   try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+    const supabase =
+      supabaseUrl && supabaseServiceKey ? createClient(supabaseUrl, supabaseServiceKey) : null;
+
     let contactData;
     try {
-      contactData = (await req.json()).contactData;
+      parsedBody = await req.json();
+      contactData = parsedBody?.contactData;
+      parsedContactData = contactData;
     } catch (parseError) {
       return new Response(JSON.stringify({ error: "Invalid JSON in request body" }), {
         status: 400,
@@ -87,6 +129,119 @@ Deno.serve(async (req: Request) => {
     const safePhone = contactData.phone ? escapeHtml(contactData.phone) : "Not provided";
     const priority = contactData.priority || "medium";
     const contactMethod = contactData.contact_method || "email";
+
+    // -------------------------
+    // Rate limiting + idempotency (DB-backed, service-role only)
+    // -------------------------
+    const ip = getClientIp(req);
+    const emailLower = String(contactData.email || "").trim().toLowerCase();
+    resolvedIp = ip;
+    resolvedEmailLower = emailLower;
+
+    // Prefer explicit Idempotency-Key header; fallback to a stable hash with hour bucket.
+    const headerKey =
+      req.headers.get("idempotency-key") ||
+      req.headers.get("Idempotency-Key") ||
+      req.headers.get("x-idempotency-key") ||
+      req.headers.get("X-Idempotency-Key");
+
+    const now = new Date();
+    const hourBucket = now.toISOString().slice(0, 13); // YYYY-MM-DDTHH
+    const fallbackKey = await sha256Hex(
+      `${emailLower}|${String(contactData.subject || "").trim()}|${String(contactData.message || "").trim()}|${hourBucket}`
+    );
+
+    const idemKey = String(headerKey || fallbackKey).trim() || fallbackKey;
+    resolvedIdemKey = idemKey;
+
+    // If we have DB access, enforce dedupe + limits.
+    if (supabase) {
+      // Idempotency fast-path
+      const { data: existingKey, error: existingErr } = await (supabase as any)
+        .from("edge_idempotency_keys")
+        .select("key,status,created_at")
+        .eq("key", idemKey)
+        .maybeSingle();
+
+      if (!existingErr && existingKey?.key) {
+        return new Response(
+          JSON.stringify({
+            success: true,
+            deduped: true,
+            status: existingKey.status,
+          }),
+          {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json",
+              ...corsHeaders,
+            },
+          }
+        );
+      }
+
+      const ipLimitPerHour = Math.max(1, getEnvInt("CONTACT_RATE_LIMIT_IP_PER_HOUR", 10));
+      const emailLimitPerHour = Math.max(1, getEnvInt("CONTACT_RATE_LIMIT_EMAIL_PER_HOUR", 5));
+
+      const sinceIso = new Date(now.getTime() - 60 * 60 * 1000).toISOString();
+
+      const [{ count: ipCount }, { count: emailCount }] = await Promise.all([
+        (supabase as any)
+          .from("edge_idempotency_keys")
+          .select("key", { count: "exact", head: true })
+          .eq("route", ROUTE)
+          .eq("ip", ip)
+          .gte("created_at", sinceIso),
+        (supabase as any)
+          .from("edge_idempotency_keys")
+          .select("key", { count: "exact", head: true })
+          .eq("route", ROUTE)
+          .eq("email", emailLower)
+          .gte("created_at", sinceIso),
+      ]);
+
+      if ((ipCount || 0) >= ipLimitPerHour || (emailCount || 0) >= emailLimitPerHour) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "Too many requests. Please try again later.",
+          }),
+          {
+            status: 429,
+            headers: {
+              "Content-Type": "application/json",
+              "Retry-After": "3600",
+              ...corsHeaders,
+            },
+          }
+        );
+      }
+
+      // Reserve idempotency key before sending. If sending fails, we delete it so the client can retry.
+      const { error: insertErr } = await (supabase as any)
+        .from("edge_idempotency_keys")
+        .insert([
+          {
+            key: idemKey,
+            route: ROUTE,
+            ip,
+            email: emailLower,
+            status: "started",
+          },
+        ]);
+
+      // Handle a race where the same key is inserted concurrently.
+      if (insertErr) {
+        // Unique violation: treat as deduped success.
+        const msg = String((insertErr as any)?.message || "");
+        if (msg.toLowerCase().includes("duplicate") || msg.toLowerCase().includes("unique")) {
+          return new Response(JSON.stringify({ success: true, deduped: true, status: "started" }), {
+            status: 200,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          });
+        }
+      }
+    }
 
     // 1. Send notification email to admin/support team
     const adminEmailHtml = `
@@ -344,6 +499,20 @@ Peaceful Investment Support Team
       user: userResult.status === 'fulfilled' ? 'sent' : 'failed',
     });
 
+    // Mark idempotency key as sent (best-effort)
+    try {
+      if (supabase) {
+        if (resolvedIdemKey) {
+          await (supabase as any)
+            .from("edge_idempotency_keys")
+            .update({ status: "sent" })
+            .eq("key", resolvedIdemKey);
+        }
+      }
+    } catch {
+      // best-effort only
+    }
+
     // Return success even if one email fails (non-critical)
     return new Response(JSON.stringify({ 
       success: true, 
@@ -362,6 +531,25 @@ Peaceful Investment Support Team
 
   } catch (error) {
     console.error("Error processing contact notification:", error);
+
+    // If we reserved an idempotency key but failed to send, delete it so clients can retry.
+    try {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+      const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+      const supabase =
+        supabaseUrl && supabaseServiceKey ? createClient(supabaseUrl, supabaseServiceKey) : null;
+      if (supabase) {
+        if (resolvedIdemKey) {
+          await (supabase as any)
+            .from("edge_idempotency_keys")
+            .delete()
+            .eq("key", resolvedIdemKey)
+            .eq("route", ROUTE);
+        }
+      }
+    } catch {
+      // best-effort only
+    }
     
     return new Response(JSON.stringify({ 
       error: error instanceof Error ? error.message : "Internal server error"
