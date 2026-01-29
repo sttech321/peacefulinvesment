@@ -3,8 +3,10 @@
   "heroBadge": "About Peaceful Investment",
   "heroHighlight": "Worldwide",
   "heroSubtitle": "We're on a mission to democratize access to investing and create opportunities for financial growth across the globe.",
-  "heroCtaPrimaryLabel": "View Our Platform",
-  "heroCtaPrimaryLink": "/downloads",
+  "heroCtaPrimaryLabel": "Start investing", 
+  "heroCtaPrimaryLink": "/auth?mode=signup",
+  "heroCtaSecondaryLink": "/downloads",
+  "heroCtaSecondaryLabel": "View Our Platform",
   "missionVisionTitle": "Our Mission & Vision",
   "missionTitle": "Mission",
   "missionBody": "To provide accessible, secure, and innovative investing solutions that empower individuals to achieve their financial goals through transparent and ethical practices.",
@@ -41,5 +43,80 @@
   ],
   "achievementsTitle": "Our",
   "achievementsHighlight": "Achievements",
-  "achievementsSubtitle": "Milestones that demonstrate our commitment to excellence and growth."
+  "achievementsSubtitle": "Milestones that demonstrate our commitment to excellence and growth.",
+  "achievementsItems": [
+    {
+      "number": "10K+",
+      "label": "Active Traders"
+    },
+    {
+      "number": "$500M+",
+      "label": "Trading Volume"
+    },
+    {
+      "number": "50+",
+      "label": "Countries Served"
+    },
+    {
+      "number": "99.9%",
+      "label": "Uptime"
+    }
+  ],
+  "leadershipTitle": "Meet Our",
+  "leadershipHighlight": "Leadership Team",
+  "leadershipSubtitle": "Experienced professionals dedicated to your trading success.",
+  "leadershipMembers": [
+    {
+      "name": "Patrick Oliveri",
+      "role": "Founder & CEO",
+      "description": "Financial industry veteran with over 15 years of experience in investment management and technology."
+    },
+    {
+      "name": "Sarah Chen",
+      "role": "Chief Technology Officer",
+      "description": "Expert in fintech solutions with a focus on secure, scalable trading platforms."
+    }, 
+    {
+      "name": "Michael Rodriguez",
+      "role": "Head of Compliance",
+      "description": "Ensures our platform meets all regulatory requirements and maintains the highest ethical standards."
+    }
+  ],
+  "journeyTitle": "Our",
+  "journeyHighlight": "Journey",
+  "journeySubtitle": "Key milestones in our company's growth and development.",
+  "journeyMilestones": [
+    {
+      "year": "2020",
+      "title": "Company Founded",
+      "description": "Peaceful Investment was established with a vision to democratize access to professional investments."
+    },
+    {
+      "year": "2021",
+      "title": "Platform Launch",
+      "description": "Successfully launched our first trading platform with MetaTrader integration."
+    },
+    {
+      "year": "2022",
+      "title": "Global Expansion",
+      "description": "Expanded services to 50+ countries and reached 10,000+ active traders."
+    },
+    {
+      "year": "2023",
+      "title": "Advanced Features",
+      "description": "Introduced AI-powered analytics and advanced risk management tools."
+    },
+    {
+      "year": "2024",
+      "title": "Future Vision",
+      "description": "Continuing innovation with blockchain integration and enhanced mobile trading capabilities."
+    }
+  ],
+  "ctaTitle": "Ready to Start Your",
+  "ctaHighlight": "Trading Journey?",
+  "ctaSubtitle": "Join thousands of successful investors who trust Peaceful Investment for their financial growth.",
+  "ctaPrimaryLabel": "Create Account",
+  "ctaPrimaryLink": "/auth?mode=signup",
+  "ctaSecondaryLabel": "Learn More",
+  "ctaSecondaryLink": "/downloads"
 }

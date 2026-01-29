@@ -62,6 +62,54 @@ export default function About() {
     });
   };
 
+  const updateAchievementsItem = (index: number, patch: { number?: string; label?: string }) => {
+    setAboutContent((prev) => {
+      const currentItems = prev.achievementsItems ?? defaultAboutContent.achievementsItems ?? [];
+      const nextItems = currentItems.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, ...patch } : item
+      );
+
+      return {
+        ...prev,
+        achievementsItems: nextItems
+      };
+    });
+  };
+
+  const updateLeadershipMember = (
+    index: number,
+    patch: { name?: string; role?: string; description?: string }
+  ) => {
+    setAboutContent((prev) => {
+      const currentItems = prev.leadershipMembers ?? defaultAboutContent.leadershipMembers ?? [];
+      const nextItems = currentItems.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, ...patch } : item
+      );
+
+      return {
+        ...prev,
+        leadershipMembers: nextItems
+      };
+    });
+  };
+
+  const updateJourneyMilestone = (
+    index: number,
+    patch: { year?: string; title?: string; description?: string }
+  ) => {
+    setAboutContent((prev) => {
+      const currentItems = prev.journeyMilestones ?? defaultAboutContent.journeyMilestones ?? [];
+      const nextItems = currentItems.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, ...patch } : item
+      );
+
+      return {
+        ...prev,
+        journeyMilestones: nextItems
+      };
+    });
+  };
+
   useEffect(() => {
     const loadContent = async () => {
       const { data, error } = await supabase
@@ -117,61 +165,38 @@ export default function About() {
     })
   );
 
-  const achievements = [
-    { number: "10K+", label: "Active Traders", icon: Users },
-    { number: "$500M+", label: "Trading Volume", icon: TrendingUp },
-    { number: "50+", label: "Countries Served", icon: Globe },
-    { number: "99.9%", label: "Uptime", icon: CheckCircle }
-  ];
+  const achievementIcons = [Users, TrendingUp, Globe, CheckCircle];
+  const achievements = (aboutContent.achievementsItems ?? defaultAboutContent.achievementsItems ?? []).map(
+    (item, index) => ({
+      number: item?.number ?? "",
+      label: item?.label ?? "",
+      icon: achievementIcons[index] ?? Users
+    })
+  );
 
-  const team = [
-    {
-      name: "Patrick Oliveri",
-      role: "Founder & CEO",
-      description: "Financial industry veteran with over 15 years of experience in investment management and technology.",
-      image: "/placeholder.svg"
-    },
-    {
-      name: "Sarah Chen",
-      role: "Chief Technology Officer",
-      description: "Expert in fintech solutions with a focus on secure, scalable trading platforms.",
-      image: "/placeholder.svg"
-    },
-    {
-      name: "Michael Rodriguez",
-      role: "Head of Compliance",
-      description: "Ensures our platform meets all regulatory requirements and maintains the highest ethical standards.",
-      image: "/placeholder.svg"
-    }
-  ];
+  const team = (aboutContent.leadershipMembers ?? defaultAboutContent.leadershipMembers ?? []).map(
+    (member) => ({
+      name: member?.name ?? "",
+      role: member?.role ?? "",
+      description: member?.description ?? ""
+    })
+  );
 
-  const milestones = [
-    {
-      year: "2020",
-      title: "Company Founded",
-      description: "Peaceful Investment was established with a vision to democratize access to professional investments."
-    },
-    {
-      year: "2021",
-      title: "Platform Launch",
-      description: "Successfully launched our first trading platform with MetaTrader integration."
-    },
-    {
-      year: "2022",
-      title: "Global Expansion",
-      description: "Expanded services to 50+ countries and reached 10,000+ active traders."
-    },
-    {
-      year: "2023",
-      title: "Advanced Features",
-      description: "Introduced AI-powered analytics and advanced risk management tools."
-    },
-    {
-      year: "2024",
-      title: "Future Vision",
-      description: "Continuing innovation with blockchain integration and enhanced mobile trading capabilities."
-    }
-  ];
+  const milestones = (aboutContent.journeyMilestones ?? defaultAboutContent.journeyMilestones ?? []).map(
+    (item) => ({
+      year: item?.year ?? "",
+      title: item?.title ?? "",
+      description: item?.description ?? ""
+    })
+  );
+
+  const ctaTitle = aboutContent.ctaTitle ?? defaultAboutContent.ctaTitle ?? "";
+  const ctaHighlight = aboutContent.ctaHighlight ?? defaultAboutContent.ctaHighlight ?? "";
+  const ctaSubtitle = aboutContent.ctaSubtitle ?? defaultAboutContent.ctaSubtitle ?? "";
+  const ctaPrimaryLabel = aboutContent.ctaPrimaryLabel ?? defaultAboutContent.ctaPrimaryLabel ?? "";
+  const ctaPrimaryLink = aboutContent.ctaPrimaryLink ?? defaultAboutContent.ctaPrimaryLink ?? "/auth?mode=signup";
+  const ctaSecondaryLabel = aboutContent.ctaSecondaryLabel ?? defaultAboutContent.ctaSecondaryLabel ?? "";
+  const ctaSecondaryLink = aboutContent.ctaSecondaryLink ?? defaultAboutContent.ctaSecondaryLink ?? "/downloads";
 
   return (
     <div className="min-h-screen pink-yellow-shadow pt-16">
@@ -203,17 +228,17 @@ export default function About() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               {!user && (
-              <Link to="/auth?mode=signup" className="bg-gradient-pink-to-yellow rounded-[12px] p-[2px]">
+              <Link to={aboutContent.heroCtaPrimaryLink} className="bg-gradient-pink-to-yellow rounded-[12px] p-[2px]">
                 <Button className="hover:bg-gradient-pink-to-yellow flex  rounded-[10px] border-0 bg-black p-0 px-5 font-inter text-xs font-semibold uppercase text-white hover:text-white w-full">
-                  Start investing
+                   {aboutContent.heroCtaPrimaryLabel}
                   <ArrowRight className="w-5 h-5 ml-0 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
               )}
 
-              <Link to={aboutContent.heroCtaPrimaryLink} className="bg-gradient-pink-to-yellow rounded-[12px] p-[2px]">
+              <Link to={aboutContent.heroCtaSecondaryLink} className="bg-gradient-pink-to-yellow rounded-[12px] p-[2px]">
                 <Button variant="outline" className="bg-gradient-yellow-to-pink hover:bg-gradient-pink-to-yellow block rounded-[10px] border-0 p-0 px-5 font-inter text-xs font-semibold uppercase text-white w-full">
-                  {aboutContent.heroCtaPrimaryLabel}
+                  {aboutContent.heroCtaSecondaryLabel}
                 </Button>
               </Link>
             </div>
@@ -370,10 +395,11 @@ export default function About() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-10 lg:mb-16">
             <h2 className="mb-4 md:mb-5 font-inter text-2xl font-bold uppercase text-white md:text-3xl">
-              Meet Our <span className="text-[var(--yellowcolor)]">Leadership Team</span>
+              {aboutContent.leadershipTitle}{" "}
+              <span className="text-[var(--yellowcolor)]">{aboutContent.leadershipHighlight}</span>
             </h2>
             <p className="mx-auto max-w-3xl font-open-sans text-lg text-white lg:text-xl">
-              Experienced professionals dedicated to your trading success.
+              {aboutContent.leadershipSubtitle}
             </p>
           </div>
 
@@ -412,10 +438,11 @@ export default function About() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-10 lg:mb-16">
             <h2 className="mb-4 md:mb-5 font-inter text-2xl font-bold uppercase text-white md:text-3xl">
-              Our <span className="text-[var(--yellowcolor)]">Journey</span>
+              {aboutContent.journeyTitle}{" "}
+              <span className="text-[var(--yellowcolor)]">{aboutContent.journeyHighlight}</span>
             </h2>
             <p className="mx-auto max-w-3xl font-open-sans text-lg text-white lg:text-xl">
-              Key milestones in our company's growth and development.
+              {aboutContent.journeySubtitle}
             </p>
           </div>
           <div className="relative">
@@ -468,23 +495,23 @@ export default function About() {
       <section className="px-6 py-10 md:py-12 lg:py-24 bg-transparent">
         <div className="max-w-7xl mx-auto text-center">
           <h2 className="mb-4 md:mb-5 font-inter text-2xl font-bold uppercase text-white md:text-3xl">
-            Ready to Start Your <span className="text-[var(--yellowcolor)]">Trading Journey?</span>
+            {ctaTitle} <span className="text-[var(--yellowcolor)]">{ctaHighlight}</span>
           </h2>
           <p className="mx-auto max-w-3xl font-open-sans text-lg text-white lg:text-xl">
-            Join thousands of successful investors who trust Peaceful Investment for their financial growth.
+            {ctaSubtitle}
           </p>
           <div className="flex sm:flex-row gap-4 justify-center pt-8 md:pt-10 max-w-sm mx-auto">
              {!user && (
-            <Link to="/auth?mode=signup" className="bg-gradient-pink-to-yellow rounded-[12px] p-[2px] w-full">
+            <Link to={ctaPrimaryLink} className="bg-gradient-pink-to-yellow rounded-[12px] p-[2px] w-full">
               <Button size="lg" variant="secondary" className="hover:bg-gradient-pink-to-yellow flex rounded-[10px] border-0 bg-black p-0 px-5 font-inter text-sm font-semibold uppercase text-white hover:text-white w-full">
-                Create Account
+                {ctaPrimaryLabel}
               </Button>
             </Link>
              )}
              
-            <Link to="/downloads" className="bg-gradient-pink-to-yellow rounded-[12px] p-[2px] w-full">
+            <Link to={ctaSecondaryLink} className="bg-gradient-pink-to-yellow rounded-[12px] p-[2px] w-full">
               <Button size="lg" variant="outline" className="bg-gradient-yellow-to-pink hover:bg-gradient-pink-to-yellow block rounded-[10px] border-0 p-0 px-5 font-inter text-sm font-semibold uppercase text-white w-full">
-                Learn More
+                {ctaSecondaryLabel}
               </Button>
             </Link>
           </div>
@@ -599,6 +626,34 @@ export default function About() {
                     setAboutContent((prev) => ({
                       ...prev,
                       heroCtaPrimaryLink: event.target.value
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Hero Secondary Button Label</Label>
+                <Input
+                  value={aboutContent.heroCtaSecondaryLabel}
+                  onChange={(event) =>
+                    setAboutContent((prev) => ({
+                      ...prev,
+                      heroCtaSecondaryLabel: event.target.value
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Hero Secondary Button Link</Label>
+                <Input
+                  value={aboutContent.heroCtaSecondaryLink}
+                  onChange={(event) =>
+                    setAboutContent((prev) => ({
+                      ...prev,
+                      heroCtaSecondaryLink: event.target.value
                     }))
                   }
                   className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
@@ -829,6 +884,302 @@ export default function About() {
                   className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none resize-none"
                   style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
                   rows={3}
+                />
+              </div>
+              <div>
+                <Label className="text-sm text-white font-normal">Achievements Items</Label>
+                {(aboutContent.achievementsItems ?? defaultAboutContent.achievementsItems ?? []).map((item, index) => (
+                  <div key={`achievements-item-${index}`} className="rounded-lg border border-white/10 p-4 space-y-3 bg-black/20 my-2 inline-block w-full">
+                    <div className="space-y-1">
+                      <Label className="text-sm text-white font-normal">Number</Label>
+                      <Input
+                        value={item?.number ?? ""}
+                        onChange={(event) =>
+                          updateAchievementsItem(index, { number: event.target.value })
+                        }
+                        className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                        style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-sm text-white font-normal">Label</Label>
+                      <Input
+                        value={item?.label ?? ""}
+                        onChange={(event) =>
+                          updateAchievementsItem(index, { label: event.target.value })
+                        }
+                        className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                        style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Leadership Title</Label>
+                <Input
+                  value={aboutContent.leadershipTitle}
+                  onChange={(event) =>
+                    setAboutContent((prev) => ({
+                      ...prev,
+                      leadershipTitle: event.target.value
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Leadership Highlight</Label>
+                <Input
+                  value={aboutContent.leadershipHighlight}
+                  onChange={(event) =>
+                    setAboutContent((prev) => ({
+                      ...prev,
+                      leadershipHighlight: event.target.value
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Leadership Subtitle</Label>
+                <Textarea
+                  value={aboutContent.leadershipSubtitle}
+                  onChange={(event) =>
+                    setAboutContent((prev) => ({
+                      ...prev,
+                      leadershipSubtitle: event.target.value
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none resize-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                  rows={3}
+                />
+              </div>
+              <div>
+                <Label className="text-sm text-white font-normal">Leadership Members</Label>
+                {(aboutContent.leadershipMembers ?? defaultAboutContent.leadershipMembers ?? []).map((member, index) => (
+                  <div key={`leadership-member-${index}`} className="rounded-lg border border-white/10 p-4 space-y-3 bg-black/20 my-2 inline-block w-full">
+                    <div className="space-y-1">
+                      <Label className="text-sm text-white font-normal">Name</Label>
+                      <Input
+                        value={member?.name ?? ""}
+                        onChange={(event) =>
+                          updateLeadershipMember(index, { name: event.target.value })
+                        }
+                        className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                        style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-sm text-white font-normal">Role</Label>
+                      <Input
+                        value={member?.role ?? ""}
+                        onChange={(event) =>
+                          updateLeadershipMember(index, { role: event.target.value })
+                        }
+                        className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                        style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-sm text-white font-normal">Description</Label>
+                      <Textarea
+                        value={member?.description ?? ""}
+                        onChange={(event) =>
+                          updateLeadershipMember(index, { description: event.target.value })
+                        }
+                        className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none resize-none"
+                        style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                        rows={3}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Journey Title</Label>
+                <Input
+                  value={aboutContent.journeyTitle}
+                  onChange={(event) =>
+                    setAboutContent((prev) => ({
+                      ...prev,
+                      journeyTitle: event.target.value
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Journey Highlight</Label>
+                <Input
+                  value={aboutContent.journeyHighlight}
+                  onChange={(event) =>
+                    setAboutContent((prev) => ({
+                      ...prev,
+                      journeyHighlight: event.target.value
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Journey Subtitle</Label>
+                <Textarea
+                  value={aboutContent.journeySubtitle}
+                  onChange={(event) =>
+                    setAboutContent((prev) => ({
+                      ...prev,
+                      journeySubtitle: event.target.value
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none resize-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                  rows={3}
+                />
+              </div>
+              <div>
+                <Label className="text-sm text-white font-normal">Journey Milestones</Label>
+                {(aboutContent.journeyMilestones ?? defaultAboutContent.journeyMilestones ?? []).map((item, index) => (
+                  <div key={`journey-milestone-${index}`} className="rounded-lg border border-white/10 p-4 space-y-3 bg-black/20 my-2 inline-block w-full">
+                    <div className="space-y-1">
+                      <Label className="text-sm text-white font-normal">Year</Label>
+                      <Input
+                        value={item?.year ?? ""}
+                        onChange={(event) =>
+                          updateJourneyMilestone(index, { year: event.target.value })
+                        }
+                        className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                        style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-sm text-white font-normal">Title</Label>
+                      <Input
+                        value={item?.title ?? ""}
+                        onChange={(event) =>
+                          updateJourneyMilestone(index, { title: event.target.value })
+                        }
+                        className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                        style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-sm text-white font-normal">Description</Label>
+                      <Textarea
+                        value={item?.description ?? ""}
+                        onChange={(event) =>
+                          updateJourneyMilestone(index, { description: event.target.value })
+                        }
+                        className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none resize-none"
+                        style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                        rows={3}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">CTA Title</Label>
+                <Input
+                  value={aboutContent.ctaTitle ?? ""}
+                  onChange={(event) =>
+                    setAboutContent((prev) => ({
+                      ...prev,
+                      ctaTitle: event.target.value
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">CTA Highlight</Label>
+                <Input
+                  value={aboutContent.ctaHighlight ?? ""}
+                  onChange={(event) =>
+                    setAboutContent((prev) => ({
+                      ...prev,
+                      ctaHighlight: event.target.value
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">CTA Subtitle</Label>
+                <Textarea
+                  value={aboutContent.ctaSubtitle ?? ""}
+                  onChange={(event) =>
+                    setAboutContent((prev) => ({
+                      ...prev,
+                      ctaSubtitle: event.target.value
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none resize-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                  rows={3}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">CTA Primary Button Label</Label>
+                <Input
+                  value={aboutContent.ctaPrimaryLabel ?? ""}
+                  onChange={(event) =>
+                    setAboutContent((prev) => ({
+                      ...prev,
+                      ctaPrimaryLabel: event.target.value
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">CTA Primary Button Link</Label>
+                <Input
+                  value={aboutContent.ctaPrimaryLink ?? ""}
+                  onChange={(event) =>
+                    setAboutContent((prev) => ({
+                      ...prev,
+                      ctaPrimaryLink: event.target.value
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">CTA Secondary Button Label</Label>
+                <Input
+                  value={aboutContent.ctaSecondaryLabel ?? ""}
+                  onChange={(event) =>
+                    setAboutContent((prev) => ({
+                      ...prev,
+                      ctaSecondaryLabel: event.target.value
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">CTA Secondary Button Link</Label>
+                <Input
+                  value={aboutContent.ctaSecondaryLink ?? ""}
+                  onChange={(event) =>
+                    setAboutContent((prev) => ({
+                      ...prev,
+                      ctaSecondaryLink: event.target.value
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
                 />
               </div>
             </div>
