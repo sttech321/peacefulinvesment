@@ -84,13 +84,20 @@ const DEFAULT_PROFILE_MENU_LABELS: ProfileMenuLabels = {
   signOut: 'Sign Out',
 };
 
+const buildDefaultHeaderLinks = (): LinkItem[] =>
+  DEFAULT_NAV_LINKS_AUTH.map((link, index) => ({
+    label: link.name,
+    to: link.href,
+    order: index + 1,
+  }));
+
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { user, signOut } = useAuth();
   const { isAdmin } = useUserRole();
   const { profile } = useProfile();
   const navigate = useNavigate();
-  const [headerLinks, setHeaderLinks] = useState<LinkItem[]>([]);
+  const [headerLinks, setHeaderLinks] = useState<LinkItem[]>(() => buildDefaultHeaderLinks());
   const [isHeaderEditorOpen, setIsHeaderEditorOpen] = useState(false);
   const [isHeaderSaving, setIsHeaderSaving] = useState(false);
   const [headerLinksDraft, setHeaderLinksDraft] = useState<LinkItem[]>([]);
@@ -99,62 +106,62 @@ const Navbar = () => {
   );
   const [profileMenuLabelsDraft, setProfileMenuLabelsDraft] =
     useState<ProfileMenuLabels>(DEFAULT_PROFILE_MENU_LABELS);
+  const [isNavContentReady, setIsNavContentReady] = useState(false);
 
   useEffect(() => {
-    fetchHeaderLinks();
-    fetchProfileMenuLabels();
+    const loadNavContent = async () => {
+      let nextHeaderLinks = buildDefaultHeaderLinks();
+      let nextProfileMenuLabels = { ...DEFAULT_PROFILE_MENU_LABELS };
+
+      try {
+        const { data, error } = await supabase
+          .from('app_settings' as any)
+          .select('value')
+          .eq('key', 'header_links')
+          .maybeSingle();
+
+        if (!error && (data as any)?.value) {
+          const parsedLinks = JSON.parse((data as any).value) as LinkItem[];
+          if (Array.isArray(parsedLinks)) {
+            const sortedLinks = [...parsedLinks].sort((a, b) => {
+              const orderA = a.order !== undefined ? a.order : 999;
+              const orderB = b.order !== undefined ? b.order : 999;
+              return orderA - orderB;
+            });
+            nextHeaderLinks = sortedLinks;
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching header links:', error);
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('app_settings' as any)
+          .select('value')
+          .eq('key', 'profile_menu_labels')
+          .maybeSingle();
+
+        if (!error && (data as any)?.value) {
+          const parsed = JSON.parse((data as any).value) as Partial<ProfileMenuLabels>;
+          if (parsed && typeof parsed === 'object') {
+            nextProfileMenuLabels = {
+              ...DEFAULT_PROFILE_MENU_LABELS,
+              ...parsed,
+            };
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching profile menu labels:', error);
+      }
+
+      setHeaderLinks(nextHeaderLinks);
+      setProfileMenuLabels(nextProfileMenuLabels);
+      setIsNavContentReady(true);
+    };
+
+    void loadNavContent();
   }, []);
-
-  const fetchHeaderLinks = async () => {
-    try {
-      const { data } = await supabase
-        .from('app_settings' as any)
-        .select('value')
-        .eq('key', 'header_links')
-        .maybeSingle();
-
-      if ((data as any)?.value) {
-        try {
-          const links = JSON.parse((data as any).value);
-          // Sort links by order if order exists
-          const sortedLinks = [...links].sort((a: LinkItem, b: LinkItem) => {
-            const orderA = a.order !== undefined ? a.order : 999;
-            const orderB = b.order !== undefined ? b.order : 999;
-            return orderA - orderB;
-          });
-          setHeaderLinks(sortedLinks);
-        } catch (e) {
-          console.warn('Failed to parse header links, using defaults:', e);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching header links:', error);
-    }
-  };
-
-  const fetchProfileMenuLabels = async () => {
-    try {
-      const { data } = await supabase
-        .from('app_settings' as any)
-        .select('value')
-        .eq('key', 'profile_menu_labels')
-        .maybeSingle();
-
-      if ((data as any)?.value) {
-        try {
-          const parsed = JSON.parse((data as any).value);
-          setProfileMenuLabels({
-            ...DEFAULT_PROFILE_MENU_LABELS,
-            ...parsed,
-          });
-        } catch (e) {
-          console.warn('Failed to parse profile menu labels, using defaults:', e);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching profile menu labels:', error);
-    }
-  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -333,6 +340,10 @@ const Navbar = () => {
     ...(showOverseasCompany ? [{ name: 'Overseas Company', href: '/overseas-company' }] : []),
     { name: 'Requests', href: '/requests' },
   ];
+
+  if (!isNavContentReady) {
+    return <div className='h-[80px]' />;
+  }
 
   return (
     <>
