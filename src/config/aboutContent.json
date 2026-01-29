@@ -31,15 +31,15 @@
     {
       "title": "Client-First Approach",
       "description": "Every decision we make is centered around our clients' success and financial well-being."
-    },
+    },     
     {
       "title": "Innovation",
       "description": "We continuously evolve our platform with cutting-edge technology to provide the best investing experience."
-    },
+    }, 
     {
       "title": "Global Reach",
       "description": "Serving clients worldwide with localized support."
-    }
+    } 
   ],
   "achievementsTitle": "Our",
   "achievementsHighlight": "Achievements",
@@ -55,12 +55,12 @@
     },
     {
       "number": "50+",
-      "label": "Countries Served"
-    },
+      "label": "Countries Served sss"
+    }, 
     {
       "number": "99.9%",
       "label": "Uptime"
-    }
+    }  
   ],
   "leadershipTitle": "Meet Our",
   "leadershipHighlight": "Leadership Team",
@@ -75,12 +75,12 @@
       "name": "Sarah Chen",
       "role": "Chief Technology Officer",
       "description": "Expert in fintech solutions with a focus on secure, scalable trading platforms."
-    }, 
+    },  
     {
       "name": "Michael Rodriguez",
       "role": "Head of Compliance",
       "description": "Ensures our platform meets all regulatory requirements and maintains the highest ethical standards."
-    }
+    } 
   ],
   "journeyTitle": "Our",
   "journeyHighlight": "Journey",
@@ -110,7 +110,7 @@
       "year": "2024",
       "title": "Future Vision",
       "description": "Continuing innovation with blockchain integration and enhanced mobile trading capabilities."
-    }
+    } 
   ],
   "ctaTitle": "Ready to Start Your",
   "ctaHighlight": "Trading Journey?",
