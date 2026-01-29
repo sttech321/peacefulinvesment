@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -27,7 +28,20 @@ import { useBlog, BlogPost, BlogCategory, BlogMedia } from "@/hooks/useBlog";
 import { useUserRole } from "@/hooks/useUserRole";
 import { supabase } from "@/integrations/supabase/client";
 
-type PrayerTaskOption = { id: string; name: string };
+type PrayerTaskRow = {
+  id: string;
+  name: string;
+  link_or_video?: string | null;
+  folder_id?: string | null;
+  duration_days?: number | null;
+  number_of_days?: number | null;
+  start_date?: string | null;
+  start_time?: string | null;
+  is_shared?: boolean | null;
+  blog_post_id?: string | null;
+};
+
+type PrayerFolder = { id: string; name: string; parent_id: string | null };
 
 function extractPrayerTaskIdFromPostTags(tags: unknown): string | null {
   if (!Array.isArray(tags)) return null;
@@ -98,6 +112,7 @@ const AdminBlog = () => {
   // -------------------------
   // Hooks: always declared here (top of component)
   // -------------------------
+  const todayIso = useMemo(() => new Date().toISOString().split("T")[0], []);
   const [catSearch, setCatSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
@@ -121,25 +136,23 @@ const AdminBlog = () => {
   const [pendingMediaFiles, setPendingMediaFiles] = useState<File[]>([]);
   const [featuredImageError, setFeaturedImageError] = useState<string>("");
   const [featuredPreviewObjectUrl, setFeaturedPreviewObjectUrl] = useState<string | null>(null);
-  const [prayerTasks, setPrayerTasks] = useState<PrayerTaskOption[]>([]);
-  const [loadingPrayerTasks, setLoadingPrayerTasks] = useState(false);
-  const [selectedPrayerTaskId, setSelectedPrayerTaskId] = useState<string>("none");
+  const [saving, setSaving] = useState(false);
 
-  // Hide prayer tasks that are already mapped to other blog posts (via tag prayer_task:<uuid>).
-  // Allow the currently-selected task to remain visible while editing.
-  const usedPrayerTaskIds = useMemo(() => {
-    const used = new Set<string>();
-    for (const p of posts || []) {
-      if (editingPost?.id && p.id === editingPost.id) continue; // allow current post to keep its mapping
-      const mapped = extractPrayerTaskIdFromPostTags((p as any).tags);
-      if (mapped) used.add(mapped);
-    }
-    return used;
-  }, [editingPost?.id, posts]);
+  const [prayerEnabled, setPrayerEnabled] = useState(true);
+  const [linkedPrayerTaskId, setLinkedPrayerTaskId] = useState<string | null>(null);
+  const [prayerFolders, setPrayerFolders] = useState<PrayerFolder[]>([]);
+  const [loadingPrayerFolders, setLoadingPrayerFolders] = useState(false);
+  const [prayerForm, setPrayerForm] = useState({
+    name: "",
+    link_or_video: "",
+    folder_id: "none",
+    duration_days: 1,
+    start_date: todayIso,
+    start_time: "06:00",
+    is_shared: true,
+  });
 
-  const availablePrayerTasks = useMemo(() => {
-    return (prayerTasks || []).filter((t) => !usedPrayerTaskIds.has(t.id) || t.id === selectedPrayerTaskId);
-  }, [prayerTasks, selectedPrayerTaskId, usedPrayerTaskIds]);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   // Cleanup object URL previews (preview only; never persisted)
   useEffect(() => {
@@ -217,31 +230,29 @@ const AdminBlog = () => {
     fetchPosts("all");
   }, [fetchPosts]);
 
-  // Load prayer tasks so admins can map blog posts to prayer_tasks via tag: `prayer_task:<uuid>`
+  // Load prayer folders for prayer task section
   useEffect(() => {
-    const loadPrayerTasks = async () => {
+    const loadPrayerFolders = async () => {
       try {
-        setLoadingPrayerTasks(true);
-        const { data, error } = await (supabase as any)
-          .from("prayer_tasks")
-          .select("id,name")
-          .order("name", { ascending: true });
+        setLoadingPrayerFolders(true);
+        const { data, error } = await (supabase as any).from("prayer_folders").select("id,name,parent_id").order("name", { ascending: true });
         if (error) throw error;
-        setPrayerTasks((data || []) as PrayerTaskOption[]);
+        setPrayerFolders((data || []) as PrayerFolder[]);
       } catch (e) {
-        console.warn("[AdminBlog] Failed to load prayer tasks for mapping:", e);
-        setPrayerTasks([]);
+        console.warn("[AdminBlog] Failed to load prayer folders:", e);
+        setPrayerFolders([]);
       } finally {
-        setLoadingPrayerTasks(false);
+        setLoadingPrayerFolders(false);
       }
     };
-    void loadPrayerTasks();
+    void loadPrayerFolders();
   }, []);
 
   // -------------------------
   // Non-hook helpers
   // -------------------------
   const resetForm = () => {
+    setFieldErrors({});
     setFormData({
       title: "",
       slug: "",
@@ -262,7 +273,17 @@ const AdminBlog = () => {
     setPendingMediaFiles([]);
     setFeaturedImageError("");
     setFeaturedPreviewObjectUrl(null);
-    setSelectedPrayerTaskId("none");
+    setPrayerEnabled(true);
+    setLinkedPrayerTaskId(null);
+    setPrayerForm({
+      name: "",
+      link_or_video: "",
+      folder_id: "none",
+      duration_days: 1,
+      start_date: todayIso,
+      start_time: "06:00",
+      is_shared: true,
+    });
   };
 
   const sanitizeFilename = (filename: string) => filename.replace(/[^a-zA-Z0-9._-]/g, "_");
@@ -296,8 +317,65 @@ const AdminBlog = () => {
       .replace(/-+/g, "-")
       .trim();
 
+  const buildPrayerLinkDefault = (slug: string) => `/blog/${String(slug || "").trim()}`;
+
+  const loadLinkedPrayerTaskForPost = async (post: BlogPost): Promise<PrayerTaskRow | null> => {
+    try {
+      const byBlog = await (supabase as any)
+        .from("prayer_tasks")
+        .select("id,name,link_or_video,folder_id,duration_days,number_of_days,start_date,start_time,is_shared,blog_post_id")
+        .eq("blog_post_id", post.id)
+        .maybeSingle();
+
+      if (byBlog?.data) return byBlog.data as PrayerTaskRow;
+
+      const mappedId = extractPrayerTaskIdFromPostTags((post as any).tags);
+      if (!mappedId) return null;
+
+      const byId = await (supabase as any)
+        .from("prayer_tasks")
+        .select("id,name,link_or_video,folder_id,duration_days,number_of_days,start_date,start_time,is_shared,blog_post_id")
+        .eq("id", mappedId)
+        .maybeSingle();
+      return (byId?.data ?? null) as PrayerTaskRow | null;
+    } catch (e) {
+      console.warn("[AdminBlog] Failed to load linked prayer task:", e);
+      return null;
+    }
+  };
+
+  const validateUnifiedForm = () => {
+    const errs: Record<string, string> = {};
+
+    const title = String(formData.title || "").trim();
+    const slug = String(formData.slug || "").trim();
+    const content = String(formData.content || "").trim();
+
+    if (!title) errs.title = "Title is required.";
+    if (!slug) errs.slug = "Slug is required.";
+    if (!content) errs.content = "Content is required.";
+
+    if (prayerEnabled) {
+      const prayerName = String(prayerForm.name || "").trim() || title;
+      const days = Math.max(1, Math.floor(Number(prayerForm.duration_days || 1)));
+      const startDate = String(prayerForm.start_date || "").trim();
+      const startTime = String(prayerForm.start_time || "").trim();
+
+      if (!prayerName) errs.prayer_name = "Prayer Task name is required.";
+      if (!Number.isFinite(days) || days < 1) errs.prayer_duration_days = "Duration must be at least 1 day.";
+      if (!startDate) errs.prayer_start_date = "Start date is required.";
+      if (!startTime) errs.prayer_start_time = "Start time is required.";
+    }
+
+    setFieldErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    setFieldErrors({});
+    if (!validateUnifiedForm()) return;
 
     const { previewUrl, featured_image, header_left_text, header_right_text, ...cleanForm } = formData;
     const featuredFile = featured_image instanceof File ? (featured_image as File) : null;
@@ -308,13 +386,8 @@ const AdminBlog = () => {
       .map((tag: string) => tag.trim())
       .filter(Boolean);
 
-    // Mapping tag (Option A): stored in DB as a normal tag, but hidden from the tags input.
-    const tagsWithoutSystem = stripSystemTags(baseTags);
-    const mappingTag =
-      selectedPrayerTaskId && selectedPrayerTaskId !== "none"
-        ? `prayer_task:${selectedPrayerTaskId}`
-        : null;
-    const finalTags = [...tagsWithoutSystem, ...(mappingTag ? [mappingTag] : [])];
+    // We keep mapping tags out of the input; the backend RPC will manage prayer_task:<uuid>.
+    const finalTags = stripSystemTags(baseTags);
 
     const basePostData = {
       ...cleanForm,
@@ -322,70 +395,67 @@ const AdminBlog = () => {
       header_left_text: String(header_left_text || "").trim() || null,
       header_right_text: String(header_right_text || "").trim() || null,
       tags: finalTags,
-      published_at: cleanForm.status === "published" ? new Date().toISOString() : null,
     };
 
     try {
-      let postId: string;
-      let updatedPost: BlogPost;
-      
-      if (editingPost) {
-        // Update post fields first (do NOT send featured_image blobs/base64)
-        const { data, error } = await updatePost(editingPost.id, basePostData);
-        if (error) throw error;
-        postId = editingPost.id;
-        updatedPost = data!;
+      setSaving(true);
 
-        // If featured image was changed, upload to Supabase Storage and store ONLY public URL
-        if (featuredFile) {
-          const previousFeatured = editingPost.featured_image;
-          const { publicUrl, filePath: newFilePath } = await uploadFeaturedImageToStorage(postId, featuredFile);
+      const title = String(basePostData.title || "").trim();
+      const slug = String(basePostData.slug || "").trim();
 
-          const { data: updatedWithImage, error: updateImageError } = await updatePost(postId, { featured_image: publicUrl });
-          if (updateImageError) throw updateImageError;
-          updatedPost = updatedWithImage!;
+      const prayerPayload = {
+        name: String(prayerForm.name || "").trim() || title,
+        link_or_video: String(prayerForm.link_or_video || "").trim() || buildPrayerLinkDefault(slug),
+        folder_id: prayerForm.folder_id !== "none" ? prayerForm.folder_id : null,
+        duration_days: Math.max(1, Math.floor(Number(prayerForm.duration_days || 1))),
+        start_date: prayerForm.start_date,
+        start_time: prayerForm.start_time,
+        is_shared: Boolean(prayerForm.is_shared),
+      };
 
-          // Optionally delete old storage file (best-effort)
-          // TODO: Confirm if old featured_image URLs always use the `blog-media` bucket. If not, skip deletion.
-          if (previousFeatured && typeof previousFeatured === "string") {
-            const oldPath = tryGetStoragePathFromPublicUrl(previousFeatured);
-            if (oldPath && oldPath !== newFilePath) {
-              try {
-                await supabase.storage.from("blog-media").remove([oldPath]);
-              } catch {
-                // best-effort cleanup only
-              }
+      const { data: upsertResult, error: upsertError } = await (supabase as any).rpc(
+        "admin_upsert_blog_post_with_prayer_task",
+        {
+          p_post_id: editingPost?.id ?? null,
+          p_post: basePostData,
+          p_prayer: prayerPayload,
+          p_with_prayer: Boolean(prayerEnabled),
+        }
+      );
+      if (upsertError) throw upsertError;
+
+      const postId = String(upsertResult?.post_id || "");
+      const prayerId = upsertResult?.prayer_task_id ? String(upsertResult.prayer_task_id) : null;
+      if (!postId) throw new Error("Failed to save: missing post id.");
+      setLinkedPrayerTaskId(prayerId);
+
+      // If featured image was changed, upload to Supabase Storage and store ONLY public URL
+      if (featuredFile) {
+        const previousFeatured = editingPost?.featured_image;
+        const { publicUrl, filePath: newFilePath } = await uploadFeaturedImageToStorage(postId, featuredFile);
+
+        const { error: updateImageError } = await updatePost(postId, { featured_image: publicUrl });
+        if (updateImageError) throw updateImageError;
+
+        // Optionally delete old storage file (best-effort)
+        if (previousFeatured && typeof previousFeatured === "string") {
+          const oldPath = tryGetStoragePathFromPublicUrl(previousFeatured);
+          if (oldPath && oldPath !== newFilePath) {
+            try {
+              await supabase.storage.from("blog-media").remove([oldPath]);
+            } catch {
+              // best-effort cleanup only
             }
           }
         }
-
-        toast({ title: "Post Updated", description: "Blog post has been updated successfully." });
-      } else {
-        // Create post first WITHOUT featured_image (no blobs/base64 in DB)
-        const { data, error } = await createPost({ ...basePostData, featured_image: null });
-        if (error) throw error;
-        postId = data!.id;
-        updatedPost = data!;
-
-        // Upload featured image AFTER post exists (required order)
-        if (featuredFile) {
-          try {
-            const { publicUrl } = await uploadFeaturedImageToStorage(postId, featuredFile);
-            const { data: updatedWithImage, error: updateImageError } = await updatePost(postId, { featured_image: publicUrl });
-            if (updateImageError) throw updateImageError;
-            updatedPost = updatedWithImage!;
-          } catch (err) {
-            // Post was created successfully; only the featured image upload failed.
-            toast({
-              title: "Warning",
-              description: "Post created but featured image failed to upload. You can retry by editing the post.",
-              variant: "destructive",
-            });
-          }
-        }
-
-        toast({ title: "Post Created", description: "Blog post has been created successfully." });
       }
+
+      toast({
+        title: editingPost ? "Updated" : "Created",
+        description: prayerEnabled
+          ? "Blog post + prayer task saved successfully."
+          : "Blog post saved successfully.",
+      });
 
       // Upload pending media files if any (for new posts)
       if (pendingMediaFiles.length > 0) {
@@ -420,20 +490,36 @@ const AdminBlog = () => {
       setPostMedia(media);
       
       // Set as editing post so media section remains available
-      setEditingPost(updatedPost);
+      const { data: freshPost } = await supabase.from("blog_posts").select("*").eq("id", postId).maybeSingle();
+      if (freshPost) setEditingPost(freshPost as BlogPost);
 
       fetchPosts("all");
     } catch (err) {
       console.error(err);
-      toast({ title: "Error", description: "Failed to save blog post. Please try again.", variant: "destructive" });
+      const msg = (err as any)?.message ? String((err as any).message) : "Failed to save blog post. Please try again.";
+      // Map a few common DB errors to fields
+      const nextErrors: Record<string, string> = {};
+      if (/blog_posts_slug_key/i.test(msg) || /duplicate key/i.test(msg)) {
+        nextErrors.slug = "That slug is already in use. Please choose another.";
+      } else if (/Missing required field: title/i.test(msg)) {
+        nextErrors.title = "Title is required.";
+      } else if (/Missing required field: slug/i.test(msg)) {
+        nextErrors.slug = "Slug is required.";
+      } else if (/Missing required field: content/i.test(msg)) {
+        nextErrors.content = "Content is required.";
+      }
+      if (Object.keys(nextErrors).length) setFieldErrors((p) => ({ ...p, ...nextErrors }));
+
+      toast({ title: "Error", description: msg, variant: "destructive" });
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleEdit = async (post: BlogPost) => {
     setEditingPost(post);
+    setFieldErrors({});
     setFeaturedPreviewObjectUrl(null);
-    const mappedPrayerTaskId = extractPrayerTaskIdFromPostTags((post as any).tags);
-    setSelectedPrayerTaskId(mappedPrayerTaskId ?? "none");
     const extractedExtras = extractExtraTextsFromTags((post as any).tags); // legacy fallback
 
     const safeDecode = (val: unknown) => {
@@ -464,6 +550,33 @@ const AdminBlog = () => {
       featured_image: "",
       previewUrl: post.featured_image || "",
     });
+
+    const linkedTask = await loadLinkedPrayerTaskForPost(post);
+    if (linkedTask) {
+      setPrayerEnabled(true);
+      setLinkedPrayerTaskId(linkedTask.id);
+      setPrayerForm({
+        name: linkedTask.name || "",
+        link_or_video: linkedTask.link_or_video || buildPrayerLinkDefault(post.slug),
+        folder_id: linkedTask.folder_id ? String(linkedTask.folder_id) : "none",
+        duration_days: Number(linkedTask.duration_days ?? linkedTask.number_of_days ?? 1) || 1,
+        start_date: String(linkedTask.start_date || todayIso),
+        start_time: String(linkedTask.start_time || "06:00").slice(0, 5),
+        is_shared: Boolean(linkedTask.is_shared ?? true),
+      });
+    } else {
+      setPrayerEnabled(false);
+      setLinkedPrayerTaskId(null);
+      setPrayerForm({
+        name: post.title || "",
+        link_or_video: buildPrayerLinkDefault(post.slug),
+        folder_id: "none",
+        duration_days: 1,
+        start_date: todayIso,
+        start_time: "06:00",
+        is_shared: true,
+      });
+    }
     
     // Fetch media for this post
     const media = await fetchPostMedia(post.id);
@@ -591,6 +704,146 @@ const AdminBlog = () => {
 
             <div className="px-4 mb-4 max-h-[70vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent">
               <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Section 1: Prayer Task */}
+                <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <CardTitle className="text-base text-black">Prayer Task</CardTitle>
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          className="rounded-[2px]"
+                          checked={prayerEnabled}
+                          onCheckedChange={(v) => setPrayerEnabled(Boolean(v))}
+                        />
+                        <span className="text-sm text-black">Create / update linked prayer task</span>
+                      </div>
+                    </div>
+                    {linkedPrayerTaskId ? (
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Linked Prayer Task ID: <code className="text-xs">{linkedPrayerTaskId}</code>
+                      </p>
+                    ) : null}
+                  </CardHeader>
+                  <CardContent className="pt-0 space-y-4">
+                    <div className={prayerEnabled ? "space-y-4" : "opacity-60 pointer-events-none select-none space-y-4"}>
+                      <div>
+                        <Label>Task Name *</Label>
+                        <Input
+                          value={prayerForm.name}
+                          onChange={(e) => setPrayerForm((p) => ({ ...p, name: e.target.value }))}
+                          placeholder="e.g., Peaceful Investment"
+                          className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none"
+                          style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as React.CSSProperties}
+                        />
+                        {fieldErrors.prayer_name ? <p className="text-sm text-red-500 mt-1">{fieldErrors.prayer_name}</p> : null}
+                      </div>
+
+                      <div>
+                        <Label>Link or Video</Label>
+                        <Input
+                          value={prayerForm.link_or_video}
+                          onChange={(e) => setPrayerForm((p) => ({ ...p, link_or_video: e.target.value }))}
+                          placeholder={buildPrayerLinkDefault(formData.slug)}
+                          className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none"
+                          style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as React.CSSProperties}
+                        />
+                        <p className="text-xs text-muted-foreground mt-2">Recommended: link to the blog post URL so users open the prayer easily.</p>
+                      </div>
+
+                      <div>
+                        <Label>Folder</Label>
+                        <Select value={prayerForm.folder_id} onValueChange={(v) => setPrayerForm((p) => ({ ...p, folder_id: v }))}>
+                          <SelectTrigger
+                            className="mt-1 rounded-[8px] shadow-none border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400"
+                            style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}
+                          >
+                            <SelectValue placeholder={loadingPrayerFolders ? "Loading..." : "Unassigned"} />
+                          </SelectTrigger>
+                          <SelectContent className="border-secondary-foreground bg-black/90 text-white">
+                            <SelectItem value="none">Unassigned</SelectItem>
+                            {(() => {
+                              // Flatten folders into a simple tree list for the select
+                              const map = new Map<string, PrayerFolder & { children: PrayerFolder[] }>();
+                              prayerFolders.forEach((f) => map.set(f.id, { ...(f as any), children: [] }));
+                              map.forEach((node) => {
+                                if (node.parent_id && map.has(String(node.parent_id))) {
+                                  map.get(String(node.parent_id))!.children.push(node);
+                                }
+                              });
+                              const roots = Array.from(map.values()).filter((n) => !n.parent_id || !map.has(String(n.parent_id)));
+                              const sortByName = (a: PrayerFolder, b: PrayerFolder) => a.name.localeCompare(b.name);
+                              roots.sort(sortByName);
+                              const out: Array<{ id: string; label: string; depth: number }> = [];
+                              const visit = (n: any, depth: number) => {
+                                out.push({ id: n.id, label: n.name, depth });
+                                (n.children || []).sort(sortByName).forEach((c: any) => visit(c, depth + 1));
+                              };
+                              roots.forEach((r) => visit(r, 0));
+                              return out.map((f) => (
+                                <SelectItem key={f.id} value={f.id}>
+                                  <span style={{ marginLeft: f.depth * 12 }}>{f.depth > 0 ? "— " : ""}{f.label}</span>
+                                </SelectItem>
+                              ));
+                            })()}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-4">
+                        <div>
+                          <Label>Duration (Days) *</Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            value={prayerForm.duration_days}
+                            onChange={(e) => setPrayerForm((p) => ({ ...p, duration_days: Number(e.target.value) || 1 }))}
+                            className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none"
+                            style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as React.CSSProperties}
+                          />
+                          {fieldErrors.prayer_duration_days ? <p className="text-sm text-red-500 mt-1">{fieldErrors.prayer_duration_days}</p> : null}
+                        </div>
+                        <div>
+                          <Label>Start Date *</Label>
+                          <Input
+                            type="date"
+                            value={prayerForm.start_date}
+                            onChange={(e) => setPrayerForm((p) => ({ ...p, start_date: e.target.value }))}
+                            className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none"
+                            style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as React.CSSProperties}
+                          />
+                          {fieldErrors.prayer_start_date ? <p className="text-sm text-red-500 mt-1">{fieldErrors.prayer_start_date}</p> : null}
+                        </div>
+                        <div>
+                          <Label>Start Time *</Label>
+                          <Input
+                            type="time"
+                            value={prayerForm.start_time}
+                            onChange={(e) => setPrayerForm((p) => ({ ...p, start_time: e.target.value }))}
+                            className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none"
+                            style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as React.CSSProperties}
+                          />
+                          {fieldErrors.prayer_start_time ? <p className="text-sm text-red-500 mt-1">{fieldErrors.prayer_start_time}</p> : null}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          className="rounded-[2px]"
+                          checked={Boolean(prayerForm.is_shared)}
+                          onCheckedChange={(v) => setPrayerForm((p) => ({ ...p, is_shared: Boolean(v) }))}
+                        />
+                        <span className="text-sm text-black">Shared (visible to everyone; users can join)</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Section 2: Blog Post */}
+                <Card className="border border-muted/20 p-0 rounded-lg bg-white/5">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base text-black">Blog Post</CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0 space-y-4">
                 <div>
                   <Label htmlFor="featured_image">Featured Image</Label>
                   <Input
@@ -653,14 +906,31 @@ const AdminBlog = () => {
                       className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none bg-black/5"
                     style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties }
                       value={formData.title}
-                      onChange={(e) => setFormData({ ...formData, title: e.target.value, slug: generateSlug(e.target.value) })}
+                      onChange={(e) => {
+                        const nextTitle = e.target.value;
+                        setFormData({ ...formData, title: nextTitle, slug: generateSlug(nextTitle) });
+                        if (!editingPost) {
+                          setPrayerForm((p) => ({ ...p, name: p.name ? p.name : nextTitle }));
+                        }
+                      }}
                       required
                     />
+                    {fieldErrors.title ? <p className="text-sm text-red-500 mt-1">{fieldErrors.title}</p> : null}
                   </div>
                   <div>
                     <Label htmlFor="slug">Slug</Label>
                     <Input id="slug" className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none bg-black/10"
-                    style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties } value={formData.slug} onChange={(e) => setFormData({ ...formData, slug: e.target.value })} required />
+                    style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties } value={formData.slug} onChange={(e) => {
+                      const nextSlug = e.target.value;
+                      setFormData({ ...formData, slug: nextSlug });
+                      setPrayerForm((p) => {
+                        const current = String(p.link_or_video || "").trim();
+                        const nextDefault = buildPrayerLinkDefault(nextSlug);
+                        if (!current || current.startsWith("/blog/")) return { ...p, link_or_video: nextDefault };
+                        return p;
+                      });
+                    }} required />
+                    {fieldErrors.slug ? <p className="text-sm text-red-500 mt-1">{fieldErrors.slug}</p> : null}
                   </div>
                 </div>
 
@@ -719,6 +989,7 @@ const AdminBlog = () => {
                   <p className="text-xs text-muted-foreground mt-2">
                     Use the formatting toolbar to style your content with headings, bold, italic, lists, links, and colors.
                   </p>
+                  {fieldErrors.content ? <p className="text-sm text-red-500 mt-2">{fieldErrors.content}</p> : null}
                 </div>
 
                 {/* Media Management Section */}
@@ -929,36 +1200,6 @@ const AdminBlog = () => {
                   </div>
                 </div>
 
-                <div>
-                  <Label>Prayer Task Mapping (optional)</Label>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Links this post to a prayer task by saving the tag <strong>prayer_task:&lt;uuid&gt;</strong>. Users can then Join/Save reminders from the card.
-                  </p>
-                  <Select value={selectedPrayerTaskId} onValueChange={setSelectedPrayerTaskId}>
-                    <SelectTrigger className="mt-2 rounded-[8px] shadow-none border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400" style={{ "--tw-ring-offset-width": "0" } as React.CSSProperties}>
-                      <SelectValue placeholder={loadingPrayerTasks ? "Loading prayer tasks..." : "Select a prayer task (optional)"} />
-                    </SelectTrigger>
-                    <SelectContent className="border-secondary-foreground bg-black/90 text-white">
-                      <SelectItem value="none">None</SelectItem>
-                      {availablePrayerTasks.map((t) => (
-                        <SelectItem key={t.id} value={t.id}>
-                          {t.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <div className="mt-3">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="rounded-[8px] border-0 hover:bg-white/80"
-                      onClick={() => navigate("/admin/prayer-tasks")}
-                    >
-                      Create Prayer Task
-                    </Button>
-                  </div>
-                </div>
-
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="meta_title">Meta Title (SEO)</Label>
@@ -969,12 +1210,16 @@ const AdminBlog = () => {
                     <Input id="meta_description" value={formData.meta_description} onChange={(e) => setFormData({ ...formData, meta_description: e.target.value })} className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none" style={ { "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none", } as React.CSSProperties } />
                   </div>
                 </div>
+                  </CardContent>
+                </Card>
 
                 <div className="flex justify-end gap-2 pb-2">
                   <Button type="button" variant="outline" className="rounded-[8px] border-0 hover:bg-white/80" onClick={() => setDialogOpen(false)}>
                     Cancel
                   </Button>
-                  <Button type="submit" className="rounded-[8px] border-0 hover:bg-primary/80">{editingPost ? "Update Post" : "Create Post"}</Button>
+                  <Button type="submit" className="rounded-[8px] border-0 hover:bg-primary/80" disabled={saving || uploadingMedia}>
+                    {saving ? "Saving..." : editingPost ? "Update" : "Create"}
+                  </Button>
                 </div>
               </form>
               </div>
