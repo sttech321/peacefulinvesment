@@ -1,5 +1,11 @@
 import { Link, useLocation } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type CSSProperties } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Edit, X } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { useUserRole } from '@/hooks/useUserRole';
 import footerLogo from '@/assets/footerLogo.svg';
 import logoAnimation from '@/assets/new-logo.gif';
 import FiArrowUpRight from '@/assets/linkArrow.svg';
@@ -16,58 +22,163 @@ interface LinkItem {
   order?: number;
 }
 
+const buildDefaultFooterLinks = (): LinkItem[] => [
+  { label: 'Home', to: '/', order: 1 },
+  { label: 'About us', to: '/about', order: 2 },
+  { label: 'App is coming soon', to: '/downloads', order: 3 },
+];
+
 const Footer = () => {
   const location = useLocation();
   const isBlogPage = location.pathname === '/blog';
-  const [footerLinks, setFooterLinks] = useState<LinkItem[]>([]);
+  const { user } = useAuth();
+  const { isAdmin } = useUserRole();
+  const [footerLinks, setFooterLinks] = useState<LinkItem[]>(() => buildDefaultFooterLinks());
+  const [isFooterReady, setIsFooterReady] = useState(false);
+  const [isFooterEditorOpen, setIsFooterEditorOpen] = useState(false);
+  const [isFooterSaving, setIsFooterSaving] = useState(false);
+  const [footerLinksDraft, setFooterLinksDraft] = useState<LinkItem[]>([]);
 
   useEffect(() => {
-    fetchFooterLinks();
+    const loadFooterLinks = async () => {
+      let nextFooterLinks = buildDefaultFooterLinks();
+
+      try {
+        const { data, error } = await supabase
+          .from('app_settings' as any)
+          .select('value')
+          .eq('key', 'footer_links')
+          .maybeSingle();
+
+        if (!error && (data as any)?.value) {
+          const parsedLinks = JSON.parse((data as any).value) as LinkItem[];
+          if (Array.isArray(parsedLinks)) {
+            nextFooterLinks = [...parsedLinks].sort((a, b) => {
+              const orderA = a.order !== undefined ? a.order : 999;
+              const orderB = b.order !== undefined ? b.order : 999;
+              return orderA - orderB;
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching footer links:', error);
+      }
+
+      setFooterLinks(nextFooterLinks);
+      setIsFooterReady(true);
+    };
+
+    void loadFooterLinks();
   }, []);
 
-  const fetchFooterLinks = async () => {
-    try {
-      const { data } = await supabase
-        .from('app_settings' as any)
-        .select('value')
-        .eq('key', 'footer_links')
-        .maybeSingle();
-
-      if ((data as any)?.value) {
-        try {
-          const links = JSON.parse((data as any).value);
-          // Sort links by order if order exists
-          const sortedLinks = [...links].sort((a: LinkItem, b: LinkItem) => {
-            const orderA = a.order !== undefined ? a.order : 999;
-            const orderB = b.order !== undefined ? b.order : 999;
-            return orderA - orderB;
-          });
-          setFooterLinks(sortedLinks);
-        } catch (e) {
-          console.warn('Failed to parse footer links, using defaults:', e);
-          setFooterLinks(getDefaultFooterLinks());
+  useEffect(() => {
+    // Live updates for footer_links
+    const channel = supabase
+      .channel('footer_links_realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'app_settings', filter: 'key=eq.footer_links' },
+        (payload: any) => {
+          try {
+            const raw = payload?.new?.value ?? payload?.old?.value;
+            if (!raw) return;
+            const parsedLinks = JSON.parse(raw) as LinkItem[];
+            if (Array.isArray(parsedLinks)) {
+              const sorted = [...parsedLinks].sort((a, b) => {
+                const orderA = a.order !== undefined ? a.order : 999;
+                const orderB = b.order !== undefined ? b.order : 999;
+                return orderA - orderB;
+              });
+              setFooterLinks(sorted);
+            }
+          } catch (e) {
+            // Ignore parse errors in realtime payload
+          }
         }
-      } else {
-        setFooterLinks(getDefaultFooterLinks());
-      }
-    } catch (error) {
-      console.error('Error fetching footer links:', error);
-      setFooterLinks(getDefaultFooterLinks());
+      )
+      .subscribe();
+
+    return () => {
+      try { channel.unsubscribe(); } catch {}
+    };
+  }, []);
+
+  if (!isFooterReady) {
+    return (
+      <footer
+        className='border-t bg-[#0A0412] px-6 py-10 text-white'
+        style={{ borderColor: 'var(--pinkcolor)' }}
+      />
+    );
+  }
+
+  const openFooterEditor = () => {
+    const base = footerLinks.length > 0 ? footerLinks : buildDefaultFooterLinks();
+    const sorted = [...base].sort((a, b) => {
+      const orderA = a.order !== undefined ? a.order : 999;
+      const orderB = b.order !== undefined ? b.order : 999;
+      return orderA - orderB;
+    });
+    setFooterLinksDraft(sorted);
+    setIsFooterEditorOpen(true);
+  };
+
+  const updateFooterDraft = (index: number, patch: Partial<LinkItem>) => {
+    setFooterLinksDraft(prev => prev.map((item, i) => (i === index ? { ...item, ...patch } : item)));
+  };
+
+  const addFooterLink = () => {
+    setFooterLinksDraft(prev => [
+      ...prev,
+      { label: '', to: '', order: prev.length + 1 },
+    ]);
+  };
+
+  const removeFooterLink = (index: number) => {
+    setFooterLinksDraft(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSaveFooterLinks = async () => {
+    if (!user) return;
+
+    setIsFooterSaving(true);
+    const sanitized = footerLinksDraft
+      .map((link, index) => ({
+        label: (link.label ?? '').trim(),
+        to: (link.to ?? '').trim(),
+        order: Number.isFinite(Number(link.order)) ? Number(link.order) : index + 1,
+      }))
+      .filter(link => link.label.length > 0 && link.to.length > 0);
+
+    const { error } = await supabase
+      .from('app_settings')
+      .upsert(
+        {
+          key: 'footer_links',
+          value: JSON.stringify(sanitized),
+          description: 'Navigation links for the footer',
+        },
+        { onConflict: 'key' }
+      );
+
+    setIsFooterSaving(false);
+    if (!error) {
+      const sortedLinks = [...sanitized].sort((a, b) => {
+        const orderA = a.order !== undefined ? a.order : 999;
+        const orderB = b.order !== undefined ? b.order : 999;
+        return orderA - orderB;
+      });
+      setFooterLinks(sortedLinks);
+      setIsFooterEditorOpen(false);
     }
   };
 
-  const getDefaultFooterLinks = (): LinkItem[] => [
-    // { label: 'Quick Links', to: '/#', order: 1 },
-    { label: 'Home', to: '/', order: 1 },
-    { label: 'About us', to: '/about', order: 2 },
-    { label: 'App is coming soon', to: '/downloads', order: 3},
-  ];
-
   return (
     <footer
-      className='border-t bg-[#0A0412] px-6 py-10 text-white'
+      className='border-t bg-[#0A0412] px-6 py-10 text-white relative'
       style={{ borderColor: 'var(--pinkcolor)' }}
     >
+  
       <div className='flex grid-cols-1 flex-wrap justify-center gap-8 md:grid-cols-2 lg:grid-cols-3 lg:flex-nowrap'>
         {/* Left column images */}
 
@@ -200,6 +311,19 @@ const Footer = () => {
                   </a>
                 </li> */}
               </ul>
+
+                  {user && isAdmin() && (
+        <div className='pt-4 z-20'>
+          <Button
+            size='sm'
+            className='bg-gradient-pink-to-yellow hover:bg-gradient-yellow-to-pink text-white rounded-[8px] border-0'
+            onClick={openFooterEditor}
+          >
+            <Edit className='h-4 w-4' /> Footer Links
+          </Button>
+        </div>
+      )}
+
             </div>
           </div>
         </div>
@@ -226,6 +350,108 @@ const Footer = () => {
           </div>
         </div>
       </div>
+
+      {user && isAdmin() && (
+        <>
+          <div
+            className={`fixed inset-0 z-40 bg-black/70 transition-opacity ${
+              isFooterEditorOpen ? 'opacity-100' : 'pointer-events-none opacity-0'
+            }`}
+            onClick={() => setIsFooterEditorOpen(false)}
+            aria-hidden='true'
+          />
+          <aside
+            className={`fixed right-0 top-0 z-50 h-full w-full max-w-md transform bg-[#2e2e2e] text-black shadow-2xl transition-transform duration-300 ${
+              isFooterEditorOpen ? 'translate-x-0' : 'translate-x-full'
+            }`}
+            aria-label='Edit Footer Links'
+          >
+            <div className='flex items-center justify-between border-b border-white/10 px-6 py-4'>
+              <h2 className='text-lg font-semibold text-white'>Edit Footer Links</h2>
+              <Button
+                size='sm'
+                variant='outline'
+                className='text-black border-0 rounded-[8px] bg-white/10 hover:bg-white/20'
+                onClick={() => setIsFooterEditorOpen(false)}
+              >
+                <X className='h-4 w-4 text-white' />
+              </Button>
+            </div>
+            <div
+              className='space-y-4 px-6 pt-6 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent'
+              style={{ height: 'calc(100vh - 157px)' }}
+            >
+             
+              {(footerLinksDraft ?? []).map((item, index) => (
+                <div
+                  key={`footer-link-${index}`}
+                  className='rounded-lg border border-white/10 p-4 space-y-3 bg-black/20 my-2 inline-block w-full'
+                >
+                  <div className='flex items-center justify-between'>
+                    <span className='text-sm text-white font-normal'>Link {index + 1}</span>
+                      <Button
+                      size='sm'
+                      variant='outline'
+                      className='text-white border-0 rounded-[8px] bg-white/10 hover:bg-white/20'
+                      onClick={() => removeFooterLink(index)}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+
+                  <div className='space-y-1'>
+                    <Label className='text-sm text-white font-normal'>Label</Label>
+                    <Input
+                      value={item.label ?? ''}
+                      onChange={(e) => updateFooterDraft(index, { label: e.target.value })}
+                      className='text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none'
+                      style={{ '--tw-ring-offset-width': '0', boxShadow: 'none', outline: 'none' } as CSSProperties}
+                    />
+                  </div>
+                  <div className='space-y-1'>
+                    <Label className='text-sm text-white font-normal'>Link (href)</Label>
+                    <Input
+                      value={item.to ?? ''}
+                      onChange={(e) => updateFooterDraft(index, { to: e.target.value })}
+                      className='text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none'
+                      style={{ '--tw-ring-offset-width': '0', boxShadow: 'none', outline: 'none' } as CSSProperties}
+                    />
+                  </div>
+                  <div className='space-y-1'>
+                    <Label className='text-sm text-white font-normal'>Order</Label>
+                    <Input
+                      value={String(item.order ?? index + 1)}
+                      onChange={(e) => updateFooterDraft(index, { order: Number(e.target.value) })}
+                      className='text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none'
+                      style={{ '--tw-ring-offset-width': '0', boxShadow: 'none', outline: 'none' } as CSSProperties}
+                    />
+                  </div>
+             
+                </div>
+              ))}
+
+               <div className='space-y-2'>
+                <Button
+                  size='sm'
+                  className='bg-gradient-pink-to-yellow text-white border-0 rounded-[8px] w-full'
+                  onClick={addFooterLink}
+                >
+                  + Add Link
+                </Button>
+              </div>
+            </div>
+            <div className='p-6'>
+              <Button
+                className='w-full bg-gradient-pink-to-yellow text-white rounded-[8px] border-0'
+                onClick={handleSaveFooterLinks}
+                disabled={isFooterSaving}
+              >
+                {isFooterSaving ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
+          </aside>
+        </>
+      )}
     </footer>
   );
 };
