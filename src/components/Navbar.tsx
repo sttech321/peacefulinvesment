@@ -49,6 +49,54 @@ type ProfileMenuLabels = {
   signOut: string;
 };
 
+type NormalizedLink = {
+  name: string;
+  href: string;
+  order: number;
+};
+
+type GuestMenuOverrides = {
+  downloadsName: string;
+  downloadsHref: string;
+  aboutName: string;
+  aboutHref: string;
+  featuresName: string;
+  featuresHref: string;
+};
+
+const defaultGuestOverrides = (): GuestMenuOverrides => {
+  const findByName = (n: string) => DEFAULT_NAV_LINKS_GUEST.find(l => l.name.toLowerCase() === n.toLowerCase());
+  const dl = findByName('Downloads');
+  const ab = findByName('About');
+  const ft = findByName('Features');
+  return {
+    downloadsName: dl?.name ?? 'Downloads',
+    downloadsHref: dl?.href ?? '/downloads',
+    aboutName: ab?.name ?? 'About',
+    aboutHref: ab?.href ?? '/about',
+    featuresName: ft?.name ?? 'Features',
+    featuresHref: ft?.href ?? '/#features',
+  };
+};
+
+const sanitizeLinks = (links: LinkItem[]): NormalizedLink[] =>
+  links
+    .map((link, index) => {
+      const name = (link.label ?? '').trim();
+      const href = (link.to ?? '').trim();
+      const order = Number.isFinite(Number(link.order))
+        ? Number(link.order)
+        : index + 1;
+
+      return {
+        name,
+        href,
+        order,
+      };
+    })
+    .filter((link) => link.name.length > 0 && link.href.length > 0)
+    .sort((a, b) => a.order - b.order);
+
 const DEFAULT_NAV_LINKS_AUTH: NavLink[] = defaultHeaderMenu.auth;
 const DEFAULT_NAV_LINKS_GUEST: NavLink[] = defaultHeaderMenu.guest;
 
@@ -60,13 +108,20 @@ const DEFAULT_PROFILE_MENU_LABELS: ProfileMenuLabels = {
   signOut: 'Sign Out',
 };
 
+const buildDefaultHeaderLinks = (): LinkItem[] =>
+  DEFAULT_NAV_LINKS_AUTH.map((link, index) => ({
+    label: link.name,
+    to: link.href,
+    order: index + 1,
+  }));
+
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { user, signOut } = useAuth();
   const { isAdmin } = useUserRole();
   const { profile } = useProfile();
   const navigate = useNavigate();
-  const [headerLinks, setHeaderLinks] = useState<LinkItem[]>([]);
+  const [headerLinks, setHeaderLinks] = useState<LinkItem[]>(() => buildDefaultHeaderLinks());
   const [isHeaderEditorOpen, setIsHeaderEditorOpen] = useState(false);
   const [isHeaderSaving, setIsHeaderSaving] = useState(false);
   const [headerLinksDraft, setHeaderLinksDraft] = useState<LinkItem[]>([]);
@@ -75,62 +130,82 @@ const Navbar = () => {
   );
   const [profileMenuLabelsDraft, setProfileMenuLabelsDraft] =
     useState<ProfileMenuLabels>(DEFAULT_PROFILE_MENU_LABELS);
+  const [guestMenuOverrides, setGuestMenuOverrides] = useState<GuestMenuOverrides>(() => defaultGuestOverrides());
+  const [guestMenuOverridesDraft, setGuestMenuOverridesDraft] = useState<GuestMenuOverrides>(() => defaultGuestOverrides());
 
   useEffect(() => {
-    fetchHeaderLinks();
-    fetchProfileMenuLabels();
+    const loadNavContent = async () => {
+      let nextHeaderLinks = buildDefaultHeaderLinks();
+      let nextProfileMenuLabels = { ...DEFAULT_PROFILE_MENU_LABELS };
+      let nextGuestOverrides = { ...defaultGuestOverrides() };
+
+      try {
+        const { data, error } = await supabase
+          .from('app_settings' as any)
+          .select('value')
+          .eq('key', 'header_links')
+          .maybeSingle();
+
+        if (!error && (data as any)?.value) {
+          const parsedLinks = JSON.parse((data as any).value) as LinkItem[];
+          if (Array.isArray(parsedLinks)) {
+            const sortedLinks = [...parsedLinks].sort((a, b) => {
+              const orderA = a.order !== undefined ? a.order : 999;
+              const orderB = b.order !== undefined ? b.order : 999;
+              return orderA - orderB;
+            });
+            nextHeaderLinks = sortedLinks;
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching header links:', error);
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('app_settings' as any)
+          .select('value')
+          .eq('key', 'profile_menu_labels')
+          .maybeSingle();
+
+        if (!error && (data as any)?.value) {
+          const parsed = JSON.parse((data as any).value) as Partial<ProfileMenuLabels>;
+          if (parsed && typeof parsed === 'object') {
+            nextProfileMenuLabels = {
+              ...DEFAULT_PROFILE_MENU_LABELS,
+              ...parsed,
+            };
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching profile menu labels:', error);
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('app_settings' as any)
+          .select('value')
+          .eq('key', 'guest_menu_overrides')
+          .maybeSingle();
+
+        if (!error && (data as any)?.value) {
+          const parsed = JSON.parse((data as any).value) as Partial<GuestMenuOverrides>;
+          if (parsed && typeof parsed === 'object') {
+            nextGuestOverrides = { ...nextGuestOverrides, ...parsed };
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching guest menu overrides:', error);
+      }
+
+      setHeaderLinks(nextHeaderLinks);
+      setProfileMenuLabels(nextProfileMenuLabels);
+      setGuestMenuOverrides(nextGuestOverrides);
+      setGuestMenuOverridesDraft(nextGuestOverrides);
+    };
+
+    void loadNavContent();
   }, []);
-
-  const fetchHeaderLinks = async () => {
-    try {
-      const { data } = await supabase
-        .from('app_settings' as any)
-        .select('value')
-        .eq('key', 'header_links')
-        .maybeSingle();
-
-      if ((data as any)?.value) {
-        try {
-          const links = JSON.parse((data as any).value);
-          // Sort links by order if order exists
-          const sortedLinks = [...links].sort((a: LinkItem, b: LinkItem) => {
-            const orderA = a.order !== undefined ? a.order : 999;
-            const orderB = b.order !== undefined ? b.order : 999;
-            return orderA - orderB;
-          });
-          setHeaderLinks(sortedLinks);
-        } catch (e) {
-          console.warn('Failed to parse header links, using defaults:', e);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching header links:', error);
-    }
-  };
-
-  const fetchProfileMenuLabels = async () => {
-    try {
-      const { data } = await supabase
-        .from('app_settings' as any)
-        .select('value')
-        .eq('key', 'profile_menu_labels')
-        .maybeSingle();
-
-      if ((data as any)?.value) {
-        try {
-          const parsed = JSON.parse((data as any).value);
-          setProfileMenuLabels({
-            ...DEFAULT_PROFILE_MENU_LABELS,
-            ...parsed,
-          });
-        } catch (e) {
-          console.warn('Failed to parse profile menu labels, using defaults:', e);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching profile menu labels:', error);
-    }
-  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -159,6 +234,7 @@ const Navbar = () => {
 
     setHeaderLinksDraft(sortedLinks);
     setProfileMenuLabelsDraft(profileMenuLabels);
+    setGuestMenuOverridesDraft(guestMenuOverrides);
     setIsHeaderEditorOpen(true);
   };
 
@@ -224,8 +300,19 @@ const Navbar = () => {
         { onConflict: 'key' }
       );
 
+    const { error: guestError } = await supabase
+      .from('app_settings')
+      .upsert(
+        {
+          key: 'guest_menu_overrides',
+          value: JSON.stringify(guestMenuOverridesDraft),
+          description: 'Guest header menu overrides (Downloads/About/Features)',
+        },
+        { onConflict: 'key' }
+      );
+
     setIsHeaderSaving(false);
-    if (!error && !labelsError) {
+    if (!error && !labelsError && !guestError) {
       const sortedLinks = [...sanitized].sort((a, b) => {
         const orderA = a.order !== undefined ? a.order : 999;
         const orderB = b.order !== undefined ? b.order : 999;
@@ -233,6 +320,7 @@ const Navbar = () => {
       });
       setHeaderLinks(sortedLinks);
       setProfileMenuLabels(profileMenuLabelsDraft);
+      setGuestMenuOverrides(guestMenuOverridesDraft);
       setIsHeaderEditorOpen(false);
     }
   };
@@ -244,27 +332,57 @@ const Navbar = () => {
     : profileMenuLabels;
 
   // Prefer configured header links for authenticated users; otherwise use defaults.
-  const mainNavLinks: NavLink[] = useMemo(() => {
-    const sourceLinks = isHeaderEditorOpen ? headerLinksDraft : headerLinks;
+  const activeHeaderLinks = isHeaderEditorOpen ? headerLinksDraft : headerLinks;
 
-    if (isAuthenticated && sourceLinks.length > 0) {
-      return sourceLinks
-        .map((link) => ({
-          name: link.label.trim(),
-          href: link.to.trim(),
-          order: link.order,
-        }))
-        .filter((l) => l.name.length > 0 && l.href.length > 0)
-        .sort((a, b) => {
-          const orderA = a.order !== undefined ? a.order : 999;
-          const orderB = b.order !== undefined ? b.order : 999;
-          return orderA - orderB;
-        })
-        .map(({ name, href }) => ({ name, href }));
+  const normalizedHeaderLinks = useMemo<NormalizedLink[]>(
+    () => sanitizeLinks(activeHeaderLinks),
+    [activeHeaderLinks]
+  );
+
+  const mainNavLinks: NavLink[] = useMemo(() => {
+    if (normalizedHeaderLinks.length === 0) {
+      if (isAuthenticated) return DEFAULT_NAV_LINKS_AUTH;
+      // Apply guest overrides on defaults
+      return DEFAULT_NAV_LINKS_GUEST.map(link => {
+        if (link.href === '/downloads' || link.name.toLowerCase() === 'downloads') {
+          return { name: guestMenuOverrides.downloadsName, href: guestMenuOverrides.downloadsHref };
+        }
+        if (link.href === '/about' || link.name.toLowerCase() === 'about') {
+          return { name: guestMenuOverrides.aboutName, href: guestMenuOverrides.aboutHref };
+        }
+        if (link.href === '/#features' || link.name.toLowerCase() === 'features') {
+          return { name: guestMenuOverrides.featuresName, href: guestMenuOverrides.featuresHref };
+        }
+        return link;
+      });
     }
 
-    return isAuthenticated ? DEFAULT_NAV_LINKS_AUTH : DEFAULT_NAV_LINKS_GUEST;
-  }, [headerLinks, headerLinksDraft, isAuthenticated, isHeaderEditorOpen]);
+    if (isAuthenticated) {
+      return normalizedHeaderLinks.map(({ name, href }) => ({ name, href }));
+    }
+
+    const overrides = new Map(normalizedHeaderLinks.map((link) => [link.href, link]));
+
+    const base = DEFAULT_NAV_LINKS_GUEST.map((defaultLink) => {
+      const override = overrides.get(defaultLink.href);
+      if (!override) return defaultLink;
+      return { name: override.name, href: override.href };
+    });
+
+    // Apply guest overrides section last
+    return base.map(link => {
+      if (link.href === '/downloads' || link.name.toLowerCase() === 'downloads') {
+        return { name: guestMenuOverrides.downloadsName, href: guestMenuOverrides.downloadsHref };
+      }
+      if (link.href === '/about' || link.name.toLowerCase() === 'about') {
+        return { name: guestMenuOverrides.aboutName, href: guestMenuOverrides.aboutHref };
+      }
+      if (link.href === '/#features' || link.name.toLowerCase() === 'features') {
+        return { name: guestMenuOverrides.featuresName, href: guestMenuOverrides.featuresHref };
+      }
+      return link;
+    });
+  }, [isAuthenticated, normalizedHeaderLinks, guestMenuOverrides]);
 
   // Services dropdown for logged-in users
   // Show "Overseas Company" only for USA users who have completed their profile
@@ -300,6 +418,8 @@ const Navbar = () => {
     ...(showOverseasCompany ? [{ name: 'Overseas Company', href: '/overseas-company' }] : []),
     { name: 'Requests', href: '/requests' },
   ];
+
+  // Render immediately with JSON defaults; async merges update after load.
 
   return (
     <>
@@ -664,7 +784,7 @@ const Navbar = () => {
                     <Button
                       size='sm'
                       variant='outline'
-                      className='text-black border-0 rounded-[8px]'
+                     className='text-white border-0 rounded-[8px] bg-white/10 hover:bg-white/20'
                       onClick={() => removeHeaderLink(index)}
                     >
                       Remove
@@ -716,6 +836,59 @@ const Navbar = () => {
               >
                 Add Link
               </Button>
+            </div>
+            <div className='space-y-4 border-t border-white/10 pt-6'>
+              <h3 className='text-sm font-semibold text-white'>Guest Menu Overrides</h3>
+              <div className='grid grid-cols-1 gap-4'>
+                <div className='space-y-1'>
+                  <label className='text-sm text-muted-foreground'>Downloads Label</label>
+                  <Input
+                    value={guestMenuOverridesDraft.downloadsName}
+                    onChange={(e) => setGuestMenuOverridesDraft(prev => ({ ...prev, downloadsName: e.target.value }))}
+                    className='text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none'
+                    style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                  />
+                  <label className='text-sm text-muted-foreground pt-2 inline-block'>Downloads Link</label>
+                  <Input
+                    value={guestMenuOverridesDraft.downloadsHref}
+                    onChange={(e) => setGuestMenuOverridesDraft(prev => ({ ...prev, downloadsHref: e.target.value }))}
+                    className='text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none'
+                    style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                  />
+                </div>
+                <div className='space-y-1'>
+                  <label className='text-sm text-muted-foreground'>About Label</label>
+                  <Input
+                    value={guestMenuOverridesDraft.aboutName}
+                    onChange={(e) => setGuestMenuOverridesDraft(prev => ({ ...prev, aboutName: e.target.value }))}
+                    className='text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none'
+                    style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                  />
+                  <label className='text-sm text-muted-foreground pt-2 inline-block'>About Link</label>
+                  <Input
+                    value={guestMenuOverridesDraft.aboutHref}
+                    onChange={(e) => setGuestMenuOverridesDraft(prev => ({ ...prev, aboutHref: e.target.value }))}
+                    className='text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none'
+                    style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                  />
+                </div>
+                <div className='space-y-1'>
+                  <label className='text-sm text-muted-foreground'>Features Label</label>
+                  <Input
+                    value={guestMenuOverridesDraft.featuresName}
+                    onChange={(e) => setGuestMenuOverridesDraft(prev => ({ ...prev, featuresName: e.target.value }))}
+                    className='text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none'
+                    style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                  />
+                  <label className='text-sm text-muted-foreground pt-2 inline-block'>Features Link</label>
+                  <Input
+                    value={guestMenuOverridesDraft.featuresHref}
+                    onChange={(e) => setGuestMenuOverridesDraft(prev => ({ ...prev, featuresHref: e.target.value }))}
+                    className='text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none'
+                    style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                  />
+                </div>
+              </div>
             </div>
             <div className='space-y-4 border-t border-white/10 pt-6'>
               <h3 className='text-sm font-semibold text-white'>Profile Menu Labels</h3>

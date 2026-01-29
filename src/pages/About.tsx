@@ -31,6 +31,59 @@ import Footer from "@/components/Footer";
 import { Close } from "@radix-ui/react-toast";
 import { Cancel } from "@radix-ui/react-alert-dialog";
 
+type ValuesItem = {
+  title?: string;
+  description?: string;
+};
+
+type AchievementItem = {
+  number?: string;
+  label?: string;
+};
+
+type LeadershipMember = {
+  name?: string;
+  role?: string;
+  description?: string;
+};
+
+type JourneyMilestone = {
+  year?: string;
+  title?: string;
+  description?: string;
+};
+
+const cloneRecord = <T extends Record<string, unknown>>(value: T | undefined): T => {
+  if (value && typeof value === "object") {
+    return { ...value } as T;
+  }
+  return {} as T;
+};
+
+const mergeArrayWithDefaults = <T extends Record<string, unknown>>(
+  fallback: T[] | undefined,
+  overrides: T[] | null | undefined
+): T[] => {
+  const base = Array.isArray(fallback) ? fallback : [];
+
+  if (!Array.isArray(overrides) || overrides.length === 0) {
+    return base.map((item) => cloneRecord(item));
+  }
+
+  const normalized = overrides.map((item, index) => ({
+    ...cloneRecord(index < base.length ? base[index] : undefined),
+    ...cloneRecord(item)
+  }));
+
+  if (normalized.length < base.length) {
+    const remaining = base.slice(normalized.length).map((item) => cloneRecord(item));
+    normalized.push(...remaining);
+  }
+
+  const targetLength = base.length > 0 ? base.length : normalized.length;
+  return normalized.slice(0, targetLength) as T[];
+};
+
 
 export default function About() {
   const { user } = useAuth();
@@ -39,6 +92,7 @@ export default function About() {
   const [aboutContent, setAboutContent] = useState(() => ({
     ...defaultAboutContent
   }));
+  const [isContentReady, setIsContentReady] = useState(false);
 
   const handleWhyChooseFeaturesChange = (value: string) => {
     const normalized = value.split("\n");
@@ -112,22 +166,49 @@ export default function About() {
 
   useEffect(() => {
     const loadContent = async () => {
-      const { data, error } = await supabase
-        .from("app_settings")
-        .select("value")
-        .eq("key", "about_content")
-        .maybeSingle();
-
-      if (error || !data?.value) {
-        return;
-      }
+      let nextContent = { ...defaultAboutContent };
 
       try {
-        const parsed = JSON.parse(data.value);
-        setAboutContent({ ...defaultAboutContent, ...parsed });
+        const { data, error } = await supabase
+          .from("app_settings")
+          .select("value")
+          .eq("key", "about_content")
+          .maybeSingle();
+
+        if (!error && data?.value) {
+          const parsed = JSON.parse(data.value) as Record<string, unknown>;
+          const parsedValues = parsed["valuesItems"] as ValuesItem[] | undefined;
+          const parsedAchievements = parsed["achievementsItems"] as AchievementItem[] | undefined;
+          const parsedLeadership = parsed["leadershipMembers"] as LeadershipMember[] | undefined;
+          const parsedMilestones = parsed["journeyMilestones"] as JourneyMilestone[] | undefined;
+
+          nextContent = {
+            ...defaultAboutContent,
+            ...parsed,
+            valuesItems: mergeArrayWithDefaults<ValuesItem>(
+              defaultAboutContent.valuesItems as ValuesItem[] | undefined,
+              parsedValues ?? null
+            ),
+            achievementsItems: mergeArrayWithDefaults<AchievementItem>(
+              defaultAboutContent.achievementsItems as AchievementItem[] | undefined,
+              parsedAchievements ?? null
+            ),
+            leadershipMembers: mergeArrayWithDefaults<LeadershipMember>(
+              defaultAboutContent.leadershipMembers as LeadershipMember[] | undefined,
+              parsedLeadership ?? null
+            ),
+            journeyMilestones: mergeArrayWithDefaults<JourneyMilestone>(
+              defaultAboutContent.journeyMilestones as JourneyMilestone[] | undefined,
+              parsedMilestones ?? null
+            )
+          };
+        }
       } catch {
-        // Keep defaults on parse error
+        // Keep defaults when Supabase or parsing fails
       }
+
+      setAboutContent(nextContent);
+      setIsContentReady(true);
     };
 
     void loadContent();
@@ -156,8 +237,32 @@ export default function About() {
     }
   };
 
+  if (!isContentReady) {
+    return <div className="min-h-screen pink-yellow-shadow pt-16" />;
+  }
+
+  const mergedValuesItems = mergeArrayWithDefaults<ValuesItem>(
+    defaultAboutContent.valuesItems as ValuesItem[] | undefined,
+    (aboutContent.valuesItems as ValuesItem[] | undefined) ?? null
+  );
+
+  const mergedAchievementsItems = mergeArrayWithDefaults<AchievementItem>(
+    defaultAboutContent.achievementsItems as AchievementItem[] | undefined,
+    (aboutContent.achievementsItems as AchievementItem[] | undefined) ?? null
+  );
+
+  const mergedLeadershipMembers = mergeArrayWithDefaults<LeadershipMember>(
+    defaultAboutContent.leadershipMembers as LeadershipMember[] | undefined,
+    (aboutContent.leadershipMembers as LeadershipMember[] | undefined) ?? null
+  );
+
+  const mergedJourneyMilestones = mergeArrayWithDefaults<JourneyMilestone>(
+    defaultAboutContent.journeyMilestones as JourneyMilestone[] | undefined,
+    (aboutContent.journeyMilestones as JourneyMilestone[] | undefined) ?? null
+  );
+
   const valueIcons = [Shield, Heart, Zap, Globe];
-  const values = (aboutContent.valuesItems ?? defaultAboutContent.valuesItems ?? []).map(
+  const values = mergedValuesItems.map(
     (item, index) => ({
       icon: valueIcons[index] ?? Shield,
       title: item?.title ?? "",
@@ -166,7 +271,7 @@ export default function About() {
   );
 
   const achievementIcons = [Users, TrendingUp, Globe, CheckCircle];
-  const achievements = (aboutContent.achievementsItems ?? defaultAboutContent.achievementsItems ?? []).map(
+  const achievements = mergedAchievementsItems.map(
     (item, index) => ({
       number: item?.number ?? "",
       label: item?.label ?? "",
@@ -174,7 +279,7 @@ export default function About() {
     })
   );
 
-  const team = (aboutContent.leadershipMembers ?? defaultAboutContent.leadershipMembers ?? []).map(
+  const team = mergedLeadershipMembers.map(
     (member) => ({
       name: member?.name ?? "",
       role: member?.role ?? "",
@@ -182,7 +287,7 @@ export default function About() {
     })
   );
 
-  const milestones = (aboutContent.journeyMilestones ?? defaultAboutContent.journeyMilestones ?? []).map(
+  const milestones = mergedJourneyMilestones.map(
     (item) => ({
       year: item?.year ?? "",
       title: item?.title ?? "",
