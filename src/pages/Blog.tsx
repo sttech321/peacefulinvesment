@@ -300,6 +300,7 @@ const Blog = () => {
   const [resolvingPrayerTask, setResolvingPrayerTask] = useState(false);
   const [saving, setSaving] = useState(false);
   const [joinedTaskIds, setJoinedTaskIds] = useState<Set<string>>(new Set());
+  const [taskIdByBlogPostId, setTaskIdByBlogPostId] = useState<Map<string, string>>(new Map());
 
   const [contactEmail, setContactEmail] = useState<string>("");
   const [contactCountryCode, setContactCountryCode] = useState<string>("");
@@ -397,6 +398,8 @@ const Blog = () => {
       ].join("\n");
 
       // 1) Email admin/support via Edge Function (required)
+      const idempotencyKey =
+        (globalThis as any)?.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
       const { error: functionError } = await supabase.functions.invoke("send-contact-notification", {
         body: {
           contactData: {
@@ -408,6 +411,9 @@ const Blog = () => {
             message,
             contact_method: "email",
           },
+        },
+        headers: {
+          "Idempotency-Key": idempotencyKey,
         },
       });
       if (functionError) throw functionError;
@@ -497,6 +503,40 @@ const Blog = () => {
     void loadJoined();
   }, [user]);
 
+  // Backward compatible mapping: if a post doesn't have the legacy tag `prayer_task:<uuid>`,
+  // resolve it via the canonical relationship `prayer_tasks.blog_post_id = blog_posts.id`.
+  // This also enables correct "Joined" state on cards.
+  useEffect(() => {
+    const ids = (filteredVisiblePosts || []).map((p) => String(p.id)).filter(Boolean);
+    if (!ids.length) {
+      setTaskIdByBlogPostId(new Map());
+      return;
+    }
+
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const { data, error } = await (supabase as any)
+          .from("prayer_tasks")
+          .select("id,blog_post_id")
+          .in("blog_post_id", ids);
+        if (error) throw error;
+
+        const map = new Map<string, string>();
+        (data || []).forEach((r: any) => {
+          if (r?.blog_post_id && r?.id) map.set(String(r.blog_post_id), String(r.id));
+        });
+        if (!cancelled) setTaskIdByBlogPostId(map);
+      } catch {
+        if (!cancelled) setTaskIdByBlogPostId(new Map());
+      }
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [filteredVisiblePosts]);
+
   const ensurePersonSaved = useCallback(
     async (name: string) => {
       if (!user) return;
@@ -544,13 +584,11 @@ const Blog = () => {
   const resolvePrayerTaskForPost = useCallback(
     async (post: BlogPost) => {
       /**
-       * Mapping strategy (no new APIs, no backend changes):
+       * Mapping strategy (backward compatible):
        * 1) Preferred: embed the prayer_task id in the blog post tags: `prayer_task:<uuid>`
-       * 2) Next-best: set `prayer_tasks.link_or_video` to `/blog/<slug>` (or full URL containing it)
-       * 3) Fallback: exact name match (`prayer_tasks.name === blog_posts.title`)
-       *
-       * TODO: If you later add a canonical relation (e.g. blog_post_id column on prayer_tasks),
-       * switch to that and remove (2)/(3).
+       * 2) Canonical relation: `prayer_tasks.blog_post_id = blog_posts.id`
+       * 3) Next-best: `prayer_tasks.link_or_video` contains `/blog/<slug>`
+       * 4) Fallback: exact name match (`prayer_tasks.name === blog_posts.title`)
        */
 
       const taggedTaskId = parsePrayerTaskIdFromTags((post as any).tags);
@@ -563,6 +601,15 @@ const Blog = () => {
         if (error) throw error;
         return (data || null) as PrayerTaskLite | null;
       }
+
+      // Canonical relation
+      const { data: byRel, error: relError } = await (supabase as any)
+        .from("prayer_tasks")
+        .select("id,name,number_of_days,duration_days,start_date,end_date")
+        .eq("blog_post_id", post.id)
+        .maybeSingle();
+      if (relError) throw relError;
+      if (byRel) return (byRel || null) as PrayerTaskLite | null;
 
       // Try mapping by blog URL stored in prayer_tasks.link_or_video
       const blogPath = `/blog/${post.slug}`;
@@ -1195,13 +1242,18 @@ const Blog = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                   {filteredVisiblePosts.map((post) => (
                     (() => {
-                      const mappedId = parsePrayerTaskIdFromTags((post as any).tags);
+                      const mappedId =
+                        parsePrayerTaskIdFromTags((post as any).tags) ||
+                        taskIdByBlogPostId.get(String(post.id)) ||
+                        null;
                       const joined = mappedId ? joinedTaskIds.has(mappedId) : false;
+                      const hasPrayerTask = Boolean(mappedId);
                       return (
                     <BlogPostCard
                       key={post.id}
                       post={post}
                       joined={joined}
+                      hasPrayerTask={hasPrayerTask}
                       onJoin={(p) => void openPrayerAction("join", p)}
                       onSave={(p) => void openPrayerAction("save", p)}
                       onDescription={openDescription}
@@ -1565,19 +1617,18 @@ const Blog = () => {
 const BlogPostCard = memo(function BlogPostCard({
   post,
   joined,
+  hasPrayerTask,
   onJoin,
   onSave,
   onDescription,
 }: {
   post: BlogPost;
   joined: boolean;
+  hasPrayerTask: boolean;
   onJoin: (post: BlogPost) => void;
   onSave: (post: BlogPost) => void;
   onDescription: (post: BlogPost) => void;
 }) {
-  const mappedPrayerTaskId = parsePrayerTaskIdFromTags((post as any).tags);
-  const hasPrayerTask = Boolean(mappedPrayerTaskId);
-
   const safeTags = Array.isArray((post as any).tags) ? ((post as any).tags as string[]) : [];
   const displayTags = safeTags
     .map((t) => String(t || "").trim())

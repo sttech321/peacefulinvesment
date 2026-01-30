@@ -132,6 +132,8 @@ const Contact = () => {
 
       // Send email notification via Edge Function
       try {
+        const idempotencyKey =
+          (globalThis as any)?.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
         const { data: functionData, error: functionError } =
           await supabase.functions.invoke('send-contact-notification', {
             body: {
@@ -144,6 +146,9 @@ const Contact = () => {
                 message: data.message,
                 contact_method: data.contactMethod,
               },
+            },
+            headers: {
+              "Idempotency-Key": idempotencyKey,
             },
           });
 

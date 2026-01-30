@@ -487,7 +487,7 @@ const Navbar = () => {
                 {isAdmin() && (
                   <Button
                     size='sm'
-                    className='bg-gradient-pink-to-yellow hover:bg-gradient-yellow-to-pink text-white border-0 px-4 py-2 font-inter text-xs font-semibold uppercase absolute right-6 top-5 rounded-[8px] h-10'
+                    className='bg-gradient-pink-to-yellow hover:bg-gradient-yellow-to-pink text-white border-0 px-4 py-2 font-inter text-xs font-semibold uppercase absolute right-6 top-5 rounded-[8px] h-10 hidden'
                     onClick={openHeaderEditor}
                   ><Edit className='h-4 w-4' />
                      Menu
@@ -595,7 +595,7 @@ const Navbar = () => {
              {isAdmin() && (
                   <Button
                     size='sm'
-                    className='bg-gradient-pink-to-yellow hover:bg-gradient-yellow-to-pink text-white border-0 px-4 py-1 font-inter text-xs font-semibold uppercase absolute right-20 top-5 rounded-[8px] h-[36px]'
+                    className='bg-gradient-pink-to-yellow hover:bg-gradient-yellow-to-pink text-white border-0 px-4 py-1 font-inter text-xs font-semibold uppercase absolute right-20 top-5 rounded-[8px] h-[36px] hidden'
                     onClick={openHeaderEditor}
                   ><Edit className='h-4 w-4' />
                     Menu

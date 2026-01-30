@@ -118,7 +118,41 @@ const BlogPost = () => {
   const [joining, setJoining] = useState(false);
   const [completing, setCompleting] = useState(false);
 
-  const mappedPrayerTaskId = useMemo(() => extractPrayerTaskIdFromTags((post as any)?.tags), [post]);
+  const [mappedPrayerTaskId, setMappedPrayerTaskId] = useState<string | null>(null);
+
+  // Backward compatible prayer-task resolution:
+  // 1) Prefer legacy mapping tag: prayer_task:<uuid>
+  // 2) Fallback to the newer relationship: prayer_tasks.blog_post_id = blog_posts.id
+  useEffect(() => {
+    if (!post) {
+      setMappedPrayerTaskId(null);
+      return;
+    }
+
+    const fromTags = extractPrayerTaskIdFromTags((post as any)?.tags);
+    if (fromTags) {
+      setMappedPrayerTaskId(fromTags);
+      return;
+    }
+
+    let cancelled = false;
+    const resolve = async () => {
+      try {
+        const { data } = await (supabase as any)
+          .from("prayer_tasks")
+          .select("id")
+          .eq("blog_post_id", post.id)
+          .maybeSingle();
+        if (!cancelled) setMappedPrayerTaskId(data?.id ? String(data.id) : null);
+      } catch {
+        if (!cancelled) setMappedPrayerTaskId(null);
+      }
+    };
+    void resolve();
+    return () => {
+      cancelled = true;
+    };
+  }, [post]);
 
   const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const [joinDialogOpen, setJoinDialogOpen] = useState(false);

@@ -206,6 +206,11 @@ Deno.serve(async (req: Request) => {
     const body = await req.json().catch(() => ({}));
     const windowMinutes = Number((body as any)?.window_minutes ?? 1);
     const userTaskIdFilter = String((body as any)?.user_task_id || "").trim() || null; // optional manual filter
+    const force = Boolean((body as any)?.force);
+
+    // Safety: allow force-send ONLY when called with the service role key (server-to-server / cron).
+    const authHeader = String(req.headers.get("authorization") || "").trim();
+    const forceAllowed = force && authHeader === `Bearer ${supabaseServiceKey}`;
 
     // Fetch ALL active prayer tasks
     let q = supabase
@@ -237,8 +242,9 @@ Deno.serve(async (req: Request) => {
           (userTask as any)?.end_date == null ||
           String((userTask as any)?.task?.schedule_mode || "") === "DAILY_UNLIMITED";
 
-        // Only send during the configured prayer_time window (cron runs every minute).
-        if (!isDueNow(prayerTime, tz, now, windowMinutes)) {
+        // Only send during the configured prayer_time window (cron runs every minute),
+        // unless a trusted server call explicitly force-sends (used by retry job).
+        if (!forceAllowed && !isDueNow(prayerTime, tz, now, windowMinutes)) {
           results.push({ user_task_id: (userTask as any).id, sent: false, reason: "Not due now" });
           continue;
         }
