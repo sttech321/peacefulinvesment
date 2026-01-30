@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from '@/hooks/useAuth';
+import { useUserRole } from '@/hooks/useUserRole';
 import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import defaultAboutContent from "@/config/aboutContent.json";
@@ -23,7 +24,6 @@ import {
   Building2,
   Lightbulb,
   ArrowRight,
-  Edit,
   X
 } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -87,6 +87,7 @@ const mergeArrayWithDefaults = <T extends Record<string, unknown>>(
 
 export default function About() {
   const { user } = useAuth();
+  const { isAdmin, loading: roleLoading } = useUserRole();
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [aboutContent, setAboutContent] = useState(() => ({
@@ -214,8 +215,20 @@ export default function About() {
     void loadContent();
   }, []);
 
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent).detail as { page?: string } | undefined;
+      if (detail?.page !== 'about') return;
+      if (!user || roleLoading || !isAdmin()) return;
+      setIsEditorOpen(true);
+    };
+
+    window.addEventListener('openPageEditor', handler as EventListener);
+    return () => window.removeEventListener('openPageEditor', handler as EventListener);
+  }, [isAdmin, roleLoading, user]);
+
   const handleSave = async () => {
-    if (!user) {
+    if (!user || roleLoading || !isAdmin()) {
       return;
     }
     setIsSaving(true);
@@ -307,17 +320,6 @@ export default function About() {
     <div className="min-h-screen pink-yellow-shadow pt-16">
       {/* Hero Section */}
       <section className="relative px-6 py-10 md:py-12 lg:py-24 bg-black/20">
-        {user && (
-          <div className="fixed right-6 top-24 z-20">
-            <Button
-              size="sm"
-              className="bg-gradient-pink-to-yellow hover:bg-gradient-yellow-to-pink text-white rounded-[8px] border-0"
-              onClick={() => setIsEditorOpen(true)}
-            >
-              <Edit className='h-4 w-4' /> About Page
-            </Button>
-          </div>
-        )}
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-0">
             <Badge variant="secondary" className="mb-6">
@@ -625,7 +627,7 @@ export default function About() {
 
       <Footer />
 
-      {user && (
+      {user && !roleLoading && isAdmin() && (
         <>
           <div
             className={`fixed inset-0 z-40 bg-black/70 transition-opacity ${

@@ -20,12 +20,12 @@ const Index = () => {
       <button
         type="button"
         onClick={requestIntroReplay}
-        className="fixed lg:left-28 xl:left-3 right-20 lg:right-auto top-6 z-[55] inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-2 text-xs font-medium text-white backdrop-blur transition hover:bg-white/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+        className="fixed lg:left-28 xl:left-3 right-52 lg:right-auto top-6 z-[55] inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-2 text-xs font-medium text-white backdrop-blur transition hover:bg-white/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
 
         aria-label="Replay intro"
       >
         <Play className="h-4 w-4" />
-        Replay
+        Replay 
       </button>
       <LandingHeroNew />
       <div className='pink-yellow-shadow'>

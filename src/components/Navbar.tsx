@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, type CSSProperties } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -121,6 +121,7 @@ const Navbar = () => {
   const { isAdmin } = useUserRole();
   const { profile } = useProfile();
   const navigate = useNavigate();
+  const location = useLocation();
   const [headerLinks, setHeaderLinks] = useState<LinkItem[]>(() => buildDefaultHeaderLinks());
   const [isHeaderEditorOpen, setIsHeaderEditorOpen] = useState(false);
   const [isHeaderSaving, setIsHeaderSaving] = useState(false);
@@ -210,6 +211,33 @@ const Navbar = () => {
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
+  };
+
+  const adminEditablePage = useMemo(() => {
+    const path = (location.pathname ?? '').toLowerCase();
+    if (path === '/' || path === '/index') {
+      return { page: 'home' as const, label: 'Body content (Home)' };
+    }
+    if (path.startsWith('/about')) {
+      return { page: 'about' as const, label: 'Body content (About)' };
+    }
+    if (path.startsWith('/contact')) {
+      return { page: 'contact' as const, label: 'Body content (Contact)' };
+    }
+    return null;
+  }, [location.pathname]);
+
+  const requestOpenFooterEditor = () => {
+    window.dispatchEvent(new CustomEvent('openFooterEditor'));
+  };
+
+  const requestOpenPageEditor = () => {
+    if (!adminEditablePage) return;
+    window.dispatchEvent(
+      new CustomEvent('openPageEditor', {
+        detail: { page: adminEditablePage.page },
+      })
+    );
   };
 
   const openHeaderEditor = () => {
@@ -424,7 +452,7 @@ const Navbar = () => {
   return (
     <>
       <nav
-        className='fixed left-0 right-0 top-0 z-50 border-b bg-[#000] backdrop-blur-xl px-6'
+        className='fixed left-0 right-0 top-0 z-50 border-b bg-[#000] backdrop-blur-xl px-3 sm:px-5 xl:px-6'
         style={{ borderColor: 'var(--pinkcolor)' }}
       >
         <div className='mx-auto max-w-7xl'>
@@ -445,7 +473,7 @@ const Navbar = () => {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className='hidden items-center space-x-6 lg:flex'>
+          <div className='hidden items-center space-x-6 xl:flex'>
             {/* Main navigation links */}
             {mainNavLinks.map(link => (
               <Link
@@ -478,21 +506,13 @@ const Navbar = () => {
           </div>
 
           {/* Right Side Actions */}
-          <div className='hidden items-center space-x-3 lg:flex'>
+          <div className='hidden items-center space-x-3 xl:flex'>
             {user ? (
               <>
                 {/* Theme Toggle */}
                 {/* <ThemeToggle /> */}
 
-                {isAdmin() && (
-                  <Button
-                    size='sm'
-                    className='bg-gradient-pink-to-yellow hover:bg-gradient-yellow-to-pink text-white border-0 px-4 py-2 font-inter text-xs font-semibold uppercase absolute right-6 top-5 rounded-[8px] h-10'
-                    onClick={openHeaderEditor}
-                  ><Edit className='h-4 w-4' />
-                     Menu
-                  </Button>
-                )}
+               
 
                 {/* Profile Dropdown */}
                 <DropdownMenu>
@@ -562,6 +582,46 @@ const Navbar = () => {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+
+
+{/* edit option */}
+                 {isAdmin() && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        size='sm'
+                        className='edit-option-btn bg-gradient-pink-to-yellow hover:bg-gradient-yellow-to-pink text-white border-0 px-4 py-2 font-inter text-xs font-semibold uppercase absolute right-6 top-5 rounded-[8px] h-10 outline-none'
+                        style={{ boxShadow: "none" }}
+                      >
+                        <Edit className='h-4 w-4' />
+                        Option
+                        <ChevronDown className='h-4 w-4' />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      className='w-56 border-0 bg-white/95 backdrop-blur-xl rounded-sm'
+                      align='end'
+                    >
+                      <DropdownMenuItem onClick={openHeaderEditor} className='flex w-full cursor-pointer items-center gap-2'>
+                        <Edit className='h-4 w-4' />
+                       Header Menu
+                      </DropdownMenuItem>
+                      {adminEditablePage && (
+                        <DropdownMenuItem onClick={requestOpenPageEditor} className='flex w-full cursor-pointer items-center gap-2'>
+                          <Edit className='h-4 w-4' />
+                          {adminEditablePage.label}
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuSeparator className='bg-black/10' />
+                      <DropdownMenuItem onClick={requestOpenFooterEditor} className='flex w-full cursor-pointer items-center gap-2'>
+                        <Edit className='h-4 w-4' />
+                        Footer menu
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+
+
               </>
             ) : (
               <>
@@ -590,17 +650,43 @@ const Navbar = () => {
           </div>
 
           {/* Mobile menu button */}
-          <div className='ml-2 flex-shrink-0 lg:hidden'>
+          <div className='ml-2 flex-shrink-0 xl:hidden'>
 
              {isAdmin() && (
-                  <Button
-                    size='sm'
-                    className='bg-gradient-pink-to-yellow hover:bg-gradient-yellow-to-pink text-white border-0 px-4 py-1 font-inter text-xs font-semibold uppercase absolute right-20 top-5 rounded-[8px] h-[36px]'
-                    onClick={openHeaderEditor}
-                  ><Edit className='h-4 w-4' />
-                    Menu
-                  </Button>
-                )}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      size='sm'
+                      className='edit-option-btn bg-gradient-pink-to-yellow hover:bg-gradient-yellow-to-pink text-white border-0 px-4 py-1 font-inter text-xs font-semibold uppercase absolute right-16 top-5 rounded-[8px] h-[36px] shadow-none'
+                      style={{ boxShadow: "none" }}
+                    >
+                      <Edit className='h-4 w-4' />
+                      Option
+                      <ChevronDown className='h-4 w-4' />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    className='w-56 border-0 bg-white/95 backdrop-blur-xl rounded-sm'
+                    align='end'
+                  >
+                    <DropdownMenuItem onClick={openHeaderEditor} className='flex w-full cursor-pointer items-center gap-2'>
+                      <Edit className='h-4 w-4' />
+                      Header Menu
+                    </DropdownMenuItem>
+                    {adminEditablePage && (
+                      <DropdownMenuItem onClick={requestOpenPageEditor} className='flex w-full cursor-pointer items-center gap-2'>
+                        <Edit className='h-4 w-4' />
+                        {adminEditablePage.label}
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuSeparator className='bg-black/10' />
+                    <DropdownMenuItem onClick={requestOpenFooterEditor} className='flex w-full cursor-pointer items-center gap-2'>
+                      <Edit className='h-4 w-4' />
+                      Footer Menu
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
 
             <button
               onClick={() => setIsOpen(!isOpen)}
@@ -617,7 +703,7 @@ const Navbar = () => {
 
         {/* Mobile Navigation */}
         {isOpen && (
-          <div className='fixed inset-x-0 top-[80px] z-50 border-t border-border/40 bg-[#0c0715]/85 shadow-lg backdrop-blur-xl lg:hidden'>
+          <div className='fixed inset-x-0 top-[80px] z-50 border-t border-border/40 bg-[#0c0715]/95 shadow-lg backdrop-blur-xl xl:hidden'>
             <div className='w-full max-w-full overflow-x-hidden'>
               <div className='space-y-1 px-3 py-2'>
                 {/* Main nav links */}

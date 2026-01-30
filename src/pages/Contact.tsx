@@ -22,7 +22,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Mail, MapPin, Shield, CheckCircle, Edit, X } from 'lucide-react';
+import { Mail, MapPin, Shield, CheckCircle, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import Footer from '@/components/Footer';
@@ -133,6 +133,18 @@ const Contact = () => {
 
     void loadContent();
   }, []);
+
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent).detail as { page?: string } | undefined;
+      if (detail?.page !== 'contact') return;
+      if (!user || roleLoading || !isAdmin()) return;
+      setIsEditorOpen(true);
+    };
+
+    window.addEventListener('openPageEditor', handler as EventListener);
+    return () => window.removeEventListener('openPageEditor', handler as EventListener);
+  }, [isAdmin, roleLoading, user]);
 
   const handleSave = async () => {
     if (!user || !isAdmin()) {
@@ -345,18 +357,6 @@ const Contact = () => {
   return (
     <div className='pink-yellow-shadow min-h-screen pt-16'>
       {/* Hero Section */}
-
-           {user && !roleLoading && isAdmin() && (
-          <div className="fixed right-6 top-24 z-20">
-            <Button
-              size="sm"
-              className="bg-gradient-pink-to-yellow hover:bg-gradient-yellow-to-pink text-white rounded-[8px] border-0"
-              onClick={() => setIsEditorOpen(true)}
-            >
-              <Edit className="h-4 w-4" />Contact Page
-            </Button>
-          </div>
-        )}
       <div className='animate-slide-up bg-black/20 px-4 py-10 text-center md:py-12 lg:py-20'>
    
         <div className='mx-auto max-w-7xl px-4 text-center'>

@@ -16,6 +16,16 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Admin "Edit option" dropdown positioning override
+   Applies only between 1280px and 1440px widths. */
+@media (min-width: 1280px) and (max-width: 1619px) {
+  .edit-option-btn {
+    position: relative !important;
+    top: 0 !important;
+    right: 0 !important;
+  }
+}
+
 /* App Download Landing Page Design System */
 
 @layer base {

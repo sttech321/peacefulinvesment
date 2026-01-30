@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Edit, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import footerLogo from '@/assets/footerLogo.svg';
@@ -381,6 +381,31 @@ const Footer = () => {
     };
   }, []);
 
+  useEffect(() => {
+    const handleOpenFooterEditor = () => {
+      if (!user || !isAdmin()) return;
+
+      const base = footerLinks.length > 0 ? footerLinks : buildDefaultFooterLinks();
+      const sorted = [...base].sort((a, b) => {
+        const orderA = a.order !== undefined ? a.order : 999;
+        const orderB = b.order !== undefined ? b.order : 999;
+        return orderA - orderB;
+      });
+
+      setFooterLinksDraft(sorted);
+      setGuestFooterOverridesDraft(guestFooterOverrides);
+      setFooterAboutContentDraft(footerAboutContent);
+      setFooterSupportLinksDraft(footerSupportLinks);
+      setFooterCopyrightDraft(footerCopyright);
+      setIsFooterEditorOpen(true);
+    };
+
+    window.addEventListener('openFooterEditor', handleOpenFooterEditor as EventListener);
+    return () => {
+      window.removeEventListener('openFooterEditor', handleOpenFooterEditor as EventListener);
+    };
+  }, [footerAboutContent, footerCopyright, footerLinks, footerSupportLinks, guestFooterOverrides, isAdmin, user]);
+
   if (!isFooterReady) {
     return (
       <footer
@@ -389,21 +414,6 @@ const Footer = () => {
       />
     );
   }
-
-  const openFooterEditor = () => {
-    const base = footerLinks.length > 0 ? footerLinks : buildDefaultFooterLinks();
-    const sorted = [...base].sort((a, b) => {
-      const orderA = a.order !== undefined ? a.order : 999;
-      const orderB = b.order !== undefined ? b.order : 999;
-      return orderA - orderB;
-    });
-    setFooterLinksDraft(sorted);
-    setGuestFooterOverridesDraft(guestFooterOverrides);
-    setFooterAboutContentDraft(footerAboutContent);
-    setFooterSupportLinksDraft(footerSupportLinks);
-    setFooterCopyrightDraft(footerCopyright);
-    setIsFooterEditorOpen(true);
-  };
 
   const updateFooterDraft = (index: number, patch: Partial<LinkItem>) => {
     setFooterLinksDraft(prev => prev.map((item, i) => (i === index ? { ...item, ...patch } : item)));
@@ -672,18 +682,6 @@ const Footer = () => {
                   </a>
                 </li> */}
               </ul>
-
-                  {user && isAdmin() && (
-        <div className='pt-4 z-20'>
-          <Button
-            size='sm'
-            className='bg-gradient-pink-to-yellow hover:bg-gradient-yellow-to-pink text-white rounded-[8px] border-0'
-            onClick={openFooterEditor}
-          >
-            <Edit className='h-4 w-4' /> Footer Editor
-          </Button>
-        </div>
-      )}
 
             </div>
           </div>

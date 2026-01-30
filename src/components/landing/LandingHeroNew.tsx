@@ -4,16 +4,18 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import tradingHeroBg from '@/assets/home-banner-img.png';
 import { supabase } from '@/integrations/supabase/client';
-import { Edit, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserRole } from '@/hooks/useUserRole';
 import defaultHomePageContent from '@/config/homePagecontent.json';
 import { useHomePageContent, type HomePageContent } from '@/hooks/useHomePageContent';
 import { Link } from 'react-router-dom';
 
 const LandingHeroNew = () => {
   const { user } = useAuth();
+  const { isAdmin, loading: roleLoading } = useUserRole();
   const { content, loading } = useHomePageContent();
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -80,6 +82,19 @@ const LandingHeroNew = () => {
     } as HomePageContent;
   }, [content]);
 
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent).detail as { page?: string } | undefined;
+      if (detail?.page !== 'home') return;
+      if (!user || roleLoading || !isAdmin()) return;
+      setDraft({ ...defaultHomePageContent, ...merged });
+      setIsEditorOpen(true);
+    };
+
+    window.addEventListener('openPageEditor', handler as EventListener);
+    return () => window.removeEventListener('openPageEditor', handler as EventListener);
+  }, [isAdmin, merged, roleLoading, user]);
+
   if (loading) {
     return <section className="relative flex min-h-screen items-center justify-center overflow-hidden" />;
   }
@@ -93,7 +108,7 @@ const LandingHeroNew = () => {
   const heroCtaSecondaryLink = merged.heroCtaSecondaryLink ?? '/downloads';
 
   return (
-    <section className="relative flex min-h-screen items-center justify-center overflow-hidden">
+    <section className="relative flex min-h-screen items-center justify-center overflow-hidden px-6">
       {/* Background */}
       <div
         className="hero-bg absolute inset-0"
@@ -105,7 +120,7 @@ const LandingHeroNew = () => {
       />
 
       {/* Content */}
-      <div className="relative z-10 mx-auto w-full max-w-7xl px-6 text-center">
+      <div className="relative z-10 mx-auto w-full max-w-7xl px-0 text-center">
         <div className="grid items-center gap-12">
           <div className="w-full max-w-3xl text-left">
             <h1 className="mb-6 font-inter font-bold uppercase text-white text-3xl md:text-4xl lg:text-5xl xl:text-6xl">
@@ -144,21 +159,8 @@ const LandingHeroNew = () => {
         </div>
       </div>
 
-      {user && (
+      {user && !roleLoading && isAdmin() && (
         <>
-          <div className="fixed right-6 top-24 z-[20]">
-            <Button
-              size="sm"
-              className="bg-gradient-pink-to-yellow hover:bg-gradient-yellow-to-pink text-white rounded-[8px] border-0"
-              onClick={() => {
-                setDraft({ ...defaultHomePageContent, ...merged });
-                setIsEditorOpen(true);
-              }}
-            >
-              <Edit className="h-4 w-4" /> Home page
-            </Button>
-          </div>
-
           <div
             className={`fixed inset-0 z-[70] bg-black/70 transition-opacity ${
               isEditorOpen ? 'opacity-100' : 'pointer-events-none opacity-0'
