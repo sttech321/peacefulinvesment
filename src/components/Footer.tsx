@@ -22,10 +22,41 @@ interface LinkItem {
   order?: number;
 }
 
+type FooterGuestMenuOverrides = {
+  homeLabel: string;
+  homeLink: string;
+  downloadsLabel: string;
+  downloadsLink: string;
+  aboutLabel: string;
+  aboutLink: string;
+};
+
 const buildDefaultFooterLinks = (): LinkItem[] => [
   { label: 'Home', to: '/', order: 1 },
   { label: 'About us', to: '/about', order: 2 },
   { label: 'App is coming soon', to: '/downloads', order: 3 },
+];
+
+const defaultFooterGuestOverrides = (): FooterGuestMenuOverrides => {
+  const defaults = buildDefaultFooterLinks();
+  const home = defaults.find(l => l.to === '/');
+  const about = defaults.find(l => l.to === '/about');
+  const downloads = defaults.find(l => l.to === '/downloads');
+
+  return {
+    homeLabel: home?.label ?? 'Home',
+    homeLink: home?.to ?? '/',
+    downloadsLabel: downloads?.label ?? 'App is coming soon',
+    downloadsLink: downloads?.to ?? '/downloads',
+    aboutLabel: about?.label ?? 'About us',
+    aboutLink: about?.to ?? '/about',
+  };
+};
+
+const buildGuestFooterLinksFromOverrides = (overrides: FooterGuestMenuOverrides): LinkItem[] => [
+  { label: overrides.homeLabel, to: overrides.homeLink, order: 1 },
+  { label: overrides.aboutLabel, to: overrides.aboutLink, order: 2 },
+  { label: overrides.downloadsLabel, to: overrides.downloadsLink, order: 3 },
 ];
 
 const Footer = () => {
@@ -38,10 +69,13 @@ const Footer = () => {
   const [isFooterEditorOpen, setIsFooterEditorOpen] = useState(false);
   const [isFooterSaving, setIsFooterSaving] = useState(false);
   const [footerLinksDraft, setFooterLinksDraft] = useState<LinkItem[]>([]);
+  const [guestFooterOverrides, setGuestFooterOverrides] = useState<FooterGuestMenuOverrides>(() => defaultFooterGuestOverrides());
+  const [guestFooterOverridesDraft, setGuestFooterOverridesDraft] = useState<FooterGuestMenuOverrides>(() => defaultFooterGuestOverrides());
 
   useEffect(() => {
     const loadFooterLinks = async () => {
       let nextFooterLinks = buildDefaultFooterLinks();
+      let nextGuestOverrides = { ...defaultFooterGuestOverrides() };
 
       try {
         const { data, error } = await supabase
@@ -64,7 +98,26 @@ const Footer = () => {
         console.error('Error fetching footer links:', error);
       }
 
+      try {
+        const { data, error } = await supabase
+          .from('app_settings' as any)
+          .select('value')
+          .eq('key', 'footer_guest_menu_overrides')
+          .maybeSingle();
+
+        if (!error && (data as any)?.value) {
+          const parsed = JSON.parse((data as any).value) as Partial<FooterGuestMenuOverrides>;
+          if (parsed && typeof parsed === 'object') {
+            nextGuestOverrides = { ...nextGuestOverrides, ...parsed };
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching footer guest menu overrides:', error);
+      }
+
       setFooterLinks(nextFooterLinks);
+      setGuestFooterOverrides(nextGuestOverrides);
+      setGuestFooterOverridesDraft(nextGuestOverrides);
       setIsFooterReady(true);
     };
 
@@ -96,6 +149,22 @@ const Footer = () => {
           }
         }
       )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'app_settings', filter: 'key=eq.footer_guest_menu_overrides' },
+        (payload: any) => {
+          try {
+            const raw = payload?.new?.value ?? payload?.old?.value;
+            if (!raw) return;
+            const parsed = JSON.parse(raw) as Partial<FooterGuestMenuOverrides>;
+            if (parsed && typeof parsed === 'object') {
+              setGuestFooterOverrides(prev => ({ ...prev, ...parsed }));
+            }
+          } catch (e) {
+            // Ignore parse errors in realtime payload
+          }
+        }
+      )
       .subscribe();
 
     return () => {
@@ -120,6 +189,7 @@ const Footer = () => {
       return orderA - orderB;
     });
     setFooterLinksDraft(sorted);
+    setGuestFooterOverridesDraft(guestFooterOverrides);
     setIsFooterEditorOpen(true);
   };
 
@@ -161,17 +231,41 @@ const Footer = () => {
         { onConflict: 'key' }
       );
 
+    const { error: guestError } = await supabase
+      .from('app_settings')
+      .upsert(
+        {
+          key: 'footer_guest_menu_overrides',
+          value: JSON.stringify({
+            homeLabel: (guestFooterOverridesDraft.homeLabel ?? '').trim(),
+            homeLink: (guestFooterOverridesDraft.homeLink ?? '').trim(),
+            downloadsLabel: (guestFooterOverridesDraft.downloadsLabel ?? '').trim(),
+            downloadsLink: (guestFooterOverridesDraft.downloadsLink ?? '').trim(),
+            aboutLabel: (guestFooterOverridesDraft.aboutLabel ?? '').trim(),
+            aboutLink: (guestFooterOverridesDraft.aboutLink ?? '').trim(),
+          }),
+          description: 'Guest footer menu overrides (Home/Downloads/About)',
+        },
+        { onConflict: 'key' }
+      );
+
     setIsFooterSaving(false);
-    if (!error) {
+    if (!error && !guestError) {
       const sortedLinks = [...sanitized].sort((a, b) => {
         const orderA = a.order !== undefined ? a.order : 999;
         const orderB = b.order !== undefined ? b.order : 999;
         return orderA - orderB;
       });
       setFooterLinks(sortedLinks);
+      setGuestFooterOverrides(guestFooterOverridesDraft);
       setIsFooterEditorOpen(false);
     }
   };
+
+  const isAuthenticated = Boolean(user);
+  const activeFooterLinks = isAuthenticated
+    ? (isFooterEditorOpen ? footerLinksDraft : footerLinks)
+    : buildGuestFooterLinksFromOverrides(guestFooterOverrides);
 
   return (
     <footer
@@ -220,10 +314,10 @@ const Footer = () => {
             </div>
 
             {/* 🔥 Dynamic Link List with Arrow Icons */}
-            {footerLinks.length > 0 && (
+            {activeFooterLinks.length > 0 && (
               <div className='min-w-40 pt-5 lg:pt-9'>
                 <ul className='space-y-3'>
-                  {footerLinks.map((item, index) => (
+                  {activeFooterLinks.map((item, index) => (
                     <li key={index} className='flex items-center gap-3'>
                       <img src={FiArrowUpRight} alt='Arrow' />
                       <Link
@@ -430,7 +524,7 @@ const Footer = () => {
                 </div>
               ))}
 
-               <div className='space-y-2'>
+  <div className='space-y-2'>
                 <Button
                   size='sm'
                   className='bg-gradient-pink-to-yellow text-white border-0 rounded-[8px] w-full'
@@ -439,6 +533,70 @@ const Footer = () => {
                   + Add Link
                 </Button>
               </div>
+
+
+              <div className='rounded-none border-0 py-4 space-y-3 bg-transparent my-4 inline-block w-full'>
+                <h3 className='text-white font-semibold'>Guest Menu Overrides</h3>
+
+                <div className='space-y-1'>
+                  <Label className='text-sm text-white font-normal'>Home Label</Label>
+                  <Input
+                    value={guestFooterOverridesDraft.homeLabel ?? ''}
+                    onChange={(e) => setGuestFooterOverridesDraft(prev => ({ ...prev, homeLabel: e.target.value }))}
+                    className='text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none'
+                    style={{ '--tw-ring-offset-width': '0', boxShadow: 'none', outline: 'none' } as CSSProperties}
+                  />
+                </div>
+                <div className='space-y-1'>
+                  <Label className='text-sm text-white font-normal'>Home Link</Label>
+                  <Input
+                    value={guestFooterOverridesDraft.homeLink ?? ''}
+                    onChange={(e) => setGuestFooterOverridesDraft(prev => ({ ...prev, homeLink: e.target.value }))}
+                    className='text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none'
+                    style={{ '--tw-ring-offset-width': '0', boxShadow: 'none', outline: 'none' } as CSSProperties}
+                  />
+                </div>
+
+                <div className='space-y-1'>
+                  <Label className='text-sm text-white font-normal'>Downloads Label</Label>
+                  <Input
+                    value={guestFooterOverridesDraft.downloadsLabel ?? ''}
+                    onChange={(e) => setGuestFooterOverridesDraft(prev => ({ ...prev, downloadsLabel: e.target.value }))}
+                    className='text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none'
+                    style={{ '--tw-ring-offset-width': '0', boxShadow: 'none', outline: 'none' } as CSSProperties}
+                  />
+                </div>
+                <div className='space-y-1'>
+                  <Label className='text-sm text-white font-normal'>Downloads Link</Label>
+                  <Input
+                    value={guestFooterOverridesDraft.downloadsLink ?? ''}
+                    onChange={(e) => setGuestFooterOverridesDraft(prev => ({ ...prev, downloadsLink: e.target.value }))}
+                    className='text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none'
+                    style={{ '--tw-ring-offset-width': '0', boxShadow: 'none', outline: 'none' } as CSSProperties}
+                  />
+                </div>
+
+                <div className='space-y-1'>
+                  <Label className='text-sm text-white font-normal'>About Label</Label>
+                  <Input
+                    value={guestFooterOverridesDraft.aboutLabel ?? ''}
+                    onChange={(e) => setGuestFooterOverridesDraft(prev => ({ ...prev, aboutLabel: e.target.value }))}
+                    className='text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none'
+                    style={{ '--tw-ring-offset-width': '0', boxShadow: 'none', outline: 'none' } as CSSProperties}
+                  />
+                </div>
+                <div className='space-y-1'>
+                  <Label className='text-sm text-white font-normal'>About Link</Label>
+                  <Input
+                    value={guestFooterOverridesDraft.aboutLink ?? ''}
+                    onChange={(e) => setGuestFooterOverridesDraft(prev => ({ ...prev, aboutLink: e.target.value }))}
+                    className='text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none'
+                    style={{ '--tw-ring-offset-width': '0', boxShadow: 'none', outline: 'none' } as CSSProperties}
+                  />
+                </div>
+              </div>
+
+             
             </div>
             <div className='p-6'>
               <Button
