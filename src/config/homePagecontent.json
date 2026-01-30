@@ -1,0 +1,59 @@
+{
+  "heroTitle": "Your Gateway to",
+  "heroHighlight": "Smart Investment",
+  "heroSubtitle": "Complete investment platform with automated trading, portfolio management, and expert insights. Start your financial journey with confidence.",
+  "heroCtaPrimaryLabel": "Start Investing",
+  "heroCtaPrimaryLink": "/auth?mode=signup",
+  "heroCtaSecondaryLabel": "App is coming soon",
+  "heroCtaSecondaryLink": "/downloads",
+
+  "stats_aum_value": "35+",
+  "stats_aum_label": "Assets Under Management",
+  "stats_investors_value": "$100K+",
+  "stats_investors_label": "Active Investors",
+  "stats_uptime_value": "99.9%",
+  "stats_uptime_label": "Platform Uptime",
+  "stats_support_value": "24/7",
+  "stats_support_label": "Expert Support",
+
+  "community_title": "JOIN OUR COMMUNITY",
+  "community_description": "Connect with successful investors and learn from the best.",
+
+  "home_stats_image_1": "",
+
+  "features_section": {
+    "titleYellow": "Balancing Growth and Faith",
+    "titleWhite": "Can You Have Both?",
+    "subtitle": "As a Catholic individual, you likely desire financial security and growth for yourself and your family. However, you also want your investments to reflect your values and avoid supporting activities that contradict your faith (e.g., abortion, embryonic stem cell research, adult entertainment).",
+    "cards": [
+      {
+        "iconUrl": "",
+        "title": "Limited Transparency",
+        "description": "Many investment options lack clarity on how companies use their profits. This makes it difficult to know if your investments are indirectly supporting activities you oppose."
+      },
+      {
+        "iconUrl": "",
+        "title": "Navigating Ethical Complexities",
+        "description": "Discerning the ethical implications of various industries and companies can be overwhelming. You might need guidance on issues like social justice, environmental impact, and fair labor practices."
+      },
+      {
+        "iconUrl": "",
+        "title": "Reconciling Faith with Returns",
+        "description": "A common concern is that prioritizing your values means sacrificing financial returns. We strive to mitigate this concern through our rigorous screening process that is designed to help drive value over time while staying true to your Catholic beliefs"
+      },
+      {
+        "iconUrl": "",
+        "title": "Ongoing Maintenance",
+        "description": "With the speed of change today, it can be difficult to maintain a portfolio that reflects catholic values over time. Companies and industries are constantly shifting and what may have been an investment that met your needs yesterday may no longer fit those same standards today."
+      }
+    ]
+  },
+
+  "faith_finance_section": {
+    "titleBeforeHighlight": "Catholic Investment Solutions for You: Aligning Your",
+    "titleHighlight": "Faith & Finances",
+    "body": "Do you yearn to grow your wealth while staying true to your Catholic values? Many Catholic individuals, like you, share this desire. You’ve worked hard and saved diligently, and now you want your investments to reflect your faith. But navigating the complexities of financial planning while adhering to Catholic social teaching can be daunting. Finding catholic investment solutions for individuals that you can trust is also difficult.\n\nAt Peaceful Investment, we specialize in helping Catholic individuals like yourself achieve your financial goals. We understand the importance of aligning your investments with your values.\n\nWe combine human expertise with innovative technology to create personalized financial plans and investment strategies that consider both your financial objectives and your Catholic beliefs.",
+    "imageUrl": "",
+    "imageAlt": "Faith & Finances"
+  }
+}

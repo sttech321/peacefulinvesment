@@ -1,36 +1,16 @@
-import { Bot, TrendingUp, Shield, Users, Bell, BarChart } from 'lucide-react';
 import balance1 from '@/assets/balance-icon-1.svg';
 import balance2 from '@/assets/balance-icon-2.svg';
 import balance3 from '@/assets/balance-icon-3.svg';
 import balance4 from '@/assets/balance-icon-4.svg';
+import { useHomePageContent } from '@/hooks/useHomePageContent';
 
 const LandingFeaturesNew = () => {
-  const features = [
-    {
-      src: balance1,
-      title: 'Limited Transparency',
-      description:
-        'Many investment options lack clarity on how companies use their profits. This makes it difficult to know if your investments are indirectly supporting activities you oppose.',
-    },
-    {
-      src: balance2,
-      title: 'Navigating Ethical Complexities',
-      description:
-        'Discerning the ethical implications of various industries and companies can be overwhelming. You might need guidance on issues like social justice, environmental impact, and fair labor practices.',
-    },
-    {
-      src: balance3,
-      title: 'Reconciling Faith with Returns',
-      description:
-        'A common concern is that prioritizing your values means sacrificing financial returns. We strive to mitigate this concern through our rigorous screening process that is designed to help drive value over time while staying true to your Catholic beliefs',
-    },
-    {
-      src: balance4,
-      title: 'Ongoing Maintenance',
-      description:
-        'With the speed of change today, it can be difficult to maintain a portfolio that reflects catholic values over time. Companies and industries are constantly shifting and what may have been an investment that met your needs yesterday may no longer fit those same standards today.',
-    },
-  ];
+  const { content } = useHomePageContent();
+
+  const fallbackIcons = [balance1, balance2, balance3, balance4];
+  const section = (content as any)?.features_section;
+  const cards: Array<{ iconUrl?: string; title?: string; description?: string }> =
+    Array.isArray(section?.cards) ? section.cards : [];
 
   return (
     <section className='px-6 pb-10 md:pb-12 lg:pb-24'>
@@ -39,23 +19,19 @@ const LandingFeaturesNew = () => {
         <div className='lg:md-16 mb-10 text-center'>
           <h2 className='mb-6 text-2xl font-bold uppercase text-white md:text-3xl'>
             <span className='text-[var(--yellowcolor)]'>
-              Balancing Growth and Faith
+              {section?.titleYellow ?? ''}
             </span>
-            : <span className='block'>Can You Have Both?</span>
+            : <span className='block'>{section?.titleWhite ?? ''}</span>
           </h2>
           <p className='mx-auto max-w-5xl font-open-sans text-lg text-white lg:text-xl'>
-            As a Catholic individual, you likely desire financial security and
-            growth for yourself and your family. However, you also want your
-            investments to reflect your values and avoid supporting activities
-            that contradict your faith (e.g., abortion, embryonic stem cell
-            research, adult entertainment).
+            {section?.subtitle ?? ''}
           </p>
         </div>
 
         {/* Features Grid */}
 
         <div className='grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4'>
-          {features.map((feature, index) => (
+          {cards.map((feature, index) => (
             <div
               key={index}
               style={{ animationDelay: `${index * 0.1}s` }}
@@ -64,7 +40,11 @@ const LandingFeaturesNew = () => {
               <div className='group relative z-10 m-[0px] h-full rounded-lg border-0 bg-black p-8 px-3 text-center'>
                 <div className='mb-6'>
                   <div className='w-20 h-20 mx-auto bg-primary/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 mb-5'>
-                    <img className='w-10 h-10' src={feature.src} alt={feature.title} />
+                    <img
+                      className='w-10 h-10'
+                      src={feature.iconUrl || fallbackIcons[index]}
+                      alt={feature.title}
+                    />
                   </div>
                 </div>
 

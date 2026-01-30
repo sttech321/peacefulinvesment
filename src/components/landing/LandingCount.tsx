@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import stats from '@/services/stats';
 import joinIcon from '@/assets/join-icon.svg';
-import { useAppTexts } from "@/hooks/useAppTexts";
+import { useHomePageContent } from '@/hooks/useHomePageContent';
 
 export default function LandingCount() {
   const stored = stats.getStats();
@@ -25,7 +25,7 @@ export default function LandingCount() {
       ),
   });
 
-  const { texts } = useAppTexts();
+  const { content } = useHomePageContent();
 
   useEffect(() => {
     // animate from start to current on mount
@@ -95,47 +95,47 @@ export default function LandingCount() {
               <div className='glass-card border-0 bg-transparent p-4 text-center shadow-none'>
                 <div className='mb-2 font-bebas-neue text-[45px] xl:text-[50px] font-normal leading-[36px] text-white'>
                   {/* {formatUsers(values.users)} */}
-                  {texts.stats_aum_value}
+                  {content.stats_aum_value}
                 </div>
                 <div className='font-open-sans text-[18px] lg:text-2xl font-normal text-white'>
-                  {texts.stats_aum_label}
+                  {content.stats_aum_label}
                 </div>
               </div>
               <div className='glass-card border-0 bg-transparent p-4 text-center shadow-none'>
                 <div className='mb-2 font-bebas-neue text-[45px] xl:text-[50px] font-normal leading-[36px] text-white'>
                   {/* {formatAum(values.aum)} */}
-                  {texts.stats_investors_value}
+                  {content.stats_investors_value}
                 </div>
                 <div className='font-open-sans text-[18px] lg:text-2xl font-normal text-white'>
-                  {texts.stats_investors_label}
+                  {content.stats_investors_label}
                 </div>
               </div>
               <div className='glass-card border-0 bg-transparent p-4 text-center shadow-none'>
                 <div className='mb-2 font-bebas-neue text-[45px] xl:text-[50px] font-normal leading-[36px] text-white'>
-                  {texts.stats_uptime_value}
+                  {content.stats_uptime_value}
                 </div>
                 <div className='font-open-sans text-[18px] lg:text-2xl font-normal text-white'>
-                  {texts.stats_uptime_label}
+                  {content.stats_uptime_label}
                 </div>
               </div>
               <div className='glass-card border-0 bg-transparent p-4 text-center shadow-none'>
                 <div className='mb-2 font-bebas-neue text-[45px] xl:text-[50px] font-normal leading-[36px] text-white'>
-                  {texts.stats_support_value}
+                  {content.stats_support_value}
                 </div>
                 <div className='font-open-sans text-[18px] lg:text-2xl font-normal text-white'>
-                  {texts.stats_support_label}
+                  {content.stats_support_label}
                 </div>
               </div>
             </div>
           </div>
 
           <div className='mt-5 px-6 pt-10 text-center'>
-            <img className='mx-auto' src={joinIcon} alt='Join Icon' />
+            <img className='mx-auto' src={content.home_stats_image_1 || joinIcon} alt='Join Icon' />
             <h2 className='pt-5 font-inter text-2xl uppercase text-white lg:text-3xl'>
-              {texts.community_title}
+              {content.community_title}
             </h2>
             <p className='mt-2 font-open-sans text-lg text-white lg:text-2xl'>
-              {texts.community_description}
+              {content.community_description}
             </p>
           </div>
         </div>
