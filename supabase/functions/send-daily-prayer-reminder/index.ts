@@ -259,9 +259,12 @@ Deno.serve(async (req: Request) => {
         const MS_DAY = 24 * 60 * 60 * 1000;
         const currentDay = Math.floor((ymdToUtcMs(todayYmd) - ymdToUtcMs(startYmd)) / MS_DAY) + 1;
 
+        const endYmd = parseYmd(String((userTask as any).end_date || ""));
         const duration: number | null = isUnlimited
           ? null
-          : ((userTask as any).task?.duration_days || (userTask as any).task?.number_of_days || 1);
+          : (endYmd
+              ? (Math.floor((ymdToUtcMs(endYmd) - ymdToUtcMs(startYmd)) / MS_DAY) + 1)
+              : ((userTask as any).task?.duration_days || (userTask as any).task?.number_of_days || 1));
 
         if (currentDay < 1 || (duration !== null && currentDay > duration)) {
           results.push({ user_task_id: (userTask as any).id, sent: false, reason: "Prayer not active today" });

@@ -29,8 +29,9 @@ const POSTS_PER_BATCH = 9;
 type PrayerTaskLite = {
   id: string;
   name: string;
-  number_of_days: number;
+  number_of_days: number | null;
   duration_days?: number | null;
+  schedule_mode?: "FIXED" | "DAILY_UNLIMITED";
   start_date?: string | null;
   end_date?: string | null;
 };
@@ -326,7 +327,9 @@ const Blog = () => {
     times_per_day: 1,
     person_needs_help: "",
     start_date: "",
-    end_date: "",
+    end_date: undefined,
+    schedule_mode: undefined,
+    duration_days: undefined,
     prayer_time: "07:00",
     timezone: userTimezone,
   }));
@@ -595,7 +598,7 @@ const Blog = () => {
       if (taggedTaskId) {
         const { data, error } = await (supabase as any)
           .from("prayer_tasks")
-          .select("id,name,number_of_days,duration_days,start_date,end_date")
+          .select("id,name,number_of_days,duration_days,schedule_mode,start_date,end_date")
           .eq("id", taggedTaskId)
           .maybeSingle();
         if (error) throw error;
@@ -605,7 +608,7 @@ const Blog = () => {
       // Canonical relation
       const { data: byRel, error: relError } = await (supabase as any)
         .from("prayer_tasks")
-        .select("id,name,number_of_days,duration_days,start_date,end_date")
+        .select("id,name,number_of_days,duration_days,schedule_mode,start_date,end_date")
         .eq("blog_post_id", post.id)
         .maybeSingle();
       if (relError) throw relError;
@@ -616,7 +619,7 @@ const Blog = () => {
       try {
         const { data, error } = await (supabase as any)
           .from("prayer_tasks")
-          .select("id,name,number_of_days,duration_days,start_date,end_date,link_or_video")
+          .select("id,name,number_of_days,duration_days,schedule_mode,start_date,end_date,link_or_video")
           .ilike("link_or_video", `%${blogPath}%`)
           .limit(1)
           .maybeSingle();
@@ -632,7 +635,7 @@ const Blog = () => {
       // Fallback: exact name match
       const { data, error } = await (supabase as any)
         .from("prayer_tasks")
-        .select("id,name,number_of_days,duration_days,start_date,end_date")
+        .select("id,name,number_of_days,duration_days,schedule_mode,start_date,end_date")
         .eq("name", post.title)
         .limit(1)
         .maybeSingle();
@@ -709,7 +712,9 @@ const Blog = () => {
         phone_number: derivedPhoneRemainder.replace(/\D/g, ""),
         person_needs_help: "",
         start_date: "",
-        end_date: "",
+        end_date: undefined,
+        schedule_mode: undefined,
+        duration_days: undefined,
         prayer_time: prayerTime,
         timezone: userTimezone,
       }));
@@ -900,7 +905,17 @@ const Blog = () => {
     try {
       setSaving(true);
 
-      const duration = resolvedPrayerTask.duration_days || resolvedPrayerTask.number_of_days;
+      const scheduleMode: "FIXED" | "DAILY_UNLIMITED" =
+        String((joinForm as any)?.schedule_mode || (resolvedPrayerTask as any)?.schedule_mode || "").trim() === "DAILY_UNLIMITED"
+          ? "DAILY_UNLIMITED"
+          : "FIXED";
+      const durationFromFormRaw = Number((joinForm as any)?.duration_days);
+      const durationFromForm =
+        Number.isFinite(durationFromFormRaw) && durationFromFormRaw >= 1 ? Math.floor(durationFromFormRaw) : 0;
+      const durationFromTask = Math.max(
+        1,
+        Math.floor(Number((resolvedPrayerTask as any)?.duration_days || (resolvedPrayerTask as any)?.number_of_days || 1))
+      );
 
       const effectiveName = joinForm.name.trim() || (profile as any)?.full_name || user.email?.split("@")[0] || "User";
       const effectiveEmail = joinForm.email.trim() || user.email || "";
@@ -950,9 +965,9 @@ const Blog = () => {
       }
 
       let startDateYmd: string;
-      let endDateYmd: string;
+      let endDateYmd: string | null;
       const customStart = (joinForm.start_date || "").trim();
-      const customEnd = String(joinForm.end_date || "").trim();
+      const customEnd = String((joinForm as any).end_date || "").trim();
 
       if (customStart) {
         startDateYmd = customStart;
@@ -963,13 +978,16 @@ const Blog = () => {
         startDateYmd = start.toISOString().split("T")[0];
       }
 
-      if (customEnd) {
+      if (scheduleMode === "DAILY_UNLIMITED") {
+        endDateYmd = null;
+      } else if (customEnd) {
         endDateYmd = customEnd;
       } else if (!customStart && traditionalDates?.end_date) {
         // If no custom date override was provided, honor the traditional end date when available.
         endDateYmd = traditionalDates.end_date;
       } else {
         // If user only picked a start date (or no traditional range exists), compute end from duration.
+        const duration = durationFromForm || durationFromTask;
         endDateYmd = addDaysToYmd(startDateYmd, Math.max(1, duration) - 1);
       }
 
@@ -996,6 +1014,7 @@ const Blog = () => {
         end_date: endDateYmd,
         current_day: 1,
         is_active: true,
+        schedule_mode: scheduleMode,
       };
 
       const { data: created, error } = await (supabase as any)
@@ -1412,6 +1431,16 @@ const Blog = () => {
         submitLabel="Join Prayer"
         showStartDatePicker={false}
         traditionalDates={traditionalDates || undefined}
+        defaultScheduleMode={
+          resolvedPrayerTask && String((resolvedPrayerTask as any)?.schedule_mode || "").trim() === "DAILY_UNLIMITED"
+            ? "DAILY_UNLIMITED"
+            : "FIXED"
+        }
+        defaultDurationDays={
+          resolvedPrayerTask
+            ? Number((resolvedPrayerTask as any)?.duration_days ?? (resolvedPrayerTask as any)?.number_of_days ?? null)
+            : null
+        }
         form={joinForm}
         setForm={setJoinForm}
         timezoneOptions={commonTimezones}

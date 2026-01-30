@@ -26,6 +26,7 @@ type PrayerTaskLite = {
   id: string;
   number_of_days?: number | null;
   duration_days?: number | null;
+  schedule_mode?: "FIXED" | "DAILY_UNLIMITED";
   start_date?: string | null;
   end_date?: string | null;
 };
@@ -40,9 +41,10 @@ type PrayerUserTaskLite = {
   prayer_time: string;
   timezone: string;
   start_date: string;
-  end_date: string;
+  end_date: string | null;
   current_day: number;
   is_active: boolean;
+  schedule_mode?: "FIXED" | "DAILY_UNLIMITED";
   completed_days?: number[];
   task?: PrayerTaskLite;
 };
@@ -164,7 +166,9 @@ const BlogPost = () => {
     times_per_day: 1,
     person_needs_help: "",
     start_date: "",
-    end_date: "",
+    end_date: undefined,
+    schedule_mode: undefined,
+    duration_days: undefined,
     prayer_time: "07:00",
     timezone: userTimezone,
   }));
@@ -224,7 +228,7 @@ const BlogPost = () => {
 
       const startMs = parseDateToUtcMs(ut.start_date);
       const endMs = parseDateToUtcMs(ut.end_date);
-      if (startMs === null || endMs === null) return 0;
+      if (startMs === null) return 0;
 
       const now = new Date();
       const tz = (ut as any)?.timezone || "UTC";
@@ -247,23 +251,58 @@ const BlogPost = () => {
       };
       const todayTzMs = getTodayInTzUtcMs(tz);
 
-      const duration = Math.floor((endMs - startMs) / MS_DAY) + 1;
+      const totalDays = endMs === null ? Number.POSITIVE_INFINITY : (Math.floor((endMs - startMs) / MS_DAY) + 1);
       const day = Math.floor((todayTzMs - startMs) / MS_DAY) + 1;
 
       if (day < 1) return 0; // Not started yet
-      if (day > duration) return duration; // Completed
+      if (Number.isFinite(totalDays) && day > totalDays) return totalDays as number; // Completed (fixed prayers)
       return day;
     },
     []
   );
 
+  const isUnlimitedDaily = useCallback((ut: PrayerUserTaskLite | null): boolean => {
+    if (!ut) return false;
+    return (
+      String((ut as any)?.schedule_mode || "") === "DAILY_UNLIMITED" ||
+      (ut as any)?.end_date == null ||
+      String((ut as any)?.task?.schedule_mode || "") === "DAILY_UNLIMITED"
+    );
+  }, []);
+
+  const getDurationForUserTask = useCallback((ut: PrayerUserTaskLite | null): number | null => {
+    if (!ut) return null;
+    if (isUnlimitedDaily(ut)) return null;
+    const s = String(ut.start_date || "").trim();
+    const e = String(ut.end_date || "").trim();
+    const ms = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    const me = e.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (ms && me) {
+      const sy = Number(ms[1]);
+      const smo = Number(ms[2]) - 1;
+      const sd = Number(ms[3]);
+      const ey = Number(me[1]);
+      const emo = Number(me[2]) - 1;
+      const ed = Number(me[3]);
+      if ([sy, smo, sd, ey, emo, ed].every(Number.isFinite)) {
+        const startMs = Date.UTC(sy, smo, sd);
+        const endMs = Date.UTC(ey, emo, ed);
+        const MS_DAY = 24 * 60 * 60 * 1000;
+        const diff = Math.floor((endMs - startMs) / MS_DAY) + 1;
+        if (Number.isFinite(diff) && diff >= 1) return diff;
+      }
+    }
+    const fallback = Number((ut as any)?.task?.duration_days || (ut as any)?.task?.number_of_days || 1);
+    return Number.isFinite(fallback) && fallback >= 1 ? Math.floor(fallback) : 1;
+  }, [isUnlimitedDaily]);
+
   const canCompleteToday = useMemo(() => {
     if (!userTask) return false;
     const currentDay = getCurrentDay(userTask);
-    const duration = userTask.task?.duration_days || userTask.task?.number_of_days || 1;
-    if (currentDay < 1 || currentDay > duration) return false;
+    const duration = getDurationForUserTask(userTask);
+    if (currentDay < 1 || (duration !== null && currentDay > duration)) return false;
     return !((userTask.completed_days || []).includes(currentDay));
-  }, [getCurrentDay, userTask]);
+  }, [getCurrentDay, getDurationForUserTask, userTask]);
 
   const fetchPost = useCallback(async () => {
     if (!slug) return;
@@ -386,7 +425,9 @@ const BlogPost = () => {
         times_per_day: 1,
         person_needs_help: "",
         start_date: "",
-        end_date: "",
+        end_date: undefined,
+        schedule_mode: undefined,
+        duration_days: undefined,
         prayer_time: "07:00",
         timezone: userTimezone,
       });
@@ -399,7 +440,7 @@ const BlogPost = () => {
       setResolvingPrayerTask(true);
       const { data: task, error: taskError } = await (supabase as any)
         .from("prayer_tasks")
-        .select("id,number_of_days,duration_days,start_date,end_date")
+        .select("id,number_of_days,duration_days,schedule_mode,start_date,end_date")
         .eq("id", mappedPrayerTaskId)
         .maybeSingle();
       if (taskError) throw taskError;
@@ -461,7 +502,17 @@ const BlogPost = () => {
         return;
       }
 
-      const duration = Number(resolvedPrayerTask.duration_days || resolvedPrayerTask.number_of_days || 1);
+      const scheduleMode: "FIXED" | "DAILY_UNLIMITED" =
+        String((joinForm as any)?.schedule_mode || (resolvedPrayerTask as any)?.schedule_mode || "").trim() === "DAILY_UNLIMITED"
+          ? "DAILY_UNLIMITED"
+          : "FIXED";
+      const durationFromFormRaw = Number((joinForm as any)?.duration_days);
+      const durationFromForm =
+        Number.isFinite(durationFromFormRaw) && durationFromFormRaw >= 1 ? Math.floor(durationFromFormRaw) : 0;
+      const durationFromTask = Math.max(
+        1,
+        Math.floor(Number((resolvedPrayerTask as any)?.duration_days || (resolvedPrayerTask as any)?.number_of_days || 1))
+      );
 
       const effectiveName = joinForm.name.trim() || (profile as any)?.full_name || user.email?.split("@")[0] || "User";
       const effectiveEmail = joinForm.email.trim() || user.email || "";
@@ -511,10 +562,10 @@ const BlogPost = () => {
       }
 
       const customStart = (joinForm.start_date || "").trim();
-      const customEnd = String(joinForm.end_date || "").trim();
+      const customEnd = String((joinForm as any).end_date || "").trim();
 
       let startDateYmd: string;
-      let endDateYmd: string;
+      let endDateYmd: string | null;
 
       if (customStart) {
         startDateYmd = customStart;
@@ -525,11 +576,14 @@ const BlogPost = () => {
         startDateYmd = today;
       }
 
-      if (customEnd) {
+      if (scheduleMode === "DAILY_UNLIMITED") {
+        endDateYmd = null;
+      } else if (customEnd) {
         endDateYmd = customEnd;
       } else if (!customStart && traditionalDates?.end_date) {
         endDateYmd = traditionalDates.end_date;
       } else {
+        const duration = durationFromForm || durationFromTask;
         endDateYmd = addDaysToYmd(startDateYmd, Math.max(1, duration) - 1);
       }
 
@@ -547,6 +601,7 @@ const BlogPost = () => {
         end_date: endDateYmd,
         current_day: 1,
         is_active: true,
+        schedule_mode: scheduleMode,
       };
 
       const { data: created, error } = await (supabase as any)
@@ -721,7 +776,7 @@ const BlogPost = () => {
 
   const displayTags = stripPrayerTaskTags(post.tags || []);
   const currentDay = userTask ? getCurrentDay(userTask) : 0;
-  const totalDays = userTask ? (userTask.task?.duration_days || userTask.task?.number_of_days || 1) : 0;
+  const totalDays = userTask ? getDurationForUserTask(userTask) : null;
 
   return (
     <>
@@ -883,7 +938,8 @@ const BlogPost = () => {
                               <div>
                                 <div className="text-white font-semibold">My Prayer Progress</div>
                                 <div className="text-white/70 text-sm">
-                                  Day {currentDay} of {totalDays} • Prayer Time: {userTask.prayer_time} ({userTask.timezone})
+                                  Day {currentDay}
+                                  {totalDays === null ? "" : ` of ${totalDays}`} • Prayer Time: {userTask.prayer_time} ({userTask.timezone})
                                 </div>
                                 {currentDay < 1 && (
                                   <div className="text-white/60 text-xs mt-1">
@@ -1101,6 +1157,16 @@ const BlogPost = () => {
         submitLabel="Join Prayer"
         showStartDatePicker={true}
         traditionalDates={traditionalDates}
+        defaultScheduleMode={
+          resolvedPrayerTask && String((resolvedPrayerTask as any)?.schedule_mode || "").trim() === "DAILY_UNLIMITED"
+            ? "DAILY_UNLIMITED"
+            : "FIXED"
+        }
+        defaultDurationDays={
+          resolvedPrayerTask
+            ? Number((resolvedPrayerTask as any)?.duration_days ?? (resolvedPrayerTask as any)?.number_of_days ?? null)
+            : null
+        }
         form={joinForm}
         setForm={setJoinForm}
         timezoneOptions={commonTimezones}
