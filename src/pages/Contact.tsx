@@ -345,18 +345,20 @@ const Contact = () => {
   return (
     <div className='pink-yellow-shadow min-h-screen pt-16'>
       {/* Hero Section */}
-      <div className='animate-slide-up bg-black/20 px-4 py-10 text-center md:py-12 lg:py-20'>
-        {user && !roleLoading && isAdmin() && (
+
+           {user && !roleLoading && isAdmin() && (
           <div className="fixed right-6 top-24 z-20">
             <Button
               size="sm"
               className="bg-gradient-pink-to-yellow hover:bg-gradient-yellow-to-pink text-white rounded-[8px] border-0"
               onClick={() => setIsEditorOpen(true)}
             >
-              <Edit className="h-4 w-4" /> Edit Contact Page
+              <Edit className="h-4 w-4" />Contact Page
             </Button>
           </div>
         )}
+      <div className='animate-slide-up bg-black/20 px-4 py-10 text-center md:py-12 lg:py-20'>
+   
         <div className='mx-auto max-w-7xl px-4 text-center'>
           <h1 className='mb-4 font-inter text-3xl font-bold uppercase text-white md:text-4xl lg:text-5xl xl:text-6xl'>
             {contactContent.heroTitle} <span className='text-primary'>{contactContent.heroTitleHighlight}</span>
@@ -732,7 +734,7 @@ const Contact = () => {
             }`}
             aria-label="Edit Contact Page"
           >
-            <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
+            <div className="flex items-center justify-between border-0 border-white/10 px-6 py-4">
               <h2 className="text-lg font-semibold text-white">Edit Contact Page</h2>
               <Button
                 size="sm"
@@ -744,9 +746,14 @@ const Contact = () => {
               </Button>
             </div>
             <div
-              className="space-y-4 px-6 pt-6 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent"
+              className="space-y-4 px-6 pt-0 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent"
               style={{ height: "calc(100vh - 157px)" }}
             >
+
+              <div className="bg-black border-l-4 border-primary mx-[-24px] px-6 py-4 mt-[0px!important]">
+                <h3 className="text-white font-semibold">Hero Section</h3>
+              </div>
+
               <div className="space-y-1">
                 <Label className="text-sm text-white font-normal">Hero Title</Label>
                 <Input
@@ -791,6 +798,10 @@ const Contact = () => {
                 />
               </div>
 
+
+<div className="bg-black border-l-4 border-primary mx-[-24px] px-6 py-4 mt-[25px!important]">
+                <h3 className="text-white font-semibold">Form Section</h3>
+              </div>
               <div className="space-y-1">
                 <Label className="text-sm text-white font-normal">Form Title</Label>
                 <Input
@@ -940,6 +951,10 @@ const Contact = () => {
                 />
               </div>
 
+
+<div className="bg-black border-l-4 border-primary mx-[-24px] px-6 py-4 mt-[25px!important]">
+                <h3 className="text-white font-semibold">Contact Info Section</h3>
+              </div>
               <div className="space-y-1">
                 <Label className="text-sm text-white font-normal">Contact Info Section Title</Label>
                 <Input
@@ -1053,6 +1068,10 @@ const Contact = () => {
                 />
               </div>
 
+
+<div className="bg-black border-l-4 border-primary mx-[-24px] px-6 py-4 mt-[25px!important]">
+                <h3 className="text-white font-semibold">FAQ Section</h3>
+              </div>
               <div className="space-y-1">
                 <Label className="text-sm text-white font-normal">FAQ Section Title</Label>
                 <Input

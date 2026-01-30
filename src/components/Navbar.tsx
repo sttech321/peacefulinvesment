@@ -758,7 +758,7 @@ const Navbar = () => {
           }`}
           aria-label='Edit Header Menu'
         >
-          <div className='flex items-center justify-between border-b border-white/10 px-6 py-4'>
+          <div className='flex items-center justify-between border-0 border-white/10 px-6 py-4'>
             <h2 className='text-lg font-semibold'>Edit Header Menu</h2>
             <Button
               size='sm'
@@ -770,9 +770,14 @@ const Navbar = () => {
             </Button>
           </div>
           <div
-            className='space-y-4 px-6 pt-6 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent'
+            className='space-y-4 px-6 pt-0 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent'
             style={{ height: 'calc(100vh - 157px)' }}
           >
+              
+             <div className="bg-black border-l-4 border-primary mx-[-24px] px-6 py-4 mt-[0px!important]">
+                <h3 className="text-white font-semibold">Header Menu</h3>
+              </div>
+
             <div className='space-y-4'>
               {headerLinksDraft.map((link, index) => (
                 <div
@@ -837,8 +842,13 @@ const Navbar = () => {
                 Add Link
               </Button>
             </div>
-            <div className='space-y-4 border-t border-white/10 pt-6'>
-              <h3 className='text-sm font-semibold text-white'>Guest Menu Overrides</h3>
+            <div className='space-y-4 border-0 border-white/10 pt-6'>
+               
+
+              <div className="bg-black border-l-4 border-primary mx-[-24px] px-6 py-4 mt-[0px!important]">
+                <h3 className="text-white font-semibold">Guest Menu Overrides</h3>
+              </div>
+
               <div className='grid grid-cols-1 gap-4'>
                 <div className='space-y-1'>
                   <label className='text-sm text-muted-foreground'>Downloads Label</label>
@@ -890,8 +900,13 @@ const Navbar = () => {
                 </div>
               </div>
             </div>
-            <div className='space-y-4 border-t border-white/10 pt-6'>
-              <h3 className='text-sm font-semibold text-white'>Profile Menu Labels</h3>
+            <div className='space-y-4 border-0 border-white/10 pt-6'>
+               
+
+              <div className="bg-black border-l-4 border-primary mx-[-24px] px-6 py-4 mt-[0px!important]">
+                <h3 className="text-white font-semibold">Profile Menu Labels</h3>
+              </div>
+
               <div className='space-y-2'>
                 <label className='text-sm text-muted-foreground'>Profile Settings</label>
                 <Input

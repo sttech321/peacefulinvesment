@@ -146,7 +146,7 @@ const LandingHeroNew = () => {
 
       {user && (
         <>
-          <div className="fixed right-6 top-24 z-[60]">
+          <div className="fixed right-6 top-24 z-[20]">
             <Button
               size="sm"
               className="bg-gradient-pink-to-yellow hover:bg-gradient-yellow-to-pink text-white rounded-[8px] border-0"

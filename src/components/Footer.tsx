@@ -1,8 +1,9 @@
 import { Link, useLocation } from 'react-router-dom';
-import { useState, useEffect, type CSSProperties } from 'react';
+import { useState, useEffect, type CSSProperties, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Edit, X } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -22,6 +23,19 @@ interface LinkItem {
   order?: number;
 }
 
+type FooterSupportLinks = {
+  heading: string;
+  contactLabel: string;
+  contactLink: string;
+  instagramLink: string;
+  facebookLink: string;
+};
+
+type FooterAboutContent = {
+  title: string;
+  description: string;
+};
+
 type FooterGuestMenuOverrides = {
   homeLabel: string;
   homeLink: string;
@@ -29,6 +43,10 @@ type FooterGuestMenuOverrides = {
   downloadsLink: string;
   aboutLabel: string;
   aboutLink: string;
+};
+
+type FooterCopyrightSettings = {
+  text: string;
 };
 
 const buildDefaultFooterLinks = (): LinkItem[] => [
@@ -59,6 +77,62 @@ const buildGuestFooterLinksFromOverrides = (overrides: FooterGuestMenuOverrides)
   { label: overrides.downloadsLabel, to: overrides.downloadsLink, order: 3 },
 ];
 
+const defaultFooterAboutContent = (): FooterAboutContent => ({
+  title: 'About Us',
+  description:
+    "We're on a mission to democratize access to professional investments and create opportunities for financial growth across the\n" +
+    'globe.',
+});
+
+const defaultFooterSupportLinks = (): FooterSupportLinks => ({
+  heading: 'Support',
+  contactLabel: 'Contact us',
+  contactLink: '/contact',
+  instagramLink: '#',
+  facebookLink: '#',
+});
+
+const defaultFooterCopyright = (): FooterCopyrightSettings => ({
+  text: 'Peaceful Investment. All rights reserved.',
+});
+
+ 
+
+const isExternalHref = (href: string) =>
+  /^https?:\/\//i.test(href) || /^mailto:/i.test(href) || /^tel:/i.test(href);
+
+const SupportNavLink = ({
+  href,
+  className,
+  children,
+}: {
+  href: string;
+  className?: string;
+  children: ReactNode;
+}) => {
+  const normalized = (href ?? '').trim();
+  if (!normalized) return null;
+
+  if (isExternalHref(normalized) || normalized === '#') {
+    return (
+      <a
+        href={normalized}
+        className={className}
+        target={normalized === '#' ? undefined : '_blank'}
+        rel={normalized === '#' ? undefined : 'noreferrer'}
+      >
+        {children}
+      </a>
+    );
+  }
+
+  return (
+    <Link to={normalized} className={className}>
+      {children}
+    </Link>
+  );
+};
+
 const Footer = () => {
   const location = useLocation();
   const isBlogPage = location.pathname === '/blog';
@@ -71,11 +145,20 @@ const Footer = () => {
   const [footerLinksDraft, setFooterLinksDraft] = useState<LinkItem[]>([]);
   const [guestFooterOverrides, setGuestFooterOverrides] = useState<FooterGuestMenuOverrides>(() => defaultFooterGuestOverrides());
   const [guestFooterOverridesDraft, setGuestFooterOverridesDraft] = useState<FooterGuestMenuOverrides>(() => defaultFooterGuestOverrides());
+  const [footerAboutContent, setFooterAboutContent] = useState<FooterAboutContent>(() => defaultFooterAboutContent());
+  const [footerAboutContentDraft, setFooterAboutContentDraft] = useState<FooterAboutContent>(() => defaultFooterAboutContent());
+  const [footerSupportLinks, setFooterSupportLinks] = useState<FooterSupportLinks>(() => defaultFooterSupportLinks());
+  const [footerSupportLinksDraft, setFooterSupportLinksDraft] = useState<FooterSupportLinks>(() => defaultFooterSupportLinks());
+  const [footerCopyright, setFooterCopyright] = useState<FooterCopyrightSettings>(() => defaultFooterCopyright());
+  const [footerCopyrightDraft, setFooterCopyrightDraft] = useState<FooterCopyrightSettings>(() => defaultFooterCopyright());
 
   useEffect(() => {
     const loadFooterLinks = async () => {
       let nextFooterLinks = buildDefaultFooterLinks();
       let nextGuestOverrides = { ...defaultFooterGuestOverrides() };
+      let nextAboutContent = { ...defaultFooterAboutContent() };
+      let nextSupportLinks = { ...defaultFooterSupportLinks() };
+      let nextCopyright = { ...defaultFooterCopyright() };
 
       try {
         const { data, error } = await supabase
@@ -115,9 +198,75 @@ const Footer = () => {
         console.error('Error fetching footer guest menu overrides:', error);
       }
 
+      try {
+        const { data, error } = await supabase
+          .from('app_settings' as any)
+          .select('value')
+          .eq('key', 'footer_about_content')
+          .maybeSingle();
+
+        if (!error && (data as any)?.value) {
+          const parsed = JSON.parse((data as any).value) as Partial<FooterAboutContent>;
+          if (parsed && typeof parsed === 'object') {
+            nextAboutContent = { ...nextAboutContent, ...parsed };
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching footer about content:', error);
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('app_settings' as any)
+          .select('value')
+          .eq('key', 'footer_support_links')
+          .maybeSingle();
+
+        if (!error && (data as any)?.value) {
+          const parsed = JSON.parse((data as any).value) as Partial<FooterSupportLinks>;
+          if (parsed && typeof parsed === 'object') {
+            nextSupportLinks = { ...nextSupportLinks, ...parsed };
+            if (!nextSupportLinks.heading?.trim()) nextSupportLinks.heading = defaultFooterSupportLinks().heading;
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching footer support links:', error);
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('app_settings' as any)
+          .select('value')
+          .eq('key', 'footer_copyright')
+          .maybeSingle();
+
+        if (!error && (data as any)?.value) {
+          const raw = (data as any).value;
+          try {
+            const parsed = JSON.parse(raw) as Partial<FooterCopyrightSettings> | string;
+            if (typeof parsed === 'string') {
+              nextCopyright = { text: parsed };
+            } else if (parsed && typeof parsed === 'object') {
+              nextCopyright = { ...nextCopyright, ...parsed };
+            }
+          } catch {
+            // Backward-compatible: allow saving plain strings in value
+            nextCopyright = { text: String(raw) };
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching footer copyright:', error);
+      }
+
       setFooterLinks(nextFooterLinks);
       setGuestFooterOverrides(nextGuestOverrides);
       setGuestFooterOverridesDraft(nextGuestOverrides);
+      setFooterAboutContent(nextAboutContent);
+      setFooterAboutContentDraft(nextAboutContent);
+      setFooterSupportLinks(nextSupportLinks);
+      setFooterSupportLinksDraft(nextSupportLinks);
+      setFooterCopyright(nextCopyright);
+      setFooterCopyrightDraft(nextCopyright);
       setIsFooterReady(true);
     };
 
@@ -165,6 +314,66 @@ const Footer = () => {
           }
         }
       )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'app_settings', filter: 'key=eq.footer_about_content' },
+        (payload: any) => {
+          try {
+            const raw = payload?.new?.value ?? payload?.old?.value;
+            if (!raw) return;
+            const parsed = JSON.parse(raw) as Partial<FooterAboutContent>;
+            if (parsed && typeof parsed === 'object') {
+              setFooterAboutContent(prev => ({ ...prev, ...parsed }));
+            }
+          } catch (e) {
+            // Ignore parse errors in realtime payload
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'app_settings', filter: 'key=eq.footer_support_links' },
+        (payload: any) => {
+          try {
+            const raw = payload?.new?.value ?? payload?.old?.value;
+            if (!raw) return;
+            const parsed = JSON.parse(raw) as Partial<FooterSupportLinks>;
+            if (parsed && typeof parsed === 'object') {
+              setFooterSupportLinks(prev => {
+                const next = { ...prev, ...parsed };
+                if (!next.heading?.trim()) next.heading = defaultFooterSupportLinks().heading;
+                return next;
+              });
+            }
+          } catch (e) {
+            // Ignore parse errors in realtime payload
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'app_settings', filter: 'key=eq.footer_copyright' },
+        (payload: any) => {
+          try {
+            const raw = payload?.new?.value ?? payload?.old?.value;
+            if (!raw) return;
+            let next: FooterCopyrightSettings = defaultFooterCopyright();
+            try {
+              const parsed = JSON.parse(raw) as Partial<FooterCopyrightSettings> | string;
+              if (typeof parsed === 'string') {
+                next = { text: parsed };
+              } else if (parsed && typeof parsed === 'object') {
+                next = { ...next, ...parsed };
+              }
+            } catch {
+              next = { text: String(raw) };
+            }
+            setFooterCopyright(next);
+          } catch (e) {
+            // Ignore parse errors in realtime payload
+          }
+        }
+      )
       .subscribe();
 
     return () => {
@@ -190,6 +399,9 @@ const Footer = () => {
     });
     setFooterLinksDraft(sorted);
     setGuestFooterOverridesDraft(guestFooterOverrides);
+    setFooterAboutContentDraft(footerAboutContent);
+    setFooterSupportLinksDraft(footerSupportLinks);
+    setFooterCopyrightDraft(footerCopyright);
     setIsFooterEditorOpen(true);
   };
 
@@ -249,8 +461,53 @@ const Footer = () => {
         { onConflict: 'key' }
       );
 
+    const { error: aboutError } = await supabase
+      .from('app_settings')
+      .upsert(
+        {
+          key: 'footer_about_content',
+          value: JSON.stringify({
+            title: (footerAboutContentDraft.title ?? '').trim() || 'About Us',
+            description: (footerAboutContentDraft.description ?? '').trim() || defaultFooterAboutContent().description,
+          }),
+          description: 'Footer About section content (title + description)',
+        },
+        { onConflict: 'key' }
+      );
+
+    const { error: supportError } = await supabase
+      .from('app_settings')
+      .upsert(
+        {
+          key: 'footer_support_links',
+          value: JSON.stringify({
+            heading: (footerSupportLinksDraft.heading ?? '').trim() || defaultFooterSupportLinks().heading,
+            contactLabel: (footerSupportLinksDraft.contactLabel ?? '').trim() || 'Contact us',
+            contactLink: (footerSupportLinksDraft.contactLink ?? '').trim() || '/contact',
+            instagramLink: (footerSupportLinksDraft.instagramLink ?? '').trim() || '#',
+            facebookLink: (footerSupportLinksDraft.facebookLink ?? '').trim() || '#',
+          }),
+          description: 'Footer support section links (contact + social)',
+        },
+        { onConflict: 'key' }
+      );
+
+    const cleanedCopyrightText = (footerCopyrightDraft.text ?? '').trim();
+    const { error: copyrightError } = await supabase
+      .from('app_settings')
+      .upsert(
+        {
+          key: 'footer_copyright',
+          value: JSON.stringify({
+            text: cleanedCopyrightText || defaultFooterCopyright().text,
+          }),
+          description: 'Footer copyright text (supports {year} placeholder)',
+        },
+        { onConflict: 'key' }
+      );
+
     setIsFooterSaving(false);
-    if (!error && !guestError) {
+    if (!error && !guestError && !aboutError && !supportError && !copyrightError) {
       const sortedLinks = [...sanitized].sort((a, b) => {
         const orderA = a.order !== undefined ? a.order : 999;
         const orderB = b.order !== undefined ? b.order : 999;
@@ -258,6 +515,9 @@ const Footer = () => {
       });
       setFooterLinks(sortedLinks);
       setGuestFooterOverrides(guestFooterOverridesDraft);
+      setFooterAboutContent(footerAboutContentDraft);
+      setFooterSupportLinks(footerSupportLinksDraft);
+      setFooterCopyright({ text: cleanedCopyrightText || defaultFooterCopyright().text });
       setIsFooterEditorOpen(false);
     }
   };
@@ -266,6 +526,14 @@ const Footer = () => {
   const activeFooterLinks = isAuthenticated
     ? (isFooterEditorOpen ? footerLinksDraft : footerLinks)
     : buildGuestFooterLinksFromOverrides(guestFooterOverrides);
+
+  const activeFooterAboutContent = isAuthenticated && isFooterEditorOpen
+    ? footerAboutContentDraft
+    : footerAboutContent;
+
+  const activeFooterCopyrightText = isAuthenticated && isFooterEditorOpen
+    ? footerCopyrightDraft.text
+    : footerCopyright.text;
 
   return (
     <footer
@@ -304,12 +572,11 @@ const Footer = () => {
               </Link>
 
               <h2 className='pt-5 font-inter text-2xl font-bold text-[var(--yellowcolor)]'>
-                About Us
+                {(activeFooterAboutContent.title ?? '').trim() || 'About Us'}
               </h2>
 
-              <p className='pt-2 font-open-sans text-sm text-white'>
-                We're on a mission to democratize access to professional investments and create opportunities for financial growth across the
-                globe.
+              <p className='pt-2 font-open-sans text-sm text-white whitespace-pre-line'>
+                {(activeFooterAboutContent.description ?? '').trim() || defaultFooterAboutContent().description}
               </p>
             </div>
 
@@ -335,19 +602,19 @@ const Footer = () => {
             {/* Empty Columns (optional) */}
             <div className='min-w-32 pt-5 lg:pt-9'>
               <h2 className='pb-2 font-inter text-[20px] font-bold text-[var(--yellowcolor)]'>
-                Support
+                {(footerSupportLinks.heading ?? '').trim() || defaultFooterSupportLinks().heading}
               </h2>
               <ul className='space-y-3'>
                 <li>
-                  <Link
-                    to='/contact'
+                  <SupportNavLink
+                    href={footerSupportLinks.contactLink}
                     className='text-[15px] font-normal text-white transition-colors hover:text-primary'
                   >
-                    Contact us
-                  </Link>
+                    {footerSupportLinks.contactLabel}
+                  </SupportNavLink>
                 </li>
                 <li className='flex'>
-                  <Link to='#' className='mr-3'>
+                  <SupportNavLink href={footerSupportLinks.instagramLink} className='mr-3'>
                     <svg
                       width='26'
                       height='25'
@@ -377,8 +644,8 @@ const Footer = () => {
                         strokeLinejoin='round'
                       />
                     </svg>
-                  </Link>{' '}
-                  <Link to='#'>
+                  </SupportNavLink>{' '}
+                  <SupportNavLink href={footerSupportLinks.facebookLink}>
                     <svg
                       width='15'
                       height='25'
@@ -394,7 +661,7 @@ const Footer = () => {
                         strokeLinejoin='round'
                       />
                     </svg>
-                  </Link>
+                  </SupportNavLink>
                 </li>
                 {/* <li>
                   <a
@@ -413,7 +680,7 @@ const Footer = () => {
             className='bg-gradient-pink-to-yellow hover:bg-gradient-yellow-to-pink text-white rounded-[8px] border-0'
             onClick={openFooterEditor}
           >
-            <Edit className='h-4 w-4' /> Footer Links
+            <Edit className='h-4 w-4' /> Footer Editor
           </Button>
         </div>
       )}
@@ -440,7 +707,8 @@ const Footer = () => {
       <div className='mx-auto w-full max-w-7xl pt-6 lg:pt-0'>
         <div className='border-t border-secondary-foreground pt-6'>
           <div className='text-center text-sm text-white'>
-            &copy; {new Date().getFullYear()} Peaceful Investment. All rights reserved.
+            &copy;  {new Date().getFullYear()}{' '}
+            {(activeFooterCopyrightText ?? '').replace('{year}', String(new Date().getFullYear()))}
           </div>
         </div>
       </div>
@@ -460,7 +728,7 @@ const Footer = () => {
             }`}
             aria-label='Edit Footer Links'
           >
-            <div className='flex items-center justify-between border-b border-white/10 px-6 py-4'>
+            <div className='flex items-center justify-between border-0 border-white/10 px-6 py-4'>
               <h2 className='text-lg font-semibold text-white'>Edit Footer Links</h2>
               <Button
                 size='sm'
@@ -472,10 +740,41 @@ const Footer = () => {
               </Button>
             </div>
             <div
-              className='space-y-4 px-6 pt-6 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent'
+              className='space-y-4 px-6 pt-0 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent'
               style={{ height: 'calc(100vh - 157px)' }}
             >
              
+              <div className='rounded-none border-0 py-0 space-y-3 bg-transparent my-0 inline-block w-full'>
+                <div className="bg-black border-l-4 border-primary mx-[-24px] px-6 py-4 mt-[0px!important]">
+                  <h3 className="text-white font-semibold">About Section</h3>
+                </div>
+
+                <div className='space-y-1'>
+                  <Label className='text-sm text-white font-normal'>Title</Label>
+                  <Input
+                    value={footerAboutContentDraft.title ?? ''}
+                    onChange={(e) => setFooterAboutContentDraft(prev => ({ ...prev, title: e.target.value }))}
+                    className='text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none'
+                    style={{ '--tw-ring-offset-width': '0', boxShadow: 'none', outline: 'none' } as CSSProperties}
+                  />
+                </div>
+
+                <div className='space-y-1'>
+                  <Label className='text-sm text-white font-normal'>Description</Label>
+                  <Textarea
+                    value={footerAboutContentDraft.description ?? ''}
+                    onChange={(e) => setFooterAboutContentDraft(prev => ({ ...prev, description: e.target.value }))}
+                    className='text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none min-h-[90px]'
+                    style={{ '--tw-ring-offset-width': '0', boxShadow: 'none', outline: 'none' } as CSSProperties}
+                  />
+                </div>
+              </div>
+
+
+             <div className="bg-black border-l-4 border-primary mx-[-24px] px-6 py-4 mt-[25px!important]">
+                <h3 className="text-white font-semibold">Footer Menu</h3>
+              </div>
+
               {(footerLinksDraft ?? []).map((item, index) => (
                 <div
                   key={`footer-link-${index}`}
@@ -535,8 +834,11 @@ const Footer = () => {
               </div>
 
 
-              <div className='rounded-none border-0 py-4 space-y-3 bg-transparent my-4 inline-block w-full'>
-                <h3 className='text-white font-semibold'>Guest Menu Overrides</h3>
+              <div className='rounded-none border-0 py-4 space-y-3 bg-transparent my-4 inline-block w-full'> 
+
+                <div className="bg-black border-l-4 border-primary mx-[-24px] px-6 py-4 mt-[0px!important]">
+                <h3 className="text-white font-semibold">Guest Menu Overrides</h3>
+              </div>
 
                 <div className='space-y-1'>
                   <Label className='text-sm text-white font-normal'>Home Label</Label>
@@ -591,6 +893,78 @@ const Footer = () => {
                     value={guestFooterOverridesDraft.aboutLink ?? ''}
                     onChange={(e) => setGuestFooterOverridesDraft(prev => ({ ...prev, aboutLink: e.target.value }))}
                     className='text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none'
+                    style={{ '--tw-ring-offset-width': '0', boxShadow: 'none', outline: 'none' } as CSSProperties}
+                  />
+                </div>
+              </div>
+
+             
+
+              <div className='rounded-none border-0 py-4 space-y-3 bg-transparent my-4 inline-block w-full'>
+                <div className="bg-black border-l-4 border-primary mx-[-24px] px-6 py-4 mt-[0px!important]">
+                  <h3 className="text-white font-semibold">Support Links</h3>
+                </div>
+
+                <div className='space-y-1'>
+                  <Label className='text-sm text-white font-normal'>Heading</Label>
+                  <Input
+                    value={footerSupportLinksDraft.heading ?? ''}
+                    onChange={(e) => setFooterSupportLinksDraft(prev => ({ ...prev, heading: e.target.value }))}
+                    className='text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none'
+                    style={{ '--tw-ring-offset-width': '0', boxShadow: 'none', outline: 'none' } as CSSProperties}
+                  />
+                </div>
+
+                <div className='space-y-1'>
+                  <Label className='text-sm text-white font-normal'>Contact Label</Label>
+                  <Input
+                    value={footerSupportLinksDraft.contactLabel ?? ''}
+                    onChange={(e) => setFooterSupportLinksDraft(prev => ({ ...prev, contactLabel: e.target.value }))}
+                    className='text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none'
+                    style={{ '--tw-ring-offset-width': '0', boxShadow: 'none', outline: 'none' } as CSSProperties}
+                  />
+                </div>
+                <div className='space-y-1'>
+                  <Label className='text-sm text-white font-normal'>Contact Link</Label>
+                  <Input
+                    value={footerSupportLinksDraft.contactLink ?? ''}
+                    onChange={(e) => setFooterSupportLinksDraft(prev => ({ ...prev, contactLink: e.target.value }))}
+                    className='text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none'
+                    style={{ '--tw-ring-offset-width': '0', boxShadow: 'none', outline: 'none' } as CSSProperties}
+                  />
+                </div>
+
+                <div className='space-y-1'>
+                  <Label className='text-sm text-white font-normal'>Instagram Link</Label>
+                  <Input
+                    value={footerSupportLinksDraft.instagramLink ?? ''}
+                    onChange={(e) => setFooterSupportLinksDraft(prev => ({ ...prev, instagramLink: e.target.value }))}
+                    className='text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none'
+                    style={{ '--tw-ring-offset-width': '0', boxShadow: 'none', outline: 'none' } as CSSProperties}
+                  />
+                </div>
+                <div className='space-y-1'>
+                  <Label className='text-sm text-white font-normal'>Facebook Link</Label>
+                  <Input
+                    value={footerSupportLinksDraft.facebookLink ?? ''}
+                    onChange={(e) => setFooterSupportLinksDraft(prev => ({ ...prev, facebookLink: e.target.value }))}
+                    className='text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none'
+                    style={{ '--tw-ring-offset-width': '0', boxShadow: 'none', outline: 'none' } as CSSProperties}
+                  />
+                </div>
+              </div>
+
+              <div className='rounded-none border-0 py-4 space-y-3 bg-transparent my-4 inline-block w-full'>
+                <div className="bg-black border-l-4 border-primary mx-[-24px] px-6 py-4 mt-[0px!important]">
+                  <h3 className="text-white font-semibold">Copyright</h3>
+                </div>
+
+                <div className='space-y-1'>
+                  <Label className='text-sm text-white font-normal'>Text</Label>
+                  <Textarea
+                    value={footerCopyrightDraft.text ?? ''}
+                    onChange={(e) => setFooterCopyrightDraft({ text: e.target.value })}
+                    className='text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none min-h-[70px]'
                     style={{ '--tw-ring-offset-width': '0', boxShadow: 'none', outline: 'none' } as CSSProperties}
                   />
                 </div>
