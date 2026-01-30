@@ -640,7 +640,7 @@ export default function About() {
             }`}
             aria-label="Edit About Page"
           >
-            <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
+            <div className="flex items-center justify-between border-0 border-white/10 px-6 py-4">
               <h2 className="text-lg font-semibold text-white">Edit About Page</h2>
               <Button size="sm" variant="outline" className="text-black border-0 rounded-[8px] bg-white/10 hover:bg-white/20" onClick={() => setIsEditorOpen(false)}>
                  
@@ -649,9 +649,13 @@ export default function About() {
               </Button>
             </div>
             <div
-              className="space-y-4 px-6 pt-6 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent"
+              className="space-y-4 px-6 pt-0 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent"
               style={{ height: "calc(100vh - 157px)" }}
             >
+              <div className="bg-black border-l-4 border-primary mx-[-24px] px-6 py-4 mt-[0px!important]">
+                <h3 className="text-white font-semibold">Hero Section</h3>
+              </div>
+
               <div className="space-y-1">
                 <Label className="text-sm text-white font-normal">Hero Badge</Label>
                 <Input
@@ -765,6 +769,10 @@ export default function About() {
                   style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
                 />
               </div>
+
+              <div className="bg-black border-l-4 border-primary mx-[-24px] px-6 py-4 mt-[25px!important]">
+                <h3 className="text-white font-semibold">Mission & Vision Section</h3>
+              </div>
               <div className="space-y-1">
                 <Label className="text-sm text-white font-normal">Mission & Vision Title</Label>
                 <Input
@@ -808,6 +816,8 @@ export default function About() {
                   rows={4}
                 />
               </div>
+
+              
               <div className="space-y-1">
                 <Label className="text-sm text-white font-normal">Vision Title</Label>
                 <Input
@@ -874,6 +884,11 @@ export default function About() {
                   style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
                   rows={6}
                 />
+              </div>
+
+
+              <div className="bg-black border-l-4 border-primary mx-[-24px] px-6 py-4 mt-[25px!important]">
+                <h3 className="text-white font-semibold">Values Section</h3>
               </div>
               <div className="space-y-1">
                 <Label className="text-sm text-white font-normal">Values Title</Label>
@@ -948,6 +963,10 @@ export default function About() {
                   </div>
                 ))}
               </div>
+
+              <div className="bg-black border-l-4 border-primary mx-[-24px] px-6 py-4 mt-[25px!important]">
+                <h3 className="text-white font-semibold">Achievements Section</h3>
+              </div>
               <div className="space-y-1">
                 <Label className="text-sm text-white font-normal">Achievements Title</Label>
                 <Input
@@ -1019,6 +1038,10 @@ export default function About() {
                     </div>
                   </div>
                 ))}
+              </div>
+
+              <div className="bg-black border-l-4 border-primary mx-[-24px] px-6 py-4 mt-[25px!important]">
+                <h3 className="text-white font-semibold">Leadership Section</h3>
               </div>
               <div className="space-y-1">
                 <Label className="text-sm text-white font-normal">Leadership Title</Label>
@@ -1104,6 +1127,10 @@ export default function About() {
                   </div>
                 ))}
               </div>
+
+              <div className="bg-black border-l-4 border-primary mx-[-24px] px-6 py-4 mt-[25px!important]">
+                <h3 className="text-white font-semibold">Journey Section</h3>
+              </div>
               <div className="space-y-1">
                 <Label className="text-sm text-white font-normal">Journey Title</Label>
                 <Input
@@ -1187,6 +1214,10 @@ export default function About() {
                     </div>
                   </div>
                 ))}
+              </div>
+
+              <div className="bg-black border-l-4 border-primary mx-[-24px] px-6 py-4 mt-[25px!important]">
+                <h3 className="text-white font-semibold">CTA Section</h3>
               </div>
               <div className="space-y-1">
                 <Label className="text-sm text-white font-normal">CTA Title</Label>

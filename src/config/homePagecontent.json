@@ -55,5 +55,44 @@
     "body": "Do you yearn to grow your wealth while staying true to your Catholic values? Many Catholic individuals, like you, share this desire. You’ve worked hard and saved diligently, and now you want your investments to reflect your faith. But navigating the complexities of financial planning while adhering to Catholic social teaching can be daunting. Finding catholic investment solutions for individuals that you can trust is also difficult.\n\nAt Peaceful Investment, we specialize in helping Catholic individuals like yourself achieve your financial goals. We understand the importance of aligning your investments with your values.\n\nWe combine human expertise with innovative technology to create personalized financial plans and investment strategies that consider both your financial objectives and your Catholic beliefs.",
     "imageUrl": "",
     "imageAlt": "Faith & Finances"
+  },
+
+  "services_section": {
+    "titleBeforeHighlight": "We Can Help You Bridge the Gap Between Your",
+    "titleHighlight": "Faith and Finances",
+    "subtitle": "As a Catholic individual, you likely desire financial security and growth for yourself and your family. However, you also want your investments to reflect your values and avoid supporting activities that contradict your faith (e.g., abortion, embryonic stem cell research, adult entertainment).",
+    "cards": [
+      {
+        "imageUrl": "",
+        "title": "Deep Understanding of Catholic Values",
+        "description": "Our team is well-versed in Catholic social teaching and its application to investment decisions. We work closely with you to ensure your portfolio reflects your ethical principles."
+      },
+      {
+        "imageUrl": "",
+        "title": "Faith-Based Investment Research",
+        "description": "We go beyond traditional financial metrics. Our research process incorporates a thorough analysis of a company’s social and environmental impact, aligning your investments with your values."
+      },
+      {
+        "imageUrl": "",
+        "title": "Personalized Faith & Finance Score",
+        "description": "This innovative tool analyzes your existing portfolio or potential investments, generating a score that reflects their alignment with Catholic values."
+      },
+      {
+        "imageUrl": "",
+        "title": "Experience You Can Trust",
+        "description": "We leverage our team’s significant expertise into personalized strategies for individual investors like you."
+      }
+    ]
+  },
+
+  "cta_section": {
+    "titleBeforeHighlight": "Ready to Start Your",
+    "titleHighlight": "Investment Journey",
+    "titleAfterHighlight": "?",
+    "subtitle": "Join successful investors who trust our platform for their trading needs.",
+    "primaryButtonLabel": "Sign up today",
+    "primaryButtonLink": "/auth",
+    "secondaryButtonLabel": "App is coming soon",
+    "secondaryButtonLink": "/downloads"
   }
 }

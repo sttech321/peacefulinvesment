@@ -173,7 +173,7 @@ const LandingHeroNew = () => {
             }`}
             aria-label="Edit Home Page"
           >
-            <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
+            <div className="flex items-center justify-between border-0 border-white/10 px-6 py-4">
               <h2 className="text-lg font-semibold text-white">Edit Home Page</h2>
               <Button
                 size="sm"
@@ -186,9 +186,12 @@ const LandingHeroNew = () => {
             </div>
 
             <div
-              className="space-y-4 px-6 pt-6 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent"
+              className="space-y-4 px-6 pt-0 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent"
               style={{ height: 'calc(100vh - 157px)' }}
             >
+              <div className="bg-black border-l-4 border-primary mx-[-24px] px-6 py-4 mt-[0px!important]">
+                <h3 className="text-white font-semibold">Banner Section</h3>
+              </div>
               <div className="space-y-1">
                 <Label className="text-sm text-white font-normal">Title</Label>
                 <Input
@@ -337,8 +340,8 @@ const LandingHeroNew = () => {
                 />
               </div>
 
-              <div className="bg-primary mx-[-24px] px-6 py-4 mt-6[!important]">
-                <h3 className="text-black font-semibold">Stats Section</h3>
+              <div className="bg-black border-l-4 border-primary mx-[-24px] px-6 py-4 mt-[25px!important]">
+                <h3 className="text-white font-semibold">Stats Section</h3>
               </div>
 
               <div className="space-y-1">
@@ -523,7 +526,7 @@ const LandingHeroNew = () => {
                 />
               </div>
 
-              <div className="pt-4">
+              <div className="bg-black border-l-4 border-primary mx-[-24px] px-6 py-4 mt-[25px!important]">
                 <h3 className="text-white font-semibold">Features Section</h3>
               </div>
 
@@ -698,7 +701,7 @@ const LandingHeroNew = () => {
                 </div>
               ))}
 
-              <div className="pt-4">
+              <div className="bg-black border-l-4 border-primary mx-[-24px] px-6 py-4 mt-[25px!important]">
                 <h3 className="text-white font-semibold">Faith &amp; Finances Section</h3>
               </div>
 
@@ -810,6 +813,378 @@ const LandingHeroNew = () => {
                       faith_finance_section: {
                         ...(prev.faith_finance_section ?? defaultHomePageContent.faith_finance_section),
                         imageAlt: event.target.value
+                      }
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={
+                    {
+                      '--tw-ring-offset-width': '0',
+                      boxShadow: 'none',
+                      outline: 'none'
+                    } as CSSProperties
+                  }
+                />
+              </div>
+
+              <div className="bg-black border-l-4 border-primary mx-[-24px] px-6 py-4 mt-[25px!important]">
+                <h3 className="text-white font-semibold">Services Section</h3>
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Title (Before Highlight)</Label>
+                <Input
+                  value={draft.services_section?.titleBeforeHighlight ?? ''}
+                  onChange={(event) =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      services_section: {
+                        ...(prev.services_section ?? defaultHomePageContent.services_section),
+                        titleBeforeHighlight: event.target.value
+                      }
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={
+                    {
+                      '--tw-ring-offset-width': '0',
+                      boxShadow: 'none',
+                      outline: 'none'
+                    } as CSSProperties
+                  }
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Title (Highlight)</Label>
+                <Input
+                  value={draft.services_section?.titleHighlight ?? ''}
+                  onChange={(event) =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      services_section: {
+                        ...(prev.services_section ?? defaultHomePageContent.services_section),
+                        titleHighlight: event.target.value
+                      }
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={
+                    {
+                      '--tw-ring-offset-width': '0',
+                      boxShadow: 'none',
+                      outline: 'none'
+                    } as CSSProperties
+                  }
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Subtitle</Label>
+                <Textarea
+                  value={draft.services_section?.subtitle ?? ''}
+                  onChange={(event) =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      services_section: {
+                        ...(prev.services_section ?? defaultHomePageContent.services_section),
+                        subtitle: event.target.value
+                      }
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none resize-none"
+                  style={
+                    {
+                      '--tw-ring-offset-width': '0',
+                      boxShadow: 'none',
+                      outline: 'none'
+                    } as CSSProperties
+                  }
+                  rows={5}
+                />
+              </div>
+
+              {Array.from({ length: 4 }).map((_, index) => (
+                <div key={`services-card-${index}`} className="space-y-3 rounded-lg border border-white/10 p-4 bg-black/20 inline-block w-full">
+                  <div className="text-white/90 font-semibold">Service Card {index + 1}</div>
+
+                  <div className="space-y-1">
+                    <Label className="text-sm text-white font-normal">Image URL (optional)</Label>
+                    <Input
+                      value={draft.services_section?.cards?.[index]?.imageUrl ?? ''}
+                      onChange={(event) =>
+                        setDraft((prev) => {
+                          const baseSection = prev.services_section ?? defaultHomePageContent.services_section;
+                          const nextCards = Array.isArray(baseSection.cards) ? [...baseSection.cards] : [];
+                          const currentCard = nextCards[index] ?? { imageUrl: '', title: '', description: '' };
+                          nextCards[index] = { ...currentCard, imageUrl: event.target.value };
+                          return {
+                            ...prev,
+                            services_section: {
+                              ...baseSection,
+                              cards: nextCards
+                            }
+                          };
+                        })
+                      }
+                      placeholder="https://..."
+                      className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                      style={
+                        {
+                          '--tw-ring-offset-width': '0',
+                          boxShadow: 'none',
+                          outline: 'none'
+                        } as CSSProperties
+                      }
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-sm text-white font-normal">Title</Label>
+                    <Input
+                      value={draft.services_section?.cards?.[index]?.title ?? ''}
+                      onChange={(event) =>
+                        setDraft((prev) => {
+                          const baseSection = prev.services_section ?? defaultHomePageContent.services_section;
+                          const nextCards = Array.isArray(baseSection.cards) ? [...baseSection.cards] : [];
+                          const currentCard = nextCards[index] ?? { imageUrl: '', title: '', description: '' };
+                          nextCards[index] = { ...currentCard, title: event.target.value };
+                          return {
+                            ...prev,
+                            services_section: {
+                              ...baseSection,
+                              cards: nextCards
+                            }
+                          };
+                        })
+                      }
+                      className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                      style={
+                        {
+                          '--tw-ring-offset-width': '0',
+                          boxShadow: 'none',
+                          outline: 'none'
+                        } as CSSProperties
+                      }
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-sm text-white font-normal">Description</Label>
+                    <Textarea
+                      value={draft.services_section?.cards?.[index]?.description ?? ''}
+                      onChange={(event) =>
+                        setDraft((prev) => {
+                          const baseSection = prev.services_section ?? defaultHomePageContent.services_section;
+                          const nextCards = Array.isArray(baseSection.cards) ? [...baseSection.cards] : [];
+                          const currentCard = nextCards[index] ?? { imageUrl: '', title: '', description: '' };
+                          nextCards[index] = { ...currentCard, description: event.target.value };
+                          return {
+                            ...prev,
+                            services_section: {
+                              ...baseSection,
+                              cards: nextCards
+                            }
+                          };
+                        })
+                      }
+                      className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none resize-none"
+                      style={
+                        {
+                          '--tw-ring-offset-width': '0',
+                          boxShadow: 'none',
+                          outline: 'none'
+                        } as CSSProperties
+                      }
+                      rows={5}
+                    />
+                  </div>
+                </div>
+              ))}
+
+              <div className="bg-black border-l-4 border-primary mx-[-24px] px-6 py-4 mt-[25px!important]">
+                <h3 className="text-white font-semibold">CTA Section</h3>
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Title (Before Highlight)</Label>
+                <Input
+                  value={draft.cta_section?.titleBeforeHighlight ?? ''}
+                  onChange={(event) =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      cta_section: {
+                        ...(prev.cta_section ?? defaultHomePageContent.cta_section),
+                        titleBeforeHighlight: event.target.value
+                      }
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={
+                    {
+                      '--tw-ring-offset-width': '0',
+                      boxShadow: 'none',
+                      outline: 'none'
+                    } as CSSProperties
+                  }
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Title (Highlight)</Label>
+                <Input
+                  value={draft.cta_section?.titleHighlight ?? ''}
+                  onChange={(event) =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      cta_section: {
+                        ...(prev.cta_section ?? defaultHomePageContent.cta_section),
+                        titleHighlight: event.target.value
+                      }
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={
+                    {
+                      '--tw-ring-offset-width': '0',
+                      boxShadow: 'none',
+                      outline: 'none'
+                    } as CSSProperties
+                  }
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Title (After Highlight)</Label>
+                <Input
+                  value={draft.cta_section?.titleAfterHighlight ?? ''}
+                  onChange={(event) =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      cta_section: {
+                        ...(prev.cta_section ?? defaultHomePageContent.cta_section),
+                        titleAfterHighlight: event.target.value
+                      }
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={
+                    {
+                      '--tw-ring-offset-width': '0',
+                      boxShadow: 'none',
+                      outline: 'none'
+                    } as CSSProperties
+                  }
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Subtitle</Label>
+                <Textarea
+                  value={draft.cta_section?.subtitle ?? ''}
+                  onChange={(event) =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      cta_section: {
+                        ...(prev.cta_section ?? defaultHomePageContent.cta_section),
+                        subtitle: event.target.value
+                      }
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none resize-none"
+                  style={
+                    {
+                      '--tw-ring-offset-width': '0',
+                      boxShadow: 'none',
+                      outline: 'none'
+                    } as CSSProperties
+                  }
+                  rows={4}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Primary Button Label</Label>
+                <Input
+                  value={draft.cta_section?.primaryButtonLabel ?? ''}
+                  onChange={(event) =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      cta_section: {
+                        ...(prev.cta_section ?? defaultHomePageContent.cta_section),
+                        primaryButtonLabel: event.target.value
+                      }
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={
+                    {
+                      '--tw-ring-offset-width': '0',
+                      boxShadow: 'none',
+                      outline: 'none'
+                    } as CSSProperties
+                  }
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Primary Button Link</Label>
+                <Input
+                  value={draft.cta_section?.primaryButtonLink ?? ''}
+                  onChange={(event) =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      cta_section: {
+                        ...(prev.cta_section ?? defaultHomePageContent.cta_section),
+                        primaryButtonLink: event.target.value
+                      }
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={
+                    {
+                      '--tw-ring-offset-width': '0',
+                      boxShadow: 'none',
+                      outline: 'none'
+                    } as CSSProperties
+                  }
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Secondary Button Label</Label>
+                <Input
+                  value={draft.cta_section?.secondaryButtonLabel ?? ''}
+                  onChange={(event) =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      cta_section: {
+                        ...(prev.cta_section ?? defaultHomePageContent.cta_section),
+                        secondaryButtonLabel: event.target.value
+                      }
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={
+                    {
+                      '--tw-ring-offset-width': '0',
+                      boxShadow: 'none',
+                      outline: 'none'
+                    } as CSSProperties
+                  }
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Secondary Button Link</Label>
+                <Input
+                  value={draft.cta_section?.secondaryButtonLink ?? ''}
+                  onChange={(event) =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      cta_section: {
+                        ...(prev.cta_section ?? defaultHomePageContent.cta_section),
+                        secondaryButtonLink: event.target.value
                       }
                     }))
                   }
