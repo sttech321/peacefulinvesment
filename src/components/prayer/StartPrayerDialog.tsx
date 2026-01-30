@@ -9,6 +9,8 @@ import { locationService } from "@/services/location/LocationService";
 
 export type StartPrayerDialogTimezoneOption = { value: string; label: string };
 
+export type StartPrayerDialogScheduleMode = "FIXED" | "DAILY_UNLIMITED";
+
 export type StartPrayerDialogForm = {
   name: string;
   email: string;
@@ -18,6 +20,12 @@ export type StartPrayerDialogForm = {
   person_needs_help: string;
   start_date: string;
   end_date?: string;
+  schedule_mode?: StartPrayerDialogScheduleMode;
+  /**
+   * Optional per-user override.
+   * When schedule_mode === "FIXED", this can be used to compute end_date from start_date.
+   */
+  duration_days?: number;
   prayer_time: string;
   timezone: string;
 };
@@ -39,6 +47,9 @@ type Props = {
   cancelLabel?: string;
   showStartDatePicker?: boolean;
   traditionalDates?: TraditionalDateRange;
+  defaultScheduleMode?: StartPrayerDialogScheduleMode;
+  defaultDurationDays?: number | null;
+  durationPresets?: number[];
   form: StartPrayerDialogForm;
   setForm: (next: StartPrayerDialogForm) => void;
   timezoneOptions: StartPrayerDialogTimezoneOption[];
@@ -56,6 +67,9 @@ export function StartPrayerDialog({
   cancelLabel = "Cancel",
   showStartDatePicker = true,
   traditionalDates,
+  defaultScheduleMode,
+  defaultDurationDays = null,
+  durationPresets = [9, 14, 30],
   form,
   setForm,
   timezoneOptions,
@@ -65,6 +79,7 @@ export function StartPrayerDialog({
   const [step, setStep] = useState<"begin" | "details">("begin");
   const [beginChoice, setBeginChoice] = useState<BeginChoice | null>(null);
   const [showValidation, setShowValidation] = useState(false);
+  const [customDurationText, setCustomDurationText] = useState<string>("");
 
   const normalizeDialCode = useCallback((val: string): string => {
     const trimmed = String(val || "").trim();
@@ -93,6 +108,7 @@ export function StartPrayerDialog({
     setStep("begin");
     setBeginChoice(null);
     setShowValidation(false);
+    setCustomDurationText("");
   }, [open]);
 
   const getLocalTodayYmd = useCallback((): string => {
@@ -166,6 +182,110 @@ export function StartPrayerDialog({
   const effectiveTraditionalDates = beginChoice === "traditional" ? traditionalDates : undefined;
   const showStartDatePickerEffective = true; // always allow editing dates after the begin step
 
+  const addDaysToYmd = useCallback((yyyyMmDd: string, daysToAdd: number): string => {
+    const m = String(yyyyMmDd || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return yyyyMmDd;
+    const y = Number(m[1]);
+    const mo = Number(m[2]) - 1;
+    const d = Number(m[3]);
+    const dt = new Date(Date.UTC(y, mo, d + Math.max(0, daysToAdd)));
+    return dt.toISOString().slice(0, 10);
+  }, []);
+
+  const normalizePositiveInt = useCallback((v: unknown): number | null => {
+    const n = Math.floor(Number(v));
+    if (!Number.isFinite(n) || n < 1) return null;
+    return n;
+  }, []);
+
+  const parseDurationToDays = useCallback(
+    (raw: string): number | null => {
+      const s = String(raw || "").trim().toLowerCase();
+      if (!s) return null;
+
+      // Accept:
+      // - "14", "14 days", "14d"
+      // - "2 weeks", "2w", "2wk", "2wks"
+      const m = s.match(/^(?<n>\d+)\s*(?<unit>d|day|days|w|wk|wks|week|weeks)?$/i);
+      if (!m?.groups?.n) return null;
+      const n = normalizePositiveInt(m.groups.n);
+      if (!n) return null;
+
+      const unit = String(m.groups.unit || "days").toLowerCase();
+      if (unit === "w" || unit === "wk" || unit === "wks" || unit === "week" || unit === "weeks") return n * 7;
+      return n;
+    },
+    [normalizePositiveInt]
+  );
+
+  const effectiveScheduleMode: StartPrayerDialogScheduleMode = (() => {
+    const raw = String((form as any)?.schedule_mode || "").trim();
+    if (raw === "DAILY_UNLIMITED") return "DAILY_UNLIMITED";
+    return "FIXED";
+  })();
+
+  const isUnlimitedSelected = effectiveScheduleMode === "DAILY_UNLIMITED" || (form as any)?.end_date == null;
+
+  // Default schedule mode + duration when the dialog opens (best-effort; keeps the form controlled by the parent).
+  useEffect(() => {
+    if (!open) return;
+
+    const next: any = { ...(form as any) };
+    let changed = false;
+
+    const desiredMode: StartPrayerDialogScheduleMode =
+      defaultScheduleMode ||
+      (normalizePositiveInt(defaultDurationDays) ? "FIXED" : "DAILY_UNLIMITED");
+
+    if (!String(next.schedule_mode || "").trim()) {
+      next.schedule_mode = desiredMode;
+      changed = true;
+    }
+
+    if (String(next.schedule_mode || "") === "DAILY_UNLIMITED") {
+      if (next.end_date != null) {
+        next.end_date = undefined;
+        changed = true;
+      }
+      if (next.duration_days != null) {
+        next.duration_days = undefined;
+        changed = true;
+      }
+    } else {
+      // FIXED
+      const dd = normalizePositiveInt(next.duration_days);
+      const fallbackDd = normalizePositiveInt(defaultDurationDays);
+      if (!dd && fallbackDd) {
+        next.duration_days = fallbackDd;
+        changed = true;
+      }
+      const start = String(next.start_date || "").trim();
+      const duration = normalizePositiveInt(next.duration_days);
+      if (start && duration && !String(next.end_date || "").trim()) {
+        next.end_date = addDaysToYmd(start, duration - 1);
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      setForm(next as StartPrayerDialogForm);
+    }
+  }, [addDaysToYmd, defaultDurationDays, defaultScheduleMode, form, normalizePositiveInt, open, setForm]);
+
+  // Auto-recompute end_date when using a fixed duration and start_date changes (non-traditional path).
+  useEffect(() => {
+    if (!open) return;
+    if (effectiveTraditionalDates) return; // traditional mode supports manual dates
+    if (effectiveScheduleMode !== "FIXED") return;
+    const duration = normalizePositiveInt((form as any)?.duration_days);
+    const start = String(form.start_date || "").trim();
+    if (!duration || !start) return;
+
+    const nextEnd = addDaysToYmd(start, duration - 1);
+    if (String(form.end_date || "").trim() === nextEnd) return;
+    setForm({ ...form, end_date: nextEnd });
+  }, [addDaysToYmd, effectiveScheduleMode, effectiveTraditionalDates, form, normalizePositiveInt, open, setForm]);
+
   const effectiveTimezoneOptions = useMemo(() => {
     const seen = new Set<string>();
     const base = (timezoneOptions || []).filter((tz) => {
@@ -195,6 +315,9 @@ export function StartPrayerDialog({
     const prayerTime = String(form.prayer_time || "").trim();
     const tz = String(form.timezone || "").trim();
     const timesPerDay = Math.max(1, Math.floor(Number((form as any).times_per_day || 1)));
+    const scheduleMode = String((form as any)?.schedule_mode || "").trim() === "DAILY_UNLIMITED" ? "DAILY_UNLIMITED" : "FIXED";
+    const durationDays = normalizePositiveInt((form as any)?.duration_days);
+    const endDate = String((form as any)?.end_date || "").trim();
 
     if (!name) errs.name = "Name is required.";
     if (!email) errs.email = "Email is required.";
@@ -203,6 +326,9 @@ export function StartPrayerDialog({
 
     // Dates: start date is always required (Begin Today auto-fills it, but user can still edit later).
     if (!startDate) errs.start_date = "Start date is required.";
+    if (scheduleMode === "FIXED") {
+      if (!durationDays && !endDate) errs.duration_days = "Please choose how many days (or select Every day).";
+    }
 
     if (!prayerTime) errs.prayer_time = "Daily time is required.";
     if (!tz) errs.timezone = "Timezone is required.";
@@ -210,7 +336,7 @@ export function StartPrayerDialog({
     if (!Number.isFinite(timesPerDay) || timesPerDay < 1) errs.times_per_day = "Prayer frequency must be at least 1.";
 
     return errs;
-  }, [beginChoice, effectiveTimezoneOptions, form, normalizeDialCode, step]);
+  }, [effectiveTimezoneOptions, form, normalizeDialCode, normalizePositiveInt, step]);
 
   const canSubmitLocal = step === "details" && Object.keys(validationErrors).length === 0;
 
@@ -236,12 +362,43 @@ export function StartPrayerDialog({
     setForm({ ...form, start_date: effectiveTraditionalDates.start_date, end_date: effectiveTraditionalDates.end_date });
   };
 
+  const setScheduleMode = (mode: StartPrayerDialogScheduleMode) => {
+    if (mode === "DAILY_UNLIMITED") {
+      setForm({ ...(form as any), schedule_mode: "DAILY_UNLIMITED", end_date: undefined, duration_days: undefined });
+      return;
+    }
+
+    // FIXED
+    const start = String(form.start_date || "").trim();
+    const duration = normalizePositiveInt((form as any)?.duration_days) || normalizePositiveInt(defaultDurationDays) || 9;
+    const end = start ? addDaysToYmd(start, duration - 1) : String((form as any)?.end_date || "").trim();
+    setForm({ ...(form as any), schedule_mode: "FIXED", duration_days: duration, end_date: end || undefined });
+  };
+
+  const applyDurationDays = (days: number) => {
+    const d = normalizePositiveInt(days);
+    if (!d) return;
+    const start = String(form.start_date || "").trim();
+    const end = start ? addDaysToYmd(start, d - 1) : String((form as any)?.end_date || "").trim();
+    setForm({ ...(form as any), schedule_mode: "FIXED", duration_days: d, end_date: end || undefined });
+    setCustomDurationText(`${d} days`);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className={`max-w-md p-0 ${
           step === "details" && effectiveTraditionalDates ? "p-0" : ""
         }`}
+        onInteractOutside={(e) => {
+          // Keep the modal open when clicking outside the dialog content.
+          // Closing should only happen via explicit UI controls (e.g., the Close button).
+          e.preventDefault();
+        }}
+        onEscapeKeyDown={(e) => {
+          // Keep behavior consistent with "only close via Close button".
+          e.preventDefault();
+        }}
       >
         <DialogHeader>
           {step === "begin" ? (
@@ -507,6 +664,28 @@ export function StartPrayerDialog({
                   </div>
                 </div>
 
+                <div className="rounded-[8px] border border-muted-foreground/30 p-3">
+                  <p className="text-xs text-muted-foreground mb-2">Days</p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className={`rounded-[8px] border ${effectiveScheduleMode === "FIXED" ? "border-black/70" : "border-muted-foreground/30"}`}
+                      onClick={() => setScheduleMode("FIXED")}
+                    >
+                      Use end date
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className={`rounded-[8px] border ${effectiveScheduleMode === "DAILY_UNLIMITED" ? "border-black/70" : "border-muted-foreground/30"}`}
+                      onClick={() => setScheduleMode("DAILY_UNLIMITED")}
+                    >
+                      Every day
+                    </Button>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
                     <Label htmlFor="prayer-instance-start-date" className="text-xs text-muted-foreground">
@@ -525,19 +704,21 @@ export function StartPrayerDialog({
                       <p className="text-xs text-red-600 mt-1">{validationErrors.start_date}</p>
                     ) : null}
                   </div>
-                  <div>
-                    <Label htmlFor="prayer-instance-end-date" className="text-xs text-muted-foreground">
-                      End Date
-                    </Label>
-                    <Input
-                      id="prayer-instance-end-date"
-                      type="date"
-                      value={form.end_date || ""}
-                      onChange={(e) => setForm({ ...form, end_date: e.target.value || undefined })}
-                      className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none"
-                      style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as React.CSSProperties}
-                    />
-                  </div>
+                  {effectiveScheduleMode === "FIXED" ? (
+                    <div>
+                      <Label htmlFor="prayer-instance-end-date" className="text-xs text-muted-foreground">
+                        End Date
+                      </Label>
+                      <Input
+                        id="prayer-instance-end-date"
+                        type="date"
+                        value={form.end_date || ""}
+                        onChange={(e) => setForm({ ...form, end_date: e.target.value || undefined })}
+                        className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none"
+                        style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as React.CSSProperties}
+                      />
+                    </div>
+                  ) : null}
                 </div>
 
                 <div>
@@ -559,40 +740,107 @@ export function StartPrayerDialog({
                 </div>
               </div>
             ) : showStartDatePickerEffective ? (
-              <div className="mt-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <div>
-                  <Label htmlFor="prayer-instance-start-date" className="text-xs text-muted-foreground">
-                    Start Date *
-                  </Label>
-                  <Input
-                    id="prayer-instance-start-date"
-                    type="date"
-                    value={form.start_date}
-                    onChange={(e) => setForm({ ...form, start_date: e.target.value, end_date: undefined })}
-                    aria-invalid={showValidation && Boolean(validationErrors.start_date)}
-                    className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none"
-                    style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as React.CSSProperties}
-                  />
-                  {showValidation && validationErrors.start_date ? (
-                    <p className="text-xs text-red-600 mt-1">{validationErrors.start_date}</p>
-                  ) : null}
+              <div className="mt-1 space-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <Label htmlFor="prayer-instance-start-date" className="text-xs text-muted-foreground">
+                      Start Date *
+                    </Label>
+                    <Input
+                      id="prayer-instance-start-date"
+                      type="date"
+                      value={form.start_date}
+                      onChange={(e) => setForm({ ...form, start_date: e.target.value })}
+                      aria-invalid={showValidation && Boolean(validationErrors.start_date)}
+                      className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none"
+                      style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as React.CSSProperties}
+                    />
+                    {showValidation && validationErrors.start_date ? (
+                      <p className="text-xs text-red-600 mt-1">{validationErrors.start_date}</p>
+                    ) : null}
+                  </div>
+                  <div>
+                    <Label htmlFor="prayer-instance-prayer-time" className="text-xs text-muted-foreground">
+                      Daily Time *
+                    </Label>
+                    <Input
+                      id="prayer-instance-prayer-time"
+                      type="time"
+                      value={form.prayer_time}
+                      onChange={(e) => setForm({ ...form, prayer_time: e.target.value })}
+                      aria-invalid={showValidation && Boolean(validationErrors.prayer_time)}
+                      className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none"
+                      style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as React.CSSProperties}
+                    />
+                    {showValidation && validationErrors.prayer_time ? (
+                      <p className="text-xs text-red-600 mt-1">{validationErrors.prayer_time}</p>
+                    ) : null}
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="prayer-instance-prayer-time" className="text-xs text-muted-foreground">
-                    Daily Time *
-                  </Label>
-                  <Input
-                    id="prayer-instance-prayer-time"
-                    type="time"
-                    value={form.prayer_time}
-                    onChange={(e) => setForm({ ...form, prayer_time: e.target.value })}
-                    aria-invalid={showValidation && Boolean(validationErrors.prayer_time)}
-                    className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none"
-                    style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as React.CSSProperties}
-                  />
-                  {showValidation && validationErrors.prayer_time ? (
-                    <p className="text-xs text-red-600 mt-1">{validationErrors.prayer_time}</p>
-                  ) : null}
+
+                <div className="rounded-[8px] border border-muted-foreground/30 p-3">
+                  <p className="text-xs text-muted-foreground mb-2">Days *</p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className={`rounded-[8px] border ${effectiveScheduleMode === "DAILY_UNLIMITED" ? "border-black/70" : "border-muted-foreground/30"}`}
+                      onClick={() => setScheduleMode("DAILY_UNLIMITED")}
+                    >
+                      Every day
+                    </Button>
+
+                    {durationPresets.map((d) => (
+                      <Button
+                        key={d}
+                        type="button"
+                        variant="outline"
+                        className={`rounded-[8px] border ${
+                          effectiveScheduleMode === "FIXED" && Number((form as any).duration_days) === d
+                            ? "border-black/70"
+                            : "border-muted-foreground/30"
+                        }`}
+                        onClick={() => applyDurationDays(d)}
+                      >
+                        {d} days
+                      </Button>
+                    ))}
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                      <Label htmlFor="prayer-instance-custom-days" className="text-xs text-muted-foreground">
+                        Custom duration
+                      </Label>
+                      <Input
+                        id="prayer-instance-custom-days"
+                        type="text"
+                        value={customDurationText}
+                        onChange={(e) => {
+                          const next = e.target.value;
+                          setCustomDurationText(next);
+                          const days = parseDurationToDays(next);
+                          if (days) applyDurationDays(days);
+                        }}
+                        placeholder="e.g., 14 days or 2 weeks"
+                        aria-invalid={showValidation && Boolean(validationErrors.duration_days)}
+                        className="rounded-[8px] shadow-none mt-1 border-muted-foreground/60 hover:border-muted-foreground focus-visible:border-black/70 box-shadow-none data-[placeholder]:text-gray-400 resize-none"
+                        style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as React.CSSProperties}
+                      />
+                      {showValidation && validationErrors.duration_days ? (
+                        <p className="text-xs text-red-600 mt-1">{validationErrors.duration_days}</p>
+                      ) : null}
+                    </div>
+                    <div className="flex items-end">
+                      <div className="text-xs text-muted-foreground">
+                        {effectiveScheduleMode === "DAILY_UNLIMITED"
+                          ? "No end date."
+                          : form.end_date
+                            ? `Ends on ${form.end_date}.`
+                            : "End date will be calculated."}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             ) : null}

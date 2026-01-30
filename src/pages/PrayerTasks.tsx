@@ -51,8 +51,8 @@ interface PrayerTask {
   link_or_video: string | null;
   status: 'TODO' | 'DONE' | 'NOT DONE';
   person_needs_help: string | null;
-  number_of_days: number;
-  duration_days: number;
+  number_of_days: number | null;
+  duration_days: number | null;
   schedule_mode?: 'FIXED' | 'DAILY_UNLIMITED';
   current_day: number;
   start_date: string;
@@ -184,6 +184,9 @@ export default function PrayerTasks() {
     times_per_day: 1,
     person_needs_help: "",
     start_date: new Date().toISOString().split("T")[0],
+    end_date: undefined as string | undefined,
+    schedule_mode: undefined as ("FIXED" | "DAILY_UNLIMITED" | undefined),
+    duration_days: undefined as number | undefined,
     prayer_time: "07:00",
     timezone: userTimezone,
   });
@@ -394,14 +397,20 @@ export default function PrayerTasks() {
       setStarting(true);
 
       const scheduleMode: "FIXED" | "DAILY_UNLIMITED" =
-        (selectedTask as any)?.schedule_mode === "DAILY_UNLIMITED" ? "DAILY_UNLIMITED" : "FIXED";
-      const duration = selectedTask.duration_days || selectedTask.number_of_days;
+        String((instanceFormData as any)?.schedule_mode || "").trim() === "DAILY_UNLIMITED" ? "DAILY_UNLIMITED" : "FIXED";
+      const durationFromFormRaw = Number((instanceFormData as any)?.duration_days);
+      const durationFromForm =
+        Number.isFinite(durationFromFormRaw) && durationFromFormRaw >= 1 ? Math.floor(durationFromFormRaw) : 0;
+      const durationFromTask = Math.max(1, Math.floor(Number((selectedTask as any)?.duration_days || (selectedTask as any)?.number_of_days || 1)));
 
       // Use selected start date from the form (cron-safe and user-controlled)
       const startDateYmd = String((instanceFormData as any).start_date || selectedTask.start_date || "").trim();
-      const fixedEnd = String((instanceFormData as any).end_date || (selectedTask as any).end_date || "").trim();
-      const endDateYmd =
-        scheduleMode === "DAILY_UNLIMITED" ? null : (fixedEnd || addDaysToYmd(startDateYmd, Math.max(1, duration) - 1));
+      const fixedEnd = String((instanceFormData as any).end_date || "").trim();
+      const computedEnd =
+        scheduleMode === "DAILY_UNLIMITED"
+          ? null
+          : (fixedEnd || addDaysToYmd(startDateYmd, Math.max(1, durationFromForm || durationFromTask) - 1));
+      const endDateYmd = scheduleMode === "DAILY_UNLIMITED" ? null : computedEnd;
 
       // Create user prayer instance
       const effectivePhone = `${ccNormalized}${digitsOnlyPhone}`.trim();
@@ -487,6 +496,9 @@ export default function PrayerTasks() {
         times_per_day: 1,
         person_needs_help: "",
         start_date: new Date().toISOString().split("T")[0],
+        end_date: undefined,
+        schedule_mode: undefined,
+        duration_days: undefined,
         prayer_time: "07:00",
         timezone: userTimezone,
       });
@@ -901,7 +913,18 @@ export default function PrayerTasks() {
     }
 
     // Default the start date to the task start date (if provided)
-    setInstanceFormData((prev) => ({ ...(prev as any), start_date: task.start_date || prev.start_date } as any));
+    setInstanceFormData((prev) => {
+      const next: any = { ...(prev as any) };
+      next.start_date = task.start_date || next.start_date;
+
+      const taskMode = String((task as any)?.schedule_mode || "").trim() === "DAILY_UNLIMITED" ? "DAILY_UNLIMITED" : "FIXED";
+      const taskDuration = Number((task as any)?.duration_days || (task as any)?.number_of_days || 0);
+
+      next.schedule_mode = taskMode;
+      next.duration_days = Number.isFinite(taskDuration) && taskDuration >= 1 ? Math.floor(taskDuration) : undefined;
+      next.end_date = undefined;
+      return next;
+    });
     setSelectedTask(task);
     setStartInstanceDialogOpen(true);
   };
@@ -974,7 +997,28 @@ export default function PrayerTasks() {
 
   const getDurationForUserTask = (userTask: PrayerUserTask): number | null => {
     if (isUnlimitedDaily(userTask)) return null;
-    return userTask.task?.duration_days || userTask.task?.number_of_days || 1;
+    const s = String(userTask.start_date || "").trim();
+    const e = String(userTask.end_date || "").trim();
+    const ms = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    const me = e.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (ms && me) {
+      const sy = Number(ms[1]);
+      const smo = Number(ms[2]) - 1;
+      const sd = Number(ms[3]);
+      const ey = Number(me[1]);
+      const emo = Number(me[2]) - 1;
+      const ed = Number(me[3]);
+      if ([sy, smo, sd, ey, emo, ed].every(Number.isFinite)) {
+        const startMs = Date.UTC(sy, smo, sd);
+        const endMs = Date.UTC(ey, emo, ed);
+        const MS_DAY = 24 * 60 * 60 * 1000;
+        const diff = Math.floor((endMs - startMs) / MS_DAY) + 1;
+        if (Number.isFinite(diff) && diff >= 1) return diff;
+      }
+    }
+    // Fallback to task template duration (legacy / safety)
+    const fallback = Number(userTask.task?.duration_days || userTask.task?.number_of_days || 1);
+    return Number.isFinite(fallback) && fallback >= 1 ? Math.floor(fallback) : 1;
   };
 
   const isPrayerCompleted = (userTask: PrayerUserTask): boolean => {
@@ -1087,6 +1131,14 @@ export default function PrayerTasks() {
     const timeOk = Boolean(String((instanceFormData as any)?.prayer_time || "").trim());
     const tzOk = Boolean(String((instanceFormData as any)?.timezone || "").trim());
     const timesPerDay = Math.max(1, Math.floor(Number((instanceFormData as any)?.times_per_day || 1)));
+    const scheduleMode = String((instanceFormData as any)?.schedule_mode || "").trim() === "DAILY_UNLIMITED" ? "DAILY_UNLIMITED" : "FIXED";
+    const durationRaw = Number((instanceFormData as any)?.duration_days);
+    const durationOk = Number.isFinite(durationRaw) && durationRaw >= 1;
+    const endDateOk = Boolean(String((instanceFormData as any)?.end_date || "").trim());
+    const fallbackTaskDurationOk =
+      selectedTask
+        ? Number.isFinite(Number((selectedTask as any)?.duration_days || (selectedTask as any)?.number_of_days || NaN))
+        : false;
     return (
       nameOk &&
       emailOk &&
@@ -1096,7 +1148,8 @@ export default function PrayerTasks() {
       timeOk &&
       tzOk &&
       Number.isFinite(timesPerDay) &&
-      timesPerDay >= 1
+      timesPerDay >= 1 &&
+      (scheduleMode === "DAILY_UNLIMITED" || durationOk || endDateOk || fallbackTaskDurationOk)
     );
   })();
 
@@ -1444,7 +1497,11 @@ export default function PrayerTasks() {
                               <div className="text-white/70 text-sm pt-2">
                                 {(task as any)?.schedule_mode === "DAILY_UNLIMITED"
                                   ? "Daily (Unlimited)"
-                                  : `${task.duration_days || task.number_of_days} days`}
+                                  : (() => {
+                                      const d = Number((task as any)?.duration_days ?? (task as any)?.number_of_days);
+                                      if (!Number.isFinite(d) || d < 1) return "Daily (Unlimited)";
+                                      return `${Math.floor(d)} days`;
+                                    })()}
                               </div>
                             </div>
                             <div className="md:col-span-1">
@@ -1622,6 +1679,12 @@ export default function PrayerTasks() {
               }
             : undefined
         }
+        defaultScheduleMode={
+          selectedTask && String((selectedTask as any).schedule_mode || "").trim() === "DAILY_UNLIMITED"
+            ? "DAILY_UNLIMITED"
+            : "FIXED"
+        }
+        defaultDurationDays={selectedTask ? Number((selectedTask as any).duration_days || (selectedTask as any).number_of_days || null) : null}
         form={instanceFormData as any}
         setForm={(next) => setInstanceFormData(next as any)}
         timezoneOptions={commonTimezones}
