@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { CSSProperties } from "react";
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -20,12 +21,14 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
-import { Mail, MapPin, Shield, CheckCircle, AlertCircle, Link } from 'lucide-react';
+import { Mail, MapPin, Shield, CheckCircle, Edit, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import Footer from '@/components/Footer';
+import defaultContactContent from "@/config/contactContent.json";
+import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 
 const contactFormSchema = z.object({
   fullName: z
@@ -82,8 +85,15 @@ const contactFormSchema = z.object({
 type ContactFormData = z.infer<typeof contactFormSchema>;
 
 const Contact = () => {
+  const { user } = useAuth();
+  const { isAdmin, loading: roleLoading } = useUserRole();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [contactContent, setContactContent] = useState(() => ({
+    ...defaultContactContent,
+  }));
   const { toast } = useToast();
 
   const {
@@ -100,6 +110,100 @@ const Contact = () => {
       contactMethod: 'email',
     },
   });
+
+  useEffect(() => {
+    const loadContent = async () => {
+      const { data, error } = await supabase
+        .from("app_settings")
+        .select("value")
+        .eq("key", "contact_content")
+        .maybeSingle();
+
+      if (error || !data?.value) {
+        return;
+      }
+
+      try {
+        const parsed = JSON.parse(data.value);
+        setContactContent({ ...defaultContactContent, ...parsed });
+      } catch {
+        // Keep defaults on parse error
+      }
+    };
+
+    void loadContent();
+  }, []);
+
+  const handleSave = async () => {
+    if (!user || !isAdmin()) {
+      return;
+    }
+
+    setIsSaving(true);
+    const payload = JSON.stringify(contactContent);
+    const { error } = await supabase
+      .from("app_settings")
+      .upsert(
+        {
+          key: "contact_content",
+          value: payload,
+          description: "Contact page content JSON",
+        },
+        { onConflict: "key" }
+      );
+
+    setIsSaving(false);
+    if (!error) {
+      setIsEditorOpen(false);
+    }
+  };
+
+  const updateFaqItem = (index: number, patch: { question?: string; answer?: string }) => {
+    setContactContent((prev) => {
+      const currentItems = (prev as any).faqItems ?? (defaultContactContent as any).faqItems ?? [];
+      const nextItems = currentItems.map((item: any, itemIndex: number) =>
+        itemIndex === index ? { ...item, ...patch } : item
+      );
+
+      return {
+        ...prev,
+        faqItems: nextItems,
+      };
+    });
+  };
+
+  const renderFaqAnswer = (answer: string) => {
+    const tokens = answer.split(/(\{\{email\}\}|\{\{phone\}\})/g);
+    return (
+      <>
+        {tokens.map((token, index) => {
+          if (token === "{{email}}") {
+            return (
+              <a
+                key={`faq-email-${index}`}
+                href={`mailto:${contactInfo.email}`}
+                className="text-primary hover:text-muted"
+              >
+                email
+              </a>
+            );
+          }
+          if (token === "{{phone}}") {
+            return (
+              <a
+                key={`faq-phone-${index}`}
+                href={`tel:${contactInfo.phone}`}
+                className="text-primary hover:text-muted"
+              >
+                phone
+              </a>
+            );
+          }
+          return <span key={`faq-text-${index}`}>{token}</span>;
+        })}
+      </>
+    );
+  };
 
   const onSubmit = async (data: ContactFormData) => {
     setIsSubmitting(true);
@@ -181,10 +285,22 @@ const Contact = () => {
   };
 
   const contactInfo = {
-    name: 'Patrick Oliveri',
-    phone: '+1 (772) 321-1897',
-    email: 'support@peacefulinvestment.com',
-    address: 'Peaceful Investment Headquarters',
+    name:
+      (contactContent as any).contactInfoName ??
+      (defaultContactContent as any).contactInfoName ??
+      "Patrick Oliveri",
+    phone:
+      (contactContent as any).contactInfoPhone ??
+      (defaultContactContent as any).contactInfoPhone ??
+      "+1 (772) 321-1897",
+    email:
+      (contactContent as any).contactInfoEmail ??
+      (defaultContactContent as any).contactInfoEmail ??
+      "support@peacefulinvestment.com",
+    address:
+      (contactContent as any).contactInfoAddress ??
+      (defaultContactContent as any).contactInfoAddress ??
+      "Peaceful Investment Headquarters",
   };
 
   const subjects = [
@@ -230,13 +346,23 @@ const Contact = () => {
     <div className='pink-yellow-shadow min-h-screen pt-16'>
       {/* Hero Section */}
       <div className='animate-slide-up bg-black/20 px-4 py-10 text-center md:py-12 lg:py-20'>
+        {user && !roleLoading && isAdmin() && (
+          <div className="fixed right-6 top-24 z-20">
+            <Button
+              size="sm"
+              className="bg-gradient-pink-to-yellow hover:bg-gradient-yellow-to-pink text-white rounded-[8px] border-0"
+              onClick={() => setIsEditorOpen(true)}
+            >
+              <Edit className="h-4 w-4" /> Edit Contact Page
+            </Button>
+          </div>
+        )}
         <div className='mx-auto max-w-7xl px-4 text-center'>
           <h1 className='mb-4 font-inter text-3xl font-bold uppercase text-white md:text-4xl lg:text-5xl xl:text-6xl'>
-            Contact <span className='text-primary'>Us</span>
+            {contactContent.heroTitle} <span className='text-primary'>{contactContent.heroTitleHighlight}</span>
           </h1>
           <p className='mx-auto max-w-2xl font-inter text-lg font-normal text-white md:text-[20px]'>
-            Get in touch with our support team. We're here to help with any
-            questions or technical issues you may have.
+            {contactContent.heroSubtitle}
           </p>
         </div>
       </div>
@@ -249,11 +375,10 @@ const Contact = () => {
               <CardHeader>
                 <CardTitle className='flex items-center gap-2 font-inter font-semibold text-white'>
                   <Mail className='h-5 w-5 text-primary' />
-                  Send us a Message
+                  {contactContent.formTitle}
                 </CardTitle>
                 <CardDescription>
-                  Fill out the form below and we'll get back to you as soon as
-                  possible.
+                  {contactContent.formDescription}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -265,7 +390,7 @@ const Contact = () => {
                         htmlFor='fullName'
                         className='text-muted-foreground'
                       >
-                        Full Name *
+                        {contactContent.labelFullName}
                       </Label>
                       <Input
                         id='fullName'
@@ -320,7 +445,7 @@ const Contact = () => {
 
                     <div className='space-y-2'>
                       <Label htmlFor='email' className='text-muted-foreground'>
-                        Email Address *
+                        {contactContent.labelEmail}
                       </Label>
                       <Input
                         id='email'
@@ -340,7 +465,7 @@ const Contact = () => {
                   {/* Phone */}
                   <div className='space-y-2'>
                     <Label htmlFor='phone' className='text-muted-foreground'>
-                      Phone Number (Optional)
+                      {contactContent.labelPhone}
                     </Label>
                     <Input
                       id='phone'
@@ -390,7 +515,7 @@ const Contact = () => {
                         htmlFor='subject'
                         className='text-muted-foreground'
                       >
-                        Subject *
+                        {contactContent.labelSubject}
                       </Label>
                       <Select
                         onValueChange={value => setValue('subject', value)}
@@ -418,7 +543,7 @@ const Contact = () => {
                         htmlFor='priority'
                         className='text-muted-foreground'
                       >
-                        Priority Level
+                        {contactContent.labelPriority}
                       </Label>
                       <Select
                         onValueChange={value =>
@@ -448,7 +573,7 @@ const Contact = () => {
                   {/* Message */}
                   <div className='space-y-2'>
                     <Label htmlFor='message' className='text-muted-foreground'>
-                      Message *
+                      {contactContent.labelMessage}
                     </Label>
                     <Textarea
                       id='message'
@@ -467,7 +592,7 @@ const Contact = () => {
                   {/* Contact Method Preference */}
                   <div className='space-y-2'>
                     <Label className='text-muted-foreground'>
-                      Preferred Contact Method
+                      {contactContent.labelPreferredContactMethod}
                     </Label>
                     <div className='flex gap-4'>
                       <label className='flex items-center space-x-2'>
@@ -501,7 +626,7 @@ const Contact = () => {
                     className='download-btn-primary w-full font-inter text-sm font-semibold uppercase'
                     disabled={isSubmitting}
                   >
-                    {isSubmitting ? 'Sending...' : 'Send Message'}
+                    {isSubmitting ? 'Sending...' : contactContent.submitButtonLabel}
                   </Button>
                 </form>
               </CardContent>
@@ -514,7 +639,7 @@ const Contact = () => {
               <CardHeader>
                 <CardTitle className='flex items-center gap-2 font-inter font-semibold text-white'>
                   <Shield className='h-5 w-5 text-primary' />
-                  Contact Information
+                  {contactContent.contactInfoSectionTitle}
                 </CardTitle>
                 <CardDescription>
                   Get in touch with us through any of these methods.
@@ -527,7 +652,7 @@ const Contact = () => {
                   </div>
                   <div>
                     <h4 className='text-sm font-normal text-white'>
-                      Email Support
+                      {contactContent.contactInfoEmailLabel}
                     </h4>
                     <p className='font-open-sans text-sm font-normal text-muted-foreground'>
                       <a href={`mailto:${contactInfo.email}`} className='hover:text-primary'>
@@ -535,7 +660,7 @@ const Contact = () => {
                       </a> 
                     </p>
                     <p className='font-open-sans text-sm font-normal text-muted-foreground'>
-                      24/7 support available
+                      {contactContent.contactInfoEmailHelperText}
                     </p>
                   </div>
                 </div>
@@ -548,7 +673,7 @@ const Contact = () => {
                   </div>
                   <div>
                     <h4 className='text-sm font-normal text-white'>
-                      Office Address
+                      {contactContent.contactInfoAddressLabel}
                     </h4>
                     <p className='font-open-sans text-sm font-normal text-muted-foreground'>
                       {contactInfo.address}
@@ -562,41 +687,28 @@ const Contact = () => {
             <Card className='glass-card group bg-black p-0 shadow-none'>
               <CardHeader>
                 <CardTitle className='mb-0 font-inter text-lg font-normal text-primary'>
-                  Frequently Asked Questions
+                  {contactContent.faqSectionTitle}
                 </CardTitle>
                 <CardDescription className='mt-0 pt-0'>
                   Quick answers to common questions
                 </CardDescription>
               </CardHeader>
               <CardContent className='space-y-4'>
-                <div>
-                  <h4 className='mb-1 font-semibold text-white'>
-                    How quickly will I receive a response?
-                  </h4>
-                  <p className='text-sm text-muted-foreground'>
-                    We typically respond to all inquiries within 24 hours during
-                    business days.
-                  </p>
-                </div>
-                <Separator className='bg-white/20' />
-                <div>
-                  <h4 className='mb-1 font-semibold text-white'>
-                    What information should I include?
-                  </h4>
-                  <p className='text-sm text-muted-foreground'>
-                    Please include your account details, specific error
-                    messages, and steps to reproduce the issue.
-                  </p>
-                </div>
-                <Separator className='bg-white/20' />
-                <div>
-                  <h4 className='mb-1 font-semibold text-white'>
-                    Is there emergency support available?
-                  </h4>
-                  <p className='text-sm text-muted-foreground'>
-                   Yes, for urgent issues, use high-priority <a href={`mailto:${contactInfo.email}`} className='text-primary hover:text-muted'>email</a> or <a href={`tel:${contactInfo.phone}`} className='text-primary hover:text-muted'>phone</a>.
-                  </p>
-                </div>
+                {(((contactContent as any).faqItems ?? (defaultContactContent as any).faqItems ?? []) as any[]).map(
+                  (item, index, array) => (
+                    <div key={`faq-item-${index}`} className="space-y-4">
+                      <div>
+                        <h4 className='mb-1 font-semibold text-white'>
+                          {item?.question ?? ""}
+                        </h4>
+                        <p className='text-sm text-muted-foreground'>
+                          {renderFaqAnswer(item?.answer ?? "")}
+                        </p>
+                      </div>
+                      {index < array.length - 1 && <Separator className='bg-white/20' />}
+                    </div>
+                  )
+                )}
               </CardContent>
             </Card>
           </div>
@@ -604,6 +716,409 @@ const Contact = () => {
       </div>
 
       <Footer />
+
+      {user && !roleLoading && isAdmin() && (
+        <>
+          <div
+            className={`fixed inset-0 z-40 bg-black/70 transition-opacity ${
+              isEditorOpen ? "opacity-100" : "pointer-events-none opacity-0"
+            }`}
+            onClick={() => setIsEditorOpen(false)}
+            aria-hidden="true"
+          />
+          <aside
+            className={`fixed right-0 top-0 z-50 h-full w-full max-w-md transform bg-[#2e2e2e] text-black shadow-2xl transition-transform duration-300 ${
+              isEditorOpen ? "translate-x-0" : "translate-x-full"
+            }`}
+            aria-label="Edit Contact Page"
+          >
+            <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
+              <h2 className="text-lg font-semibold text-white">Edit Contact Page</h2>
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-black border-0 rounded-[8px] bg-white/10 hover:bg-white/20"
+                onClick={() => setIsEditorOpen(false)}
+              >
+                <X className="h-4 w-4 text-white" />
+              </Button>
+            </div>
+            <div
+              className="space-y-4 px-6 pt-6 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent"
+              style={{ height: "calc(100vh - 157px)" }}
+            >
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Hero Title</Label>
+                <Input
+                  value={contactContent.heroTitle}
+                  onChange={(event) =>
+                    setContactContent((prev) => ({
+                      ...prev,
+                      heroTitle: event.target.value,
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Hero Title Highlight</Label>
+                <Input
+                  value={(contactContent as any).heroTitleHighlight ?? ""}
+                  onChange={(event) =>
+                    setContactContent((prev: any) => ({
+                      ...prev,
+                      heroTitleHighlight: event.target.value,
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Hero Subtitle</Label>
+                <Textarea
+                  value={contactContent.heroSubtitle}
+                  onChange={(event) =>
+                    setContactContent((prev) => ({
+                      ...prev,
+                      heroSubtitle: event.target.value,
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none resize-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                  rows={4}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Form Title</Label>
+                <Input
+                  value={(contactContent as any).formTitle ?? ""}
+                  onChange={(event) =>
+                    setContactContent((prev: any) => ({
+                      ...prev,
+                      formTitle: event.target.value,
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Form Description</Label>
+                <Textarea
+                  value={(contactContent as any).formDescription ?? ""}
+                  onChange={(event) =>
+                    setContactContent((prev: any) => ({
+                      ...prev,
+                      formDescription: event.target.value,
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none resize-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                  rows={3}
+                />
+              </div>
+
+              <div>
+                <Label className="text-sm text-white font-normal">Field Labels</Label>
+                <div className="rounded-lg border border-white/10 p-4 space-y-3 bg-black/20 my-2 inline-block w-full">
+                  <div className="space-y-1">
+                    <Label className="text-sm text-white font-normal">Full Name</Label>
+                    <Input
+                      value={(contactContent as any).labelFullName ?? ""}
+                      onChange={(event) =>
+                        setContactContent((prev: any) => ({
+                          ...prev,
+                          labelFullName: event.target.value,
+                        }))
+                      }
+                      className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                      style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-sm text-white font-normal">Email Address</Label>
+                    <Input
+                      value={(contactContent as any).labelEmail ?? ""}
+                      onChange={(event) =>
+                        setContactContent((prev: any) => ({
+                          ...prev,
+                          labelEmail: event.target.value,
+                        }))
+                      }
+                      className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                      style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-sm text-white font-normal">Phone Number</Label>
+                    <Input
+                      value={(contactContent as any).labelPhone ?? ""}
+                      onChange={(event) =>
+                        setContactContent((prev: any) => ({
+                          ...prev,
+                          labelPhone: event.target.value,
+                        }))
+                      }
+                      className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                      style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-sm text-white font-normal">Subject</Label>
+                    <Input
+                      value={(contactContent as any).labelSubject ?? ""}
+                      onChange={(event) =>
+                        setContactContent((prev: any) => ({
+                          ...prev,
+                          labelSubject: event.target.value,
+                        }))
+                      }
+                      className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                      style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-sm text-white font-normal">Priority Level</Label>
+                    <Input
+                      value={(contactContent as any).labelPriority ?? ""}
+                      onChange={(event) =>
+                        setContactContent((prev: any) => ({
+                          ...prev,
+                          labelPriority: event.target.value,
+                        }))
+                      }
+                      className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                      style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-sm text-white font-normal">Message</Label>
+                    <Input
+                      value={(contactContent as any).labelMessage ?? ""}
+                      onChange={(event) =>
+                        setContactContent((prev: any) => ({
+                          ...prev,
+                          labelMessage: event.target.value,
+                        }))
+                      }
+                      className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                      style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-sm text-white font-normal">Preferred Contact Method</Label>
+                    <Input
+                      value={(contactContent as any).labelPreferredContactMethod ?? ""}
+                      onChange={(event) =>
+                        setContactContent((prev: any) => ({
+                          ...prev,
+                          labelPreferredContactMethod: event.target.value,
+                        }))
+                      }
+                      className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                      style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Submit Button Label</Label>
+                <Input
+                  value={(contactContent as any).submitButtonLabel ?? ""}
+                  onChange={(event) =>
+                    setContactContent((prev: any) => ({
+                      ...prev,
+                      submitButtonLabel: event.target.value,
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Contact Info Section Title</Label>
+                <Input
+                  value={(contactContent as any).contactInfoSectionTitle ?? ""}
+                  onChange={(event) =>
+                    setContactContent((prev: any) => ({
+                      ...prev,
+                      contactInfoSectionTitle: event.target.value,
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Contact Name</Label>
+                <Input
+                  value={(contactContent as any).contactInfoName ?? ""}
+                  onChange={(event) =>
+                    setContactContent((prev: any) => ({
+                      ...prev,
+                      contactInfoName: event.target.value,
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Contact Phone</Label>
+                <Input
+                  value={(contactContent as any).contactInfoPhone ?? ""}
+                  onChange={(event) =>
+                    setContactContent((prev: any) => ({
+                      ...prev,
+                      contactInfoPhone: event.target.value,
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Contact Email</Label>
+                <Input
+                  value={(contactContent as any).contactInfoEmail ?? ""}
+                  onChange={(event) =>
+                    setContactContent((prev: any) => ({
+                      ...prev,
+                      contactInfoEmail: event.target.value,
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Contact Address</Label>
+                <Input
+                  value={(contactContent as any).contactInfoAddress ?? ""}
+                  onChange={(event) =>
+                    setContactContent((prev: any) => ({
+                      ...prev,
+                      contactInfoAddress: event.target.value,
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Email Label</Label>
+                <Input
+                  value={(contactContent as any).contactInfoEmailLabel ?? ""}
+                  onChange={(event) =>
+                    setContactContent((prev: any) => ({
+                      ...prev,
+                      contactInfoEmailLabel: event.target.value,
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Email Helper Text</Label>
+                <Input
+                  value={(contactContent as any).contactInfoEmailHelperText ?? ""}
+                  onChange={(event) =>
+                    setContactContent((prev: any) => ({
+                      ...prev,
+                      contactInfoEmailHelperText: event.target.value,
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">Address Label</Label>
+                <Input
+                  value={(contactContent as any).contactInfoAddressLabel ?? ""}
+                  onChange={(event) =>
+                    setContactContent((prev: any) => ({
+                      ...prev,
+                      contactInfoAddressLabel: event.target.value,
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-sm text-white font-normal">FAQ Section Title</Label>
+                <Input
+                  value={(contactContent as any).faqSectionTitle ?? ""}
+                  onChange={(event) =>
+                    setContactContent((prev: any) => ({
+                      ...prev,
+                      faqSectionTitle: event.target.value,
+                    }))
+                  }
+                  className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                  style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                />
+              </div>
+              <div>
+                <Label className="text-sm text-white font-normal">FAQ Items</Label>
+                {(((contactContent as any).faqItems ?? (defaultContactContent as any).faqItems ?? []) as any[]).map(
+                  (item, index) => (
+                    <div
+                      key={`faq-edit-${index}`}
+                      className="rounded-lg border border-white/10 p-4 space-y-3 bg-black/20 my-2 inline-block w-full"
+                    >
+                      <div className="space-y-1">
+                        <Label className="text-sm text-white font-normal">Question</Label>
+                        <Input
+                          value={item?.question ?? ""}
+                          onChange={(event) =>
+                            updateFaqItem(index, { question: event.target.value })
+                          }
+                          className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none"
+                          style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-sm text-white font-normal">Answer</Label>
+                        <Textarea
+                          value={item?.answer ?? ""}
+                          onChange={(event) =>
+                            updateFaqItem(index, { answer: event.target.value })
+                          }
+                          className="text-black rounded-[8px] shadow-none mt-1 border-0 box-shadow-none resize-none"
+                          style={{ "--tw-ring-offset-width": "0", boxShadow: "none", outline: "none" } as CSSProperties}
+                          rows={3}
+                        />
+                        <p className="text-xs text-white/70">
+                          Tip: use <span className="font-mono">{`{{email}}`}</span> and{" "}
+                          <span className="font-mono">{`{{phone}}`}</span> to insert clickable links.
+                        </p>
+                      </div>
+                    </div>
+                  )
+                )}
+              </div>
+            </div>
+            <div className="p-6">
+              <Button
+                className="w-full bg-gradient-pink-to-yellow text-white rounded-[8px] border-0"
+                onClick={handleSave}
+                disabled={isSaving}
+              >
+                {isSaving ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
+          </aside>
+        </>
+      )}
     </div>
   );
 };
